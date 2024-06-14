@@ -2,6 +2,12 @@
 
 Archive reader
 
+## Screenshots
+
+![Library](/assets/library.webp?raw=true "Library page")
+![Gallery](/assets/gallery.webp?raw=true "Gallery page")
+![Reader](/assets/reader.webp?raw=true "Reader page")
+
 ## Usage with Docker Compose
 
 Use `docker-compose.example.yaml` as a base.
