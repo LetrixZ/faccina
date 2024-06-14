@@ -1,0 +1,47 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+async_zip = { version = "0.0.17", features = ["tokio-fs"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+globwalk = "0.9.1"
+itertools = "0.13.0"
+once_cell = "1.19.0"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+serde_yaml = "0.9.34"
+sha2 = "0.10.8"
+slug = "0.1.5"
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "chrono"] }
+tokio = { version = "1.38.0", features = ["full"] }
+zip = "2.1.2"
+tokio-util = { version = "0.7.11", features = ["io-util"] }
+axum = { version = "0.7.5", features = ["macros"] }
+tower-http = { version = "0.5.2", features = ["trace", "cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4.5.4", features = ["derive"] }
+ring = "0.17.8"
+data-encoding = "2.6.0"
+toml = "0.8.14"
+serde-inline-default = "0.2.0"
+regex = "1.10.4"
+url = "2.5.0"
+capitalize = { version = "0.3.4", features = ["nightly"] }
+human-sort = "0.2.2"
+file-format = "0.25.0"
+funty = "2.0.0"
+rayon = "1.10.0"
+image = { version = "0.25.1", features = ["rayon"] }
+thiserror = "1.0.61"
+indicatif = "0.17.8"
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = true

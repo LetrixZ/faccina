@@ -1,0 +1,23 @@
+[database]
+host = "db"
+port = 5432
+name = "faccina"
+user = "faccina"
+pass = "faccina"
+
+[server]
+host = "0.0.0.0"
+port = 3000
+
+[directories]
+data = "/opt/server/data"
+content = "/opt/server/content"
+log = "/opt/server/logs"
+
+[thumbnails]
+quality = 50
+cover_quality = 50
+speed = 4
+cover_speed = 4
+width = 320
+cover_width = 540
