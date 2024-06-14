@@ -2,6 +2,21 @@
 
 Archive reader
 
+## Planned features
+
+- Add downloads support:
+  - Client-side downloads.
+  - [WebTorrents](https://webtorrent.io/) downloads.
+  - Server-side resampled downloads.
+  - Client-side resampled downloads.
+- Admin dashboard to manage the galleries.
+- Public API for 3rd-party apps.
+- Listing pages for artists, circles, magazines, parodies and tags.
+- User account support.
+- Gallery upload support.
+- Reader improvments:
+  - Add different touch layouts.
+
 ## Screenshots
 
 ![Library](/assets/library.webp?raw=true "Library page")
