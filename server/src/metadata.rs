@@ -1,9 +1,11 @@
 use crate::db::InsertArchive;
+use serde_inline_default::serde_inline_default;
 use slug::slugify;
 use std::io::{Cursor, Read};
 use tracing::error;
 use zip::ZipArchive;
 
+#[serde_inline_default]
 #[derive(serde::Deserialize)]
 pub struct AnchiraMetadata {
   #[serde(rename = "Title")]
@@ -22,7 +24,7 @@ pub struct AnchiraMetadata {
   pub parodies: Vec<String>,
   #[serde(rename = "Tags")]
   pub tags: Vec<String>,
-
+  #[serde_inline_default(1)]
   #[serde(rename = "Thumbnail")]
   pub thumb_index: i16,
 }
@@ -44,12 +46,7 @@ pub fn add_metadata(zip: &mut ZipArchive<Cursor<Vec<u8>>>, archive: &mut InsertA
       archive.magazines = info.magazines;
       archive.parodies = info.parodies;
       archive.tags = info.tags;
-
-      if info.thumb_index == 0 {
-        archive.thumbnail = 1;
-      } else {
-        archive.thumbnail = info.thumb_index;
-      }
+      archive.thumbnail = info.thumb_index;
 
       if let Some(url) = info.url {
         archive.sources = vec![url, info.source];
