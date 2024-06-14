@@ -44,7 +44,12 @@ pub fn add_metadata(zip: &mut ZipArchive<Cursor<Vec<u8>>>, archive: &mut InsertA
       archive.magazines = info.magazines;
       archive.parodies = info.parodies;
       archive.tags = info.tags;
-      archive.thumbnail = info.thumb_index;
+
+      if info.thumb_index == 0 {
+        archive.thumbnail = 1;
+      } else {
+        archive.thumbnail = info.thumb_index;
+      }
 
       if let Some(url) = info.url {
         archive.sources = vec![url, info.source];

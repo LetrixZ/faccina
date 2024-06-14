@@ -37,13 +37,13 @@ impl IndexArgs {
 }
 
 pub struct GenerateThumbnailArgs {
-  pub quality: u8,
   pub regenerate: bool,
-  pub width: u32,
-  pub cover_width: u32,
+  pub quality: u8,
   pub cover_quality: u8,
   pub speed: u8,
   pub cover_speed: u8,
+  pub width: u32,
+  pub cover_width: u32,
 }
 
 impl From<cmd::GenerateThumbnailArgs> for GenerateThumbnailArgs {
@@ -67,13 +67,13 @@ impl From<cmd::GenerateThumbnailArgs> for GenerateThumbnailArgs {
 impl From<config::Thumbnails> for GenerateThumbnailArgs {
   fn from(value: config::Thumbnails) -> Self {
     Self {
+      regenerate: false,
       quality: value.quality,
       cover_quality: value.cover_quality,
       speed: value.speed,
       cover_speed: value.cover_speed,
       width: value.width,
       cover_width: value.cover_width,
-      regenerate: false,
     }
   }
 }

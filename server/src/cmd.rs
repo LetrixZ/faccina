@@ -93,7 +93,7 @@ async fn fetch_archives(
       }
     }
 
-    qb.push(" id IN ANY(").push_bind(ids).push(")");
+    qb.push(" id = ANY(").push_bind(ids).push(")");
 
     if !ranges.is_empty() {
       qb.push(" OR");
