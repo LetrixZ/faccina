@@ -6,7 +6,7 @@ use image::{
     png::{self, PngEncoder},
   },
   imageops::FilterType,
-  GenericImageView,
+  DynamicImage, GenericImageView,
 };
 use serde::Deserialize;
 use std::io::Cursor;
@@ -49,24 +49,15 @@ pub struct ImageEncodeOpts {
   pub codec: ImageCodec,
 }
 
-pub fn encode_image(
-  img: &[u8],
+fn encode(
+  img: &DynamicImage,
   ImageEncodeOpts {
-    width,
+    width: _,
     speed,
     quality,
     codec,
   }: ImageEncodeOpts,
 ) -> anyhow::Result<Vec<u8>> {
-  let cursor = Cursor::new(img);
-  let img = image::io::Reader::new(cursor)
-    .with_guessed_format()?
-    .decode()?;
-  let (w, h) = img.dimensions();
-
-  let resized = img.resize(width, width * h / w, FilterType::Lanczos3);
-  let img = image::DynamicImage::ImageRgb8(resized.into());
-
   let mut buf = vec![];
 
   match codec {
@@ -95,4 +86,21 @@ pub fn encode_image(
   };
 
   Ok(buf)
+}
+
+pub fn encode_image(img: &[u8], opts: ImageEncodeOpts) -> anyhow::Result<Vec<u8>> {
+  let cursor = Cursor::new(img);
+  let img = image::io::Reader::new(cursor)
+    .with_guessed_format()?
+    .decode()?;
+  let (w, h) = img.dimensions();
+
+  if w < 50 || h < 50 {
+    return Ok(encode(&img, opts)?);
+  }
+
+  let resized = img.resize(opts.width, opts.width * h / w, FilterType::Lanczos3);
+  let img = image::DynamicImage::ImageRgb8(resized.into());
+
+  Ok(encode(&img, opts)?)
 }

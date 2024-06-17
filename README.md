@@ -5,7 +5,6 @@ Archive reader
 ## Planned features
 
 - Add downloads support:
-  - Client-side downloads.
   - [WebTorrents](https://webtorrent.io/) downloads.
   - Server-side resampled downloads.
   - Client-side resampled downloads.
