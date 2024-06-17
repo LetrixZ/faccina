@@ -70,6 +70,7 @@ Pass one or multiple paths to the command to navigate those.
 - `-r`, `--recursive`: Indicate that it should navigate the path recursevly.
 - `--reindex`: By default, the program will check if a path exists in the database to know if it should skip that archive. Using this option will skip that check. Archives will be matched by their hash and updated accordingly if a match is found. **Use this to re-create symbolic links when necessary**.
 - `--skip-thumbnails`: Skip thumbnail generation
+- `--from-path <PATH>`: Start from this path. Useful to resume from errors.
 
 ### Thumbnail generation
 

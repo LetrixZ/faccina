@@ -44,6 +44,11 @@ pub struct IndexArgs {
   pub reindex: bool,
   #[arg(long, default_value = "false", help = "Skip generating thumbnails")]
   pub skip_thumbnails: bool,
+  #[arg(
+    long,
+    help = "Start re-indexing from this path. Useful for resuming after an error."
+  )]
+  pub from_path: Option<PathBuf>,
 }
 
 #[derive(Args, Clone)]
@@ -136,6 +141,8 @@ async fn fetch_archives(
 }
 
 pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
+  let has_path_arg = args.paths.is_some();
+
   let paths = args
     .paths
     .clone()
@@ -165,6 +172,27 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
         "The given path is not a valid path or couldn't be accessed: {}",
         path.display()
       );
+    }
+  }
+
+  if !has_path_arg {
+    if let Some(from_path) = &args.from_path {
+      let mut should_add = false;
+      let mut paths = vec![];
+
+      for path in &paths_to_index {
+        if path.eq(from_path) {
+          should_add = true;
+        }
+
+        if !should_add {
+          continue;
+        }
+
+        paths.push(path.to_path_buf());
+      }
+
+      paths_to_index = paths;
     }
   }
 
