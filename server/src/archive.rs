@@ -27,7 +27,6 @@ pub struct IndexArgs {
   pub path: PathBuf,
   pub reindex: bool,
   pub skip_thumbnails: bool,
-  pub skip_dimensions: bool,
 }
 
 impl IndexArgs {
@@ -36,7 +35,6 @@ impl IndexArgs {
       path: path.to_path_buf(),
       reindex: args.reindex,
       skip_thumbnails: args.skip_thumbnails,
-      skip_dimensions: args.skip_dimensions,
     }
   }
 }
@@ -645,9 +643,7 @@ pub async fn index_archive(
 
   archive.id = id;
 
-  if !args.skip_dimensions {
-    calculate_dimensions(&mut transaction, multi, false, &mut image_files, archive.id).await?;
-  }
+  calculate_dimensions(&mut transaction, multi, false, &mut image_files, archive.id).await?;
 
   transaction.commit().await?;
 

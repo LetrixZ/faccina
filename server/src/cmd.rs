@@ -44,12 +44,6 @@ pub struct IndexArgs {
   pub reindex: bool,
   #[arg(long, default_value = "false", help = "Skip generating thumbnails")]
   pub skip_thumbnails: bool,
-  #[arg(
-    long,
-    default_value = "false",
-    help = "Skip calculating image dimensions. Image dimensions allow to avoid content shift when images are loading."
-  )]
-  pub skip_dimensions: bool,
 }
 
 #[derive(Args, Clone)]
