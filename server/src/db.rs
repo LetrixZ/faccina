@@ -45,7 +45,7 @@ pub struct ArchiveFile {
 pub struct ArchivePage {
   pub id: i64,
   pub pages: i16,
-  pub filename: String,
+  pub filename: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -270,68 +270,38 @@ pub async fn fetch_relations(
   ))
 }
 
-pub async fn fetch_archive_info(
-  pool: &PgPool,
-  id_slug: String,
-) -> Result<Option<ArchiveId>, sqlx::Error> {
-  let mut qb = QueryBuilder::new(r#"SELECT id, slug FROM archives WHERE"#);
-
-  if let Ok(id) = id_slug.parse::<i64>() {
-    qb.push(" id = ").push_bind(id);
-  } else {
-    qb.push(" slug = ").push_bind(id_slug);
-  }
-
-  let data = qb
-    .push(r#" AND deleted_at IS NULL"#)
-    .build_query_as::<ArchiveId>()
-    .fetch_optional(pool)
-    .await?;
-
-  if let Some(data) = data {
-    Ok(Some(data))
-  } else {
-    Ok(None)
-  }
-}
-
 pub async fn fetch_archive_data(
   pool: &PgPool,
-  id_slug: String,
+  id: i64,
 ) -> Result<Option<ArchiveRelations>, sqlx::Error> {
-  let mut qb = QueryBuilder::new(
+  let row = sqlx::query!(
     r#"SELECT id, slug, title, description, hash, pages, size, thumbnail,
     (SELECT json_build_object('width', width, 'height', height) FROM archive_images img WHERE img.archive_id = archives.id AND img.page_number = archives.thumbnail) cover,
     (SELECT json_agg(json_build_object('page_number', page_number, 'width', width, 'height', height)) FROM archive_images img WHERE img.archive_id = archives.id) images,
-    created_at, released_at FROM archives WHERE"#,
-  );
-
-  if let Ok(id) = id_slug.parse::<i64>() {
-    qb.push(" id = ").push_bind(id);
-  } else {
-    qb.push(" slug = ").push_bind(id_slug);
-  }
-
-  let row = qb
-    .push(r#" AND deleted_at IS NULL"#)
-    .build()
-    .fetch_optional(pool)
-    .await?;
+    created_at, released_at FROM archives WHERE id = $1"#,
+    id
+  ).fetch_optional(pool).await?;
 
   if let Some(row) = row {
     let archive = Archive {
-      id: row.get(0),
-      slug: row.get(1),
-      title: row.get(2),
-      description: row.get(3),
-      hash: row.get(4),
-      pages: row.get(5),
-      size: row.get(6),
-      thumbnail: row.get(7),
-      cover: row.try_get::<Json<_>, _>(8).map(|r| r.0).unwrap_or(None),
-      images: row.try_get::<Json<_>, _>(9).map(|r| r.0).unwrap_or(vec![]),
-      created_at: row.get(10),
-      released_at: row.get(11),
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      description: row.description,
+      hash: row.hash,
+      pages: row.pages,
+      size: row.size,
+      thumbnail: row.thumbnail,
+      cover: row
+        .cover
+        .map(|cover| serde_json::from_value(cover).ok())
+        .unwrap_or_default(),
+      images: row
+        .images
+        .and_then(|images| serde_json::from_value(images).ok())
+        .unwrap_or(vec![]),
+      created_at: row.created_at,
+      released_at: row.released_at,
     };
 
     let mut relations: ArchiveRelations = archive.into();
@@ -675,25 +645,15 @@ pub async fn search(
 
 pub async fn get_archive_page(
   pool: &PgPool,
-  id_slug: String,
+  id: i64,
   page: i16,
 ) -> Result<Option<ArchivePage>, sqlx::Error> {
-  let mut qb = QueryBuilder::new(
-    r#"SELECT id, pages, (SELECT filename FROM archive_images ai WHERE ai.archive_id = archives.id AND ai.page_number ="#,
-  );
-
-  qb.push_bind(page).push(" ) filename FROM archives WHERE");
-
-  if let Ok(id) = id_slug.parse::<i64>() {
-    qb.push(" id = ").push_bind(id);
-  } else {
-    qb.push(" slug = ").push_bind(id_slug);
-  }
-
-  let archive = qb
-    .build_query_as::<ArchivePage>()
-    .fetch_optional(pool)
-    .await?;
+  let archive = sqlx::query_as!(
+    ArchivePage,
+    r#"SELECT id, pages, (SELECT filename FROM archive_images WHERE archive_id = id AND page_number = $1) filename
+    FROM archives WHERE id = $2"#
+    , page,
+    id).fetch_optional(pool).await?;
 
   Ok(archive)
 }

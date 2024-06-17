@@ -1,5 +1,5 @@
 use super::{
-  models::{ArchiveData, ArchiveId, LibraryPage},
+  models::{ArchiveData, LibraryPage},
   ApiError, ApiJson, AppState,
 };
 use crate::{
@@ -16,7 +16,6 @@ use axum::{
   response::{IntoResponse, Response},
 };
 use serde_json::{Map, Value};
-use sqlx::QueryBuilder;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 use tokio::{
   fs::File,
@@ -180,24 +179,11 @@ pub async fn library(
   }))
 }
 
-pub async fn archive_info(
-  Path(id_slug): Path<String>,
-  State(state): State<AppState>,
-) -> Result<ApiJson<ArchiveId>, ApiError> {
-  let data = db::fetch_archive_info(&state.pool, id_slug).await?;
-
-  if let Some(data) = data {
-    Ok(ApiJson(data.into()))
-  } else {
-    Err(ApiError::NotFound)
-  }
-}
-
 pub async fn archive_data(
-  Path(id_slug): Path<String>,
+  Path(id): Path<i64>,
   State(state): State<AppState>,
 ) -> Result<ApiJson<ArchiveData>, ApiError> {
-  let archive = db::fetch_archive_data(&state.pool, id_slug).await?;
+  let archive = db::fetch_archive_data(&state.pool, id).await?;
 
   if let Some(archive) = archive {
     Ok(ApiJson(archive.into()))
@@ -207,20 +193,22 @@ pub async fn archive_data(
 }
 
 pub async fn page(
-  Path((id_slug, page)): Path<(String, i16)>,
+  Path((id, page)): Path<(i64, i16)>,
   State(state): State<AppState>,
 ) -> Result<Response, ApiError> {
-  if let Some(archive) = db::get_archive_page(&state.pool, id_slug, page).await? {
+  if let Some(archive) = db::get_archive_page(&state.pool, id, page).await? {
     let file = File::open(CONFIG.directories.links.join(archive.id.to_string())).await?;
     let reader = BufReader::new(file);
     let mut zip = ZipFileReader::with_tokio(reader).await?;
+
+    let filenme = archive.filename.unwrap();
 
     let file = zip
       .file()
       .entries()
       .iter()
       .enumerate()
-      .find(|(_, entry)| entry.filename().as_str().unwrap().eq(&archive.filename))
+      .find(|(_, entry)| entry.filename().as_str().unwrap().eq(&filenme))
       .map(|(i, _)| i);
 
     let index = file.ok_or(ApiError::ImageNotFound)?;
@@ -243,10 +231,10 @@ pub async fn page(
 }
 
 pub async fn page_thumbnail(
-  Path((id_slug, page)): Path<(String, i16)>,
+  Path((id, page)): Path<(i64, i16)>,
   State(state): State<AppState>,
 ) -> Result<Response, ApiError> {
-  if let Some(archive) = db::get_archive_page(&state.pool, id_slug, page).await? {
+  if let Some(archive) = db::get_archive_page(&state.pool, id, page).await? {
     let name = utils::leading_zeros(page, archive.pages);
 
     let mut walker = globwalk::glob(format!(
@@ -291,19 +279,10 @@ pub async fn page_thumbnail(
 }
 
 pub async fn gallery_cover(
-  Path(id_slug): Path<String>,
+  Path(id): Path<i64>,
   State(state): State<AppState>,
 ) -> Result<Response, ApiError> {
-  let mut qb = QueryBuilder::new(r#"SELECT id FROM archives WHERE "#);
-
-  if let Ok(id) = id_slug.parse::<i64>() {
-    qb.push(" id = ").push_bind(id);
-  } else {
-    qb.push(" slug = ").push_bind(id_slug);
-  }
-
-  if let Some(id) = qb
-    .build_query_scalar::<i64>()
+  if let Some(id) = sqlx::query_scalar!("SELECT id FROM archives WHERE id = $1", id)
     .fetch_optional(&state.pool)
     .await?
   {

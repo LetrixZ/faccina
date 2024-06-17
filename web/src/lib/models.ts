@@ -24,7 +24,6 @@ export type ArchiveId = Pick<Archive, 'id' | 'slug'>;
 
 export interface ArchiveListItem {
 	id: number;
-	slug: string;
 	title: string;
 	cover?: ImageDimensions;
 	artists: Taxonomy[];

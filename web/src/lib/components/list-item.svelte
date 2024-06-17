@@ -65,7 +65,7 @@
 </script>
 
 <div class="group h-auto w-auto space-y-2">
-	<a href={`/g/${archive.id}/${archive.slug}${$page.url.search}`} tabindex="-1">
+	<a href={`/g/${archive.id}${$page.url.search}`} tabindex="-1">
 		<div class="overflow-clip rounded-md shadow">
 			<img
 				class="bg-neutral-300 dark:bg-neutral-600"
@@ -73,15 +73,15 @@
 				{height}
 				loading="eager"
 				alt={`'${archive.title}' cover`}
-				src={`${env.CDN_URL}/archive/${archive.slug}/cover`}
+				src={`${env.CDN_URL}/archive/${archive.id}/cover`}
 			/>
 		</div>
 	</a>
 
 	<div class="h-fit space-y-1.5">
 		<a
-			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
-			href={`/g/${archive.id}/${archive.slug}${$page.url.search}`}
+			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+			href={`/g/${archive.id}${$page.url.search}`}
 			title={archive.title}
 		>
 			{archive.title}

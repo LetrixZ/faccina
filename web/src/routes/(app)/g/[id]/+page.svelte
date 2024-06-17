@@ -87,7 +87,7 @@
 				await pMap(
 					archive.images,
 					async (image) => {
-						const url = `${env.CDN_URL}/archive/${archive.slug}/${image.page_number}`;
+						const url = `${env.CDN_URL}/archive/${archive.id}/${image.page_number}`;
 						const response = await fetch(url);
 
 						if (!response.ok) {
@@ -159,21 +159,21 @@
 <main class="container flex flex-col gap-2 md:flex-row">
 	<div class="@container w-full space-y-2 md:w-80">
 		<div class="w-full">
-			<a href={`./${archive.slug}/read/1/${$page.url.search}`} data-sveltekit-preload-data="off">
+			<a href={`./${archive.id}/read/1/${$page.url.search}`} data-sveltekit-preload-data="off">
 				<img
 					class="shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600"
 					{width}
 					{height}
 					loading="eager"
 					alt={`'${archive.title}' cover`}
-					src={`${env.CDN_URL}/archive/${archive.slug}/cover`}
+					src={`${env.CDN_URL}/archive/${archive.id}/cover`}
 				/>
 			</a>
 		</div>
 
 		<div class="@xs:grid-cols-2 grid gap-2">
 			<Button
-				href={`./${archive.slug}/read/1${$page.url.search}`}
+				href={`./${archive.id}/read/1${$page.url.search}`}
 				class="shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80"
 				variant="secondary"
 				data-sveltekit-preload-data="off"
@@ -282,7 +282,7 @@
 				{#each filteredImages as image (image.page_number)}
 					<a
 						class="relative"
-						href={`./${archive.slug}/read/${image.page_number}${$page.url.search}`}
+						href={`./${archive.id}/read/${image.page_number}${$page.url.search}`}
 						data-sveltekit-preload-data="off"
 					>
 						<img
@@ -294,7 +294,7 @@
 							height={Math.round((320 / image.width) * image.height)}
 							loading="eager"
 							alt={`Page ${image.page_number}`}
-							src={`${env.CDN_URL}/archive/${archive.slug}/${image.page_number}/thumb`}
+							src={`${env.CDN_URL}/archive/${archive.id}/${image.page_number}/thumb`}
 						/>
 						{#if !wideImages && isSpread(image)}
 							<span

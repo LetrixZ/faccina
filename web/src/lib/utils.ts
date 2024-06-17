@@ -189,7 +189,7 @@ export function getMetadata(archive: Archive) {
 		Publisher: archive.publishers.map((publisher) => publisher.name).join(', '),
 		Pages: archive.pages,
 		Tags: archive.tags.map((tag) => tag.name),
-		Source: `https://${location.hostname}/g/${archive.id}/${archive.slug}`,
+		Source: `https://${location.hostname}/g/${archive.id}`,
 		Released: new Date(archive.released_at).getTime() / 1000,
 		Thumbnail: archive.thumbnail - 1,
 	};

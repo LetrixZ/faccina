@@ -111,11 +111,10 @@ pub async fn start_server() -> anyhow::Result<()> {
 
   let app = Router::new()
     .route("/library", get(routes::library))
-    .route("/archive/:id_slug", get(routes::archive_info))
-    .route("/archive/:id_slug/data", get(routes::archive_data))
-    .route("/archive/:id_slug/cover", get(routes::gallery_cover))
-    .route("/archive/:id_slug/:page", get(routes::page))
-    .route("/archive/:id_slug/:page/thumb", get(routes::page_thumbnail))
+    .route("/archive/:id", get(routes::archive_data))
+    .route("/archive/:id/cover", get(routes::gallery_cover))
+    .route("/archive/:id/:page", get(routes::page))
+    .route("/archive/:id/:page/thumb", get(routes::page_thumbnail))
     .layer(cors)
     .layer(
       TraceLayer::new_for_http()

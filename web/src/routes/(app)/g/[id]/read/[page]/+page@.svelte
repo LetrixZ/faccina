@@ -27,13 +27,13 @@
 			if (nextPage) {
 				{
 					const image = new Image();
-					image.src = `${env.CDN_URL}/archive/${archive.slug}/${nextPage}`;
+					image.src = `${env.CDN_URL}/archive/${archive.id}/${nextPage}`;
 				}
 
 				if (nextPage < archive.pages) {
 					{
 						const image = new Image();
-						image.src = `${env.CDN_URL}/archive/${archive.slug}/${nextPage + 1}`;
+						image.src = `${env.CDN_URL}/archive/${archive.id}/${nextPage + 1}`;
 					}
 				}
 			}
@@ -41,7 +41,7 @@
 			if (prevPage) {
 				{
 					const image = new Image();
-					image.src = `${env.CDN_URL}/archive/${archive.slug}/${prevPage}`;
+					image.src = `${env.CDN_URL}/archive/${archive.id}/${prevPage}`;
 				}
 			}
 		}
@@ -70,21 +70,21 @@
 				}
 				break;
 			case 'ArrowUp':
-				goto(`/g/${archive.id}/${archive.slug}${$page.url.search}`);
+				goto(`/g/${archive.id}${$page.url.search}`);
 		}
 	}}
 />
 
 <div class="flex h-dvh w-full flex-col">
 	<div
-		class="mx-auto flex min-h-10 max-w-full bg-background"
+		class="bg-background mx-auto flex min-h-10 max-w-full"
 		style={`width: calc((100dvh - 2.5rem) * ${image.width / image.height});`}
 	>
 		<a
 			href={prevPageUrl}
 			draggable="false"
 			class={cn(
-				'inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline',
+				'text-muted-foreground-light inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline',
 				!prevPage && 'pointer-events-none opacity-40'
 			)}
 		>
@@ -93,9 +93,9 @@
 		</a>
 
 		<a
-			href={`/g/${archive.id}/${archive.slug}${$page.url.search}`}
+			href={`/g/${archive.id}${$page.url.search}`}
 			draggable="false"
-			class="inline-flex h-full flex-grow items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline"
+			class="text-muted-foreground-light inline-flex h-full flex-grow items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
 		>
 			<span>Go back</span>
 		</a>
@@ -104,7 +104,7 @@
 			href={nextPageUrl}
 			draggable="false"
 			class={cn(
-				'inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline ',
+				'text-muted-foreground-light inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline ',
 				!nextPage && 'pointer-events-none opacity-40'
 			)}
 		>
@@ -136,7 +136,7 @@
 			height={image.height}
 			width={image.width}
 			alt={`Page ${currentPage}`}
-			src={`${env.CDN_URL}/archive/${archive.slug}/${currentPage}`}
+			src={`${env.CDN_URL}/archive/${archive.id}/${currentPage}`}
 			loading="eager"
 			on:error={() => {
 				toast.error('Failed to load the page');
