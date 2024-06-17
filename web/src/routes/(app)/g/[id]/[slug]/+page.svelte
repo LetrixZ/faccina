@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { read } from '$app/server';
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import Chip from '$lib/components/chip.svelte';
@@ -158,11 +157,11 @@
 </svelte:head>
 
 <main class="container flex flex-col gap-2 md:flex-row">
-	<div class="w-full space-y-2 @container md:w-80">
+	<div class="@container w-full space-y-2 md:w-80">
 		<div class="w-full">
 			<a href={`./${archive.slug}/read/1/${$page.url.search}`} data-sveltekit-preload-data="off">
 				<img
-					class="h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
+					class="shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600"
 					{width}
 					{height}
 					loading="eager"
@@ -172,10 +171,10 @@
 			</a>
 		</div>
 
-		<div class="grid gap-2 @xs:grid-cols-2">
+		<div class="@xs:grid-cols-2 grid gap-2">
 			<Button
 				href={`./${archive.slug}/read/1${$page.url.search}`}
-				class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
+				class="shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80"
 				variant="secondary"
 				data-sveltekit-preload-data="off"
 			>
@@ -185,7 +184,7 @@
 
 			<Button
 				variant="secondary"
-				class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
+				class="shadow-shadow flex w-full bg-green-700 text-center font-semibold text-white shadow hover:bg-green-700/80"
 				on:click={() => startDownload()}
 			>
 				<BiSolidDownload class="size-5 shrink-0" />
@@ -193,10 +192,10 @@
 			</Button>
 		</div>
 
-		<div class="overflow-clip rounded shadow-md shadow-shadow">
+		<div class="shadow-shadow overflow-clip rounded shadow-md">
 			<InfoSection class="space-y-1">
 				<p class="text-lg font-semibold leading-6">{archive.title}</p>
-				<p class="text-sm text-muted-foreground-light">
+				<p class="text-muted-foreground-light text-sm">
 					{generateFilename(archive)}
 				</p>
 			</InfoSection>
@@ -279,7 +278,7 @@
 
 	<div class="flex-grow space-y-2">
 		<div class="@container">
-			<div class="grid grid-cols-2 gap-2 @2xl:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6">
+			<div class="@2xl:grid-cols-3 3xl:grid-cols-6 grid grid-cols-2 gap-2 xl:grid-cols-4">
 				{#each filteredImages as image (image.page_number)}
 					<a
 						class="relative"
@@ -288,7 +287,7 @@
 					>
 						<img
 							class={cn(
-								'h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600',
+								'shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600',
 								isSpread(image) && 'object-contain'
 							)}
 							width={320}
@@ -299,7 +298,7 @@
 						/>
 						{#if !wideImages && isSpread(image)}
 							<span
-								class="absolute bottom-2 right-2 rounded-md bg-muted px-1 py-0.5 text-xs font-medium uppercase tracking-wide opacity-90"
+								class="bg-muted absolute bottom-2 right-2 rounded-md px-1 py-0.5 text-xs font-medium uppercase tracking-wide opacity-90"
 							>
 								Spread
 							</span>
