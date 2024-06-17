@@ -118,7 +118,7 @@
 			class="absolute inset-0 m-auto flex"
 			style={`width: calc((100dvh - 2.5rem) * ${image.width / image.height}); height: calc((100dvw) * ${image.height / image.width});`}
 		>
-			<a class="h-full w-[33.3%]" href={prevPageUrl} draggable="false">
+			<a class="h-full w-[33.3dvw]" href={prevPageUrl} draggable="false">
 				<span class="sr-only">Previous page</span>
 			</a>
 			<a class="h-full flex-grow" href={nextPageUrl} draggable="false">
