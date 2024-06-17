@@ -51,12 +51,13 @@ cover_width = 540
 
 #### Thumbnails
 
-- `quality`: Quality of the AVIF thumbnail. From 1-100 (worst-best). Default `50`.
-- `cover_quality`: Quality of the AVIF gallery cover. From 1-100 (worst-best). Uses `quality` as default.
-- `speed`: Speed of the AVIF thumbnail encoder. From 1-10 (slowest-fastest). Default `4`.
-- `cover_speed`: Speed of the AVIF gallery cover encoder. From 1-10 (slowest-fastest). Uses `speed` as default.
 - `width`: Width of the generated thumbnail.
 - `cover_width`: Width of the generated gallery cover. Uses `width` as default.
+- `quality`: Image encoder quality for the thumbnails. From 1-100 (worst-best). Default `50`. Only for `avif`, `webp` and `jpeg`.
+- `cover_quality`: Image encoder quality for the covers. From 1-100 (worst-best). Uses `quality` as default. Only for `avif`, `webp` and `jpeg`.
+- `speed`: Speed of the AVIF thumbnail encoder. From 1-10 (slowest-fastest). Default `4`. Only for `avif`.
+- `cover_speed`: Speed of the AVIF cover encoder. From 1-10 (slowest-fastest). Default `4`. Only for `avif`.
+- `format`: Image encoder to use. Can be `avif`, `webp` (default), `jpeg` and `png`.
 
 ## Usage
 
@@ -80,12 +81,13 @@ Thumbnails will be saved in the `./data/thumbs/:id/` directory following the for
 
 - `--ids <IDS>`: Indicate one or multiple archive IDs to generate thumbnails for.
 - `--regenerate`: Regenerate existing thumbnails.
-- `-q`, `--quality`: Quality of the AVIF thumbnail. From 1-100 (worst-best). Default `50`.
-- `--cover-quality`: Quality of the AVIF gallery cover. From 1-100 (worst-best). Uses `quality` as default.
-- `-s`, `--speed`: Speed of the AVIF thumbnail encoder. From 1-10 (slowest-fastest). Default `4`.
-- `--cover-speed`: Speed of the AVIF gallery cover encoder. From 1-10 (slowest-fastest). Uses `speed` as default.
+- `-q`, `--quality`: Image encoder quality for the thumbnails. From 1-100 (worst-best). Default `50`. Only for `avif`, `webp` and `jpeg`.
+- `--cover-quality` Image encoder quality for the covers. From 1-100 (worst-best). Uses `quality` as default. Only for `avif`, `webp` and `jpeg`.
+- `-s`, `--speed`: Speed of the AVIF thumbnail encoder. From 1-10 (slowest-fastest). Default `4`. Only for `avif`.
+- `--cover-speed`: Speed of the AVIF cover encoder. From 1-10 (slowest-fastest). Default `4`. Only for `avif`.
 - `-w`, `--width`: Width of the generated thumbnail.
 - `--cover--width`: Width of the generated gallery cover. Uses `width` as default.
+- `--format`: Image encoder to use. Can be `avif`, `webp` (default), `jpeg` and `png`.
 
 ### Start server
 
