@@ -5,7 +5,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
 	try {
-		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}/data`);
+		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}`);
 
 		if (res.status === 404) {
 			return error(404, {

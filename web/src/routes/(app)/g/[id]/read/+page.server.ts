@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	let archive: Archive;
 
 	try {
-		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}/data`);
+		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}`);
 
 		if (res.status === 404) {
 			return error(404, {
