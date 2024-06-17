@@ -1,5 +1,7 @@
 use crate::archive::get_image_files;
+use crate::image::ImageCodec;
 use crate::{archive, config::CONFIG, db};
+use anyhow::anyhow;
 use clap::{Args, Parser, Subcommand};
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -42,12 +44,18 @@ pub struct IndexArgs {
   pub reindex: bool,
   #[arg(long, default_value = "false", help = "Skip generating thumbnails")]
   pub skip_thumbnails: bool,
+  #[arg(
+    long,
+    default_value = "false",
+    help = "Skip calculating image dimensions. Image dimensions allow to avoid content shift when images are loading."
+  )]
+  pub skip_dimensions: bool,
 }
 
 #[derive(Args, Clone)]
 pub struct GenerateThumbnailArgs {
   #[arg(long, help = "List of archive IDs or range (ex: 1-10,14,230-400)")]
-  pub ids: Option<Vec<String>>,
+  pub id: Option<String>,
   #[arg(long, default_value = "false", help = "Regenerate existing thumbnails")]
   pub regenerate: bool,
   #[arg(long, help = "Width for the page thumbnails")]
@@ -56,10 +64,10 @@ pub struct GenerateThumbnailArgs {
   pub cover_width: Option<u32>,
   #[arg(
     long,
-    help = "AVIF encoder quality for the page thumbnails. From 1 to 100 (worst to best)"
+    help = "Image encoder quality for the page thumbnails. From 1 to 100 (worst to best)"
   )]
   pub quality: Option<u8>,
-  #[arg(long, help = "AVIF encoder quality for the gallery cover")]
+  #[arg(long, help = "Image encoder quality for the gallery cover")]
   pub cover_quality: Option<u8>,
   #[arg(
     long,
@@ -68,20 +76,23 @@ pub struct GenerateThumbnailArgs {
   pub speed: Option<u8>,
   #[arg(long, help = "AVIF encoder speed for the gallery cover")]
   pub cover_speed: Option<u8>,
+  #[arg(long, help = "Image format")]
+  pub format: Option<ImageCodec>,
 }
 
 async fn fetch_archives(
   pool: &PgPool,
-  id_ranges: &Option<Vec<String>>,
+  id_ranges: &Option<String>,
 ) -> Result<Vec<db::ArchiveFile>, sqlx::Error> {
   let mut qb = QueryBuilder::new("SELECT id, path, pages, thumbnail FROM archives WHERE");
 
   if let Some(id_ranges) = id_ranges {
+    let id_ranges = id_ranges.split(",").map(|s| s.trim()).collect_vec();
     let mut ids = vec![];
     let mut ranges = vec![];
 
     for range in id_ranges {
-      let splits = range.split("-").collect_vec();
+      let splits = range.split("-").filter(|s| !s.is_empty()).collect_vec();
 
       if splits.len() == 1 {
         let id = splits.first().unwrap();
@@ -100,9 +111,9 @@ async fn fetch_archives(
     }
 
     for (i, (start, end)) in ranges.iter().enumerate() {
-      qb.push(" (id > ")
+      qb.push(" (id >= ")
         .push(start)
-        .push(" AND id < ")
+        .push(" AND id <= ")
         .push_bind(end)
         .push(")");
 
@@ -112,6 +123,7 @@ async fn fetch_archives(
     }
 
     let archives = qb
+      .push(" ORDER BY id ASC")
       .build_query_as::<db::ArchiveFile>()
       .fetch_all(pool)
       .await?;
@@ -120,7 +132,7 @@ async fn fetch_archives(
   } else {
     let archives = sqlx::query_as!(
       db::ArchiveFile,
-      "SELECT id, path, pages, thumbnail FROM archives"
+      "SELECT id, path, thumbnail FROM archives ORDER BY id ASC"
     )
     .fetch_all(pool)
     .await?;
@@ -194,21 +206,35 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
 
 pub async fn generate_thumbnails(args: GenerateThumbnailArgs) -> anyhow::Result<()> {
   let pool = db::get_pool().await?;
-  let archives = fetch_archives(&pool, &args.ids).await?;
+  let archives = fetch_archives(&pool, &args.id).await?;
 
   let multi = MultiProgress::new();
+  let args = &args.into();
+
+  info!(target: "archive::generate_thumbnails", "Image encoding options\n{args:?}");
 
   for archive in archives {
-    let mut zip = archive::read_zip(&archive.path)?;
-    let mut image_files = get_image_files(&mut zip.file)?;
+    if let Err(err) = || -> anyhow::Result<()> {
+      let path = CONFIG.directories.links.join(archive.path);
+      let mut zip =
+        archive::read_zip(&path).map_err(|err| anyhow!("Failed to read zip archive: {err}"))?;
+      let mut image_files = get_image_files(&mut zip.file)?;
 
-    archive::generate_thumbnails(
-      &args.clone().into(),
-      &multi,
-      image_files.as_mut_slice(),
-      archive.id,
-      archive.thumbnail.as_usize(),
-    )?;
+      archive::generate_thumbnails(
+        args,
+        &multi,
+        image_files.as_mut_slice(),
+        archive.id,
+        archive.thumbnail.as_usize(),
+      )?;
+
+      Ok(())
+    }() {
+      error!(
+        "Failed to generate thumbnails for archive ID {}: {}",
+        archive.id, err
+      )
+    }
   }
 
   Ok(())

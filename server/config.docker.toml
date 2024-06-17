@@ -15,9 +15,13 @@ content = "/opt/server/content"
 log = "/opt/server/logs"
 
 [thumbnails]
-quality = 50
-cover_quality = 50
-speed = 4
-cover_speed = 4
+quality = 50       # Only for avif, webp and jpeg
+cover_quality = 50 # Only for avif, webp and jpeg
+speed = 4          # Only for avif
+cover_speed = 4    # Only for avif
+format = "webp"    # Can be avif, webp, jpeg or png
 width = 320
 cover_width = 540
+
+[metadata]
+parse_filename_title = true # Try to get a title from filename. Ex: [Artist] Title [English] -> Title

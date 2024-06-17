@@ -13,7 +13,7 @@ pub fn server_logging() {
   tracing_subscriber::registry()
     .with(
       tracing_subscriber::EnvFilter::try_from_env("LOG_LEVEL")
-        .unwrap_or_else(|_| "debug,sqlx::postgres::notice=warn".into()),
+        .unwrap_or_else(|_| "debug,sqlx::query=info,sqlx::postgres::notice=warn".into()),
     )
     .with(tracing_subscriber::fmt::layer())
     .with(

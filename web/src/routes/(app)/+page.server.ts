@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import type { LibraryPage } from '$lib/models';
-import { error } from '@sveltejs/kit';
+import { error, isHttpError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, fetch }) => {
@@ -8,11 +8,21 @@ export const load: PageServerLoad = async ({ url, fetch }) => {
 		const res = await fetch(`${env.SERVER_URL}/library${url.search}`);
 		const libraryPage: LibraryPage = await res.json();
 
-		return {
-			libraryPage,
-		};
+		if (!res.ok) {
+			return error(res.status, {
+				status: res.status,
+				statusText: res.statusText,
+				message: 'Failed to get galleries',
+			});
+		}
+
+		return { libraryPage };
 	} catch (e) {
 		console.error(e);
+
+		if (isHttpError(e)) {
+			throw e;
+		}
 
 		return error(500, {
 			status: 500,

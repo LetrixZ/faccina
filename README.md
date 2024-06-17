@@ -9,13 +9,19 @@ Archive reader
   - [WebTorrents](https://webtorrent.io/) downloads.
   - Server-side resampled downloads.
   - Client-side resampled downloads.
-- Admin dashboard to manage the galleries.
+- Trending page.
+- Message of the day.
 - Public API for 3rd-party apps.
+- Admin dashboard to manage the galleries.
 - Listing pages for artists, circles, magazines, parodies and tags.
 - User account support.
+  - User categories.
 - Gallery upload support.
 - Reader improvments:
   - Add different touch layouts.
+  - Auto scroll.
+- HenTag scraper.
+- Gallery collections.
 
 ## Screenshots
 

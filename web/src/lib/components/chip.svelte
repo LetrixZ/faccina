@@ -1,22 +1,24 @@
 <script lang="ts">
-	import type { Tag, TagType } from '$lib/models';
+	import { TagType, type Taxonomy } from '$lib/models';
 	import { cn, encodeURL } from '$lib/utils';
 	import { Button } from './ui/button';
 
-	export let item: Tag;
+	export let item: Taxonomy;
 	export let type: TagType;
 
 	const classes = (() => {
 		switch (type) {
-			case 'artist':
+			case TagType.ARTIST:
 				return 'bg-red-700 hover:bg-red-700/80';
-			case 'circle':
+			case TagType.CIRCLE:
 				return 'bg-orange-700 hover:bg-orange-700/80';
-			case 'magazine':
+			case TagType.MAGAZINE:
 				return 'bg-blue-700 hover:bg-blue-700/80';
-			case 'parody':
+			case TagType.PUBLISHER:
+				return 'bg-sky-700 hover:bg-sky-700/80';
+			case TagType.PARODY:
 				return 'bg-indigo-700 hover:bg-indigo-700/80';
-			case 'tag':
+			case TagType.TAG:
 				return 'bg-neutral-700 hover:bg-neutral-700/80';
 		}
 	})();

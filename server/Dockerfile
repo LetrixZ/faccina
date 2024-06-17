@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly AS builder
+FROM rust:1.78 AS builder
 WORKDIR /app
 COPY . .
 COPY .sqlx /app/.sqlx

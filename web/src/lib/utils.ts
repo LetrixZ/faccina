@@ -1,8 +1,12 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { clsx, type ClassValue } from 'clsx';
+import dayjs from 'dayjs';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
+import { twMerge } from 'tailwind-merge';
 import type { Archive, Image } from './models';
+
+dayjs.extend(localizedFormat);
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -62,15 +66,12 @@ export function humanFileSize(size: number) {
 	return +(size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
+export function dateTimeFormat(date: Date) {
+	return dayjs(date).format('L, HH:mm');
+}
+
 export function dateFormat(date: Date) {
-	return date.toLocaleDateString([], {
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false,
-	});
+	return dayjs(date).format('L');
 }
 
 export function encodeURL(url: string) {
@@ -152,10 +153,44 @@ export const tagWeights: [string, number][] = [
 	['paizuru', 2],
 	['cheating', 8],
 	['creampie', 3],
+	['futanari', 8],
+	['schoolgirl outfit', 5],
 	['story arc', 2],
 	['group', 6],
+	['cg set', 10],
+	['incest', 8],
 ];
 
 export function isSpread(image: Image) {
 	return image.width > image.height;
+}
+
+// https://stackoverflow.com/a/1349426
+export function randomString() {
+	let result = '';
+	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	const charactersLength = characters.length;
+	let counter = 0;
+	while (counter < 6) {
+		result += characters.charAt(Math.floor(Math.random() * charactersLength));
+		counter += 1;
+	}
+	return result;
+}
+
+export function getMetadata(archive: Archive) {
+	return {
+		Title: archive.title,
+		Description: archive.description ?? undefined,
+		Artist: archive.artists.map((artist) => artist.name)?.join(', '),
+		Groups: archive.circles.map((circle) => circle.name)?.join(', '),
+		Magazine: archive.magazines.map((magazine) => magazine.name)?.join(', '),
+		Parody: archive.parodies.map((parody) => parody.name)?.join(', '),
+		Publisher: archive.publishers.map((publisher) => publisher.name).join(', '),
+		Pages: archive.pages,
+		Tags: archive.tags.map((tag) => tag.name),
+		Source: `https://${location.hostname}/g/${archive.id}/${archive.slug}`,
+		Released: new Date(archive.released_at).getTime() / 1000,
+		Thumbnail: archive.thumbnail - 1,
+	};
 }

@@ -7,12 +7,15 @@ export interface Archive {
 	pages: number;
 	size: number;
 	cover: ImageDimensions | null;
+	thumbnail: number;
 	images: Image[];
 	created_at: string;
-	artists: Tag[];
-	circles: Tag[];
-	magazines: Tag[];
-	parodies: Tag[];
+	released_at: string;
+	artists: Taxonomy[];
+	circles: Taxonomy[];
+	magazines: Taxonomy[];
+	publishers: Taxonomy[];
+	parodies: Taxonomy[];
 	tags: Tag[];
 	sources: Source[];
 }
@@ -24,10 +27,10 @@ export interface ArchiveListItem {
 	slug: string;
 	title: string;
 	cover?: ImageDimensions;
-	artists: Tag[];
-	circles: Tag[];
-	magazines: Tag[];
-	parodies: Tag[];
+	artists: Taxonomy[];
+	circles: Taxonomy[];
+	magazines: Taxonomy[];
+	parodies: Taxonomy[];
 	tags: Tag[];
 	rank: number;
 }
@@ -36,13 +39,20 @@ export enum TagType {
 	ARTIST = 'artist',
 	CIRCLE = 'circle',
 	MAGAZINE = 'magazine',
+	PUBLISHER = 'publisher',
 	PARODY = 'parody',
 	TAG = 'tag',
+}
+
+export interface Taxonomy {
+	slug: string;
+	name: string;
 }
 
 export interface Tag {
 	slug: string;
 	name: string;
+	namespace: string | null;
 }
 
 export interface Source {
@@ -77,6 +87,7 @@ export interface SearchParams {
 
 export enum Sorting {
 	RELEVANCE = 'relevance',
+	RELEASED_AT = 'released_at',
 	CREATED_AT = 'created_at',
 	TITLE = 'title',
 	PAGES = 'pages',
@@ -85,4 +96,11 @@ export enum Sorting {
 export enum Ordering {
 	ASC = 'asc',
 	DESC = 'desc',
+}
+
+export interface Task {
+	archive: Archive;
+	progress: number;
+	total: number;
+	complete: boolean;
 }

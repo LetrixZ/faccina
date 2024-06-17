@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { Tag, TagType } from '$lib/models';
+	import type { TagType, Taxonomy } from '$lib/models';
 	import { cn, encodeURL } from '$lib/utils';
 	import { Button } from './ui/button';
 
-	export let item: Tag;
+	export let item: Taxonomy;
 	export let type: TagType;
 
 	const classes = (() => {

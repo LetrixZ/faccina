@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-async_zip = { version = "0.0.17", features = ["tokio-fs"] }
+async_zip = { version = "0.0.17", features = ["full"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 globwalk = "0.9.1"
 itertools = "0.13.0"
@@ -30,7 +30,6 @@ toml = "0.8.14"
 serde-inline-default = "0.2.0"
 regex = "1.10.4"
 url = "2.5.0"
-capitalize = { version = "0.3.4", features = ["nightly"] }
 human-sort = "0.2.2"
 file-format = "0.25.0"
 funty = "2.0.0"
@@ -38,10 +37,5 @@ rayon = "1.10.0"
 image = { version = "0.25.1", features = ["rayon"] }
 thiserror = "1.0.61"
 indicatif = "0.17.8"
-
-[profile.release]
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = 'abort'
-strip = true
+time = "0.3.36"
+webp = "0.3.0"

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE archives SET\n          slug = $2,\n          title = $3,\n          path = $4,\n          pages = $5,\n          size = $6,\n          thumbnail = $7,\n          description = $8,\n          language = $9,\n          translated = $10,\n          released_at = COALESCE($11, released_at),\n          updated_at = NOW()\n        WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Int2",
+        "Int8",
+        "Int2",
+        "Text",
+        "Varchar",
+        "Bool",
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a38c94fdce8589980c0cfa662d842d50e6f2c6b294fcff72c882759448889a09"
+}

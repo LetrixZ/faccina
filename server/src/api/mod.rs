@@ -100,6 +100,8 @@ impl IntoResponse for ApiError {
 pub async fn start_server() -> anyhow::Result<()> {
   crate::log::server_logging();
 
+  info!(target: "server::config", "Server config\n{}", *CONFIG);
+
   let pool = db::get_pool().await?;
   let state = AppState { pool };
 

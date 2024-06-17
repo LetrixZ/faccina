@@ -28,15 +28,16 @@ pub struct Archive {
   pub pages: i16,
   pub size: i64,
   pub cover: Option<ImageDimensions>,
+  pub thumbnail: i16,
   pub images: Vec<Image>,
   pub created_at: NaiveDateTime,
+  pub released_at: NaiveDateTime,
 }
 
 #[derive(sqlx::FromRow)]
 pub struct ArchiveFile {
   pub id: i64,
   pub path: String,
-  pub pages: i16,
   pub thumbnail: i16,
 }
 
@@ -48,12 +49,19 @@ pub struct ArchivePage {
 }
 
 #[derive(sqlx::FromRow)]
-pub struct Tag {
+pub struct Taxonomy {
   pub slug: String,
   pub name: String,
 }
 
 #[derive(sqlx::FromRow)]
+pub struct Tag {
+  pub slug: String,
+  pub name: String,
+  pub namespace: Option<String>,
+}
+
+#[derive(sqlx::FromRow, Debug)]
 pub struct Source {
   pub name: String,
   pub url: Option<String>,
@@ -74,12 +82,15 @@ pub struct ArchiveRelations {
   pub pages: i16,
   pub size: i64,
   pub cover: Option<ImageDimensions>,
+  pub thumbnail: i16,
   pub images: Vec<Image>,
   pub created_at: NaiveDateTime,
-  pub artists: Vec<Tag>,
-  pub circles: Vec<Tag>,
-  pub magazines: Vec<Tag>,
-  pub parodies: Vec<Tag>,
+  pub released_at: NaiveDateTime,
+  pub artists: Vec<Taxonomy>,
+  pub circles: Vec<Taxonomy>,
+  pub magazines: Vec<Taxonomy>,
+  pub publishers: Vec<Taxonomy>,
+  pub parodies: Vec<Taxonomy>,
   pub tags: Vec<Tag>,
   pub sources: Vec<Source>,
 }
@@ -95,8 +106,10 @@ impl From<Archive> for ArchiveRelations {
       pages,
       size,
       cover,
+      thumbnail,
       images,
       created_at,
+      released_at,
     }: Archive,
   ) -> Self {
     Self {
@@ -108,11 +121,14 @@ impl From<Archive> for ArchiveRelations {
       pages,
       size,
       cover,
+      thumbnail,
       images,
       created_at,
+      released_at,
       artists: Default::default(),
       circles: Default::default(),
       magazines: Default::default(),
+      publishers: Default::default(),
       parodies: Default::default(),
       tags: Default::default(),
       sources: Default::default(),
@@ -120,22 +136,53 @@ impl From<Archive> for ArchiveRelations {
   }
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct InsertArchive {
   pub id: i64,
   pub slug: String,
   pub title: String,
+  pub description: Option<String>,
   pub path: String,
   pub hash: String,
   pub pages: i16,
   pub size: i64,
   pub thumbnail: i16,
+  pub language: Option<String>,
+  pub translated: Option<bool>,
+  pub released_at: Option<NaiveDateTime>,
   pub artists: Vec<String>,
   pub circles: Vec<String>,
   pub magazines: Vec<String>,
+  pub publishers: Vec<String>,
   pub parodies: Vec<String>,
-  pub tags: Vec<String>,
-  pub sources: Vec<String>,
+  pub tags: Vec<(String, Option<String>)>,
+  pub sources: Vec<Source>,
+}
+
+impl Default for InsertArchive {
+  fn default() -> Self {
+    Self {
+      id: Default::default(),
+      slug: Default::default(),
+      title: Default::default(),
+      description: Default::default(),
+      path: Default::default(),
+      hash: Default::default(),
+      pages: Default::default(),
+      size: Default::default(),
+      thumbnail: 1,
+      language: Default::default(),
+      translated: Default::default(),
+      released_at: Default::default(),
+      artists: Default::default(),
+      circles: Default::default(),
+      magazines: Default::default(),
+      publishers: Default::default(),
+      parodies: Default::default(),
+      tags: Default::default(),
+      sources: Default::default(),
+    }
+  }
 }
 
 pub async fn get_pool() -> anyhow::Result<PgPool> {
@@ -155,11 +202,11 @@ pub async fn get_pool() -> anyhow::Result<PgPool> {
   Ok(pool)
 }
 
-async fn fetch_tags_data(
+async fn fetch_taxonomy_data(
   pool: &PgPool,
   tag_type: TagType,
   archive_id: i64,
-) -> Result<Vec<Tag>, sqlx::Error> {
+) -> Result<Vec<Taxonomy>, sqlx::Error> {
   QueryBuilder::<Postgres>::new(format!(
     r#"SELECT slug, name FROM {table}
       INNER JOIN {relation} ON {relation}.{id} = id
@@ -168,6 +215,19 @@ async fn fetch_tags_data(
     relation = tag_type.relation(),
     id = tag_type.id()
   ))
+  .push_bind(archive_id)
+  .push(" ORDER BY name")
+  .build_query_as::<Taxonomy>()
+  .fetch_all(pool)
+  .await
+}
+
+async fn fetch_tag_data(pool: &PgPool, archive_id: i64) -> Result<Vec<Tag>, sqlx::Error> {
+  QueryBuilder::<Postgres>::new(
+    r#"SELECT slug, name, namespace FROM tags
+      INNER JOIN archive_tags ON archive_tags.tag_id = id
+      WHERE archive_tags.archive_id = "#,
+  )
   .push_bind(archive_id)
   .push(" ORDER BY name")
   .build_query_as::<Tag>()
@@ -180,20 +240,22 @@ pub async fn fetch_relations(
   pool: &PgPool,
 ) -> Result<
   (
-    Vec<Tag>,
-    Vec<Tag>,
-    Vec<Tag>,
-    Vec<Tag>,
+    Vec<Taxonomy>,
+    Vec<Taxonomy>,
+    Vec<Taxonomy>,
+    Vec<Taxonomy>,
+    Vec<Taxonomy>,
     Vec<Tag>,
     Vec<Source>,
   ),
   sqlx::Error,
 > {
-  let artists = fetch_tags_data(pool, TagType::Artist, archive_id).await?;
-  let circles = fetch_tags_data(pool, TagType::Circle, archive_id).await?;
-  let magazines = fetch_tags_data(pool, TagType::Magazine, archive_id).await?;
-  let parodies = fetch_tags_data(pool, TagType::Parody, archive_id).await?;
-  let tags = fetch_tags_data(pool, TagType::Tag, archive_id).await?;
+  let artists = fetch_taxonomy_data(pool, TagType::Artist, archive_id).await?;
+  let circles = fetch_taxonomy_data(pool, TagType::Circle, archive_id).await?;
+  let magazines = fetch_taxonomy_data(pool, TagType::Magazine, archive_id).await?;
+  let publishers = fetch_taxonomy_data(pool, TagType::Publisher, archive_id).await?;
+  let parodies = fetch_taxonomy_data(pool, TagType::Parody, archive_id).await?;
+  let tags = fetch_tag_data(pool, archive_id).await?;
 
   let sources = sqlx::query_as!(
     Source,
@@ -203,7 +265,9 @@ pub async fn fetch_relations(
   .fetch_all(pool)
   .await?;
 
-  Ok((artists, circles, magazines, parodies, tags, sources))
+  Ok((
+    artists, circles, magazines, publishers, parodies, tags, sources,
+  ))
 }
 
 pub async fn fetch_archive_info(
@@ -236,10 +300,10 @@ pub async fn fetch_archive_data(
   id_slug: String,
 ) -> Result<Option<ArchiveRelations>, sqlx::Error> {
   let mut qb = QueryBuilder::new(
-    r#"SELECT id, slug, title, description, hash, pages, size,
+    r#"SELECT id, slug, title, description, hash, pages, size, thumbnail,
     (SELECT json_build_object('width', width, 'height', height) FROM archive_images img WHERE img.archive_id = archives.id AND img.page_number = archives.thumbnail) cover,
     (SELECT json_agg(json_build_object('page_number', page_number, 'width', width, 'height', height)) FROM archive_images img WHERE img.archive_id = archives.id) images,
-    created_at FROM archives WHERE"#,
+    created_at, released_at FROM archives WHERE"#,
   );
 
   if let Ok(id) = id_slug.parse::<i64>() {
@@ -263,18 +327,21 @@ pub async fn fetch_archive_data(
       hash: row.get(4),
       pages: row.get(5),
       size: row.get(6),
-      cover: row.try_get::<Json<_>, _>(7).map(|r| r.0).unwrap_or(None),
-      images: row.try_get::<Json<_>, _>(8).map(|r| r.0).unwrap_or(vec![]),
-      created_at: row.get(9),
+      thumbnail: row.get(7),
+      cover: row.try_get::<Json<_>, _>(8).map(|r| r.0).unwrap_or(None),
+      images: row.try_get::<Json<_>, _>(9).map(|r| r.0).unwrap_or(vec![]),
+      created_at: row.get(10),
+      released_at: row.get(11),
     };
 
     let mut relations: ArchiveRelations = archive.into();
 
-    let (artists, circles, magazines, parodies, tags, sources) =
+    let (artists, circles, magazines, publishers, parodies, tags, sources) =
       fetch_relations(relations.id, pool).await?;
     relations.artists = artists;
     relations.circles = circles;
     relations.magazines = magazines;
+    relations.publishers = publishers;
     relations.parodies = parodies;
     relations.tags = tags;
     relations.sources = sources;
@@ -436,6 +503,7 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &st
       "artist" => push_tag_sql(TagType::Artist),
       "circle" => push_tag_sql(TagType::Circle),
       "magazine" => push_tag_sql(TagType::Magazine),
+      "publisher" => push_tag_sql(TagType::Publisher),
       "parody" => push_tag_sql(TagType::Parody),
       "tag" => push_tag_sql(TagType::Tag),
       _ => {}
@@ -491,31 +559,7 @@ pub async fn search(
 
   let count: i64 = qb.build_query_scalar().fetch_one(pool).await?;
 
-  let mut qb = QueryBuilder::new(
-    r#"SELECT archives.id, archives.slug, archives.title,
-    (SELECT json_build_object('width', width, 'height', height) FROM archive_images img WHERE img.archive_id = archives.id AND img.page_number = archives.thumbnail) cover,"#,
-  );
-
-  for tag_type in [
-    TagType::Artist,
-    TagType::Circle,
-    TagType::Magazine,
-    TagType::Parody,
-    TagType::Tag,
-  ] {
-    qb.push(format!(
-      r#"COALESCE((SELECT json_agg(json_build_object('slug', {table}.slug, 'name', {table}.name) ORDER BY {table}.name)
-      FROM {table} INNER JOIN {relation} r ON r.{id} = {table}.id
-      WHERE r.archive_id = archives.id), '[]') {table}"#,
-      table = tag_type.table(),
-      relation = tag_type.relation(),
-      id = tag_type.id()
-    ));
-
-    if tag_type != TagType::Tag {
-      qb.push(",");
-    }
-  }
+  let mut qb = QueryBuilder::new(r#"SELECT archives.id"#);
 
   if !parsed.is_empty() {
     qb.push(", ts_rank((title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv), to_tsquery('english', ")
@@ -548,6 +592,9 @@ pub async fn search(
         qb.push(format!(r#" ORDER BY created_at {}"#, query.order));
       }
     }
+    crate::api::routes::Sorting::ReleasedAt => {
+      qb.push(format!(r#" ORDER BY released_at {}"#, query.order));
+    }
     crate::api::routes::Sorting::CreatedAt => {
       qb.push(format!(r#" ORDER BY created_at {}"#, query.order));
     }
@@ -568,6 +615,45 @@ pub async fn search(
     .push_bind(24.mul(query.page - 1).as_i32());
 
   let rows = qb.build().fetch_all(pool).await?;
+
+  let ids: Vec<i64> = rows.iter().map(|row| row.get(0)).collect();
+
+  let mut qb = QueryBuilder::new(
+    r#"SELECT archives.id, archives.slug, archives.title, (SELECT json_build_object('width', width, 'height', height) FROM archive_images img WHERE img.archive_id = archives.id AND img.page_number = archives.thumbnail) cover,"#,
+  );
+
+  for tag_type in [
+    TagType::Artist,
+    TagType::Circle,
+    TagType::Magazine,
+    TagType::Publisher,
+    TagType::Parody,
+    TagType::Tag,
+  ] {
+    qb.push(format!(
+        r#" COALESCE((SELECT json_agg(json_build_object('slug', {table}.slug, 'name', {table}.name) ORDER BY {table}.name)
+        FROM {table} INNER JOIN {relation} r ON r.{id} = {table}.id
+        WHERE r.archive_id = archives.id), '[]') {table}"#,
+        table = tag_type.table(),
+        relation = tag_type.relation(),
+        id = tag_type.id()
+      ));
+
+    if tag_type != TagType::Tag {
+      qb.push(",");
+    }
+  }
+
+  qb.push(", ARRAY_POSITION(")
+    .push_bind(&ids)
+    .push(",id) AS ord");
+
+  qb.push(" FROM archives WHERE id = ANY(")
+    .push_bind(&ids)
+    .push(") ORDER BY ord");
+
+  let rows = qb.build().fetch_all(pool).await?;
+
   let archives = rows
     .iter()
     .map(|row| ArchiveListItem {
@@ -578,11 +664,36 @@ pub async fn search(
       artists: row.get::<Json<_>, _>(4).0,
       circles: row.get::<Json<_>, _>(5).0,
       magazines: row.get::<Json<_>, _>(6).0,
-      parodies: row.get::<Json<_>, _>(7).0,
-      tags: row.get::<Json<_>, _>(8).0,
-      rank: if !parsed.is_empty() { row.get(9) } else { 0.0 },
+      publishers: row.get::<Json<_>, _>(7).0,
+      parodies: row.get::<Json<_>, _>(8).0,
+      tags: row.get::<Json<_>, _>(9).0,
     })
-    .collect_vec();
+    .collect();
 
   Ok((archives, count))
+}
+
+pub async fn get_archive_page(
+  pool: &PgPool,
+  id_slug: String,
+  page: i16,
+) -> Result<Option<ArchivePage>, sqlx::Error> {
+  let mut qb = QueryBuilder::new(
+    r#"SELECT id, pages, (SELECT filename FROM archive_images ai WHERE ai.archive_id = archives.id AND ai.page_number ="#,
+  );
+
+  qb.push_bind(page).push(" ) filename FROM archives WHERE");
+
+  if let Ok(id) = id_slug.parse::<i64>() {
+    qb.push(" id = ").push_bind(id);
+  } else {
+    qb.push(" slug = ").push_bind(id_slug);
+  }
+
+  let archive = qb
+    .build_query_as::<ArchivePage>()
+    .fetch_optional(pool)
+    .await?;
+
+  Ok(archive)
 }

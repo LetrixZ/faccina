@@ -1,9 +1,12 @@
 use crate::config::CONFIG;
-use crate::db::InsertArchive;
-use crate::metadata::add_metadata;
+use crate::image;
+use crate::metadata::add_external_metadata;
 use crate::utils::{self, ToStringExt};
 use crate::{cmd, config};
+use crate::{db, metadata::add_metadata};
+use ::image::GenericImageView;
 use anyhow::anyhow;
+use chrono::{DateTime, Utc};
 use data_encoding::HEXUPPER;
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -17,13 +20,14 @@ use std::io::{Cursor, Read};
 use std::os;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use zip::ZipArchive;
 
 pub struct IndexArgs {
   pub path: PathBuf,
   pub reindex: bool,
   pub skip_thumbnails: bool,
+  pub skip_dimensions: bool,
 }
 
 impl IndexArgs {
@@ -32,10 +36,12 @@ impl IndexArgs {
       path: path.to_path_buf(),
       reindex: args.reindex,
       skip_thumbnails: args.skip_thumbnails,
+      skip_dimensions: args.skip_dimensions,
     }
   }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct GenerateThumbnailArgs {
   pub regenerate: bool,
   pub quality: u8,
@@ -44,6 +50,7 @@ pub struct GenerateThumbnailArgs {
   pub cover_speed: u8,
   pub width: u32,
   pub cover_width: u32,
+  pub codec: image::ImageCodec,
 }
 
 impl From<cmd::GenerateThumbnailArgs> for GenerateThumbnailArgs {
@@ -60,6 +67,7 @@ impl From<cmd::GenerateThumbnailArgs> for GenerateThumbnailArgs {
       cover_speed: args
         .cover_speed
         .unwrap_or(args.speed.unwrap_or(CONFIG.thumbnails.speed)),
+      codec: args.format.unwrap_or_default(),
     }
   }
 }
@@ -74,6 +82,7 @@ impl From<config::Thumbnails> for GenerateThumbnailArgs {
       cover_speed: value.cover_speed,
       width: value.width,
       cover_width: value.cover_width,
+      codec: value.format,
     }
   }
 }
@@ -88,6 +97,7 @@ pub enum TagType {
   Artist,
   Circle,
   Magazine,
+  Publisher,
   Parody,
   Tag,
 }
@@ -98,6 +108,7 @@ impl TagType {
       TagType::Artist => "artists".to_string(),
       TagType::Circle => "circles".to_string(),
       TagType::Magazine => "magazines".to_string(),
+      TagType::Publisher => "publishers".to_string(),
       TagType::Parody => "parodies".to_string(),
       TagType::Tag => "tags".to_string(),
     }
@@ -108,6 +119,7 @@ impl TagType {
       TagType::Artist => "artist_id".to_string(),
       TagType::Circle => "circle_id".to_string(),
       TagType::Magazine => "magazine_id".to_string(),
+      TagType::Publisher => "publisher_id".to_string(),
       TagType::Parody => "parody_id".to_string(),
       TagType::Tag => "tag_id".to_string(),
     }
@@ -118,6 +130,7 @@ impl TagType {
       TagType::Artist => "archive_artists".to_string(),
       TagType::Circle => "archive_circles".to_string(),
       TagType::Magazine => "archive_magazines".to_string(),
+      TagType::Publisher => "archive_publishers".to_string(),
       TagType::Parody => "archive_parodies".to_string(),
       TagType::Tag => "archive_tags".to_string(),
     }
@@ -125,9 +138,16 @@ impl TagType {
 }
 
 #[derive(sqlx::FromRow)]
+struct Taxonomy {
+  id: i64,
+  slug: String,
+}
+
+#[derive(sqlx::FromRow)]
 struct Tag {
   id: i64,
   slug: String,
+  namespace: Option<String>,
 }
 
 pub struct ZipArchiveData {
@@ -152,13 +172,13 @@ pub fn read_zip(path: &impl AsRef<Path>) -> anyhow::Result<ZipArchiveData> {
   Ok(ZipArchiveData { file, hash, size })
 }
 
-async fn insert_tag_type(
+async fn insert_taxonomy(
   transaction: &mut Transaction<'_, Postgres>,
   tag_type: TagType,
   tags: &[String],
   archive_id: i64,
 ) -> Result<(), sqlx::Error> {
-  let mut tags = tags
+  let mut archive_tags = tags
     .iter()
     .map(|tag| (tag.clone(), slugify(tag)))
     .collect_vec();
@@ -166,23 +186,23 @@ async fn insert_tag_type(
   let rows = QueryBuilder::new("SELECT id, slug FROM ")
     .push(tag_type.table())
     .push(" WHERE slug = ANY(")
-    .push_bind(tags.iter().map(|tag| tag.1.clone()).collect_vec())
+    .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
     .push(")")
-    .build_query_as::<Tag>()
+    .build_query_as::<Taxonomy>()
     .fetch_all(&mut **transaction)
     .await?;
 
   let mut tag_ids: Vec<i64> = Vec::new();
   tag_ids.append(&mut rows.iter().map(|tag| tag.id).collect_vec());
-  tags.retain(|tag| !rows.iter().any(|it| it.slug.eq(&tag.1)));
+  archive_tags.retain(|tag| !rows.iter().any(|it| it.slug.eq(&tag.1)));
 
-  if !tags.is_empty() {
+  if !archive_tags.is_empty() {
     let ids = QueryBuilder::new("INSERT INTO ")
       .push(tag_type.table())
       .push(" (name, slug) SELECT * FROM UNNEST(")
-      .push_bind(tags.iter().map(|tag| tag.0.clone()).collect_vec())
+      .push_bind(archive_tags.iter().map(|tag| tag.0.clone()).collect_vec())
       .push("::text[], ")
-      .push_bind(tags.iter().map(|tag| tag.1.clone()).collect_vec())
+      .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
       .push("::text[]) RETURNING id")
       .build_query_scalar::<i64>()
       .fetch_all(&mut **transaction)
@@ -207,27 +227,81 @@ async fn insert_tag_type(
   Ok(())
 }
 
-async fn insert_sources(
+async fn insert_tags(
   transaction: &mut Transaction<'_, Postgres>,
-  sources: &[String],
+  tags: &[(String, Option<String>)],
   archive_id: i64,
-) -> Result<(), sqlx::Error> {
-  let sources = sources
+) -> anyhow::Result<()> {
+  let mut archive_tags = tags
     .iter()
-    .map(|str| {
-      (
-        utils::parse_source_name(str),
-        url::Url::parse(str).map(|url| url.to_string()).ok(),
-      )
-    })
+    .map(|tag| (tag.0.clone(), slugify(tag.0.clone()), tag.1.clone()))
     .collect_vec();
 
-  for (name, url) in sources {
+  let db_tags = QueryBuilder::new("SELECT id, slug, namespace FROM tags WHERE slug = ANY(")
+    .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
+    .push(")")
+    .build_query_as::<Tag>()
+    .fetch_all(&mut **transaction)
+    .await?;
+
+  for tag in &db_tags {
+    if let Some(archive_tag) = archive_tags.iter().find(|t| t.1.eq(&tag.slug)) {
+      if archive_tag.2.is_some() && !tag.namespace.eq(&archive_tag.2) {
+        sqlx::query!(
+          "UPDATE tags SET namespace = $2 WHERE id = $1",
+          tag.id,
+          archive_tag.2
+        )
+        .execute(&mut **transaction)
+        .await?;
+      }
+    }
+  }
+
+  let mut tag_ids: Vec<i64> = Vec::new();
+  tag_ids.append(&mut db_tags.iter().map(|tag| tag.id).collect_vec());
+  archive_tags.retain(|tag| !db_tags.iter().any(|it| it.slug.eq(&tag.1)));
+
+  if !archive_tags.is_empty() {
+    let ids = QueryBuilder::new("INSERT INTO tags (name, slug, namespace) SELECT * FROM UNNEST(")
+      .push_bind(archive_tags.iter().map(|tag| tag.0.clone()).collect_vec())
+      .push("::text[], ")
+      .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
+      .push("::text[], ")
+      .push_bind(archive_tags.iter().map(|tag| tag.2.clone()).collect_vec())
+      .push("::text[]) RETURNING id")
+      .build_query_scalar::<i64>()
+      .fetch_all(&mut **transaction)
+      .await
+      .map_err(|err| anyhow!("Failed to insert tags: {err}"))?;
+
+    tag_ids.append(&mut ids.iter().copied().collect_vec());
+  }
+
+  QueryBuilder::new("INSERT INTO archive_tags (archive_id, tag_id) SELECT * FROM UNNEST(")
+    .push_bind(vec![archive_id; tag_ids.len()])
+    .push("::bigint[], ")
+    .push_bind(tag_ids)
+    .push("::bigint[])")
+    .build()
+    .execute(&mut **transaction)
+    .await
+    .map_err(|err| anyhow!("Failed to insert archive_tags: {err}"))?;
+
+  Ok(())
+}
+
+async fn insert_sources(
+  transaction: &mut Transaction<'_, Postgres>,
+  sources: &Vec<db::Source>,
+  archive_id: i64,
+) -> Result<(), sqlx::Error> {
+  for source in sources {
     sqlx::query!(
-      r#"INSERT INTO archive_sources (archive_id, name, url) VALUES ($1, $2, $3)"#,
+      r#"INSERT INTO archive_sources (archive_id, name, url) VALUES ($1, $2, $3) ON CONFLICT (archive_id, name) DO UPDATE SET url = EXCLUDED.url"#,
       archive_id,
-      name,
-      url
+      source.name,
+      source.url
     )
     .execute(&mut **transaction)
     .await?;
@@ -239,20 +313,25 @@ async fn insert_sources(
 async fn insert_archive(
   transaction: &mut Transaction<'_, Postgres>,
   multi: &MultiProgress,
-  data: &InsertArchive,
+  data: &db::InsertArchive,
 ) -> anyhow::Result<(i64, bool)> {
-  let InsertArchive {
+  let db::InsertArchive {
     id: _,
     slug,
     title,
+    description,
     path,
     hash,
     pages,
     size,
     thumbnail,
+    language,
+    translated,
+    released_at,
     artists,
     circles,
     magazines,
+    publishers,
     parodies,
     tags,
     sources,
@@ -274,20 +353,65 @@ async fn insert_archive(
       slug
     )
     .fetch_one(&mut **transaction)
-    .await?;
+    .await?
+    .unwrap_or(false);
 
-    if !slug_exists.unwrap() {
+    if !slug_exists {
       sqlx::query!(
-      r#"UPDATE archives SET slug = $2, title = $3, path = $4, pages = $5, size = $6, thumbnail = $7, updated_at = NOW() WHERE id = $1"#,
-      rec.id, slug, title, path, pages, size, thumbnail
-    )
-    .execute(&mut **transaction)
-    .await?;
+        r#"UPDATE archives SET
+          slug = $2,
+          title = $3,
+          path = $4,
+          pages = $5,
+          size = $6,
+          thumbnail = $7,
+          description = $8,
+          language = $9,
+          translated = $10,
+          released_at = COALESCE($11, released_at),
+          updated_at = NOW()
+        WHERE id = $1"#,
+        rec.id,
+        slug,
+        title,
+        path,
+        pages,
+        size,
+        thumbnail,
+        description.clone(),
+        language.clone(),
+        translated.clone(),
+        released_at.clone()
+      )
+      .execute(&mut **transaction)
+      .await?;
     } else if *title == rec.title {
       sqlx::query!(
-        r#"UPDATE archives SET title = $2, path = $3, pages = $4, size = $5, thumbnail = $6, updated_at = NOW() WHERE id = $1"#,
-        rec.id, title, path, pages, size, thumbnail
-      ).execute(&mut **transaction).await?;
+        r#"UPDATE archives SET
+          title = $2,
+          path = $3,
+          pages = $4,
+          size = $5,
+          thumbnail = $6,
+          description = $7,
+          language = $8,
+          translated = $9,
+          released_at = COALESCE($10, released_at),
+          updated_at = NOW()
+        WHERE id = $1"#,
+        rec.id,
+        title,
+        path,
+        pages,
+        size,
+        thumbnail,
+        description.clone(),
+        language.clone(),
+        translated.clone(),
+        released_at.clone()
+      )
+      .execute(&mut **transaction)
+      .await?;
     } else {
       let slug = format!(
         "{slug}-{}",
@@ -296,13 +420,40 @@ async fn insert_archive(
           .unwrap()
           .as_secs()
       );
-      sqlx::query!(
-        r#"UPDATE archives SET slug = $2, title = $3, path = $4, pages = $5, size = $6, thumbnail = $7, updated_at = NOW() WHERE id = $1"#,
-        rec.id, slug, title ,path, pages, size, thumbnail
-      ).execute(&mut **transaction).await?;
-    }
 
-    (rec.id, false)
+      sqlx::query!(
+        r#"UPDATE archives SET
+          slug = $2,
+          title = $3,
+          path = $4,
+          pages = $5,
+          size = $6,
+          thumbnail = $7,
+          description = $8,
+          language = $9,
+          translated = $10,
+          released_at = COALESCE($11, released_at),
+          updated_at = NOW()
+        WHERE id = $1"#,
+        rec.id,
+        slug,
+        title,
+        path,
+        pages,
+        size,
+        thumbnail,
+        description.clone(),
+        language.clone(),
+        translated.clone(),
+        released_at.clone()
+      )
+      .execute(&mut **transaction)
+      .await?;
+    };
+
+    let archive_id = rec.id;
+
+    (archive_id, false)
   } else {
     let count = sqlx::query_scalar!(r#"SELECT COUNT(*) FROM archives WHERE slug = $1"#, slug)
       .fetch_one(&mut **transaction)
@@ -322,30 +473,36 @@ async fn insert_archive(
     };
 
     let rec = sqlx::query!(
-      r#"INSERT INTO archives (slug, title, path, thumbnail, hash, pages, size)
-      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"#,
+      r#"INSERT INTO archives (slug, title, description, path, hash, pages, size, thumbnail, language, translated, released_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, NOW())) RETURNING id"#,
       slug,
       title,
+      description.clone(),
       path,
-      thumbnail,
       hash,
       pages,
-      size
+      size,
+      thumbnail,
+      language.clone(),
+      translated.clone(),
+      released_at.clone().map(|time| DateTime::<Utc>::from_naive_utc_and_offset(time, Utc))
     )
     .fetch_one(&mut **transaction)
     .await?;
 
     let archive_id = rec.id;
 
-    insert_tag_type(transaction, TagType::Artist, artists, archive_id).await?;
-    insert_tag_type(transaction, TagType::Circle, circles, archive_id).await?;
-    insert_tag_type(transaction, TagType::Magazine, magazines, archive_id).await?;
-    insert_tag_type(transaction, TagType::Parody, parodies, archive_id).await?;
-    insert_tag_type(transaction, TagType::Tag, tags, archive_id).await?;
-    insert_sources(transaction, sources, archive_id).await?;
+    insert_taxonomy(transaction, TagType::Artist, artists, archive_id).await?;
+    insert_taxonomy(transaction, TagType::Circle, circles, archive_id).await?;
+    insert_taxonomy(transaction, TagType::Magazine, magazines, archive_id).await?;
+    insert_taxonomy(transaction, TagType::Publisher, publishers, archive_id).await?;
+    insert_taxonomy(transaction, TagType::Parody, parodies, archive_id).await?;
+    insert_tags(transaction, tags, archive_id).await?;
 
     (archive_id, true)
   };
+
+  insert_sources(transaction, sources, id).await?;
 
   #[cfg(unix)]
   if let Err(err) = os::unix::fs::symlink(path, CONFIG.directories.links.join(id.to_string())) {
@@ -391,12 +548,12 @@ async fn insert_archive(
 pub async fn index_archive(
   pool: &PgPool,
   multi: &MultiProgress,
-  opts: IndexArgs,
+  args: IndexArgs,
 ) -> anyhow::Result<()> {
-  if !opts.reindex {
+  if !args.reindex {
     let rec = sqlx::query_scalar!(
       r#"SELECT COUNT(*) AS count FROM archives WHERE path = $1"#,
-      opts.path.to_string()
+      args.path.to_string()
     )
     .fetch_one(pool)
     .await?;
@@ -408,10 +565,17 @@ pub async fn index_archive(
     }
   }
 
-  let mut zip = read_zip(&opts.path)?;
+  let mut zip = read_zip(&args.path)?;
 
-  let mut archive = InsertArchive {
-    path: opts.path.to_string(),
+  if zip.file.is_empty() {
+    multi.suspend(|| warn!("Zip file is empty. Skipping '{}'", args.path.display()));
+    return Ok(());
+  }
+
+  multi.suspend(|| info!("Indexing archive '{}'", args.path.display()));
+
+  let mut archive = db::InsertArchive {
+    path: args.path.to_string(),
     hash: zip.hash,
     size: zip.size.as_i64(),
     ..Default::default()
@@ -429,21 +593,49 @@ pub async fn index_archive(
     });
   }
 
-  add_metadata(&mut zip.file, &mut archive);
+  let filename = args.path.file_stem().unwrap().to_str().unwrap().to_string();
 
-  if archive.title.is_empty() {
-    let (title, artists, circles) =
-      utils::parse_filename(opts.path.file_stem().unwrap().to_str().unwrap());
+  if let Err(err) = add_external_metadata(Path::new(&archive.path.clone()), &mut archive) {
+    multi
+      .suspend(|| warn!(target: "archive::metadata", "External metadata couldn't be read: {err}"));
 
-    archive.slug = slugify(&title);
-    archive.title = title;
-    archive.artists = artists;
-    archive.circles = circles;
+    if let Err(err) = add_metadata(&mut zip.file, &mut archive) {
+      multi.suspend(
+        || warn!(target: "archive::metadata", "Couldn't parse metadata for the archive: {err}"),
+      );
+
+      let (title, artists, circles) = utils::parse_filename(&filename);
+
+      if CONFIG.metadata.parse_filename_title {
+        archive.title = title;
+      } else {
+        archive.title = filename.to_string();
+      }
+
+      archive.artists = artists;
+      archive.circles = circles;
+    }
   }
 
   if archive.title.is_empty() {
-    return Err(anyhow!("Couldn't get a title for the archive"));
+    archive.title = filename;
+
+    multi.suspend(|| {
+      warn!(
+        target: "archive::index",
+        "Couldn't get a title for the archive. Using filename '{}'",
+        archive.title
+      )
+    });
   }
+
+  if archive.released_at.is_none() {
+    archive.released_at = Some(utils::parse_zip_date(
+      zip.file.by_index(0).unwrap().last_modified().unwrap(),
+    ));
+  }
+
+  archive.slug = slugify(&archive.title);
 
   let mut image_files = get_image_files(&mut zip.file)?;
   archive.pages = i16::try_from(image_files.len()).unwrap();
@@ -453,7 +645,9 @@ pub async fn index_archive(
 
   archive.id = id;
 
-  calculate_dimensions(&mut transaction, multi, false, &mut image_files, archive.id).await?;
+  if !args.skip_dimensions {
+    calculate_dimensions(&mut transaction, multi, false, &mut image_files, archive.id).await?;
+  }
 
   transaction.commit().await?;
 
@@ -463,12 +657,12 @@ pub async fn index_archive(
         target: "archive::index",
         "New archive saved in the database with ID {}: '{}'",
         archive.id,
-        opts.path.display()
+        args.path.display()
       )
     });
   }
 
-  if !opts.skip_thumbnails {
+  if !args.skip_thumbnails {
     generate_thumbnails(
       &GenerateThumbnailArgs::from(CONFIG.thumbnails),
       multi,
@@ -561,11 +755,12 @@ async fn calculate_dimensions(
 
       let result = (|| -> anyhow::Result<(usize, &String, u32, u32)> {
         let cursor = Cursor::new(&file.contents);
-        let img = image::io::Reader::new(cursor)
+        let img = ::image::io::Reader::new(cursor)
           .with_guessed_format()?
           .decode()?;
+        let (w, h) = img.dimensions();
 
-        Ok((page, &file.filename, img.width(), img.height()))
+        Ok((page, &file.filename, w, h))
       })();
 
       pb.inc(1);
@@ -631,12 +826,18 @@ pub fn generate_thumbnails(
   let archive_thumb_dir = CONFIG.directories.thumbs.join(format!("{}", archive_id));
   create_dir_all(&archive_thumb_dir)?;
 
-  let walker = globwalk::glob(format!("{}/*.t.avif", archive_thumb_dir.to_string())).unwrap();
+  let extension = args.codec.extension();
+
+  let walker =
+    globwalk::glob(format!("{}/*.t.{extension}", archive_thumb_dir.to_string())).unwrap();
   let existing_thumbnails = walker
     .map(|entry| entry.unwrap().path().to_string())
     .collect_vec();
 
-  let cover_name = format!("{}.c.avif", utils::leading_zeros(thumbnail, files.len()));
+  let cover_name = format!(
+    "{}.c.{extension}",
+    utils::leading_zeros(thumbnail, files.len())
+  );
 
   if !args.regenerate
     && (existing_thumbnails.len()) == files.len()
@@ -645,16 +846,18 @@ pub fn generate_thumbnails(
     return Ok(());
   }
 
-  let opts = utils::ImageEncodeOpts {
+  let opts = image::ImageEncodeOpts {
     width: args.width,
     quality: args.quality,
     speed: args.speed,
+    codec: args.codec,
   };
 
-  let cover_opts = utils::ImageEncodeOpts {
+  let cover_opts = image::ImageEncodeOpts {
     width: args.cover_width,
     quality: args.cover_quality,
     speed: args.cover_speed,
+    codec: args.codec,
   };
 
   let mut file_idx = files.iter().enumerate().map(|(i, _)| i).collect_vec();
@@ -674,7 +877,7 @@ pub fn generate_thumbnails(
   multi.add(pb.clone());
 
   let encode_cover = |buf: &Vec<u8>, name: String| {
-    let encoded = utils::encode_image(buf, cover_opts).unwrap();
+    let encoded = image::encode_image(buf, cover_opts).unwrap();
 
     match fs::write(archive_thumb_dir.join(&cover_name), encoded) {
       Ok(_) => {}
@@ -693,7 +896,7 @@ pub fn generate_thumbnails(
   file_idx.into_par_iter().for_each(|i| {
     let page = i + 1;
 
-    let name = format!("{}.t.avif", utils::leading_zeros(page, files.len()));
+    let name = format!("{}.t.{extension}", utils::leading_zeros(page, files.len()));
 
     _ = (|| -> anyhow::Result<()> {
       if !args.regenerate && existing_thumbnails.contains(&name) {
@@ -704,7 +907,7 @@ pub fn generate_thumbnails(
         return Ok(());
       }
 
-      let encoded = utils::encode_image(&files[i].contents, opts).unwrap();
+      let encoded = image::encode_image(&files[i].contents, opts).unwrap();
 
       match fs::write(archive_thumb_dir.join(&name), encoded) {
         Ok(_) => {}

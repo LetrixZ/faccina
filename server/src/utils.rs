@@ -1,13 +1,14 @@
-use capitalize::Capitalize;
+use chrono::{DateTime, NaiveDateTime};
 use funty::Numeric;
-use image::{codecs::avif::AvifEncoder, imageops::FilterType};
 use itertools::Itertools;
 use regex::Regex;
 use ring::digest::{Context, Digest, SHA256};
 use std::{
-  io::{Cursor, Read},
+  ffi::OsStr,
+  io::Read,
   path::{Path, PathBuf},
 };
+use time::OffsetDateTime;
 
 pub fn sha256_digest<R: Read>(mut reader: R) -> anyhow::Result<Digest> {
   let mut context = Context::new(&SHA256);
@@ -25,7 +26,7 @@ pub fn sha256_digest<R: Read>(mut reader: R) -> anyhow::Result<Digest> {
 }
 
 pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
-  let filename = filename.trim();
+  let filename: &str = filename.trim();
 
   let mut title = String::new();
   let mut artists = vec![];
@@ -34,8 +35,12 @@ pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
   let re = Regex::new(r"(\(|\[|\{)?[^\(\[\{\}\]\)]+(\}\)|\])?").unwrap();
   let mut captures: Vec<String> = vec![];
 
-  for cap in re.captures_iter(filename) {
+  for (i, cap) in re.captures_iter(filename).enumerate() {
     let str = cap[0].trim().to_string();
+
+    if i == 2 && (str.starts_with("[") || str.starts_with("(")) {
+      continue;
+    }
 
     if !str.is_empty() {
       captures.push(str);
@@ -72,6 +77,8 @@ pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
           .split(',')
           .map(|s| s.trim_matches('[').trim_matches(']').trim().to_string())
           .collect_vec();
+      } else {
+        title = str.to_string();
       }
 
       let str = captures.next().unwrap();
@@ -86,9 +93,13 @@ pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
           .split(',')
           .map(|s| s.trim_matches('[').trim_matches(']').trim().to_string())
           .collect_vec();
+      } else {
+        title = str.to_string()
       }
 
-      title = captures.next().unwrap().to_string();
+      if title.is_empty() {
+        title = captures.next().unwrap().to_string();
+      }
     }
   }
 
@@ -112,43 +123,19 @@ pub fn parse_source_name(str: &str) -> String {
     return "Anchira".into();
   } else if str.contains("hentainexus") || str.contains("hentai nexus") {
     return "HentaiNexus".into();
+  } else if str.contains("e-hentai") {
+    return "E-Hentai".into();
+  } else if str.contains("exhentai") || str.contains("ex-hentai") {
+    return "ExHentai".into();
+  } else if str.contains("hentag") {
+    return "HenTag".into();
   } else {
     return if let Ok(url) = url::Url::parse(&str) {
-      url.host_str().unwrap_or(&str).to_string()
+      capitalize_words(url.host_str().unwrap_or(&str))
     } else {
-      str
-    }
-    .capitalize_words();
+      capitalize_words(&str)
+    };
   }
-}
-
-#[derive(Clone, Copy)]
-pub struct ImageEncodeOpts {
-  pub width: u32,
-  pub speed: u8,
-  pub quality: u8,
-}
-
-pub fn encode_image(
-  img: &[u8],
-  ImageEncodeOpts {
-    width,
-    speed,
-    quality,
-  }: ImageEncodeOpts,
-) -> anyhow::Result<Vec<u8>> {
-  let cursor = Cursor::new(img);
-  let img = image::io::Reader::new(cursor)
-    .with_guessed_format()?
-    .decode()?;
-
-  let img = img.resize(width, width * 2, FilterType::Lanczos3);
-
-  let mut buf = vec![];
-  let encoder = AvifEncoder::new_with_speed_quality(&mut buf, speed, quality);
-  img.write_with_encoder(encoder)?;
-
-  Ok(buf)
 }
 
 pub fn is_image<S: AsRef<str>>(filename: S) -> bool {
@@ -182,6 +169,12 @@ impl ToStringExt for PathBuf {
   }
 }
 
+impl ToStringExt for OsStr {
+  fn to_string(&self) -> String {
+    self.to_str().unwrap().to_string()
+  }
+}
+
 pub fn get_digits(s: &str) -> usize {
   let digits: String = s.chars().filter(|c| c.is_ascii_digit()).collect();
   digits.parse::<usize>().unwrap()
@@ -196,4 +189,29 @@ pub fn trim_whitespace(s: &str) -> String {
     result
   });
   new_str
+}
+
+pub fn capitalize_words(s: &str) -> String {
+  s.split_whitespace()
+    .map(|word: &str| {
+      word
+        .chars()
+        .enumerate()
+        .map(|(i, c)| {
+          if i == 0 {
+            c.to_uppercase().to_string()
+          } else {
+            c.to_string()
+          }
+        })
+        .collect::<String>()
+    })
+    .collect::<Vec<String>>()
+    .join(" ")
+}
+
+pub fn parse_zip_date(date: zip::DateTime) -> NaiveDateTime {
+  DateTime::from_timestamp(OffsetDateTime::try_from(date).unwrap().unix_timestamp(), 0)
+    .unwrap()
+    .naive_utc()
 }

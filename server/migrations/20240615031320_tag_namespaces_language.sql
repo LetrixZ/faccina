@@ -1,0 +1,5 @@
+ALTER TABLE archives ADD language VARCHAR NULL;
+ALTER TABLE archives ADD translated BOOLEAN NULL;
+ALTER TABLE archives ADD released_at TIMESTAMP NOT NULL DEFAULT NOW();
+
+ALTER TABLE tags ADD namespace VARCHAR NULL;

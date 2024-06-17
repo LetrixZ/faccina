@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/public';
 import type { Archive } from '$lib/models';
-import { error, redirect } from '@sveltejs/kit';
+import { error, isHttpError, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
@@ -20,6 +20,10 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		archive = await res.json();
 	} catch (e) {
 		console.error(e);
+
+		if (isHttpError(e)) {
+			throw e;
+		}
 
 		return error(500, {
 			status: 500,

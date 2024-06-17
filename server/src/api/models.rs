@@ -13,8 +13,10 @@ pub struct Archive {
   pub pages: i16,
   pub size: i64,
   pub cover: Option<ImageDimensions>,
+  pub thumbnail: i16,
   pub images: Vec<Image>,
   pub created_at: NaiveDateTime,
+  pub released_at: NaiveDateTime,
 }
 
 impl From<db::Archive> for Archive {
@@ -28,8 +30,10 @@ impl From<db::Archive> for Archive {
       pages,
       size,
       cover,
+      thumbnail,
       images,
       created_at,
+      released_at,
     }: db::Archive,
   ) -> Self {
     Self {
@@ -41,8 +45,10 @@ impl From<db::Archive> for Archive {
       pages,
       size,
       cover,
+      thumbnail,
       images,
       created_at,
+      released_at,
     }
   }
 }
@@ -72,12 +78,15 @@ pub struct ArchiveData {
   pub pages: i16,
   pub size: i64,
   pub cover: Option<ImageDimensions>,
+  pub thumbnail: i16,
   pub images: Vec<Image>,
   pub created_at: NaiveDateTime,
-  pub artists: Vec<Tag>,
-  pub circles: Vec<Tag>,
-  pub magazines: Vec<Tag>,
-  pub parodies: Vec<Tag>,
+  pub released_at: NaiveDateTime,
+  pub artists: Vec<Taxonomy>,
+  pub circles: Vec<Taxonomy>,
+  pub magazines: Vec<Taxonomy>,
+  pub publishers: Vec<Taxonomy>,
+  pub parodies: Vec<Taxonomy>,
   pub tags: Vec<Tag>,
   pub sources: Vec<Source>,
 }
@@ -93,11 +102,14 @@ impl From<db::ArchiveRelations> for ArchiveData {
       pages,
       size,
       cover,
+      thumbnail,
       images,
       created_at,
+      released_at,
       artists,
       circles,
       magazines,
+      publishers,
       parodies,
       tags,
       sources,
@@ -112,11 +124,14 @@ impl From<db::ArchiveRelations> for ArchiveData {
       pages,
       size,
       cover,
+      thumbnail,
       images,
       created_at,
+      released_at,
       artists: artists.into_iter().map(|t| t.into()).collect(),
       circles: circles.into_iter().map(|t| t.into()).collect(),
       magazines: magazines.into_iter().map(|t| t.into()).collect(),
+      publishers: publishers.into_iter().map(|t| t.into()).collect(),
       parodies: parodies.into_iter().map(|t| t.into()).collect(),
       tags: tags.into_iter().map(|t| t.into()).collect(),
       sources: sources.into_iter().map(|s| s.into()).collect(),
@@ -125,9 +140,25 @@ impl From<db::ArchiveRelations> for ArchiveData {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct Taxonomy {
+  pub slug: String,
+  pub name: String,
+}
+
+impl From<db::Taxonomy> for Taxonomy {
+  fn from(item: db::Taxonomy) -> Self {
+    Taxonomy {
+      slug: item.slug,
+      name: item.name,
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Tag {
   pub slug: String,
   pub name: String,
+  pub namespace: Option<String>,
 }
 
 impl From<db::Tag> for Tag {
@@ -135,6 +166,7 @@ impl From<db::Tag> for Tag {
     Tag {
       slug: item.slug,
       name: item.name,
+      namespace: item.namespace,
     }
   }
 }
@@ -160,12 +192,12 @@ pub struct ArchiveListItem {
   pub slug: String,
   pub title: String,
   pub cover: Option<ImageDimensions>,
-  pub artists: Vec<Tag>,
-  pub circles: Vec<Tag>,
-  pub magazines: Vec<Tag>,
-  pub parodies: Vec<Tag>,
-  pub tags: Vec<Tag>,
-  pub rank: f32,
+  pub artists: Vec<Taxonomy>,
+  pub circles: Vec<Taxonomy>,
+  pub magazines: Vec<Taxonomy>,
+  pub publishers: Vec<Taxonomy>,
+  pub parodies: Vec<Taxonomy>,
+  pub tags: Vec<Taxonomy>,
 }
 
 #[derive(Serialize, Deserialize)]

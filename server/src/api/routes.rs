@@ -2,7 +2,11 @@ use super::{
   models::{ArchiveData, ArchiveId, LibraryPage},
   ApiError, ApiJson, AppState,
 };
-use crate::{config::CONFIG, db, utils};
+use crate::{
+  config::CONFIG,
+  db,
+  utils::{self, ToStringExt},
+};
 use anyhow::anyhow;
 use async_zip::tokio::read::seek::ZipFileReader;
 use axum::{
@@ -14,8 +18,10 @@ use axum::{
 use serde_json::{Map, Value};
 use sqlx::QueryBuilder;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
-use tokio::{fs::File, io::BufReader};
-use tokio_util::io::ReaderStream;
+use tokio::{
+  fs::File,
+  io::{AsyncReadExt, BufReader},
+};
 
 pub struct SearchQuery {
   pub value: String,
@@ -35,6 +41,7 @@ impl Display for Ordering {
 
 pub enum Sorting {
   Relevance,
+  ReleasedAt,
   CreatedAt,
   Title,
   Pages,
@@ -42,7 +49,7 @@ pub enum Sorting {
 
 impl Default for Sorting {
   fn default() -> Self {
-    Self::CreatedAt
+    Self::ReleasedAt
   }
 }
 
@@ -55,6 +62,7 @@ impl FromStr for Sorting {
 
     match s {
       "relevance" => Ok(Self::Relevance),
+      "released_at" => Ok(Self::ReleasedAt),
       "created_at" => Ok(Self::CreatedAt),
       "title" => Ok(Self::Title),
       "pages" => Ok(Self::Pages),
@@ -202,24 +210,7 @@ pub async fn page(
   Path((id_slug, page)): Path<(String, i16)>,
   State(state): State<AppState>,
 ) -> Result<Response, ApiError> {
-  let mut qb = QueryBuilder::new(
-    r#"SELECT id, path, pages, (SELECT filename FROM archive_images ai WHERE ai.archive_id = archives.id AND ai.page_number ="#,
-  );
-
-  qb.push_bind(page).push(" ) filename FROM archives WHERE");
-
-  if let Ok(id) = id_slug.parse::<i64>() {
-    qb.push(" id = ").push_bind(id);
-  } else {
-    qb.push(" slug = ").push_bind(id_slug);
-  }
-
-  let archive = qb
-    .build_query_as::<db::ArchivePage>()
-    .fetch_optional(&state.pool)
-    .await?;
-
-  if let Some(archive) = archive {
+  if let Some(archive) = db::get_archive_page(&state.pool, id_slug, page).await? {
     let file = File::open(CONFIG.directories.links.join(archive.id.to_string())).await?;
     let reader = BufReader::new(file);
     let mut zip = ZipFileReader::with_tokio(reader).await?;
@@ -255,41 +246,45 @@ pub async fn page_thumbnail(
   Path((id_slug, page)): Path<(String, i16)>,
   State(state): State<AppState>,
 ) -> Result<Response, ApiError> {
-  let mut qb = QueryBuilder::new(
-    r#"SELECT id, path, pages, (SELECT filename FROM archive_images ai WHERE ai.archive_id = archives.id AND ai.page_number ="#,
-  );
-
-  qb.push_bind(page).push(" ) filename FROM archives WHERE");
-
-  if let Ok(id) = id_slug.parse::<i64>() {
-    qb.push(" id = ").push_bind(id);
-  } else {
-    qb.push(" slug = ").push_bind(id_slug);
-  }
-
-  let archive: Option<db::ArchivePage> = qb.build_query_as().fetch_optional(&state.pool).await?;
-
-  if let Some(archive) = archive {
+  if let Some(archive) = db::get_archive_page(&state.pool, id_slug, page).await? {
     let name = utils::leading_zeros(page, archive.pages);
-    let filename = format!("{name}.t.avif");
 
-    let file = File::open(
+    let mut walker = globwalk::glob(format!(
+      "{}/{}.t.{{avif,webp,jpeg,png}}",
       CONFIG
         .directories
         .thumbs
         .join(archive.id.to_string())
-        .join(&filename),
-    )
-    .await?;
+        .to_string(),
+      name
+    ))
+    .unwrap();
 
-    let stream = ReaderStream::new(file);
-    let body = Body::from_stream(stream);
-    let headers = [
-      (header::CONTENT_TYPE, "image/avif"),
-      (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
-    ];
+    if let Some(entry) = walker.next() {
+      let entry = entry.unwrap();
+      let mut file = File::open(entry.path()).await?;
 
-    Ok((headers, body).into_response())
+      let mut buf = vec![];
+      file.read_to_end(&mut buf).await?;
+
+      let format = file_format::FileFormat::from_bytes(&buf);
+
+      let body = Body::from(buf);
+      let headers = [
+        (
+          header::CONTENT_TYPE,
+          format!("image/{}", format.extension()),
+        ),
+        (
+          header::CACHE_CONTROL,
+          "public, max-age=259200, immutable".into(),
+        ),
+      ];
+
+      Ok((headers, body).into_response())
+    } else {
+      Err(ApiError::NotFound)
+    }
   } else {
     Err(ApiError::NotFound)
   }
@@ -299,7 +294,7 @@ pub async fn gallery_cover(
   Path(id_slug): Path<String>,
   State(state): State<AppState>,
 ) -> Result<Response, ApiError> {
-  let mut qb = QueryBuilder::new(r#"SELECT id, path, pages, thumbnail FROM archives WHERE"#);
+  let mut qb = QueryBuilder::new(r#"SELECT id FROM archives WHERE "#);
 
   if let Ok(id) = id_slug.parse::<i64>() {
     qb.push(" id = ").push_bind(id);
@@ -307,29 +302,42 @@ pub async fn gallery_cover(
     qb.push(" slug = ").push_bind(id_slug);
   }
 
-  let archive: Option<db::ArchiveFile> = qb.build_query_as().fetch_optional(&state.pool).await?;
+  if let Some(id) = qb
+    .build_query_scalar::<i64>()
+    .fetch_optional(&state.pool)
+    .await?
+  {
+    let mut walker = globwalk::glob(format!(
+      "{}/*.c.{{avif,webp,jpeg,png}}",
+      CONFIG.directories.thumbs.join(id.to_string()).to_string()
+    ))
+    .unwrap();
 
-  if let Some(archive) = archive {
-    let name = utils::leading_zeros(archive.thumbnail, archive.pages);
-    let filename = format!("{name}.c.avif");
+    if let Some(entry) = walker.next() {
+      let entry = entry.unwrap();
+      let mut file = File::open(entry.path()).await?;
 
-    let file = File::open(
-      CONFIG
-        .directories
-        .thumbs
-        .join(archive.id.to_string())
-        .join(&filename),
-    )
-    .await?;
+      let mut buf = vec![];
+      file.read_to_end(&mut buf).await?;
 
-    let stream = ReaderStream::new(file);
-    let body = Body::from_stream(stream);
-    let headers = [
-      (header::CONTENT_TYPE, "image/avif"),
-      (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
-    ];
+      let format = file_format::FileFormat::from_bytes(&buf);
 
-    Ok((headers, body).into_response())
+      let body = Body::from(buf);
+      let headers = [
+        (
+          header::CONTENT_TYPE,
+          format!("image/{}", format.extension()),
+        ),
+        (
+          header::CACHE_CONTROL,
+          "public, max-age=259200, immutable".into(),
+        ),
+      ];
+
+      Ok((headers, body).into_response())
+    } else {
+      Err(ApiError::NotFound)
+    }
   } else {
     Err(ApiError::NotFound)
   }

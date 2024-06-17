@@ -15,6 +15,10 @@
 
 	const sortOptions = [
 		{
+			label: 'Date released',
+			value: Sorting.RELEASED_AT,
+		},
+		{
 			label: 'Date added',
 			value: Sorting.CREATED_AT,
 		},
@@ -32,7 +36,7 @@
 		},
 	];
 
-	$: sort = ($page.url.searchParams.get('sort') as Sorting) || Sorting.CREATED_AT;
+	$: sort = ($page.url.searchParams.get('sort') as Sorting) || Sorting.RELEASED_AT;
 	$: order = ($page.url.searchParams.get('order') as Ordering) || Ordering.DESC;
 
 	$: sortOption = sort && sortOptions.find((option) => option.value === sort);
@@ -57,7 +61,7 @@
 					selected={sortOption}
 					onSelectedChange={(option) => {
 						const query = new URLSearchParams($page.url.searchParams.toString());
-						query.set('sort', option?.value ?? Sorting.CREATED_AT);
+						query.set('sort', option?.value ?? Sorting.RELEASED_AT);
 						goto(`?${query.toString()}`);
 					}}
 				>
@@ -91,21 +95,25 @@
 			</Button>
 		</div>
 
-		<ListPagination total={libraryPage.total} class="mx-auto w-fit md:mx-0 md:ms-auto" />
+		<ListPagination total={libraryPage.total || 1} class="mx-auto w-fit md:mx-0 md:ms-auto" />
 	</div>
 
 	<Separator />
 
-	<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-		{#each archives as archive (archive.id)}
-			<ListItem {archive} />
-		{/each}
-	</div>
+	{#if archives.length}
+		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+			{#each archives as archive (archive.id)}
+				<ListItem {archive} />
+			{/each}
+		</div>
+	{:else}
+		<p class="mx-auto w-fit py-20 text-4xl font-medium">No results found</p>
+	{/if}
 
 	<Separator />
 
 	<ListPagination
-		total={libraryPage.total}
+		total={libraryPage.total || 1}
 		class="mx-auto w-fit flex-grow md:mx-0 md:ms-auto md:flex-grow-0"
 	/>
 </main>

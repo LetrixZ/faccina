@@ -1,12 +1,25 @@
 <script lang="ts">
+	import { read } from '$app/server';
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import Chip from '$lib/components/chip.svelte';
+	import DownloadProgress from '$lib/components/download-progress.svelte';
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { TagType } from '$lib/models.js';
-	import { cn, dateFormat, generateFilename, humanFileSize, isSpread } from '$lib/utils';
+	import { TagType, type Task } from '$lib/models.js';
+	import {
+		cn,
+		dateTimeFormat,
+		generateFilename,
+		getMetadata,
+		humanFileSize,
+		isSpread,
+		randomString,
+	} from '$lib/utils';
+	import { AsyncZipDeflate, Zip, ZipPassThrough, strToU8 } from 'fflate';
+	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
+	import { writable } from 'svelte/store';
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
 	import BiSolidDownload from '~icons/bxs/download';
 
@@ -18,6 +31,126 @@
 	const height = archive?.cover
 		? Math.round((640 / archive.cover.width) * archive.cover.height)
 		: undefined;
+
+	$: wideImages =
+		archive.images.reduce((acc, image) => acc + image.width / image.height, 0) /
+			archive.images.length >=
+		1;
+
+	let maxCount = 12;
+
+	$: filteredImages = archive.images.slice(0, maxCount);
+
+	const startDownload = async () => {
+		const task = writable<Task>({
+			archive,
+			progress: 0,
+			total: archive.images.length,
+			complete: false,
+		});
+		const { createWriteStream } = await import('streamsaver');
+
+		const chunks: any[] = [];
+
+		const promise = new Promise<void>(async (resolve, reject) => {
+			const fileStream = createWriteStream(`${generateFilename(archive)}.cbz`);
+			const writer = fileStream.getWriter();
+
+			const zip = new Zip();
+
+			zip.ondata = async (err, chunk, final) => {
+				if (!err) {
+					chunks.push(chunk);
+					writer.write(chunk);
+
+					if (final) {
+						writer.close();
+					}
+				} else {
+					writer.abort();
+					reject(err);
+				}
+			};
+
+			const beforeUnloadHandler = () => writer.abort();
+			window.addEventListener('beforeunload', beforeUnloadHandler);
+			writer.closed
+				.then(() => window.removeEventListener('beforeunload', beforeUnloadHandler))
+				.catch(() => {});
+
+			try {
+				const metadataFile = new AsyncZipDeflate('info.json');
+
+				zip.add(metadataFile);
+
+				metadataFile.push(strToU8(JSON.stringify(getMetadata(archive), null, 2)), true);
+
+				await pMap(
+					archive.images,
+					async (image) => {
+						const url = `${env.CDN_URL}/archive/${archive.slug}/${image.page_number}`;
+						const response = await fetch(url);
+
+						if (!response.ok) {
+							throw new Error('Failed to fetch image');
+						}
+
+						const blob = await response.blob();
+						const extension = blob!.type.split('/').at(-1);
+
+						const imageFile = new ZipPassThrough(`${image.page_number}.${extension}`);
+						zip.add(imageFile);
+
+						await blob!
+							.arrayBuffer()
+							.then((buffer) => imageFile.push(new Uint8Array(buffer), true));
+
+						task.update((task) => ({ ...task, progress: task.progress + 1 }));
+					},
+					{ concurrency: 2 }
+				);
+
+				zip.end();
+
+				task.update((task) => ({ ...task, complete: true }));
+
+				resolve();
+			} catch (e) {
+				console.error(e);
+				await writer.abort();
+
+				reject(e);
+			}
+		});
+
+		const id = randomString();
+
+		toast.promise(promise, {
+			id,
+			componentProps: {
+				task,
+				save: async () => {
+					const fileStream = createWriteStream(`${generateFilename(archive)}.cbz`);
+					const writer = fileStream.getWriter();
+
+					for (const chunk of chunks) {
+						await writer.write(chunk);
+					}
+
+					writer.close();
+				},
+			},
+			loading: DownloadProgress,
+			success: () => DownloadProgress,
+			error: () => {
+				setTimeout(() => toast.dismiss(id), 5000);
+
+				return 'Download failed';
+			},
+			position: 'bottom-center',
+			duration: 10000,
+		});
+	};
 </script>
 
 <svelte:head>
@@ -25,11 +158,11 @@
 </svelte:head>
 
 <main class="container flex flex-col gap-2 md:flex-row">
-	<div class="@container w-full space-y-2 md:w-80">
+	<div class="w-full space-y-2 @container md:w-80">
 		<div class="w-full">
 			<a href={`./${archive.slug}/read/1/${$page.url.search}`} data-sveltekit-preload-data="off">
 				<img
-					class="shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600"
+					class="h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
 					{width}
 					{height}
 					loading="eager"
@@ -39,10 +172,10 @@
 			</a>
 		</div>
 
-		<div class="@xs:grid-cols-2 grid gap-2">
+		<div class="grid gap-2 @xs:grid-cols-2">
 			<Button
 				href={`./${archive.slug}/read/1${$page.url.search}`}
-				class="shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80"
+				class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
 				variant="secondary"
 				data-sveltekit-preload-data="off"
 			>
@@ -52,20 +185,18 @@
 
 			<Button
 				variant="secondary"
-				class="shadow-shadow flex w-full bg-green-700 text-center font-semibold text-white shadow hover:bg-green-700/80"
-				on:click={() => {
-					toast.warning('Not implemented yet');
-				}}
+				class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
+				on:click={() => startDownload()}
 			>
 				<BiSolidDownload class="size-5 shrink-0" />
 				<span class="flex-auto"> Download </span>
 			</Button>
 		</div>
 
-		<div class="shadow-shadow overflow-clip rounded shadow-md">
+		<div class="overflow-clip rounded shadow-md shadow-shadow">
 			<InfoSection class="space-y-1">
 				<p class="text-lg font-semibold leading-6">{archive.title}</p>
-				<p class="text-muted-foreground-light text-sm">
+				<p class="text-sm text-muted-foreground-light">
 					{generateFilename(archive)}
 				</p>
 			</InfoSection>
@@ -89,6 +220,16 @@
 					<div class="flex flex-wrap gap-2">
 						{#each archive.magazines as magazine}
 							<Chip item={magazine} type={TagType.MAGAZINE} />
+						{/each}
+					</div>
+				</InfoSection>
+			{/if}
+
+			{#if archive.publishers.length}
+				<InfoSection name="Publishers">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.publishers as publisher}
+							<Chip item={publisher} type={TagType.PUBLISHER} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -122,44 +263,58 @@
 				<p class="text-sm">{humanFileSize(archive.size)}</p>
 			</InfoSection>
 
+			<InfoSection name="Released">
+				<p class="text-sm">
+					{dateTimeFormat(new Date(archive.released_at))}
+				</p>
+			</InfoSection>
+
 			<InfoSection name="Added">
 				<p class="text-sm">
-					{dateFormat(new Date(archive.created_at))}
+					{dateTimeFormat(new Date(archive.created_at))}
 				</p>
 			</InfoSection>
 		</div>
 	</div>
 
-	<div class="flex-grow">
-		{#if archive.images.length}
-			<div class="@container">
-				<div class="@2xl:grid-cols-3 3xl:grid-cols-5 grid grid-cols-2 gap-2 xl:grid-cols-4">
-					{#each archive.images as image (image.page_number)}
-						<a
-							class="relative"
-							href={`./${archive.slug}/read/${image.page_number}${$page.url.search}`}
-							data-sveltekit-preload-data="off"
-						>
-							<img
-								class={cn(
-									'shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600',
-									isSpread(image) && 'object-contain'
-								)}
-								width={320}
-								height={Math.round((320 / image.width) * image.height)}
-								loading="eager"
-								alt={`Page ${image.page_number}`}
-								src={`${env.CDN_URL}/archive/${archive.slug}/${image.page_number}/thumb`}
-							/>
-							{#if isSpread(image)}
-								<span
-									class="bg-muted absolute bottom-2 right-2 rounded-md px-1 py-0.5 text-xs font-medium uppercase tracking-wide opacity-90"
-									>Spread</span
-								>
-							{/if}
-						</a>
-					{/each}
-				</div>
+	<div class="flex-grow space-y-2">
+		<div class="@container">
+			<div class="grid grid-cols-2 gap-2 @2xl:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6">
+				{#each filteredImages as image (image.page_number)}
+					<a
+						class="relative"
+						href={`./${archive.slug}/read/${image.page_number}${$page.url.search}`}
+						data-sveltekit-preload-data="off"
+					>
+						<img
+							class={cn(
+								'h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600',
+								isSpread(image) && 'object-contain'
+							)}
+							width={320}
+							height={Math.round((320 / image.width) * image.height)}
+							loading="eager"
+							alt={`Page ${image.page_number}`}
+							src={`${env.CDN_URL}/archive/${archive.slug}/${image.page_number}/thumb`}
+						/>
+						{#if !wideImages && isSpread(image)}
+							<span
+								class="absolute bottom-2 right-2 rounded-md bg-muted px-1 py-0.5 text-xs font-medium uppercase tracking-wide opacity-90"
+							>
+								Spread
+							</span>
+						{/if}
+					</a>
+				{/each}
+			</div>
+		</div>
+
+		{#if filteredImages.length < archive.images.length}
+			<div class="grid grid-cols-2 gap-2">
+				<Button variant="indigo-outline" on:click={() => (maxCount += 12)}>Show more</Button>
+				<Button variant="blue-outline" on:click={() => (maxCount = archive.images.length)}>
+					Show all
+				</Button>
 			</div>
 		{/if}
 	</div>

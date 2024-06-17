@@ -1,6 +1,5 @@
 use clap::Parser;
 use cmd::{Cli, Commands};
-use std::panic;
 use tracing::error;
 
 mod api;
@@ -8,6 +7,7 @@ mod archive;
 mod cmd;
 mod config;
 mod db;
+mod image;
 mod log;
 mod metadata;
 mod utils;
@@ -32,8 +32,6 @@ async fn run() -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() {
-  panic::set_hook(Box::new(|panic| error!(%panic, "process panicked")));
-
   if let Err(ref error) = run().await {
     error!(
         error = format!("{error:#}"),

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, path, pages, thumbnail FROM archives",
+  "query": "SELECT id, path, thumbnail FROM archives ORDER BY id ASC",
   "describe": {
     "columns": [
       {
@@ -15,11 +15,6 @@
       },
       {
         "ordinal": 2,
-        "name": "pages",
-        "type_info": "Int2"
-      },
-      {
-        "ordinal": 3,
         "name": "thumbnail",
         "type_info": "Int2"
       }
@@ -30,9 +25,8 @@
     "nullable": [
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "36f44564bc8746a57dd290ece2c09e1573ac509929f7b1b3144082aa53e1c542"
+  "hash": "4aab702e2c6e93731ada4c964e3e628a2c9d3403208a7cb73521b59a179c5607"
 }

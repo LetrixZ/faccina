@@ -7,8 +7,19 @@ const buttonVariants = tv({
 	variants: {
 		variant: {
 			default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+			'primary-outline':
+				'border border-primary/50 bg-transparent text-foreground hover:bg-primary/20',
 			destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-			outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+			indigo: 'bg-indigo-700 text-foreground hover:bg-indigo-700/90',
+			'indigo-outline':
+				'border border-indigo-700/50 bg-transparent text-foreground hover:bg-indigo-700/20',
+			sky: 'bg-sky-700 text-foreground hover:bg-sky-700/90',
+			'sky-outline': 'border border-sky-700/50 bg-transparent text-foreground hover:bg-sky-700/20',
+			'blue-outline':
+				'border border-blue-700/50 bg-transparent text-foreground hover:bg-blue-700/20',
+			'green-outline':
+				'border border-green-700/50 bg-transparent text-foreground hover:bg-green-700/20',
+			outline: 'border border-input bg-transparent hover:bg-accent hover:text-accent-foreground',
 			secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
 			ghost: 'hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent',
 			link: 'text-foreground underline-offset-4 hover:underline',

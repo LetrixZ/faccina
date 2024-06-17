@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import { cn } from '$lib/utils';
@@ -60,30 +61,30 @@
 		switch (event.key) {
 			case 'ArrowLeft':
 				if (prevPageUrl) {
-					location.href = prevPageUrl;
+					goto(prevPageUrl);
 				}
 				break;
 			case 'ArrowRight':
 				if (nextPageUrl) {
-					location.href = nextPageUrl;
+					goto(nextPageUrl);
 				}
 				break;
 			case 'ArrowUp':
-				location.href = `/g/${archive.id}/${archive.slug}${$page.url.search}`;
+				goto(`/g/${archive.id}/${archive.slug}${$page.url.search}`);
 		}
 	}}
 />
 
 <div class="flex h-dvh w-full flex-col">
 	<div
-		class="bg-background mx-auto flex min-h-10 max-w-full"
+		class="mx-auto flex min-h-10 max-w-full bg-background"
 		style={`width: calc((100dvh - 2.5rem) * ${image.width / image.height});`}
 	>
 		<a
 			href={prevPageUrl}
 			draggable="false"
 			class={cn(
-				'text-muted-foreground-light inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline',
+				'inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline',
 				!prevPage && 'pointer-events-none opacity-40'
 			)}
 		>
@@ -94,7 +95,7 @@
 		<a
 			href={`/g/${archive.id}/${archive.slug}${$page.url.search}`}
 			draggable="false"
-			class="text-muted-foreground-light inline-flex h-full flex-grow items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+			class="inline-flex h-full flex-grow items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline"
 		>
 			<span>Go back</span>
 		</a>
@@ -103,7 +104,7 @@
 			href={nextPageUrl}
 			draggable="false"
 			class={cn(
-				'text-muted-foreground-light inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline ',
+				'inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline ',
 				!nextPage && 'pointer-events-none opacity-40'
 			)}
 		>

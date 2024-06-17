@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
-	import { TagType, type ArchiveListItem, type Tag } from '$lib/models';
+	import { TagType, type ArchiveListItem, type Taxonomy } from '$lib/models';
 	import { tagWeights, tagsExcludeCount, tagsExcludeDisplay } from '$lib/utils';
 	import pixelWidth from 'string-pixel-width';
 	import ChipList from './chip-list.svelte';
@@ -18,6 +18,9 @@
 		const tags = [
 			...archive.artists.map((tag) => ({ ...tag, type: TagType.ARTIST })),
 			...archive.circles.map((tag) => ({ ...tag, type: TagType.CIRCLE })),
+			...archive.parodies
+				.map((tag) => ({ ...tag, type: TagType.PARODY }))
+				.filter((tag) => !['original-work', 'original'].includes(tag.slug)),
 			...archive.tags
 				.map((tag) => ({ ...tag, type: TagType.TAG }))
 				.filter((tag) => !tagsExcludeCount.includes(tag.name.toLowerCase()))
@@ -36,7 +39,7 @@
 		let tagCount = tags.length;
 		let width = 0;
 
-		const reduced: (Tag & { type: TagType })[] = [];
+		const reduced: (Taxonomy & { type: TagType })[] = [];
 
 		for (const tag of tags) {
 			if (width < minContainerWidth) {
@@ -57,6 +60,7 @@
 
 	$: artists = reducedTags.filter((tag) => tag.type === TagType.ARTIST);
 	$: circles = reducedTags.filter((tag) => tag.type === TagType.CIRCLE);
+	$: parodies = reducedTags.filter((tag) => tag.type === TagType.PARODY);
 	$: tags = reducedTags.filter((tag) => tag.type === TagType.TAG);
 </script>
 
@@ -90,6 +94,10 @@
 
 			{#each circles as circle}
 				<ChipList item={circle} type={TagType.CIRCLE} />
+			{/each}
+
+			{#each parodies as parody}
+				<ChipList item={parody} type={TagType.PARODY} />
 			{/each}
 
 			{#each tags as tag}
