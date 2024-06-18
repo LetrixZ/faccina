@@ -113,12 +113,12 @@
 		</a>
 	</div>
 
-	<div class="relative mx-auto h-full w-full overflow-hidden">
-		<div
-			class="absolute inset-0 m-auto flex"
-			style={`width: calc((100dvh - 2.5rem) * ${image ? image?.width / image?.height : 1}); height: calc((100dvw) * ${image ? image?.height / image?.width : 1});`}
-		>
-			<a class="h-full w-[33.3dvw]" href={prevPageUrl} draggable="false">
+	<div
+		class="relative m-auto h-fit w-full max-w-full overflow-hidden"
+		style={`width: calc((100dvh - 2.5rem) * ${image ? image?.width / image?.height : 1}); height: calc((100dvw) * ${image ? image?.height / image?.width : 1});`}
+	>
+		<div class="absolute inset-0 flex">
+			<a class="h-full basis-1/3" href={prevPageUrl} draggable="false">
 				<span class="sr-only">Previous page</span>
 			</a>
 			<a class="h-full flex-grow" href={nextPageUrl} draggable="false">
@@ -132,15 +132,13 @@
 		/>
 
 		<img
-			class="mx-auto h-full w-fit object-contain"
+			class="mx-auto h-fit max-h-full w-fit object-contain"
 			height={image?.height}
 			width={image?.width}
 			alt={`Page ${currentPage}`}
 			src={`${env.CDN_URL}/image/${archive.hash}/${currentPage}`}
 			loading="eager"
-			on:error={() => {
-				toast.error('Failed to load the page');
-			}}
+			on:error={() => toast.error('Failed to load the page')}
 		/>
 	</div>
 </div>
