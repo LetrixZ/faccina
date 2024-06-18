@@ -1,12 +1,17 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO tags (name, slug) SELECT * FROM UNNEST($1::text[], $2::text[]) RETURNING id",
+  "query": "INSERT INTO tags (name, slug) SELECT * FROM UNNEST($1::text[], $2::text[]) RETURNING id, slug",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "id",
         "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -16,8 +21,9 @@
       ]
     },
     "nullable": [
+      false,
       false
     ]
   },
-  "hash": "252077e7f8bd4782081a5bddab3deb09c979566e9297954082f6f4943f729402"
+  "hash": "d2dcb23be2747763c6aa991cfb0e27f4ef92993fdd9757f52e26868c6c6134d6"
 }
