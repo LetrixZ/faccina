@@ -1,3 +1,4 @@
+use async_zip::ZipString;
 use chrono::{DateTime, NaiveDateTime};
 use funty::Numeric;
 use itertools::Itertools;
@@ -172,6 +173,12 @@ impl ToStringExt for PathBuf {
 impl ToStringExt for OsStr {
   fn to_string(&self) -> String {
     self.to_str().unwrap().to_string()
+  }
+}
+
+impl ToStringExt for ZipString {
+  fn to_string(&self) -> String {
+    self.as_str().unwrap().to_string()
   }
 }
 

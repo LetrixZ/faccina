@@ -22,6 +22,7 @@ async fn run() -> anyhow::Result<()> {
       match command {
         Commands::Index(args) => cmd::index(args.clone()).await?,
         Commands::GenerateThumbnails(args) => cmd::generate_thumbnails(args.clone()).await?,
+        Commands::CalculateDimensions(args) => cmd::calculate_dimensions(args.clone()).await?,
       }
     }
     None => api::start_server().await?,

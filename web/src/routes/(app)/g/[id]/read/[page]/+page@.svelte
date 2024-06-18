@@ -12,7 +12,7 @@
 
 	$: archive = data.archive;
 	$: currentPage = parseInt($page.params.page!);
-	$: image = archive.images.find((image) => image.page_number === currentPage)!;
+	$: image = archive.images.find((image) => image?.page_number === currentPage);
 
 	$: prevPage = currentPage > 1 ? currentPage - 1 : undefined;
 	$: nextPage = currentPage < archive.pages ? currentPage + 1 : undefined;
@@ -27,13 +27,13 @@
 			if (nextPage) {
 				{
 					const image = new Image();
-					image.src = `${env.CDN_URL}/archive/${archive.id}/${nextPage}`;
+					image.src = `${env.CDN_URL}/image/${archive.hash}/${nextPage}`;
 				}
 
 				if (nextPage < archive.pages) {
 					{
 						const image = new Image();
-						image.src = `${env.CDN_URL}/archive/${archive.id}/${nextPage + 1}`;
+						image.src = `${env.CDN_URL}/image/${archive.hash}/${nextPage + 1}`;
 					}
 				}
 			}
@@ -41,7 +41,7 @@
 			if (prevPage) {
 				{
 					const image = new Image();
-					image.src = `${env.CDN_URL}/archive/${archive.id}/${prevPage}`;
+					image.src = `${env.CDN_URL}/image/${archive.hash}/${prevPage}`;
 				}
 			}
 		}
@@ -78,7 +78,7 @@
 <div class="flex h-dvh w-full flex-col">
 	<div
 		class="bg-background mx-auto flex min-h-10 max-w-full"
-		style={`width: calc((100dvh - 2.5rem) * ${image.width / image.height});`}
+		style={`width: calc((100dvh - 2.5rem) * ${image ? image.width / image.height : 1});`}
 	>
 		<a
 			href={prevPageUrl}
@@ -116,7 +116,7 @@
 	<div class="relative mx-auto h-full w-full overflow-hidden">
 		<div
 			class="absolute inset-0 m-auto flex"
-			style={`width: calc((100dvh - 2.5rem) * ${image.width / image.height}); height: calc((100dvw) * ${image.height / image.width});`}
+			style={`width: calc((100dvh - 2.5rem) * ${image ? image?.width / image?.height : 1}); height: calc((100dvw) * ${image ? image?.height / image?.width : 1});`}
 		>
 			<a class="h-full w-[33.3dvw]" href={prevPageUrl} draggable="false">
 				<span class="sr-only">Previous page</span>
@@ -128,15 +128,15 @@
 
 		<div
 			class="absolute inset-0 -z-10 m-auto flex bg-neutral-300 dark:bg-neutral-600"
-			style={`width: calc((100dvh - 2.5rem) * ${image.width / image.height}); height: calc((100dvw) * ${image.height / image.width});`}
+			style={`width: calc((100dvh - 2.5rem) * ${image ? image?.width / image?.height : 1}); height: calc((100dvw) * ${image ? image?.height / image?.width : 1});`}
 		/>
 
 		<img
 			class="mx-auto h-full w-fit object-contain"
-			height={image.height}
-			width={image.width}
+			height={image?.height}
+			width={image?.width}
 			alt={`Page ${currentPage}`}
-			src={`${env.CDN_URL}/archive/${archive.id}/${currentPage}`}
+			src={`${env.CDN_URL}/image/${archive.hash}/${currentPage}`}
 			loading="eager"
 			on:error={() => {
 				toast.error('Failed to load the page');

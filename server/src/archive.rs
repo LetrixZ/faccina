@@ -14,7 +14,6 @@ use itertools::Itertools;
 use rayon::prelude::*;
 use slug::slugify;
 use sqlx::{PgConnection, PgPool, Postgres, QueryBuilder, Transaction};
-use std::collections::HashMap;
 use std::fs::{self, create_dir_all};
 use std::io::{Cursor, Read};
 use std::os;
@@ -141,11 +140,10 @@ struct Taxonomy {
   slug: String,
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Debug)]
 struct Tag {
   id: i64,
   slug: String,
-  namespace: Option<String>,
 }
 
 pub struct ZipArchiveData {
@@ -161,7 +159,7 @@ pub fn read_zip(path: &impl AsRef<Path>) -> anyhow::Result<ZipArchiveData> {
   let mut cursor = Cursor::new(file_contents);
 
   let digest = utils::sha256_digest(&mut cursor)?;
-  let hash = HEXUPPER.encode(digest.as_ref());
+  let hash = HEXUPPER.encode(digest.as_ref()).to_lowercase();
 
   cursor.set_position(0);
 
@@ -178,7 +176,9 @@ async fn insert_taxonomy(
 ) -> Result<(), sqlx::Error> {
   let mut archive_tags = tags
     .iter()
-    .map(|tag| (tag.clone(), slugify(tag)))
+    .map(|s| s.trim())
+    .filter(|s| !s.is_empty())
+    .map(|tag| (tag, slugify(tag)))
     .collect_vec();
 
   let rows = QueryBuilder::new("SELECT id, slug FROM ")
@@ -190,7 +190,7 @@ async fn insert_taxonomy(
     .fetch_all(&mut **transaction)
     .await?;
 
-  let mut tag_ids: Vec<i64> = Vec::new();
+  let mut tag_ids: Vec<i64> = vec![];
   tag_ids.append(&mut rows.iter().map(|tag| tag.id).collect_vec());
   archive_tags.retain(|tag| !rows.iter().any(|it| it.slug.eq(&tag.1)));
 
@@ -198,7 +198,7 @@ async fn insert_taxonomy(
     let ids = QueryBuilder::new("INSERT INTO ")
       .push(tag_type.table())
       .push(" (name, slug) SELECT * FROM UNNEST(")
-      .push_bind(archive_tags.iter().map(|tag| tag.0.clone()).collect_vec())
+      .push_bind(archive_tags.iter().map(|tag| tag.0).collect_vec())
       .push("::text[], ")
       .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
       .push("::text[]) RETURNING id")
@@ -230,61 +230,86 @@ async fn insert_tags(
   tags: &[(String, Option<String>)],
   archive_id: i64,
 ) -> anyhow::Result<()> {
-  let mut archive_tags = tags
+  #[derive(Debug)]
+  struct ArchiveTag {
+    name: String,
+    slug: String,
+    namespace: Option<String>,
+  }
+
+  let archive_tags = tags
     .iter()
-    .map(|tag| (tag.0.clone(), slugify(tag.0.clone()), tag.1.clone()))
+    .map(|s| (s.0.trim(), s.1.clone().map(|n| n.trim().to_string())))
+    .filter(|s| !s.0.is_empty())
+    .map(|tag| ArchiveTag {
+      name: tag.0.to_string(),
+      slug: slugify(tag.0),
+      namespace: tag.1,
+    })
     .collect_vec();
 
-  let db_tags = QueryBuilder::new("SELECT id, slug, namespace FROM tags WHERE slug = ANY(")
-    .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
+  let mut existing_tags = QueryBuilder::new(r#"SELECT id, slug FROM tags WHERE slug = ANY("#)
+    .push_bind(
+      archive_tags
+        .iter()
+        .map(|tag| tag.slug.clone())
+        .collect_vec(),
+    )
     .push(")")
     .build_query_as::<Tag>()
     .fetch_all(&mut **transaction)
     .await?;
 
-  for tag in &db_tags {
-    if let Some(archive_tag) = archive_tags.iter().find(|t| t.1.eq(&tag.slug)) {
-      if archive_tag.2.is_some() && !tag.namespace.eq(&archive_tag.2) {
-        sqlx::query!(
-          "UPDATE tags SET namespace = $2 WHERE id = $1",
-          tag.id,
-          archive_tag.2
-        )
-        .execute(&mut **transaction)
-        .await?;
-      }
-    }
+  let to_insert = archive_tags
+    .iter()
+    .filter(|tag| {
+      existing_tags
+        .iter()
+        .all(|db_tag| !db_tag.slug.eq(&tag.slug))
+    })
+    .unique_by(|tag| tag.slug.clone())
+    .collect_vec();
+
+  let mut db_tags = vec![];
+  db_tags.append(&mut existing_tags);
+
+  if !to_insert.is_empty() {
+    let new_tags = sqlx::query!(
+      r#"INSERT INTO tags (name, slug) SELECT * FROM UNNEST($1::text[], $2::text[]) RETURNING id, slug"#,
+      &to_insert.iter().map(|tag| tag.name.clone()).collect_vec(),
+      &to_insert.iter().map(|tag| tag.slug.clone()).collect_vec()
+    )
+    .fetch_all(&mut **transaction)
+    .await?;
+
+    db_tags.append(
+      &mut new_tags
+        .iter()
+        .map(|t| Tag {
+          id: t.id,
+          slug: t.slug.clone(),
+        })
+        .collect_vec(),
+    );
   }
 
-  let mut tag_ids: Vec<i64> = Vec::new();
-  tag_ids.append(&mut db_tags.iter().map(|tag| tag.id).collect_vec());
-  archive_tags.retain(|tag| !db_tags.iter().any(|it| it.slug.eq(&tag.1)));
+  let tag_ids = archive_tags
+    .iter()
+    .map(|tag| db_tags.iter().find(|t| t.slug.eq(&tag.slug)).unwrap().id)
+    .collect_vec();
 
-  if !archive_tags.is_empty() {
-    let ids = QueryBuilder::new("INSERT INTO tags (name, slug, namespace) SELECT * FROM UNNEST(")
-      .push_bind(archive_tags.iter().map(|tag| tag.0.clone()).collect_vec())
-      .push("::text[], ")
-      .push_bind(archive_tags.iter().map(|tag| tag.1.clone()).collect_vec())
-      .push("::text[], ")
-      .push_bind(archive_tags.iter().map(|tag| tag.2.clone()).collect_vec())
-      .push("::text[]) RETURNING id")
-      .build_query_scalar::<i64>()
-      .fetch_all(&mut **transaction)
-      .await
-      .map_err(|err| anyhow!("Failed to insert tags: {err}"))?;
-
-    tag_ids.append(&mut ids.iter().copied().collect_vec());
-  }
-
-  QueryBuilder::new("INSERT INTO archive_tags (archive_id, tag_id) SELECT * FROM UNNEST(")
-    .push_bind(vec![archive_id; tag_ids.len()])
-    .push("::bigint[], ")
-    .push_bind(tag_ids)
-    .push("::bigint[])")
-    .build()
-    .execute(&mut **transaction)
-    .await
-    .map_err(|err| anyhow!("Failed to insert archive_tags: {err}"))?;
+  sqlx::query!(
+    r#"INSERT INTO archive_tags (archive_id, tag_id, namespace) 
+    SELECT * FROM UNNEST($1::bigint[], $2::bigint[], $3::text[])"#,
+    &vec![archive_id; tag_ids.len()],
+    &tag_ids,
+    &archive_tags
+      .iter()
+      .map(|tag| tag.namespace.clone().unwrap_or_default())
+      .collect_vec()
+  )
+  .execute(&mut **transaction)
+  .await?;
 
   Ok(())
 }
@@ -690,26 +715,12 @@ pub fn get_image_files(zip: &mut ZipArchive<Cursor<Vec<u8>>>) -> anyhow::Result<
     });
   }
 
-  let mut filenames: Vec<&str> = files.iter().map(|s| s.filename.as_str()).collect_vec();
-  let filenames = filenames.as_mut_slice();
-  human_sort::sort(filenames);
-
-  let files_lookup: HashMap<_, _> = filenames
-    .iter_mut()
-    .enumerate()
-    .map(|(index, filename)| (filename.to_string(), index))
-    .collect();
-
-  files.sort_by(|a, b| {
-    let a_order = files_lookup.get(&a.filename).unwrap();
-    let b_order = files_lookup.get(&b.filename).unwrap();
-    a_order.cmp(b_order)
-  });
+  files.sort_by(|a, b| natord::compare(&a.filename, &b.filename));
 
   Ok(files)
 }
 
-async fn calculate_dimensions(
+pub async fn calculate_dimensions(
   conn: &mut PgConnection,
   multi: &MultiProgress,
   recalcualte: bool,

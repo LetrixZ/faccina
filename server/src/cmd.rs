@@ -1,4 +1,5 @@
 use crate::archive::get_image_files;
+use crate::db::ArchiveFile;
 use crate::image::ImageCodec;
 use crate::{archive, config::CONFIG, db};
 use anyhow::anyhow;
@@ -24,6 +25,8 @@ pub enum Commands {
   Index(IndexArgs),
   #[command(about="Generate thumbnails for indexed archives", long_about = None)]
   GenerateThumbnails(GenerateThumbnailArgs),
+  #[command(about="Calculate image dimensions. Useful to fix image ordering.", long_about = None)]
+  CalculateDimensions(CalculateDimensionsArgs),
 }
 
 #[derive(Args, Clone)]
@@ -77,6 +80,12 @@ pub struct GenerateThumbnailArgs {
   pub cover_speed: Option<u8>,
   #[arg(long, help = "Image format")]
   pub format: Option<ImageCodec>,
+}
+
+#[derive(Args, Clone)]
+pub struct CalculateDimensionsArgs {
+  #[arg(long, help = "List of archive IDs or range (ex: 1-10,14,230-400)")]
+  pub id: Option<String>,
 }
 
 async fn fetch_archives(
@@ -252,6 +261,40 @@ pub async fn generate_thumbnails(args: GenerateThumbnailArgs) -> anyhow::Result<
 
       Ok(())
     }() {
+      error!(
+        "Failed to generate thumbnails for archive ID {}: {}",
+        archive.id, err
+      )
+    }
+  }
+
+  Ok(())
+}
+
+async fn calculate_archive_dimensions(
+  pool: &PgPool,
+  multi: &MultiProgress,
+  archive: &ArchiveFile,
+) -> anyhow::Result<()> {
+  let mut conn = pool.acquire().await?;
+  let path = CONFIG.directories.links.join(&archive.path);
+  let mut zip =
+    archive::read_zip(&path).map_err(|err| anyhow!("Failed to read zip archive: {err}"))?;
+  let mut image_files = get_image_files(&mut zip.file)?;
+
+  archive::calculate_dimensions(&mut conn, multi, true, &mut image_files, archive.id).await?;
+
+  Ok(())
+}
+
+pub async fn calculate_dimensions(args: CalculateDimensionsArgs) -> anyhow::Result<()> {
+  let pool = db::get_pool().await?;
+  let archives = fetch_archives(&pool, &args.id).await?;
+
+  let multi = MultiProgress::new();
+
+  for archive in archives {
+    if let Err(err) = calculate_archive_dimensions(&pool, &multi, &archive).await {
       error!(
         "Failed to generate thumbnails for archive ID {}: {}",
         archive.id, err

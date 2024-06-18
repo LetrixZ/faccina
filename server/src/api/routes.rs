@@ -2,25 +2,11 @@ use super::{
   models::{ArchiveData, LibraryPage},
   ApiError, ApiJson, AppState,
 };
-use crate::{
-  config::CONFIG,
-  db,
-  utils::{self, ToStringExt},
-};
+use crate::db;
 use anyhow::anyhow;
-use async_zip::tokio::read::seek::ZipFileReader;
-use axum::{
-  body::Body,
-  extract::{Path, Query, State},
-  http::header,
-  response::{IntoResponse, Response},
-};
+use axum::extract::{Path, Query, State};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
-use tokio::{
-  fs::File,
-  io::{AsyncReadExt, BufReader},
-};
 
 pub struct SearchQuery {
   pub value: String,
@@ -187,136 +173,6 @@ pub async fn archive_data(
 
   if let Some(archive) = archive {
     Ok(ApiJson(archive.into()))
-  } else {
-    Err(ApiError::NotFound)
-  }
-}
-
-pub async fn page(
-  Path((id, page)): Path<(i64, i16)>,
-  State(state): State<AppState>,
-) -> Result<Response, ApiError> {
-  if let Some(archive) = db::get_archive_page(&state.pool, id, page).await? {
-    let file = File::open(CONFIG.directories.links.join(archive.id.to_string())).await?;
-    let reader = BufReader::new(file);
-    let mut zip = ZipFileReader::with_tokio(reader).await?;
-
-    let filenme = archive.filename.unwrap();
-
-    let file = zip
-      .file()
-      .entries()
-      .iter()
-      .enumerate()
-      .find(|(_, entry)| entry.filename().as_str().unwrap().eq(&filenme))
-      .map(|(i, _)| i);
-
-    let index = file.ok_or(ApiError::ImageNotFound)?;
-
-    let mut reader = zip.reader_with_entry(index).await?;
-    let mut buf = vec![];
-    reader.read_to_end_checked(&mut buf).await?;
-
-    let format = file_format::FileFormat::from_bytes(&buf);
-    let body = Body::from(buf);
-    let headers = [
-      (header::CONTENT_TYPE, format.media_type()),
-      (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
-    ];
-
-    Ok((headers, body).into_response())
-  } else {
-    Err(ApiError::NotFound)
-  }
-}
-
-pub async fn page_thumbnail(
-  Path((id, page)): Path<(i64, i16)>,
-  State(state): State<AppState>,
-) -> Result<Response, ApiError> {
-  if let Some(archive) = db::get_archive_page(&state.pool, id, page).await? {
-    let name = utils::leading_zeros(page, archive.pages);
-
-    let mut walker = globwalk::glob(format!(
-      "{}/{}.t.{{avif,webp,jpeg,png}}",
-      CONFIG
-        .directories
-        .thumbs
-        .join(archive.id.to_string())
-        .to_string(),
-      name
-    ))
-    .unwrap();
-
-    if let Some(entry) = walker.next() {
-      let entry = entry.unwrap();
-      let mut file = File::open(entry.path()).await?;
-
-      let mut buf = vec![];
-      file.read_to_end(&mut buf).await?;
-
-      let format = file_format::FileFormat::from_bytes(&buf);
-
-      let body = Body::from(buf);
-      let headers = [
-        (
-          header::CONTENT_TYPE,
-          format!("image/{}", format.extension()),
-        ),
-        (
-          header::CACHE_CONTROL,
-          "public, max-age=259200, immutable".into(),
-        ),
-      ];
-
-      Ok((headers, body).into_response())
-    } else {
-      Err(ApiError::NotFound)
-    }
-  } else {
-    Err(ApiError::NotFound)
-  }
-}
-
-pub async fn gallery_cover(
-  Path(id): Path<i64>,
-  State(state): State<AppState>,
-) -> Result<Response, ApiError> {
-  if let Some(id) = sqlx::query_scalar!("SELECT id FROM archives WHERE id = $1", id)
-    .fetch_optional(&state.pool)
-    .await?
-  {
-    let mut walker = globwalk::glob(format!(
-      "{}/*.c.{{avif,webp,jpeg,png}}",
-      CONFIG.directories.thumbs.join(id.to_string()).to_string()
-    ))
-    .unwrap();
-
-    if let Some(entry) = walker.next() {
-      let entry = entry.unwrap();
-      let mut file = File::open(entry.path()).await?;
-
-      let mut buf = vec![];
-      file.read_to_end(&mut buf).await?;
-
-      let format = file_format::FileFormat::from_bytes(&buf);
-
-      let body = Body::from(buf);
-      let headers = [
-        (
-          header::CONTENT_TYPE,
-          format!("image/{}", format.extension()),
-        ),
-        (
-          header::CACHE_CONTROL,
-          "public, max-age=259200, immutable".into(),
-        ),
-      ];
-
-      Ok((headers, body).into_response())
-    } else {
-      Err(ApiError::NotFound)
-    }
   } else {
     Err(ApiError::NotFound)
   }

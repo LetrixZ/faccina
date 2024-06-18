@@ -42,13 +42,6 @@ pub struct ArchiveFile {
 }
 
 #[derive(sqlx::FromRow)]
-pub struct ArchivePage {
-  pub id: i64,
-  pub pages: i16,
-  pub filename: Option<String>,
-}
-
-#[derive(sqlx::FromRow)]
 pub struct Taxonomy {
   pub slug: String,
   pub name: String,
@@ -276,8 +269,8 @@ pub async fn fetch_archive_data(
 ) -> Result<Option<ArchiveRelations>, sqlx::Error> {
   let row = sqlx::query!(
     r#"SELECT id, slug, title, description, hash, pages, size, thumbnail,
-    (SELECT json_build_object('width', width, 'height', height) FROM archive_images img WHERE img.archive_id = archives.id AND img.page_number = archives.thumbnail) cover,
-    (SELECT json_agg(json_build_object('page_number', page_number, 'width', width, 'height', height)) FROM archive_images img WHERE img.archive_id = archives.id) images,
+    (SELECT json_build_object('width', width, 'height', height) FROM archive_images WHERE archive_id = id AND page_number = archives.thumbnail) cover,
+    (SELECT json_agg(image) FROM (SELECT json_build_object('page_number', page_number, 'width', width, 'height', height) AS image FROM archive_images WHERE archive_id = id ORDER BY page_number ASC) AS ordered_images) images,
     created_at, released_at FROM archives WHERE id = $1"#,
     id
   ).fetch_optional(pool).await?;
@@ -453,7 +446,8 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &st
 
     let get_sql = |tag_type: &TagType, column: &str| {
       format!(
-        r#"SELECT 1 FROM {relation} LEFT JOIN {table} ON {table}.id = {relation}.{id} WHERE {relation}.archive_id = archives.id AND {table}.{column} ILIKE "#,
+        r#"SELECT 1 FROM {relation} LEFT JOIN {table} ON {table}.id = {relation}.{id}
+        WHERE {relation}.archive_id = archives.id AND {table}.{column} ILIKE "#,
         relation = tag_type.relation(),
         table = tag_type.table(),
         id = tag_type.id(),
@@ -589,7 +583,11 @@ pub async fn search(
   let ids: Vec<i64> = rows.iter().map(|row| row.get(0)).collect();
 
   let mut qb = QueryBuilder::new(
-    r#"SELECT archives.id, archives.slug, archives.title, (SELECT json_build_object('width', width, 'height', height) FROM archive_images img WHERE img.archive_id = archives.id AND img.page_number = archives.thumbnail) cover,"#,
+    r#"SELECT id, slug, hash, title,
+    (
+      SELECT json_build_object('width', width, 'height', height)
+      FROM archive_images WHERE archive_id = id AND page_number = thumbnail
+    ) cover,"#,
   );
 
   for tag_type in [
@@ -629,31 +627,17 @@ pub async fn search(
     .map(|row| ArchiveListItem {
       id: row.get(0),
       slug: row.get(1),
-      title: row.get(2),
-      cover: row.try_get::<Json<_>, _>(3).map(|r| r.0).unwrap_or(None),
-      artists: row.get::<Json<_>, _>(4).0,
-      circles: row.get::<Json<_>, _>(5).0,
-      magazines: row.get::<Json<_>, _>(6).0,
-      publishers: row.get::<Json<_>, _>(7).0,
-      parodies: row.get::<Json<_>, _>(8).0,
-      tags: row.get::<Json<_>, _>(9).0,
+      hash: row.get(2),
+      title: row.get(3),
+      cover: row.try_get::<Json<_>, _>(4).map(|r| r.0).unwrap_or(None),
+      artists: row.get::<Json<_>, _>(5).0,
+      circles: row.get::<Json<_>, _>(6).0,
+      magazines: row.get::<Json<_>, _>(7).0,
+      publishers: row.get::<Json<_>, _>(8).0,
+      parodies: row.get::<Json<_>, _>(9).0,
+      tags: row.get::<Json<_>, _>(10).0,
     })
     .collect();
 
   Ok((archives, count))
-}
-
-pub async fn get_archive_page(
-  pool: &PgPool,
-  id: i64,
-  page: i16,
-) -> Result<Option<ArchivePage>, sqlx::Error> {
-  let archive = sqlx::query_as!(
-    ArchivePage,
-    r#"SELECT id, pages, (SELECT filename FROM archive_images WHERE archive_id = id AND page_number = $1) filename
-    FROM archives WHERE id = $2"#
-    , page,
-    id).fetch_optional(pool).await?;
-
-  Ok(archive)
 }

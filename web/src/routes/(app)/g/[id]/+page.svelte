@@ -87,7 +87,7 @@
 				await pMap(
 					archive.images,
 					async (image) => {
-						const url = `${env.CDN_URL}/archive/${archive.id}/${image.page_number}`;
+						const url = `${env.CDN_URL}/image/${archive.hash}/${image.page_number}`;
 						const response = await fetch(url);
 
 						if (!response.ok) {
@@ -96,7 +96,6 @@
 
 						const blob = await response.blob();
 						const extension = blob!.type.split('/').at(-1);
-
 						const imageFile = new ZipPassThrough(`${image.page_number}.${extension}`);
 						zip.add(imageFile);
 
@@ -166,7 +165,7 @@
 					{height}
 					loading="eager"
 					alt={`'${archive.title}' cover`}
-					src={`${env.CDN_URL}/archive/${archive.id}/cover`}
+					src={`${env.CDN_URL}/image/${archive.hash}/cover`}
 				/>
 			</a>
 		</div>
@@ -294,7 +293,7 @@
 							height={Math.round((320 / image.width) * image.height)}
 							loading="eager"
 							alt={`Page ${image.page_number}`}
-							src={`${env.CDN_URL}/archive/${archive.id}/${image.page_number}/thumb`}
+							src={`${env.CDN_URL}/image/${archive.hash}/${image.page_number}/thumb`}
 						/>
 						{#if !wideImages && isSpread(image)}
 							<span

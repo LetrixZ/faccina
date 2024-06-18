@@ -190,6 +190,7 @@ impl From<db::Source> for Source {
 pub struct ArchiveListItem {
   pub id: i64,
   pub slug: String,
+  pub hash: String,
   pub title: String,
   pub cover: Option<ImageDimensions>,
   pub artists: Vec<Taxonomy>,

@@ -1,3 +1,7 @@
+mod image;
+pub mod models;
+pub mod routes;
+
 use crate::config::CONFIG;
 use crate::db;
 use axum::extract::rejection::QueryRejection;
@@ -14,9 +18,6 @@ use thiserror::Error;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{debug_span, error, info};
-
-pub mod models;
-pub mod routes;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -112,9 +113,7 @@ pub async fn start_server() -> anyhow::Result<()> {
   let app = Router::new()
     .route("/library", get(routes::library))
     .route("/archive/:id", get(routes::archive_data))
-    .route("/archive/:id/cover", get(routes::gallery_cover))
-    .route("/archive/:id/:page", get(routes::page))
-    .route("/archive/:id/:page/thumb", get(routes::page_thumbnail))
+    .merge(image::get_routes())
     .layer(cors)
     .layer(
       TraceLayer::new_for_http()

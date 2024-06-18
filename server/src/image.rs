@@ -1,3 +1,4 @@
+use crate::config;
 use clap::ValueEnum;
 use image::{
   codecs::{
@@ -49,6 +50,26 @@ pub struct ImageEncodeOpts {
   pub codec: ImageCodec,
 }
 
+impl ImageEncodeOpts {
+  pub fn cover_from(value: config::Thumbnails) -> Self {
+    Self {
+      width: value.cover_width,
+      speed: value.cover_speed,
+      quality: value.cover_quality,
+      codec: value.format,
+    }
+  }
+
+  pub fn thumb_from(value: config::Thumbnails) -> Self {
+    Self {
+      width: value.width,
+      speed: value.speed,
+      quality: value.quality,
+      codec: value.format,
+    }
+  }
+}
+
 fn encode(
   img: &DynamicImage,
   ImageEncodeOpts {
@@ -79,7 +100,7 @@ fn encode(
       img.write_with_encoder(encoder)?;
     }
     ImageCodec::Webp => {
-      let encoder = webp::Encoder::from_image(&img).unwrap();
+      let encoder = webp::Encoder::from_image(img).unwrap();
       let encoded = encoder.encode(quality.into());
       return Ok((*encoded).to_vec());
     }
@@ -96,11 +117,11 @@ pub fn encode_image(img: &[u8], opts: ImageEncodeOpts) -> anyhow::Result<Vec<u8>
   let (w, h) = img.dimensions();
 
   if w < 50 || h < 50 {
-    return Ok(encode(&img, opts)?);
+    return encode(&img, opts);
   }
 
   let resized = img.resize(opts.width, opts.width * h / w, FilterType::Lanczos3);
   let img = image::DynamicImage::ImageRgb8(resized.into());
 
-  Ok(encode(&img, opts)?)
+  encode(&img, opts)
 }

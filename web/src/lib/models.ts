@@ -24,6 +24,7 @@ export type ArchiveId = Pick<Archive, 'id' | 'slug'>;
 
 export interface ArchiveListItem {
 	id: number;
+	hash: string;
 	title: string;
 	cover?: ImageDimensions;
 	artists: Taxonomy[];
@@ -75,7 +76,6 @@ export interface LibraryPage {
 	page: number;
 	limit: number;
 	total: number;
-	errors: {} | null;
 }
 
 export interface SearchParams {

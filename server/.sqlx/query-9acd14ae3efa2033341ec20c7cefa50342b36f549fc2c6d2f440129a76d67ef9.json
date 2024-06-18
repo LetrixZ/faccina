@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, pages, (SELECT filename FROM archive_images WHERE archive_id = id AND page_number = $1) filename\n    FROM archives WHERE id = $2",
+  "query": "SELECT id, path, pages, thumbnail FROM archives WHERE hash = $1",
   "describe": {
     "columns": [
       {
@@ -10,26 +10,31 @@
       },
       {
         "ordinal": 1,
+        "name": "path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
         "name": "pages",
         "type_info": "Int2"
       },
       {
-        "ordinal": 2,
-        "name": "filename",
-        "type_info": "Varchar"
+        "ordinal": 3,
+        "name": "thumbnail",
+        "type_info": "Int2"
       }
     ],
     "parameters": {
       "Left": [
-        "Int2",
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
       false,
       false,
-      null
+      false,
+      false
     ]
   },
-  "hash": "b8b466f4a97e5733eb5a833c65f9b45e6ad50e79575c23471e7a07a9d0f7e23f"
+  "hash": "9acd14ae3efa2033341ec20c7cefa50342b36f549fc2c6d2f440129a76d67ef9"
 }

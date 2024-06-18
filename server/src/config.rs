@@ -1,10 +1,9 @@
+use crate::image;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 use std::{env, fmt::Display, fs, path::PathBuf};
-
-use crate::image;
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
   let config_location = env::var("CONFIG_FILE").unwrap_or("config.toml".to_string());
