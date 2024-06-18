@@ -1,6 +1,6 @@
 use super::{ApiError, AppState};
 use crate::image::ImageEncodeOpts;
-use crate::utils::ToStringExt;
+use crate::utils::{leading_zeros, ToStringExt};
 use crate::{config::CONFIG, utils};
 use async_zip::base::read::seek::ZipFileReader;
 use axum::body::Body;
@@ -131,7 +131,10 @@ async fn get_cover(
     while let Ok(Some(entry)) = dir.next_entry().await {
       let filename = entry.file_name();
 
-      if filename.to_string().contains(".c.") {
+      if filename.to_string().contains(&format!(
+        "{}.c.",
+        leading_zeros(archive.thumbnail, archive.pages)
+      )) {
         files.push(entry);
       }
     }
@@ -191,7 +194,10 @@ async fn get_page_thumbnail(
     while let Ok(Some(entry)) = dir.next_entry().await {
       let filename = entry.file_name();
 
-      if filename.to_string().contains(&format!("{}.t.", page)) {
+      if filename
+        .to_string()
+        .contains(&format!("{}.t.", leading_zeros(page, archive.pages)))
+      {
         files.push(entry);
       }
     }
