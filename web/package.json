@@ -54,6 +54,7 @@
 		"string-pixel-width": "^1.11.0",
 		"svelte-sonner": "^0.3.24",
 		"tailwind-merge": "^2.3.0",
-		"tailwind-variants": "^0.2.1"
+		"tailwind-variants": "^0.2.1",
+		"zod": "^3.23.8"
 	}
 }

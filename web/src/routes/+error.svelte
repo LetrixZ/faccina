@@ -5,7 +5,9 @@
 </script>
 
 <div class="absolute inset-x-0 top-52 m-auto flex h-fit w-fit flex-col">
-	<p class="text-5xl font-extralight">{$page.error?.status}</p>
+	{#if $page.error?.status}
+		<p class="text-5xl font-extralight">{$page.error.status}</p>
+	{/if}
 	<p class="text-4xl font-medium">
 		{$page.error?.message}
 	</p>

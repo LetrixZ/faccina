@@ -1,13 +1,18 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import type { Image } from '$lib/models';
-	import { cn } from '$lib/utils';
+	import { Separator } from '$lib/components/ui/separator';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
+	import { ImageFitMode, type Image } from '$lib/models';
+	import { cn, type ReaderPreferences } from '$lib/utils';
+	import dayjs from 'dayjs';
 	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
@@ -17,9 +22,6 @@
 	export let data;
 
 	type ImageState = 'idle' | 'preloading' | 'preloaded';
-	type ImageFitMode = 'default' | 'fit-height';
-
-	let fitMode: ImageFitMode = 'default';
 
 	let imageEl: HTMLImageElement;
 	let pageSelect: HTMLSelectElement;
@@ -33,6 +35,8 @@
 	}));
 
 	$: archive = data.archive;
+	$: prefs = data.prefs;
+
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
 	$: image = archive.images.find((image) => image?.page_number === currentPage);
 
@@ -59,10 +63,10 @@
 		newImage.onerror = () => toast.error('Failed to load the page');
 
 		imageEl.classList.forEach((className) => newImage.classList.add(className));
-
-		replaceState(page.toString(), { page });
 		imageEl.replaceWith(newImage);
 		imageEl = newImage;
+
+		replaceState(page.toString(), { page });
 	};
 
 	const changePageState = (page: number, newState: ImageState) => {
@@ -100,9 +104,59 @@
 		);
 	};
 
+	const getContainerStyle = (prefs: ReaderPreferences, image: Image | undefined) => {
+		if (!image) {
+			return;
+		}
+
+		const base = `aspect-ratio: ${image.width / image.height};`;
+
+		switch (prefs.fitMode) {
+			case ImageFitMode.MaxWidth:
+				if (prefs.maxWidth) {
+					return base + `max-height: ${(prefs.maxWidth * image.height) / image.width}px;`;
+				}
+			case ImageFitMode.ImageWidth:
+				return base + `max-height: ${image.height}px;`;
+			case ImageFitMode.FitHeight:
+				return base + 'max-height: 100%';
+		}
+	};
+
+	const getImageStyle = (prefs: ReaderPreferences) => {
+		switch (prefs.fitMode) {
+			case ImageFitMode.ImageWidth:
+				return ``;
+			case ImageFitMode.MaxWidth:
+				if (prefs.maxWidth) {
+					return `max-width: clamp(0px, ${prefs.maxWidth}px, 100%);`;
+				} else {
+					return `max-width: '100%';`;
+				}
+			case ImageFitMode.FitHeight:
+				return `width: auto; max-height: 100%;`;
+		}
+	};
+
+	const onModeChange = (mode: string | undefined) => {
+		prefs.fitMode = (mode ?? ImageFitMode.FitHeight) as ImageFitMode;
+	};
+
 	$: {
 		if (imageEl && currentPage) {
 			preloadImages();
+		}
+	}
+
+	$: {
+		if (imageEl && prefs) {
+			imageEl.style.cssText = getImageStyle(prefs);
+		}
+	}
+
+	$: {
+		if (browser) {
+			document.cookie = `reader=${JSON.stringify(prefs)}; Max-Age=${dayjs(dayjs().add(1, 'year')).diff(dayjs(), 'seconds')}`;
 		}
 	}
 </script>
@@ -113,6 +167,10 @@
 
 <svelte:window
 	on:keydown={(event) => {
+		if (preferencesOpen) {
+			return;
+		}
+
 		switch (event.key) {
 			case 'ArrowLeft':
 				if (prevPageUrl) {
@@ -205,10 +263,10 @@
 		</Button>
 	</div>
 
-	<div class="relative my-auto overflow-auto">
+	<div class="relative my-auto flex h-full overflow-auto">
 		<div
-			class="absolute inset-0 flex min-w-full max-w-full"
-			style={image && `max-height: ${image.height}px; aspect-ratio: ${image.width / image.height}`}
+			class="absolute inset-0 flex min-h-full min-w-full max-w-full"
+			style={getContainerStyle(prefs, image)}
 		>
 			<a
 				class={cn(
@@ -251,7 +309,8 @@
 			alt={`Page ${currentPage}`}
 			src={`${env.CDN_URL}/image/${archive.hash}/${currentPage}`}
 			loading="eager"
-			class="mx-auto bg-neutral-500"
+			style={getImageStyle(prefs)}
+			class="m-auto bg-neutral-500"
 			on:error={() => toast.error('Failed to load the page')}
 		/>
 	</div>
@@ -266,6 +325,33 @@
 		<div class="flex items-center">
 			<Label for="preview-layout" class="w-full">Preview touch layout</Label>
 			<Checkbox id="preview-layout" bind:checked={previewLayout} />
+		</div>
+
+		<Separator />
+
+		<h3 class="text-lg font-medium">Image scaling</h3>
+
+		<ToggleGroup.Root
+			id="fit-mode"
+			variant="outline"
+			type="single"
+			value={prefs.fitMode}
+			onValueChange={onModeChange}
+		>
+			<ToggleGroup.Item value={ImageFitMode.FitHeight}>Fit Height</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageFitMode.MaxWidth}>Max Width</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageFitMode.ImageWidth}>Image Width</ToggleGroup.Item>
+		</ToggleGroup.Root>
+
+		<div class="flex items-center">
+			<Label for="max-width" class="w-full">Max width</Label>
+			<Input
+				id="max-width"
+				type="number"
+				value={prefs.maxWidth}
+				class="w-24"
+				on:change={(event) => (prefs.maxWidth = parseInt(event.currentTarget.value) || undefined)}
+			/>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>

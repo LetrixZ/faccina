@@ -103,3 +103,9 @@ export interface Task {
 	total: number;
 	complete: boolean;
 }
+
+export enum ImageFitMode {
+	ImageWidth = 'image-width',
+	MaxWidth = 'max-width',
+	FitHeight = 'fit-height',
+}

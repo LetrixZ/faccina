@@ -2,8 +2,9 @@ import { env } from '$env/dynamic/private';
 import type { Archive } from '$lib/models';
 import { error, isHttpError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
+import { getReaderPreferencesFromCookie } from '$lib/utils';
 
-export const load: PageServerLoad = async ({ fetch, params }) => {
+export const load: PageServerLoad = async ({ fetch, params, cookies }) => {
 	try {
 		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}`);
 
@@ -16,7 +17,10 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 
 		const archive: Archive = await res.json();
 
-		return { archive };
+		return {
+			archive,
+			prefs: getReaderPreferencesFromCookie(cookies.get('reader')),
+		};
 	} catch (e) {
 		console.error(e);
 

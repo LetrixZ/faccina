@@ -4,7 +4,8 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
-import type { Archive, Image } from './models';
+import { ImageFitMode, type Archive, type Image } from './models';
+import { z } from 'zod';
 
 dayjs.extend(localizedFormat);
 
@@ -194,4 +195,25 @@ export function getMetadata(archive: Archive) {
 		Released: new Date(archive.released_at).getTime() / 1000,
 		Thumbnail: archive.thumbnail - 1,
 	};
+}
+
+const preferencesSchema = z.object({
+	fitMode: z.nativeEnum(ImageFitMode).catch(ImageFitMode.FitHeight),
+	maxWidth: z.number().optional().catch(1000),
+});
+
+export type ReaderPreferences = z.infer<typeof preferencesSchema>;
+
+export function getReaderPreferencesFromCookie(cookie: string | undefined) {
+	if (cookie) {
+		try {
+			const saved = JSON.parse(cookie);
+			const validated = preferencesSchema.parse(saved);
+			return validated;
+		} catch {
+			return preferencesSchema.parse({});
+		}
+	}
+
+	return preferencesSchema.parse({});
 }
