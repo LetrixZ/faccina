@@ -1,17 +1,39 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
+	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import Label from '$lib/components/ui/label/label.svelte';
+	import type { Image } from '$lib/models';
 	import { cn } from '$lib/utils';
+	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { onMount } from 'svelte';
+	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
 
 	export let data;
 
+	type ImageState = 'idle' | 'preloading' | 'preloaded';
+	type ImageFitMode = 'default' | 'fit-height';
+
+	let fitMode: ImageFitMode = 'default';
+
+	let imageEl: HTMLImageElement;
+	let pageSelect: HTMLSelectElement;
+
+	let preferencesOpen = false;
+	let previewLayout = false;
+
+	let pageState: (Image & { state: ImageState })[] = data.archive.images.map((image) => ({
+		...image,
+		state: 'idle',
+	}));
+
 	$: archive = data.archive;
-	$: currentPage = parseInt($page.params.page!);
+	$: currentPage = $page.state.page || parseInt($page.params.page!);
 	$: image = archive.images.find((image) => image?.page_number === currentPage);
 
 	$: prevPage = currentPage > 1 ? currentPage - 1 : undefined;
@@ -20,36 +42,69 @@
 	$: prevPageUrl = prevPage ? `${prevPage}${$page.url.search}` : undefined;
 	$: nextPageUrl = nextPage ? `${nextPage}${$page.url.search}` : undefined;
 
-	let isMounted = false;
+	const changePage = (page?: number) => {
+		if (!page) {
+			return;
+		}
+
+		const imageInfo = archive.images.find((image) => image.page_number === page);
+
+		if (!imageInfo) {
+			return;
+		}
+
+		const newImage = new Image(imageInfo.width, imageInfo.height);
+		newImage.src = `${env.CDN_URL}/image/${archive.hash}/${page}`;
+		newImage.alt = `Page ${currentPage}`;
+		newImage.onerror = () => toast.error('Failed to load the page');
+
+		imageEl.classList.forEach((className) => newImage.classList.add(className));
+
+		replaceState(page.toString(), { page });
+		imageEl.replaceWith(newImage);
+		imageEl = newImage;
+	};
+
+	const changePageState = (page: number, newState: ImageState) => {
+		pageState = pageState.map((state) => {
+			if (state.page_number === page) {
+				state.state = newState;
+			}
+
+			return state;
+		});
+	};
+
+	const preloadImages = async () => {
+		await pMap(
+			[currentPage + 1, currentPage + 2, currentPage - 1, currentPage + 3, currentPage - 2]
+				.filter((page) => archive.images.some(({ page_number }) => page_number === page))
+				.filter((page) => pageState.find((state) => state.page_number === page)!.state === 'idle')
+				.map((page) => archive.images.find(({ page_number }) => page_number === page)!),
+			async (imageInfo) => {
+				const { page_number } = imageInfo;
+
+				changePageState(page_number, 'preloading');
+
+				const newImage = new Image(imageInfo.width, imageInfo.height);
+				newImage.src = `${env.CDN_URL}/image/${archive.hash}/${page_number}`;
+
+				if (newImage.complete) {
+					newImage.addEventListener('error', () => changePageState(page_number, 'preloaded'));
+				} else {
+					newImage.addEventListener('load', () => changePageState(page_number, 'preloaded'));
+					newImage.addEventListener('error', () => changePageState(page_number, 'idle'));
+				}
+			},
+			{ concurrency: 2 }
+		);
+	};
 
 	$: {
-		if (isMounted) {
-			if (nextPage) {
-				{
-					const image = new Image();
-					image.src = `${env.CDN_URL}/image/${archive.hash}/${nextPage}`;
-				}
-
-				if (nextPage < archive.pages) {
-					{
-						const image = new Image();
-						image.src = `${env.CDN_URL}/image/${archive.hash}/${nextPage + 1}`;
-					}
-				}
-			}
-
-			if (prevPage) {
-				{
-					const image = new Image();
-					image.src = `${env.CDN_URL}/image/${archive.hash}/${prevPage}`;
-				}
-			}
+		if (imageEl && currentPage) {
+			preloadImages();
 		}
 	}
-
-	onMount(() => {
-		isMounted = true;
-	});
 </script>
 
 <svelte:head>
@@ -75,70 +130,142 @@
 	}}
 />
 
-<div class="flex h-dvh w-full flex-col">
+<div class="flex h-dvh w-full flex-col overflow-clip">
 	<div
-		class="bg-background mx-auto flex min-h-10 max-w-full"
-		style={`width: calc((100dvh - 2.5rem) * ${image ? image.width / image.height : 1});`}
+		class="bg-background relative mx-auto flex min-h-10 w-full items-center justify-between px-2"
 	>
-		<a
-			href={prevPageUrl}
-			draggable="false"
-			class={cn(
-				'text-muted-foreground-light inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline',
-				!prevPage && 'pointer-events-none opacity-40'
-			)}
-		>
-			<ChevronLeft class="me-2" />
-			Previous
-		</a>
-
 		<a
 			href={`/g/${archive.id}${$page.url.search}`}
 			draggable="false"
-			class="text-muted-foreground-light inline-flex h-full flex-grow items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+			class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
 		>
-			<span>Go back</span>
+			<ArrowLeft class="size-5" />
+			<span class="sr-only">Go back</span>
 		</a>
 
-		<a
-			href={nextPageUrl}
-			draggable="false"
-			class={cn(
-				'text-muted-foreground-light inline-flex h-full flex-1 items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline ',
-				!nextPage && 'pointer-events-none opacity-40'
-			)}
-		>
-			Next
-			<ChevronRight class="ms-2" />
-		</a>
-	</div>
-
-	<div
-		class="relative m-auto h-fit w-full max-w-full overflow-hidden"
-		style={`width: calc((100dvh - 2.5rem) * ${image ? image?.width / image?.height : 1}); height: calc((100dvw) * ${image ? image?.height / image?.width : 1});`}
-	>
-		<div class="absolute inset-0 flex">
-			<a class="h-full basis-1/3" href={prevPageUrl} draggable="false">
-				<span class="sr-only">Previous page</span>
+		<div class="absolute inset-0 mx-auto flex w-fit items-center">
+			<a
+				href={prevPageUrl}
+				on:click|preventDefault={() => changePage(prevPage)}
+				draggable="false"
+				class={cn(
+					'text-muted-foreground-light inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium underline-offset-4 hover:underline',
+					!prevPage && 'pointer-events-none opacity-40'
+				)}
+			>
+				<ChevronLeft class="me-2" />
+				Previous
 			</a>
-			<a class="h-full flex-grow" href={nextPageUrl} draggable="false">
-				<span class="sr-only">Next page</span>
+
+			<div class="relative w-24 sm:w-36">
+				<select
+					bind:this={pageSelect}
+					class="absolute inset-0 -z-10 mx-auto w-fit opacity-0"
+					on:change={(ev) => changePage(parseInt(ev.currentTarget.value))}
+				>
+					{#each archive.images as image}
+						<option value={image.page_number}>{image.page_number}</option>
+					{/each}
+
+					<span> {currentPage}</span> /
+					<span>{archive.images.length}</span>
+				</select>
+
+				<Button
+					variant="link"
+					class="w-full whitespace-pre font-medium underline-offset-4"
+					on:click={() => pageSelect.showPicker()}
+				>
+					<span> {currentPage}</span>&ThickSpace;/&ThickSpace;<span>{archive.images.length}</span>
+				</Button>
+			</div>
+
+			<a
+				href={nextPageUrl}
+				on:click|preventDefault={() => changePage(nextPage)}
+				draggable="false"
+				class={cn(
+					'text-muted-foreground-light inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium underline-offset-4 hover:underline ',
+					!nextPage && 'pointer-events-none opacity-40'
+				)}
+			>
+				Next
+				<ChevronRight class="ms-2" />
 			</a>
 		</div>
 
+		<Button
+			draggable="false"
+			variant="link"
+			class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+			on:click={() => (preferencesOpen = true)}
+		>
+			<MenuIcon class="size-5" />
+			<span class="sr-only">Open reader preferences</span>
+		</Button>
+	</div>
+
+	<div class="relative my-auto overflow-auto">
 		<div
-			class="absolute inset-0 -z-10 m-auto flex bg-neutral-300 dark:bg-neutral-600"
-			style={`width: calc((100dvh - 2.5rem) * ${image ? image?.width / image?.height : 1}); height: calc((100dvw) * ${image ? image?.height / image?.width : 1});`}
-		/>
+			class="absolute inset-0 flex min-w-full max-w-full"
+			style={image && `max-height: ${image.height}px; aspect-ratio: ${image.width / image.height}`}
+		>
+			<a
+				class={cn(
+					'relative h-full basis-2/5',
+					previewLayout && 'flex items-center justify-center bg-blue-500/50'
+				)}
+				href={prevPageUrl}
+				draggable="false"
+				on:click|preventDefault={() => changePage(prevPage)}
+			>
+				<span class="sr-only"> Previous page </span>
+			</a>
+			<a
+				class={cn('relative h-full flex-grow', previewLayout && 'bg-red-500/50')}
+				href={nextPageUrl}
+				draggable="false"
+				on:click|preventDefault={() => changePage(nextPage)}
+			>
+				<span class="sr-only"> Next page </span>
+			</a>
+		</div>
+
+		{#if previewLayout}
+			<div class="pointer-events-none fixed inset-0 flex h-full min-w-full max-w-full opacity-70">
+				<div class="relative flex h-full basis-2/5 items-center justify-center">
+					<span class="rounded-md bg-black p-2 font-medium uppercase lg:text-2xl">
+						Previous page
+					</span>
+				</div>
+				<div class="relative flex h-full flex-grow items-center justify-center">
+					<span class="rounded-md bg-black p-2 font-medium uppercase lg:text-2xl"> Next page </span>
+				</div>
+			</div>
+		{/if}
 
 		<img
-			class="mx-auto h-fit max-h-full w-fit object-contain"
+			bind:this={imageEl}
 			height={image?.height}
 			width={image?.width}
 			alt={`Page ${currentPage}`}
 			src={`${env.CDN_URL}/image/${archive.hash}/${currentPage}`}
 			loading="eager"
+			class="mx-auto bg-neutral-500"
 			on:error={() => toast.error('Failed to load the page')}
 		/>
 	</div>
 </div>
+
+<Dialog.Root bind:open={preferencesOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Reader preferences</Dialog.Title>
+		</Dialog.Header>
+
+		<div class="flex items-center">
+			<Label for="preview-layout" class="w-full">Preview touch layout</Label>
+			<Checkbox id="preview-layout" bind:checked={previewLayout} />
+		</div>
+	</Dialog.Content>
+</Dialog.Root>

@@ -8,9 +8,11 @@ declare global {
 			status: number;
 			message: string;
 		}
+		interface PageState {
+			page: number;
+		}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
 		// interface Platform {}
 	}
 }

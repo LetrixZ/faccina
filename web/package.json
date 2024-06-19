@@ -48,7 +48,7 @@
 		"dayjs": "^1.11.11",
 		"dotenv": "^16.4.5",
 		"fflate": "^0.8.2",
-		"lucide-svelte": "^0.394.0",
+		"lucide-svelte": "^0.395.0",
 		"p-map": "^7.0.2",
 		"streamsaver": "^2.0.6",
 		"string-pixel-width": "^1.11.0",
