@@ -22,8 +22,8 @@ struct Metadata {
   pub url: Option<String>,
   #[serde(rename = "Artist")]
   pub artists: Option<MultiField>,
-  #[serde(rename = "Circle")]
-  pub circles: Option<MultiField>,
+  #[serde(rename = "Groups", alias = "Circle")]
+  pub groups: Option<MultiField>,
   #[serde(rename = "Magazine")]
   pub magazines: Option<MultiField>,
   #[serde(rename = "Publisher")]
@@ -61,7 +61,7 @@ pub fn add_metadata(json: &str, archive: &mut db::InsertArchive) -> anyhow::Resu
     };
   }
 
-  if let Some(data) = info.circles {
+  if let Some(data) = info.groups {
     archive.circles = match data {
       MultiField::Single(str) => str.split(",").map(|s| s.trim().to_string()).collect_vec(),
       MultiField::Many(vec) => vec,
