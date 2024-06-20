@@ -1,26 +1,16 @@
 import { env } from '$env/dynamic/private';
 import type { Archive } from '$lib/models';
+import { handleFetchError } from '$lib/utils';
 import { error, isHttpError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getReaderPreferencesFromCookie } from '$lib/utils';
 
-export const load: PageServerLoad = async ({ fetch, params, cookies }) => {
+export const load: PageServerLoad = async ({ params, fetch, isDataRequest }) => {
 	try {
-		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}`);
+		const promise = fetch(`${env.SERVER_URL}/archive/${params.id}`).then(
+			handleFetchError
+		) as Promise<Archive>;
 
-		if (res.status === 404) {
-			return error(404, {
-				status: 404,
-				message: `The requested gallery wasn't found`,
-			});
-		}
-
-		const archive: Archive = await res.json();
-
-		return {
-			archive,
-			prefs: getReaderPreferencesFromCookie(cookies.get('reader')),
-		};
+		return { archive: isDataRequest ? promise : await promise };
 	} catch (e) {
 		console.error(e);
 

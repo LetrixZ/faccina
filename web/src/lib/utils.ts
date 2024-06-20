@@ -1,11 +1,12 @@
+import { error } from '@sveltejs/kit';
 import { clsx, type ClassValue } from 'clsx';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
-import { ImageFitMode, type Archive, type Image } from './models';
 import { z } from 'zod';
+import { ImageFitMode, type Archive, type Image } from './models';
 
 dayjs.extend(localizedFormat);
 
@@ -197,7 +198,7 @@ export function getMetadata(archive: Archive) {
 	};
 }
 
-const preferencesSchema = z.object({
+export const preferencesSchema = z.object({
 	fitMode: z.nativeEnum(ImageFitMode).catch(ImageFitMode.FitHeight),
 	maxWidth: z.number().optional().catch(1000),
 	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
@@ -228,4 +229,18 @@ export function isScrolledIntoView(el: HTMLElement, currentTop: number) {
 
 export function remToPx(rem: number) {
 	return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
+// https://stackoverflow.com/a/10134261
+export function randomInt(min: number, max: number) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export async function handleFetchError(res: Response) {
+	if (!res.ok) {
+		const { message } = await res.json();
+		error(res.status, { status: res.status, message });
+	} else {
+		return res.json();
+	}
 }

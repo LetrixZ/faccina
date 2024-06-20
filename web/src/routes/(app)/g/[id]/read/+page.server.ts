@@ -1,22 +1,18 @@
 import { env } from '$env/dynamic/public';
 import type { Archive } from '$lib/models';
+import { handleFetchError } from '$lib/utils';
 import { error, isHttpError, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, url, fetch }) => {
-	let archive: Archive;
-
+export const load: PageServerLoad = async ({ params, url, fetch, setHeaders }) => {
 	try {
-		const res = await fetch(`${env.SERVER_URL}/archive/${params.id}`);
+		const archive = (await fetch(`${env.SERVER_URL}/archive/${params.id}`).then(
+			handleFetchError
+		)) as Archive;
 
-		if (res.status === 404) {
-			return error(404, {
-				status: 404,
-				message: `The requested gallery wasn't found`,
-			});
-		}
+		setHeaders({ 'cache-control': 'public, max-age=300' });
 
-		archive = await res.json();
+		redirect(301, `/g/${archive.id}/read/1${url.search}`);
 	} catch (e) {
 		console.error(e);
 
@@ -29,6 +25,4 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 			message: 'Failed to communicate with the server',
 		});
 	}
-
-	redirect(301, `/g/${archive.id}/read/1${url.search}`);
 };

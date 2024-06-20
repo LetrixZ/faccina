@@ -1,22 +1,18 @@
 import { env } from '$env/dynamic/private';
 import type { LibraryPage } from '$lib/models';
+import { handleFetchError } from '$lib/utils';
 import { error, isHttpError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url, fetch }) => {
+export const load: PageServerLoad = async ({ url, fetch, isDataRequest, setHeaders }) => {
 	try {
-		const res = await fetch(`${env.SERVER_URL}/library${url.search}`);
-		const libraryPage: LibraryPage = await res.json();
+		const promise = fetch(`${env.SERVER_URL}/library${url.search}`).then(
+			handleFetchError
+		) as Promise<LibraryPage>;
 
-		if (!res.ok) {
-			return error(res.status, {
-				status: res.status,
-				statusText: res.statusText,
-				message: 'Failed to get galleries',
-			});
-		}
+		setHeaders({ 'cache-control': 'public, max-age=300' });
 
-		return { libraryPage };
+		return { libraryPage: isDataRequest ? promise : await promise };
 	} catch (e) {
 		console.error(e);
 
@@ -26,7 +22,6 @@ export const load: PageServerLoad = async ({ url, fetch }) => {
 
 		return error(500, {
 			status: 500,
-			statusText: 'Internal error',
 			message: 'Failed to communicate with the server',
 		});
 	}

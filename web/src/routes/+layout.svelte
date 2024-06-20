@@ -6,5 +6,3 @@
 <Toaster richColors position="top-right" />
 
 <slot></slot>
-
-<style></style>
