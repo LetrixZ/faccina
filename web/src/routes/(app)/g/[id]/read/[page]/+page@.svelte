@@ -8,16 +8,18 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
 	import { ImageFitMode, type Image } from '$lib/models';
-	import { cn, type ReaderPreferences } from '$lib/utils';
+	import { cn, remToPx, type BarPlacement, type ReaderPreferences } from '$lib/utils';
 	import dayjs from 'dayjs';
-	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
+	import { ArrowLeft, ContrastIcon, MenuIcon } from 'lucide-svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
+	import { fly } from 'svelte/transition';
 
 	export let data;
 
@@ -25,6 +27,7 @@
 
 	let imageEl: HTMLImageElement;
 	let pageSelect: HTMLSelectElement;
+	let container: HTMLDivElement;
 
 	let preferencesOpen = false;
 	let previewLayout = false;
@@ -67,6 +70,7 @@
 		imageEl = newImage;
 
 		replaceState(page.toString(), { page });
+		container.scrollTo({ top: 0 });
 	};
 
 	const changePageState = (page: number, newState: ImageState) => {
@@ -138,6 +142,10 @@
 		}
 	};
 
+	const onPlacemenetChange = (placement: string) => {
+		prefs.barPlacement = placement as BarPlacement;
+	};
+
 	const onModeChange = (mode: string | undefined) => {
 		prefs.fitMode = (mode ?? ImageFitMode.FitHeight) as ImageFitMode;
 	};
@@ -156,7 +164,32 @@
 
 	$: {
 		if (browser) {
-			document.cookie = `reader=${JSON.stringify(prefs)}; Max-Age=${dayjs(dayjs().add(1, 'year')).diff(dayjs(), 'seconds')}`;
+			document.cookie = `reader=${JSON.stringify(prefs)}; Path=/; Max-Age=${dayjs(dayjs().add(1, 'year')).diff(dayjs(), 'seconds')}`;
+		}
+	}
+
+	let showBar = true;
+	let timeout = 0;
+
+	const resetTimeout = () => {
+		clearTimeout(timeout);
+
+		timeout = setTimeout(() => {
+			showBar = false;
+		}, 3000);
+	};
+
+	$: {
+		if (showBar) {
+			resetTimeout();
+		}
+	}
+
+	$: {
+		if (preferencesOpen) {
+			clearTimeout(timeout);
+		} else {
+			resetTimeout();
 		}
 	}
 </script>
@@ -189,88 +222,129 @@
 />
 
 <div class="flex h-dvh w-full flex-col overflow-clip">
-	<div
-		class="bg-background relative mx-auto flex min-h-10 w-full items-center justify-between px-2"
-	>
-		<a
-			href={`/g/${archive.id}${$page.url.search}`}
-			draggable="false"
-			class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+	{#if showBar}
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
+		<div
+			in:fly={{
+				duration: 150,
+				y: prefs.barPlacement === 'bottom' ? '3rem' : '-3rem',
+				opacity: 1,
+			}}
+			out:fly={{
+				duration: 150,
+				y: prefs.barPlacement === 'bottom' ? '3rem' : '-3rem',
+				opacity: 1,
+			}}
+			class={cn(
+				'fixed inset-x-0 z-10 overflow-clip',
+				prefs.barPlacement === 'bottom' ? 'bottom-0' : 'top-0'
+			)}
+			on:click={() => resetTimeout()}
+			on:mousemove={() => resetTimeout()}
 		>
-			<ArrowLeft class="size-5" />
-			<span class="sr-only">Go back</span>
-		</a>
-
-		<div class="absolute inset-0 mx-auto flex w-fit items-center">
-			<a
-				href={prevPageUrl}
-				on:click|preventDefault={() => changePage(prevPage)}
-				draggable="false"
-				class={cn(
-					'text-muted-foreground-light inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium underline-offset-4 hover:underline',
-					!prevPage && 'pointer-events-none opacity-40'
-				)}
+			<div
+				class="bg-background relative mx-auto flex h-12 w-full items-center justify-between px-2"
 			>
-				<ChevronLeft class="me-2" />
-				Previous
-			</a>
-
-			<div class="relative w-24 sm:w-36">
-				<select
-					bind:this={pageSelect}
-					class="absolute inset-0 -z-10 mx-auto w-fit opacity-0"
-					on:change={(ev) => changePage(parseInt(ev.currentTarget.value))}
+				<a
+					href={`/g/${archive.id}${$page.url.search}`}
+					draggable="false"
+					class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
 				>
-					{#each archive.images as image}
-						<option value={image.page_number}>{image.page_number}</option>
-					{/each}
+					<ArrowLeft class="size-5" />
+					<span class="sr-only">Go back</span>
+				</a>
 
-					<span> {currentPage}</span> /
-					<span>{archive.images.length}</span>
-				</select>
+				<div class="absolute inset-0 mx-auto flex w-fit items-center">
+					<a
+						href={prevPageUrl}
+						on:click|preventDefault={() => changePage(prevPage)}
+						draggable="false"
+						class={cn(
+							'text-muted-foreground-light inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium underline-offset-4 hover:underline',
+							!prevPage && 'pointer-events-none opacity-40'
+						)}
+					>
+						<ChevronLeft class="me-2" />
+					</a>
+
+					<div class="relative w-20 sm:w-24">
+						<select
+							bind:this={pageSelect}
+							class="absolute inset-0 -z-10 mx-auto w-fit opacity-0"
+							on:change={(ev) => changePage(parseInt(ev.currentTarget.value))}
+						>
+							{#each archive.images as image}
+								<option value={image.page_number} selected={currentPage === image.page_number}>
+									{image.page_number}
+								</option>
+							{/each}
+
+							<span> {currentPage}</span> /
+							<span>{archive.images.length}</span>
+						</select>
+
+						<Button
+							variant="link"
+							class="w-full whitespace-pre font-medium underline-offset-4"
+							on:click={() => pageSelect.showPicker()}
+						>
+							<span>{currentPage}</span>&ThickSpace;/&ThickSpace;<span>
+								{archive.images.length}
+							</span>
+						</Button>
+					</div>
+
+					<a
+						href={nextPageUrl}
+						on:click|preventDefault={() => changePage(nextPage)}
+						draggable="false"
+						class={cn(
+							'text-muted-foreground-light inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium underline-offset-4 hover:underline ',
+							!nextPage && 'pointer-events-none opacity-40'
+						)}
+					>
+						<ChevronRight class="ms-2" />
+					</a>
+				</div>
 
 				<Button
+					draggable="false"
 					variant="link"
-					class="w-full whitespace-pre font-medium underline-offset-4"
-					on:click={() => pageSelect.showPicker()}
+					class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+					on:click={() => (preferencesOpen = true)}
 				>
-					<span> {currentPage}</span>&ThickSpace;/&ThickSpace;<span>{archive.images.length}</span>
+					<MenuIcon class="size-5" />
+					<span class="sr-only">Open reader preferences</span>
 				</Button>
 			</div>
-
-			<a
-				href={nextPageUrl}
-				on:click|preventDefault={() => changePage(nextPage)}
-				draggable="false"
-				class={cn(
-					'text-muted-foreground-light inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium underline-offset-4 hover:underline ',
-					!nextPage && 'pointer-events-none opacity-40'
-				)}
-			>
-				Next
-				<ChevronRight class="ms-2" />
-			</a>
 		</div>
+	{/if}
 
-		<Button
-			draggable="false"
-			variant="link"
-			class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
-			on:click={() => (preferencesOpen = true)}
-		>
-			<MenuIcon class="size-5" />
-			<span class="sr-only">Open reader preferences</span>
-		</Button>
-	</div>
-
-	<div class="relative my-auto flex h-full overflow-auto">
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<div
+		bind:this={container}
+		class="relative my-auto flex h-full overflow-auto"
+		on:mousemove={(ev) => {
+			if (prefs.barPlacement === 'bottom' && window.innerHeight - ev.clientY <= remToPx(4)) {
+				showBar = true;
+				resetTimeout();
+			} else if (
+				prefs.barPlacement === 'top' &&
+				window.innerHeight + ev.clientY - window.innerHeight <= remToPx(4)
+			) {
+				showBar = true;
+				resetTimeout();
+			}
+		}}
+	>
 		<div
 			class="absolute inset-0 flex min-h-full min-w-full max-w-full"
 			style={getContainerStyle(prefs, image)}
 		>
 			<a
 				class={cn(
-					'relative h-full basis-2/5',
+					'relative h-full flex-grow',
 					previewLayout && 'flex items-center justify-center bg-blue-500/50'
 				)}
 				href={prevPageUrl}
@@ -279,6 +353,7 @@
 			>
 				<span class="sr-only"> Previous page </span>
 			</a>
+			<button class="h-full min-w-28 max-w-56 basis-[20%]" on:click={() => (showBar = !showBar)} />
 			<a
 				class={cn('relative h-full flex-grow', previewLayout && 'bg-red-500/50')}
 				href={nextPageUrl}
@@ -290,14 +365,17 @@
 		</div>
 
 		{#if previewLayout}
-			<div class="pointer-events-none fixed inset-0 flex h-full min-w-full max-w-full opacity-70">
-				<div class="relative flex h-full basis-2/5 items-center justify-center">
-					<span class="rounded-md bg-black p-2 font-medium uppercase lg:text-2xl">
-						Previous page
+			<div class="pointer-events-none fixed inset-0 flex h-full min-w-full max-w-full opacity-100">
+				<div class="relative flex h-full flex-grow items-center justify-center">
+					<span class="stroke rounded-md text-2xl font-semibold uppercase tracking-wider">
+						Prev
 					</span>
 				</div>
+				<div class="h-full min-w-28 max-w-56 basis-[20%]"></div>
 				<div class="relative flex h-full flex-grow items-center justify-center">
-					<span class="rounded-md bg-black p-2 font-medium uppercase lg:text-2xl"> Next page </span>
+					<span class="stroke rounded-md text-2xl font-semibold uppercase tracking-wider">
+						Next
+					</span>
 				</div>
 			</div>
 		{/if}
@@ -318,14 +396,28 @@
 
 <Dialog.Root bind:open={preferencesOpen}>
 	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>Reader preferences</Dialog.Title>
-		</Dialog.Header>
+		<h3 class="text-lg font-medium">Touch layout</h3>
 
 		<div class="flex items-center">
 			<Label for="preview-layout" class="w-full">Preview touch layout</Label>
 			<Checkbox id="preview-layout" bind:checked={previewLayout} />
 		</div>
+
+		<Label for="bar-placement">Control bar placement</Label>
+		<RadioGroup.Root
+			value={prefs.barPlacement}
+			id="bar-placement"
+			onValueChange={onPlacemenetChange}
+		>
+			<div class="flex items-center space-x-2">
+				<RadioGroup.Item value="top" id="top" />
+				<Label for="top">Top</Label>
+			</div>
+			<div class="flex items-center space-x-2">
+				<RadioGroup.Item value="bottom" id="bottom" />
+				<Label for="bottom">Bottom</Label>
+			</div>
+		</RadioGroup.Root>
 
 		<Separator />
 

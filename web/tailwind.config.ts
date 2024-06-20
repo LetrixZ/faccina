@@ -69,7 +69,7 @@ const config: Config = {
 			},
 		},
 	},
-	plugins: [require('@tailwindcss/container-queries'), require('@tailwindcss/typography')],
+	plugins: [require('@tailwindcss/container-queries')],
 };
 
 export default config;

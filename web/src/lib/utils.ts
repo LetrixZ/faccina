@@ -200,9 +200,11 @@ export function getMetadata(archive: Archive) {
 const preferencesSchema = z.object({
 	fitMode: z.nativeEnum(ImageFitMode).catch(ImageFitMode.FitHeight),
 	maxWidth: z.number().optional().catch(1000),
+	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
 });
 
 export type ReaderPreferences = z.infer<typeof preferencesSchema>;
+export type BarPlacement = ReaderPreferences['barPlacement'];
 
 export function getReaderPreferencesFromCookie(cookie: string | undefined) {
 	if (cookie) {
@@ -216,4 +218,14 @@ export function getReaderPreferencesFromCookie(cookie: string | undefined) {
 	}
 
 	return preferencesSchema.parse({});
+}
+
+export function isScrolledIntoView(el: HTMLElement, currentTop: number) {
+	const rect = el.getBoundingClientRect();
+
+	return rect.top >= 0 && rect.bottom <= currentTop;
+}
+
+export function remToPx(rem: number) {
+	return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
