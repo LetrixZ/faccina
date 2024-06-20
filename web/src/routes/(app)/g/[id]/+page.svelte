@@ -71,7 +71,7 @@
 				await pMap(
 					archive.images,
 					async (image) => {
-						const url = `${env.CDN_URL}/image/${archive.hash}/${image.page_number}`;
+						const url = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.page_number}`;
 						const response = await fetch(url);
 
 						if (!response.ok) {
@@ -224,7 +224,7 @@
 							: undefined}
 						loading="eager"
 						alt={`'${archive.title}' cover`}
-						src={`${env.CDN_URL}/image/${archive.hash}/cover`}
+						src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/cover`}
 					/>
 				</a>
 			</div>

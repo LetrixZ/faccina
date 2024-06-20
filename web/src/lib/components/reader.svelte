@@ -54,7 +54,7 @@
 		}
 
 		const newImage = new Image(imageInfo.width, imageInfo.height);
-		newImage.src = `${env.CDN_URL}/image/${archive.hash}/${page}`;
+		newImage.src = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${page}`;
 		newImage.alt = `Page ${currentPage}`;
 		newImage.onerror = () => toast.error('Failed to load the page');
 
@@ -88,7 +88,7 @@
 				changePageState(page_number, 'preloading');
 
 				const newImage = new Image(imageInfo.width, imageInfo.height);
-				newImage.src = `${env.CDN_URL}/image/${archive.hash}/${page_number}`;
+				newImage.src = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${page_number}`;
 
 				if (newImage.complete) {
 					newImage.addEventListener('error', () => changePageState(page_number, 'preloaded'));
@@ -232,7 +232,7 @@
 			height={image?.height}
 			width={image?.width}
 			alt={`Page ${currentPage}`}
-			src={`${env.CDN_URL}/image/${archive.hash}/${currentPage}`}
+			src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${currentPage}`}
 			loading="eager"
 			style={getImageStyle($prefs)}
 			class="m-auto bg-neutral-500"

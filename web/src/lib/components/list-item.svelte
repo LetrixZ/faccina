@@ -73,7 +73,7 @@
 				{height}
 				loading="eager"
 				alt={`'${archive.title}' cover`}
-				src={`${env.CDN_URL}/image/${archive.hash}/cover`}
+				src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/cover`}
 			/>
 		</div>
 	</a>

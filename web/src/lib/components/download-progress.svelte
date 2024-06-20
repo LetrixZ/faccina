@@ -19,7 +19,7 @@
 
 		<Button
 			class={cn(
-				'size-7 bg-transparent p-1 hover:bg-success/20 disabled:opacity-5',
+				'hover:bg-success/20 size-7 flex-shrink-0 bg-transparent p-1 disabled:opacity-5',
 				$task.complete && 'text-success'
 			)}
 			disabled={!$task.complete}
