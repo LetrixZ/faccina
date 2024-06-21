@@ -100,12 +100,14 @@ impl Default for Server {
 pub struct Directories {
   #[serde_inline_default("./data".into())]
   pub data: PathBuf,
-  #[serde_inline_default("./content".into())]
-  pub content: PathBuf,
   #[serde(skip)]
   pub links: PathBuf,
   #[serde(skip)]
   pub thumbs: PathBuf,
+  #[serde(skip)]
+  pub torrents: PathBuf,
+  #[serde_inline_default("./content".into())]
+  pub content: PathBuf,
   #[serde_inline_default("./logs".into())]
   pub log: PathBuf,
 }
@@ -114,12 +116,14 @@ impl Directories {
   fn set_relative(&mut self) {
     self.links = self.data.join("links");
     self.thumbs = self.data.join("thumbs");
+    self.torrents = self.data.join("torrents");
   }
 
   fn create_dirs(&self) {
     fs::create_dir_all(&self.data).expect("Failed to create data directory");
     fs::create_dir_all(&self.links).expect("Failed to create symbolic links directory");
     fs::create_dir_all(&self.thumbs).expect("Failed to create thumbnail directory");
+    fs::create_dir_all(&self.torrents).expect("Failed to create torrents directory");
     fs::create_dir_all(&self.log).expect("Failed to create logs directory");
 
     let _ = fs::create_dir_all(&self.content);
@@ -132,6 +136,7 @@ impl Default for Directories {
       data: "./data".into(),
       links: "./data/links".into(),
       thumbs: "./data/thumbs".into(),
+      torrents: "./data/torrents".into(),
       content: "./content".into(),
       log: "./logs".into(),
     }

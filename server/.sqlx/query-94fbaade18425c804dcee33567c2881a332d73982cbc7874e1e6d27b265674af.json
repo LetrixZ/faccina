@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO archive_torrents (archive_id, torrent_id, path, size)\n      VALUES ($1, $2, $3, $4) ON CONFLICT (archive_id, torrent_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "94fbaade18425c804dcee33567c2881a332d73982cbc7874e1e6d27b265674af"
+}

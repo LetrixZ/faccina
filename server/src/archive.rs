@@ -553,7 +553,7 @@ async fn insert_archive(
       std::io::ErrorKind::AlreadyExists => {
         if fs::remove_file(CONFIG.directories.links.join(id.to_string())).is_ok() {
           if let Err(err) =
-            os::unix::fs::symlink(path, CONFIG.directories.links.join(id.to_string()))
+            os::windows::fs::symlink(path, CONFIG.directories.links.join(id.to_string()))
           {
             return Err(anyhow!("Couldn't create a symbolic link: {err}"));
           }

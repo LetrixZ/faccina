@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO archive_torrents (archive_id, torrent_id, path, size)\n      SELECT * FROM UNNEST($1::bigint[], $2::bigint[], $3::text[], $4::bigint[])\n      ON CONFLICT (archive_id, torrent_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Int8Array",
+        "TextArray",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "062f93e3cb72bb1af0c82c020db44ac80d9c2807d5e2ecc251612f0d64cf23c6"
+}

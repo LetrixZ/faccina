@@ -1,13 +1,14 @@
 use crate::archive::get_image_files;
 use crate::db::ArchiveFile;
 use crate::image::ImageCodec;
+use crate::torrent;
 use crate::{archive, config::CONFIG, db};
 use anyhow::anyhow;
 use clap::{Args, Parser, Subcommand};
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use itertools::Itertools;
-use sqlx::{PgPool, QueryBuilder};
+use sqlx::{PgPool, Postgres, QueryBuilder};
 use std::path::PathBuf;
 use tracing::{error, info};
 
@@ -23,6 +24,8 @@ pub struct Cli {
 pub enum Commands {
   #[command(about="Index archive(s) located in the given path(s). Defaults to configured content path.", long_about = None)]
   Index(IndexArgs),
+  #[command(about = "Index archive(s) torrents for indexed archives", long_about = None)]
+  IndexTorrent(IndexTorrentArsgs),
   #[command(about="Generate thumbnails for indexed archives", long_about = None)]
   GenerateThumbnails(GenerateThumbnailArgs),
   #[command(about="Calculate image dimensions. Useful to fix image ordering.", long_about = None)]
@@ -52,6 +55,29 @@ pub struct IndexArgs {
     help = "Start re-indexing from this path. Useful for resuming after an error."
   )]
   pub from_path: Option<PathBuf>,
+}
+
+#[derive(Args, Clone)]
+pub struct IndexTorrentArsgs {
+  pub paths: Option<Vec<PathBuf>>,
+  #[arg(
+    short,
+    long,
+    default_value = "false",
+    help = "Navigate directory recursively"
+  )]
+  pub recursive: bool,
+  #[arg(
+    long,
+    default_value = "false",
+    help = "Re-index and update existing archive torrents"
+  )]
+  pub reindex: bool,
+  #[arg(
+    long,
+    help = "List of archive IDs or range to index torrents for (ex: 1-10,14,230-400)"
+  )]
+  pub id: Option<String>,
 }
 
 #[derive(Args, Clone)]
@@ -88,47 +114,51 @@ pub struct CalculateDimensionsArgs {
   pub id: Option<String>,
 }
 
+pub fn add_id_ranges(qb: &mut QueryBuilder<Postgres>, id_ranges: &str) {
+  let id_ranges = id_ranges.split(",").map(|s| s.trim()).collect_vec();
+  let mut ids = vec![];
+  let mut ranges = vec![];
+
+  for range in id_ranges {
+    let splits = range.split("-").filter(|s| !s.is_empty()).collect_vec();
+
+    if splits.len() == 1 {
+      let id = splits.first().unwrap();
+      ids.push(id.parse::<i64>().unwrap());
+    } else if splits.len() == 2 {
+      let start = splits.first().unwrap();
+      let end = splits.last().unwrap();
+      ranges.push((start.parse::<i64>().unwrap(), end.parse::<i64>().unwrap()))
+    }
+  }
+
+  qb.push(" id = ANY(").push_bind(ids).push(")");
+
+  if !ranges.is_empty() {
+    qb.push(" OR");
+  }
+
+  for (i, (start, end)) in ranges.clone().into_iter().enumerate() {
+    qb.push(" (id >= ")
+      .push(start)
+      .push(" AND id <= ")
+      .push_bind(end)
+      .push(")");
+
+    if i != ranges.len() - 1 {
+      qb.push(" OR");
+    }
+  }
+}
+
 async fn fetch_archives(
   pool: &PgPool,
   id_ranges: &Option<String>,
 ) -> Result<Vec<db::ArchiveFile>, sqlx::Error> {
-  let mut qb = QueryBuilder::new("SELECT id, path, pages, thumbnail FROM archives WHERE");
-
   if let Some(id_ranges) = id_ranges {
-    let id_ranges = id_ranges.split(",").map(|s| s.trim()).collect_vec();
-    let mut ids = vec![];
-    let mut ranges = vec![];
+    let mut qb = QueryBuilder::new("SELECT id, path, pages, thumbnail FROM archives WHERE");
 
-    for range in id_ranges {
-      let splits = range.split("-").filter(|s| !s.is_empty()).collect_vec();
-
-      if splits.len() == 1 {
-        let id = splits.first().unwrap();
-        ids.push(id.parse::<i64>().unwrap());
-      } else if splits.len() == 2 {
-        let start = splits.first().unwrap();
-        let end = splits.last().unwrap();
-        ranges.push((start.parse::<i64>().unwrap(), end.parse::<i64>().unwrap()))
-      }
-    }
-
-    qb.push(" id = ANY(").push_bind(ids).push(")");
-
-    if !ranges.is_empty() {
-      qb.push(" OR");
-    }
-
-    for (i, (start, end)) in ranges.iter().enumerate() {
-      qb.push(" (id >= ")
-        .push(start)
-        .push(" AND id <= ")
-        .push_bind(end)
-        .push(")");
-
-      if i != ranges.len() - 1 {
-        qb.push(" OR");
-      }
-    }
+    add_id_ranges(&mut qb, id_ranges);
 
     let archives = qb
       .push(" ORDER BY id ASC")
@@ -177,7 +207,7 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
       paths_to_index.push(path);
     } else {
       error!(
-        target: "cmd::fetch_archive",
+        target: "cmd::index",
         "The given path is not a valid path or couldn't be accessed: {}",
         path.display()
       );
@@ -221,7 +251,7 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
     match archive::index_archive(&pool, &multi, archive::IndexArgs::with_args(&args, &path)).await {
       Ok(_) => count += 1,
       Err(err) => pb.suspend(
-        || error!(target: "archive::index", "Failed to index archive '{}' - {err}", path.display()),
+        || error!(target: "cmd::index", "Failed to index archive '{}' - {err}", path.display()),
       ),
     }
 
@@ -230,7 +260,70 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
 
   pb.finish_and_clear();
 
-  info!(target: "archive::index", "Indexed {count} archives");
+  info!(target: "cmd::index", "Indexed {count} archives");
+
+  Ok(())
+}
+
+pub async fn index_torrents(args: IndexTorrentArsgs) -> anyhow::Result<()> {
+  let paths = args
+    .paths
+    .clone()
+    .unwrap_or(vec![CONFIG.directories.content.clone()]);
+
+  let mut paths_to_index = vec![];
+
+  for path in paths {
+    if path.is_dir() {
+      let pattern = if args.recursive {
+        format!("{}/**/*.torrent", path.to_str().unwrap())
+      } else {
+        format!("{}/*.torrent", path.to_str().unwrap())
+      };
+
+      let walker = globwalk::glob(&pattern).unwrap();
+
+      for entry in walker {
+        let entry = entry.unwrap();
+        paths_to_index.push(entry.path().to_owned());
+      }
+    } else if path.is_file() {
+      paths_to_index.push(path);
+    } else {
+      error!(
+        target: "cmd::index_torrents",
+        "The given path is not a valid path or couldn't be accessed: {}",
+        path.display()
+      );
+    }
+  }
+
+  let pool = db::get_pool().await?;
+  let multi = MultiProgress::new();
+  let pb = ProgressBar::new(paths_to_index.len().as_u64());
+
+  pb.set_style(
+    ProgressStyle::with_template("[{elapsed_precise}] {bar:40.green/white} {pos:>7}/{len:7}")
+      .unwrap(),
+  );
+  multi.add(pb.clone());
+
+  let mut count = 0;
+
+  for path in paths_to_index {
+    match torrent::index(&pool, &multi,  torrent::IndexTorrentArgs::with_args(&args, &path)).await {
+      Ok(_) => count += 1,
+      Err(err) => pb.suspend(
+        || error!(target: "cmd::index_torrents", "Failed to index torrent '{}' - {err}", path.display()),
+      ),
+    }
+
+    pb.inc(1)
+  }
+
+  pb.finish_and_clear();
+
+  info!(target: "cmd::index_torrents", "Indexed {count} torrent");
 
   Ok(())
 }
