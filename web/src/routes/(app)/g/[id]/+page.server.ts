@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/public';
+import { env } from '$env/dynamic/private';
 import type { Archive } from '$lib/models';
 import { handleFetchError } from '$lib/utils';
 import { error, isHttpError } from '@sveltejs/kit';
