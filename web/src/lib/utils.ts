@@ -6,7 +6,7 @@ import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-import { ImageFitMode, type Archive, type Image } from './models';
+import { ImageFitMode, type Archive, type Image, type Tag, type Taxonomy } from './models';
 
 dayjs.extend(localizedFormat);
 
@@ -243,4 +243,34 @@ export async function handleFetchError(res: Response) {
 	} else {
 		return res.json();
 	}
+}
+
+export function isTag(tag: Taxonomy | Tag): tag is Tag {
+	return (tag as Tag).namespace !== undefined;
+}
+
+export function processTags(tags: Tag[]) {
+	const tagNamespaces = tags.map((tag) => `${tag.namespace}:${tag.name}`);
+
+	// Step 1: Create a frequency map for the substrings after the colon
+	const frequencyMap = tagNamespaces.reduce(
+		(acc, item) => {
+			const afterColon = item.split(':')[1];
+			acc[afterColon] = (acc[afterColon] || 0) + 1;
+			return acc;
+		},
+		{} as { [key: string]: number }
+	);
+
+	// Step 2: Generate the result array based on the frequency map
+	const result = tagNamespaces.map((item) => {
+		const [beforeColon, afterColon] = item.split(':');
+		if (frequencyMap[afterColon] === 1) {
+			return afterColon;
+		} else {
+			return item;
+		}
+	});
+
+	return tags.map((tag, i) => ({ ...tag, name: result[i] }));
 }

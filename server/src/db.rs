@@ -216,14 +216,12 @@ async fn fetch_taxonomy_data(
 }
 
 async fn fetch_tag_data(pool: &PgPool, archive_id: i64) -> Result<Vec<Tag>, sqlx::Error> {
-  QueryBuilder::<Postgres>::new(
-    r#"SELECT slug, name, namespace FROM tags
-      INNER JOIN archive_tags ON archive_tags.tag_id = id
-      WHERE archive_tags.archive_id = "#,
+  sqlx::query_as!(
+    Tag,
+    r#"SELECT slug, name, namespace FROM tags INNER JOIN archive_tags ON archive_tags.tag_id = id
+    WHERE archive_tags.archive_id = $1 ORDER BY name"#,
+    archive_id
   )
-  .push_bind(archive_id)
-  .push(" ORDER BY name")
-  .build_query_as::<Tag>()
   .fetch_all(pool)
   .await
 }
@@ -355,10 +353,10 @@ fn parse_query(query: &str) -> String {
             .chars()
             .collect::<Vec<_>>()
             .iter()
-            .rposition(|s| *s == '&')
+            .rposition(|s| *s == '&' || *s == '|')
           {
             let mut x = s.to_string();
-            x.insert(position, '(');
+            x.insert(position + 1, '(');
             x
           } else {
             format!("({s}")
@@ -366,16 +364,18 @@ fn parse_query(query: &str) -> String {
         } else if i == parsed_query.len() - 1 {
           let mut s = s.to_string();
 
-          if let Some(position1) = s.char_indices().find(|&(_, c)| c == '&') {
-            s.insert(position1.0, ')');
+          if let Some(position) = s.char_indices().find(|&(_, c)| c == '&' || c == '|') {
+            s.insert(position.0, ')');
+          } else {
+            s = format!("{s})");
           }
 
           s
         } else {
           let mut s = s.to_string();
 
-          if let Some(position1) = s.char_indices().find(|&(_, c)| c == '&') {
-            s.insert(position1.0, ')');
+          if let Some(position) = s.char_indices().find(|&(_, c)| c == '&' || c == '|') {
+            s.insert(position.0, ')');
           }
 
           if let Some(position) = s
@@ -415,63 +415,110 @@ fn parse_query(query: &str) -> String {
 
 fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &str) {
   let re = regex::Regex::new(
-    r#"(?i)-?(artist|circle|magazine|parody|tag|title|pages):(".*?"|'.*?'|[^\s]+)"#,
+    r#"(?i)-?(artist|circle|magazine|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
   )
   .unwrap();
+
   let captures = re.captures_iter(value).collect_vec();
 
   for (i, capture) in captures.into_iter().enumerate() {
     if i == 0 {
       if has_parsed {
-        qb.push(" AND");
+        qb.push(" AND (");
       } else {
-        qb.push(" WHERE");
+        qb.push(" WHERE (\n");
       }
     } else {
-      qb.push(" AND");
+      qb.push(" AND (");
     }
 
     let negate = capture.get(0).unwrap().as_str().starts_with('-');
     let condition = if negate { "NOT EXISTS" } else { "EXISTS" };
-    qb.push(format!(" ({condition} ("));
 
     let tag_type = capture.get(1).unwrap().as_str().to_lowercase();
-    let value = capture
-      .get(2)
-      .unwrap()
-      .as_str()
-      .trim_matches('\"')
-      .trim_matches('\'')
-      .replace('*', "%");
 
     let get_sql = |tag_type: &TagType, column: &str| {
       format!(
-        r#"SELECT 1 FROM {relation} LEFT JOIN {table} ON {table}.id = {relation}.{id}
-        WHERE {relation}.archive_id = archives.id AND {table}.{column} ILIKE "#,
+        r#"SELECT 1 FROM {relation} LEFT JOIN {table} ON {table}.id = {relation}.{id} WHERE {relation}.archive_id = archives.id AND {table}.{column} ILIKE "#,
         relation = tag_type.relation(),
         table = tag_type.table(),
         id = tag_type.id(),
       )
     };
 
-    let mut push_tag_sql = |tag_type: TagType| {
+    let push_taxonomy_sql = |qb: &mut QueryBuilder<Postgres>, tag_type: TagType, value: String| {
       qb.push(get_sql(&tag_type, "name"))
         .push_bind(value.clone())
-        .push(format!(") OR {condition} ("))
+        .push(format!("\n        ) OR\n        {condition} (\n          "))
         .push(get_sql(&tag_type, "slug"))
-        .push_bind(value.clone())
-        .push("))".to_string());
+        .push_bind(value)
+        .push("\n        )\n      )\n".to_string());
     };
 
-    match tag_type.as_str() {
-      "artist" => push_tag_sql(TagType::Artist),
-      "circle" => push_tag_sql(TagType::Circle),
-      "magazine" => push_tag_sql(TagType::Magazine),
-      "publisher" => push_tag_sql(TagType::Publisher),
-      "parody" => push_tag_sql(TagType::Parody),
-      "tag" => push_tag_sql(TagType::Tag),
-      _ => {}
+    let push_tag_sql_sql =
+      |qb: &mut QueryBuilder<Postgres>, tag_type: TagType, value: String, namespace: String| {
+        qb.push(get_sql(&tag_type, "name"))
+          .push_bind(value.clone())
+          .push(format!(" AND namespace ILIKE '{namespace}'"))
+          .push(format!("\n        ) OR\n        {condition} (\n          "))
+          .push(get_sql(&tag_type, "slug"))
+          .push_bind(value)
+          .push(format!(" AND namespace ILIKE '{namespace}'"))
+          .push("\n        )\n      )\n".to_string());
+      };
+
+    let value = capture
+      .get(2)
+      .unwrap()
+      .as_str()
+      .trim_matches('\"')
+      .trim_matches('\'')
+      .replace('*', "%")
+      .replace("(", "")
+      .replace(")", "");
+
+    let or_splits = value.split("|").collect_vec();
+
+    for (i, or_split) in or_splits.iter().enumerate() {
+      qb.push("  (\n");
+      let and_splits = or_split.split("&").collect_vec();
+
+      if i == 0 {
+        qb.push("    (\n");
+      }
+
+      for (j, and_split) in and_splits.iter().enumerate() {
+        qb.push(format!("      (\n        {condition} (\n          "));
+
+        let and_split = and_split.to_string();
+        println!("and_split {and_split}");
+
+        match tag_type.as_str() {
+          "artist" => push_taxonomy_sql(qb, TagType::Artist, and_split),
+          "circle" => push_taxonomy_sql(qb, TagType::Circle, and_split),
+          "magazine" => push_taxonomy_sql(qb, TagType::Magazine, and_split),
+          "publisher" => push_taxonomy_sql(qb, TagType::Publisher, and_split),
+          "parody" => push_taxonomy_sql(qb, TagType::Parody, and_split),
+          "tag" => push_tag_sql_sql(qb, TagType::Tag, and_split, "%%".to_string()),
+          "male" => push_tag_sql_sql(qb, TagType::Tag, and_split, "male".to_string()),
+          "female" => push_tag_sql_sql(qb, TagType::Tag, and_split, "female".to_string()),
+          "misc" | "other" => push_tag_sql_sql(qb, TagType::Tag, and_split, "misc".to_string()),
+          _ => {}
+        }
+
+        if j != and_splits.len() - 1 {
+          qb.push(" AND ");
+        } else {
+          qb.push("    )");
+        }
+      }
+
+      if i != or_splits.len() - 1 {
+        qb.push(" OR\n  ");
+      }
     }
+
+    qb.push("))");
   }
 }
 
@@ -479,7 +526,7 @@ fn clean_value(query: &str) -> String {
   let mut value = query.to_owned();
 
   let re = regex::Regex::new(
-    r#"(?i)-?(artist|circle|magazine|parody|tag|title|pages):(".*?"|'.*?'|[^\s]+)"#,
+    r#"(?i)-?(artist|circle|magazine|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
   )
   .unwrap();
   let captures = re.captures_iter(query).collect_vec();

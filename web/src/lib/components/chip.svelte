@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { TagType, type Taxonomy } from '$lib/models';
-	import { cn, encodeURL } from '$lib/utils';
+	import { TagType, type Tag, type Taxonomy } from '$lib/models';
+	import { cn, encodeURL, isTag } from '$lib/utils';
 	import { Button } from './ui/button';
 
-	export let item: Taxonomy;
+	export let item: Taxonomy | Tag;
 	export let type: TagType;
 
 	const classes = (() => {
@@ -22,10 +22,18 @@
 				return 'bg-neutral-700 hover:bg-neutral-700/80';
 		}
 	})();
+
+	$: queryUrl = (() => {
+		if (item.name.split(':').length > 1) {
+			return item.name.toLowerCase();
+		} else {
+			return `${type}:'${encodeURL(item.name).toLowerCase()}'`;
+		}
+	})();
 </script>
 
 <Button
-	href={`/?q=${type}:'${encodeURL(item.name).toLowerCase()}'`}
+	href={`/?q=${queryUrl}`}
 	class={cn(
 		'h-fit w-fit px-1.5 py-0.5 text-sm font-medium text-neutral-50 dark:text-neutral-100',
 		classes

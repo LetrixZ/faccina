@@ -13,7 +13,7 @@
 	$: height = archive.cover && Math.round((640 / archive.cover.width) * archive.cover.height);
 
 	$: [reducedTags, moreCount] = (() => {
-		const minContainerWidth = 290;
+		const maxWidth = 290;
 
 		const tags = [
 			...archive.artists.map((tag) => ({ ...tag, type: TagType.ARTIST })),
@@ -42,7 +42,15 @@
 		const reduced: (Taxonomy & { type: TagType })[] = [];
 
 		for (const tag of tags) {
-			if (width < minContainerWidth) {
+			if (reduced.find((t) => t.name === tag.name)) {
+				continue;
+			}
+
+			if (tag.type === TagType.CIRCLE && tag.name.length > 20) {
+				continue;
+			}
+
+			if (width < maxWidth) {
 				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
 
 				if (tag.type === TagType.TAG && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {

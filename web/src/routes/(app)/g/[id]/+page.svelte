@@ -13,6 +13,7 @@
 		generateFilename,
 		getMetadata,
 		humanFileSize,
+		processTags,
 		randomString,
 	} from '$lib/utils';
 	import { AsyncZipDeflate, Zip, ZipPassThrough, strToU8 } from 'fflate';
@@ -304,7 +305,7 @@
 				{#if archive.tags.length}
 					<InfoSection name="Tags">
 						<div class="flex flex-wrap gap-2">
-							{#each archive.tags as tag}
+							{#each processTags(archive.tags) as tag}
 								<Chip item={tag} type={TagType.TAG} />
 							{/each}
 						</div>

@@ -89,7 +89,7 @@ pub struct ZipFile {
   contents: Vec<u8>,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum TagType {
   Artist,
   Circle,
