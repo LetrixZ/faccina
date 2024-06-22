@@ -50,8 +50,8 @@ struct Metadata {
   pub urls: Option<HashMap<String, String>>,
   #[serde(rename = "Id", default)]
   pub source_ids: Option<HashMap<String, MultiIdField>>,
-  #[serde(rename = "Released")]
-  pub released: i64,
+  #[serde(rename = "Released", default)]
+  pub released: Option<i64>,
   #[serde(rename = "ThumbnailIndex")]
   pub thumb_index: Option<i16>,
 }
@@ -123,11 +123,10 @@ pub fn add_metadata(yaml: &str, archive: &mut db::InsertArchive) -> anyhow::Resu
   }
 
   archive.thumbnail = info.thumb_index.map(|t| t + 1).unwrap_or(1);
-  archive.released_at = Some(
-    DateTime::from_timestamp(info.released, 0)
-      .unwrap()
-      .naive_utc(),
-  );
+
+  if let Some(released) = info.released {
+    archive.released_at = Some(DateTime::from_timestamp(released, 0).unwrap().naive_utc());
+  }
 
   let mut sources: Vec<db::Source> = vec![];
 
