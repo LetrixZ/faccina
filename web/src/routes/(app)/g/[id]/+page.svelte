@@ -3,6 +3,7 @@
 	import { env } from '$env/dynamic/public';
 	import Chip from '$lib/components/chip.svelte';
 	import DownloadProgress from '$lib/components/download-progress.svelte';
+	import GallerySource from '$lib/components/gallery-source.svelte';
 	import GalleryThumbnails from '$lib/components/gallery-thumbnails.svelte';
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -307,6 +308,16 @@
 						<div class="flex flex-wrap gap-2">
 							{#each processTags(archive.tags) as tag}
 								<Chip item={tag} type={TagType.TAG} />
+							{/each}
+						</div>
+					</InfoSection>
+				{/if}
+
+				{#if archive.sources.length}
+					<InfoSection name="Sources">
+						<div class="flex flex-wrap gap-2">
+							{#each archive.sources as source}
+								<GallerySource {source} />
 							{/each}
 						</div>
 					</InfoSection>

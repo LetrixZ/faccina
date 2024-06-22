@@ -82,11 +82,18 @@ pub fn add_metadata(json: &str, archive: &mut db::InsertArchive) -> anyhow::Resu
   archive.tags = tags;
 
   if let Some(source) = info.source {
-    let url = format!("https://{}/g/{}/{}", source.site, source.gid, source.token);
+    let url = if source.site == "e-hentai" || source.site == "exhentai" {
+      Some(format!(
+        "https://{}.org/g/{}/{}",
+        source.site, source.gid, source.token
+      ))
+    } else {
+      None
+    };
 
     archive.sources = vec![db::Source {
-      name: utils::parse_source_name(&url),
-      url: Some(url),
+      name: utils::parse_source_name(&source.site),
+      url,
     }];
   }
 

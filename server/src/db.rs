@@ -250,7 +250,7 @@ pub async fn fetch_relations(
 
   let sources = sqlx::query_as!(
     Source,
-    "SELECT name, url FROM archive_sources WHERE archive_id = $1",
+    "SELECT name, url FROM archive_sources WHERE archive_id = $1 ORDER BY name ASC",
     archive_id
   )
   .fetch_all(pool)
@@ -491,7 +491,6 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &st
         qb.push(format!("      (\n        {condition} (\n          "));
 
         let and_split = and_split.to_string();
-        println!("and_split {and_split}");
 
         match tag_type.as_str() {
           "artist" => push_taxonomy_sql(qb, TagType::Artist, and_split),
