@@ -1,7 +1,7 @@
 use crate::archive::get_image_files;
 use crate::db::ArchiveFile;
 use crate::image::ImageCodec;
-use crate::torrent;
+use crate::torrents;
 use crate::{archive, config::CONFIG, db};
 use anyhow::anyhow;
 use clap::{Args, Parser, Subcommand};
@@ -311,7 +311,7 @@ pub async fn index_torrents(args: IndexTorrentArsgs) -> anyhow::Result<()> {
   let mut count = 0;
 
   for path in paths_to_index {
-    match torrent::index(&pool, &multi,  torrent::IndexTorrentArgs::with_args(&args, &path)).await {
+    match torrents::index(&pool, &multi,  torrents::IndexTorrentArgs::with_args(&args, &path)).await {
       Ok(_) => count += 1,
       Err(err) => pb.suspend(
         || error!(target: "cmd::index_torrents", "Failed to index torrent '{}' - {err}", path.display()),

@@ -259,21 +259,21 @@
 					</p>
 				</InfoSection>
 
-				{#if archive.tags.length || archive.circles.length}
+				{#if archive.artists?.length || archive.circles?.length}
 					<InfoSection name="Artists">
 						<div class="flex flex-wrap gap-2">
-							{#each archive.artists as artist}
+							{#each archive.artists ?? [] as artist}
 								<Chip item={artist} type={TagType.ARTIST} />
 							{/each}
 
-							{#each archive.circles as circle}
+							{#each archive.circles ?? [] as circle}
 								<Chip item={circle} type={TagType.CIRCLE} />
 							{/each}
 						</div>
 					</InfoSection>
 				{/if}
 
-				{#if archive.magazines.length}
+				{#if archive.magazines?.length}
 					<InfoSection name="Magazines">
 						<div class="flex flex-wrap gap-2">
 							{#each archive.magazines as magazine}
@@ -283,7 +283,17 @@
 					</InfoSection>
 				{/if}
 
-				{#if archive.publishers.length}
+				{#if archive.events?.length}
+					<InfoSection name="Events">
+						<div class="flex flex-wrap gap-2">
+							{#each archive.events as event}
+								<Chip item={event} type={TagType.EVENT} />
+							{/each}
+						</div>
+					</InfoSection>
+				{/if}
+
+				{#if archive.publishers?.length}
 					<InfoSection name="Publishers">
 						<div class="flex flex-wrap gap-2">
 							{#each archive.publishers as publisher}
@@ -293,7 +303,7 @@
 					</InfoSection>
 				{/if}
 
-				{#if archive.parodies.length}
+				{#if archive.parodies?.length}
 					<InfoSection name="Parodies">
 						<div class="flex flex-wrap gap-2">
 							{#each archive.parodies as parody}
@@ -303,7 +313,7 @@
 					</InfoSection>
 				{/if}
 
-				{#if archive.tags.length}
+				{#if archive.tags?.length}
 					<InfoSection name="Tags">
 						<div class="flex flex-wrap gap-2">
 							{#each processTags(archive.tags) as tag}

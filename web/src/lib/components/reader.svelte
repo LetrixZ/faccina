@@ -117,6 +117,8 @@
 				return base + `max-height: ${image.height}px;`;
 			case ImageFitMode.FitHeight:
 				return base + 'max-height: 100%';
+			default:
+				return base;
 		}
 	};
 
@@ -183,7 +185,6 @@
 />
 
 <div class="flex h-dvh w-full flex-col overflow-clip">
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div bind:this={container} class="relative my-auto flex h-full overflow-auto">
 		<div
 			class="absolute inset-0 flex min-h-full min-w-full max-w-full"

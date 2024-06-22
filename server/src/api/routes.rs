@@ -5,7 +5,6 @@ use super::{
 use crate::db;
 use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
-use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 pub struct SearchQuery {
@@ -82,33 +81,10 @@ impl FromStr for Ordering {
   }
 }
 
-enum QueryError {
-  Sorting(String),
-  Ordering(String),
-}
-
-impl QueryError {
-  fn kind(&self) -> &str {
-    match self {
-      QueryError::Sorting(_) => "sorting",
-      QueryError::Ordering(_) => "ordering",
-    }
-  }
-
-  fn message(&self) -> &str {
-    match self {
-      QueryError::Sorting(msg) => msg,
-      QueryError::Ordering(msg) => msg,
-    }
-  }
-}
-
 pub async fn library(
   Query(params): Query<HashMap<String, String>>,
   State(state): State<AppState>,
 ) -> Result<ApiJson<LibraryPage>, ApiError> {
-  let mut errors = vec![];
-
   let search_query = SearchQuery {
     value: params.get("q").cloned().unwrap_or_default(),
     page: {
@@ -120,26 +96,14 @@ pub async fn library(
     },
     sort: {
       if let Some(sort) = params.get("sort") {
-        match sort.parse() {
-          Ok(sort) => sort,
-          Err(err) => {
-            errors.push(QueryError::Sorting(err.to_string()));
-            Sorting::default()
-          }
-        }
+        sort.parse().unwrap_or_default()
       } else {
         Sorting::default()
       }
     },
     order: {
       if let Some(order) = params.get("order") {
-        match order.parse() {
-          Ok(order) => order,
-          Err(err) => {
-            errors.push(QueryError::Ordering(err.to_string()));
-            Ordering::default()
-          }
-        }
+        order.parse().unwrap_or_default()
       } else {
         Ordering::default()
       }
@@ -148,20 +112,11 @@ pub async fn library(
 
   let (archives, total) = db::search(&search_query, &state.pool).await?;
 
-  let errors = errors.iter().fold(Value::Null, |mut acc, error| {
-    acc.as_object_mut().unwrap_or(&mut Map::new()).insert(
-      error.kind().to_string(),
-      Value::String(error.message().to_string()),
-    );
-    acc
-  });
-
   Ok(ApiJson(LibraryPage {
     archives,
     page: search_query.page,
     limit: 24,
     total,
-    errors,
   }))
 }
 

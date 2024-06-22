@@ -11,12 +11,13 @@ export interface Archive {
 	images: Image[];
 	created_at: string;
 	released_at: string;
-	artists: Taxonomy[];
-	circles: Taxonomy[];
-	magazines: Taxonomy[];
-	publishers: Taxonomy[];
-	parodies: Taxonomy[];
-	tags: Tag[];
+	artists?: Taxonomy[];
+	circles?: Taxonomy[];
+	magazines?: Taxonomy[];
+	events?: Taxonomy[];
+	publishers?: Taxonomy[];
+	parodies?: Taxonomy[];
+	tags?: Tag[];
 	sources: Source[];
 }
 
@@ -27,11 +28,12 @@ export interface ArchiveListItem {
 	hash: string;
 	title: string;
 	cover?: ImageDimensions;
-	artists: Taxonomy[];
-	circles: Taxonomy[];
-	magazines: Taxonomy[];
-	parodies: Taxonomy[];
-	tags: Tag[];
+	artists?: Taxonomy[];
+	circles?: Taxonomy[];
+	magazines?: Taxonomy[];
+	events?: Taxonomy[];
+	parodies?: Taxonomy[];
+	tags?: Tag[];
 	rank: number;
 }
 
@@ -39,6 +41,7 @@ export enum TagType {
 	ARTIST = 'artist',
 	CIRCLE = 'circle',
 	MAGAZINE = 'magazine',
+	EVENT = 'event',
 	PUBLISHER = 'publisher',
 	PARODY = 'parody',
 	TAG = 'tag',

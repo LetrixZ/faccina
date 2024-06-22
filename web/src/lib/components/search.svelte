@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { Ordering, Sorting } from '$lib/models';
+	import { cn } from '$lib/utils';
 	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
 	import Button from './ui/button/button.svelte';
 	import { Input } from './ui/input';
-	import { cn } from '$lib/utils';
 
 	let className: string | null | undefined = undefined;
 
 	$: query = $page.url.searchParams.get('q') ?? '';
-	$: sort = ($page.url.searchParams.get('sort')?.toLowerCase() as Sorting) ?? Sorting.CREATED_AT;
-	$: order = ($page.url.searchParams.get('order')?.toLowerCase() as Sorting) ?? Ordering.DESC;
 
 	export { className as class };
 </script>

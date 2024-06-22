@@ -82,6 +82,7 @@ pub struct ArchiveRelations {
   pub artists: Vec<Taxonomy>,
   pub circles: Vec<Taxonomy>,
   pub magazines: Vec<Taxonomy>,
+  pub events: Vec<Taxonomy>,
   pub publishers: Vec<Taxonomy>,
   pub parodies: Vec<Taxonomy>,
   pub tags: Vec<Tag>,
@@ -121,6 +122,7 @@ impl From<Archive> for ArchiveRelations {
       artists: Default::default(),
       circles: Default::default(),
       magazines: Default::default(),
+      events: Default::default(),
       publishers: Default::default(),
       parodies: Default::default(),
       tags: Default::default(),
@@ -146,6 +148,7 @@ pub struct InsertArchive {
   pub artists: Vec<String>,
   pub circles: Vec<String>,
   pub magazines: Vec<String>,
+  pub events: Vec<String>,
   pub publishers: Vec<String>,
   pub parodies: Vec<String>,
   pub tags: Vec<(String, Option<String>)>,
@@ -170,6 +173,7 @@ impl Default for InsertArchive {
       artists: Default::default(),
       circles: Default::default(),
       magazines: Default::default(),
+      events: Default::default(),
       publishers: Default::default(),
       parodies: Default::default(),
       tags: Default::default(),
@@ -236,6 +240,7 @@ pub async fn fetch_relations(
     Vec<Taxonomy>,
     Vec<Taxonomy>,
     Vec<Taxonomy>,
+    Vec<Taxonomy>,
     Vec<Tag>,
     Vec<Source>,
   ),
@@ -244,6 +249,7 @@ pub async fn fetch_relations(
   let artists = fetch_taxonomy_data(pool, TagType::Artist, archive_id).await?;
   let circles = fetch_taxonomy_data(pool, TagType::Circle, archive_id).await?;
   let magazines = fetch_taxonomy_data(pool, TagType::Magazine, archive_id).await?;
+  let events = fetch_taxonomy_data(pool, TagType::Event, archive_id).await?;
   let publishers = fetch_taxonomy_data(pool, TagType::Publisher, archive_id).await?;
   let parodies = fetch_taxonomy_data(pool, TagType::Parody, archive_id).await?;
   let tags = fetch_tag_data(pool, archive_id).await?;
@@ -257,7 +263,7 @@ pub async fn fetch_relations(
   .await?;
 
   Ok((
-    artists, circles, magazines, publishers, parodies, tags, sources,
+    artists, circles, magazines, events, publishers, parodies, tags, sources,
   ))
 }
 
@@ -297,11 +303,12 @@ pub async fn fetch_archive_data(
 
     let mut relations: ArchiveRelations = archive.into();
 
-    let (artists, circles, magazines, publishers, parodies, tags, sources) =
+    let (artists, circles, magazines, events, publishers, parodies, tags, sources) =
       fetch_relations(relations.id, pool).await?;
     relations.artists = artists;
     relations.circles = circles;
     relations.magazines = magazines;
+    relations.events = events;
     relations.publishers = publishers;
     relations.parodies = parodies;
     relations.tags = tags;
@@ -415,7 +422,7 @@ fn parse_query(query: &str) -> String {
 
 fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &str) {
   let re = regex::Regex::new(
-    r#"(?i)-?(artist|circle|magazine|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
+    r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
   )
   .unwrap();
 
@@ -525,7 +532,7 @@ fn clean_value(query: &str) -> String {
   let mut value = query.to_owned();
 
   let re = regex::Regex::new(
-    r#"(?i)-?(artist|circle|magazine|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
+    r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
   )
   .unwrap();
   let captures = re.captures_iter(query).collect_vec();
@@ -640,6 +647,7 @@ pub async fn search(
     TagType::Artist,
     TagType::Circle,
     TagType::Magazine,
+    TagType::Event,
     TagType::Publisher,
     TagType::Parody,
     TagType::Tag,
@@ -679,9 +687,10 @@ pub async fn search(
       artists: row.get::<Json<_>, _>(5).0,
       circles: row.get::<Json<_>, _>(6).0,
       magazines: row.get::<Json<_>, _>(7).0,
-      publishers: row.get::<Json<_>, _>(8).0,
-      parodies: row.get::<Json<_>, _>(9).0,
-      tags: row.get::<Json<_>, _>(10).0,
+      events: row.get::<Json<_>, _>(8).0,
+      publishers: row.get::<Json<_>, _>(9).0,
+      parodies: row.get::<Json<_>, _>(10).0,
+      tags: row.get::<Json<_>, _>(11).0,
     })
     .collect();
 

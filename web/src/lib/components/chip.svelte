@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TagType, type Tag, type Taxonomy } from '$lib/models';
-	import { cn, encodeURL, isTag } from '$lib/utils';
+	import { cn, encodeURL } from '$lib/utils';
 	import { Button } from './ui/button';
 
 	export let item: Taxonomy | Tag;
@@ -14,6 +14,8 @@
 				return 'bg-orange-700 hover:bg-orange-700/80';
 			case TagType.MAGAZINE:
 				return 'bg-blue-700 hover:bg-blue-700/80';
+			case TagType.EVENT:
+				return 'bg-rose-700 hover:bg-blue-700/80';
 			case TagType.PUBLISHER:
 				return 'bg-sky-700 hover:bg-sky-700/80';
 			case TagType.PARODY:

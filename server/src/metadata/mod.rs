@@ -1,4 +1,5 @@
 mod anchira;
+mod ccdc06;
 mod eze;
 mod gallerydl;
 mod hentag;
@@ -29,6 +30,7 @@ enum MetadataFormat {
 enum MetadataFormatYaml {
   Anchira(String),
   HentaiNexus(String),
+  CCDC06(String),
 }
 
 enum MetadataFormatJson {
@@ -47,6 +49,7 @@ fn handle_metadata_format(
     MetadataFormat::Yaml(yaml) => match yaml {
       MetadataFormatYaml::Anchira(yaml) => anchira::add_metadata(&yaml, archive)?,
       MetadataFormatYaml::HentaiNexus(yaml) => hentainexus::add_metadata(&yaml, archive)?,
+      MetadataFormatYaml::CCDC06(yaml) => ccdc06::add_metadata(&yaml, archive)?,
     },
     MetadataFormat::Json(json) => match json {
       MetadataFormatJson::HenTag(json) => hentag::add_metadata(&json, archive)?,
@@ -61,6 +64,10 @@ fn handle_metadata_format(
 }
 
 fn get_yaml_type(yaml: String) -> anyhow::Result<MetadataFormatYaml> {
+  if yaml.contains("DownloadSource") || yaml.contains("ThumbnailIndex") || yaml.contains("Files") {
+    return Ok(MetadataFormatYaml::CCDC06(yaml));
+  }
+
   let value: YamlValue = serde_yaml::from_str(&yaml).expect("Failed to parse YAML");
   if let Some(source) = value.get("Source") {
     if let Some(source) = source.as_str() {

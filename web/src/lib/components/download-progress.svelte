@@ -7,7 +7,7 @@
 	import Progress from './ui/progress/progress.svelte';
 
 	export let task: Readable<Task>;
-	export let save: () => {};
+	export let save: () => unknown;
 </script>
 
 <div class="flex w-full flex-col space-y-1">
@@ -19,7 +19,7 @@
 
 		<Button
 			class={cn(
-				'hover:bg-success/20 size-7 flex-shrink-0 bg-transparent p-1 disabled:opacity-5',
+				'size-7 flex-shrink-0 bg-transparent p-1 hover:bg-success/20 disabled:opacity-5',
 				$task.complete && 'text-success'
 			)}
 			disabled={!$task.complete}

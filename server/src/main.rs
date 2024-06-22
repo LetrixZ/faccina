@@ -10,7 +10,7 @@ mod db;
 mod image;
 mod log;
 mod metadata;
-mod torrent;
+mod torrents;
 mod utils;
 
 async fn run() -> anyhow::Result<()> {

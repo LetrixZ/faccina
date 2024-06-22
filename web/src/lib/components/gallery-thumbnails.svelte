@@ -19,12 +19,12 @@
 
 <div class="flex-grow space-y-2">
 	<div class="@container">
-		<div class="@2xl:grid-cols-3 3xl:grid-cols-6 grid grid-cols-2 gap-2 xl:grid-cols-4">
+		<div class="grid grid-cols-2 gap-2 @2xl:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6">
 			{#each filteredImages as image (image.page_number)}
 				<a class="relative" href={`./${archive.id}/read/${image.page_number}${$page.url.search}`}>
 					<img
 						class={cn(
-							'shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600',
+							'h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600',
 							isSpread(image) && 'object-contain'
 						)}
 						width={320}
@@ -35,7 +35,7 @@
 					/>
 					{#if !wideImages && isSpread(image)}
 						<span
-							class="bg-muted absolute bottom-2 right-2 rounded-md px-1 py-0.5 text-xs font-medium uppercase tracking-wide opacity-90"
+							class="absolute bottom-2 right-2 rounded-md bg-muted px-1 py-0.5 text-xs font-medium uppercase tracking-wide opacity-90"
 						>
 							Spread
 						</span>

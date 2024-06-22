@@ -62,7 +62,7 @@
 
 	<Button
 		variant="ghost"
-		class="text-muted-foreground-light size-8 p-0"
+		class="size-8 p-0 text-muted-foreground-light"
 		on:click={() => {
 			const query = new URLSearchParams($page.url.searchParams.toString());
 			query.set('order', order === Ordering.DESC ? Ordering.ASC : Ordering.DESC);

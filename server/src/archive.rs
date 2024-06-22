@@ -94,6 +94,7 @@ pub enum TagType {
   Artist,
   Circle,
   Magazine,
+  Event,
   Publisher,
   Parody,
   Tag,
@@ -105,6 +106,7 @@ impl TagType {
       TagType::Artist => "artists".to_string(),
       TagType::Circle => "circles".to_string(),
       TagType::Magazine => "magazines".to_string(),
+      TagType::Event => "events".to_string(),
       TagType::Publisher => "publishers".to_string(),
       TagType::Parody => "parodies".to_string(),
       TagType::Tag => "tags".to_string(),
@@ -116,6 +118,7 @@ impl TagType {
       TagType::Artist => "artist_id".to_string(),
       TagType::Circle => "circle_id".to_string(),
       TagType::Magazine => "magazine_id".to_string(),
+      TagType::Event => "event_id".to_string(),
       TagType::Publisher => "publisher_id".to_string(),
       TagType::Parody => "parody_id".to_string(),
       TagType::Tag => "tag_id".to_string(),
@@ -127,6 +130,7 @@ impl TagType {
       TagType::Artist => "archive_artists".to_string(),
       TagType::Circle => "archive_circles".to_string(),
       TagType::Magazine => "archive_magazines".to_string(),
+      TagType::Event => "archive_events".to_string(),
       TagType::Publisher => "archive_publishers".to_string(),
       TagType::Parody => "archive_parodies".to_string(),
       TagType::Tag => "archive_tags".to_string(),
@@ -354,6 +358,7 @@ async fn insert_archive(
     artists,
     circles,
     magazines,
+    events,
     publishers,
     parodies,
     tags,
@@ -518,6 +523,7 @@ async fn insert_archive(
     insert_taxonomy(transaction, TagType::Artist, artists, archive_id).await?;
     insert_taxonomy(transaction, TagType::Circle, circles, archive_id).await?;
     insert_taxonomy(transaction, TagType::Magazine, magazines, archive_id).await?;
+    insert_taxonomy(transaction, TagType::Event, events, archive_id).await?;
     insert_taxonomy(transaction, TagType::Publisher, publishers, archive_id).await?;
     insert_taxonomy(transaction, TagType::Parody, parodies, archive_id).await?;
     insert_tags(transaction, tags, archive_id).await?;

@@ -101,11 +101,11 @@
 		on:click={() => readerTimeout.reset()}
 		on:mousemove={() => readerTimeout.reset()}
 	>
-		<div class="bg-background relative mx-auto flex h-12 w-full items-center justify-between px-2">
+		<div class="relative mx-auto flex h-12 w-full items-center justify-between bg-background px-2">
 			<a
 				href={`/g/${$page.params.id}${$page.url.search}`}
 				draggable="false"
-				class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+				class="inline-flex h-full items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline"
 			>
 				<ArrowLeft class="size-5" />
 				<span class="sr-only">Go back</span>
@@ -117,7 +117,7 @@
 					on:click|preventDefault={() => ($readerPage = $prevPage)}
 					draggable="false"
 					class={cn(
-						'text-muted-foreground-light inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium underline-offset-4 hover:underline',
+						'inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline',
 						!$prevPage && 'pointer-events-none opacity-40'
 					)}
 				>
@@ -160,7 +160,7 @@
 					on:click|preventDefault={() => ($readerPage = $nextPage)}
 					draggable="false"
 					class={cn(
-						'text-muted-foreground-light inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium underline-offset-4 hover:underline ',
+						'inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline ',
 						!$nextPage && 'pointer-events-none opacity-40'
 					)}
 				>
@@ -172,7 +172,7 @@
 			<Button
 				draggable="false"
 				variant="link"
-				class="text-muted-foreground-light inline-flex h-full items-center justify-center p-0 text-sm font-medium underline-offset-4 hover:underline"
+				class="inline-flex h-full items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline"
 				on:click={() => ($preferencesOpen = true)}
 			>
 				<MenuIcon class="size-5" />
@@ -188,7 +188,7 @@
 			<Dialog.Title>Reader preferences</Dialog.Title>
 		</Dialog.Header>
 
-		<p class="text-muted-foreground-light text-sm font-medium leading-none">
+		<p class="text-sm font-medium leading-none text-muted-foreground-light">
 			Control bar placement
 		</p>
 		<RadioGroup.Root value={$prefs.barPlacement} onValueChange={onPlacemenetChange}>

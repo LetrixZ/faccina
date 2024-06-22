@@ -16,24 +16,28 @@
 		const maxWidth = 290;
 
 		const tags = [
-			...archive.artists.map((tag) => ({ ...tag, type: TagType.ARTIST })),
-			...archive.circles.map((tag) => ({ ...tag, type: TagType.CIRCLE })),
-			...archive.parodies
-				.map((tag) => ({ ...tag, type: TagType.PARODY }))
-				.filter((tag) => !['original-work', 'original'].includes(tag.slug)),
-			...archive.tags
-				.map((tag) => ({ ...tag, type: TagType.TAG }))
-				.filter((tag) => !tagsExcludeCount.includes(tag.name.toLowerCase()))
-				.sort((a, b) => {
-					const aWeight = tagWeights.find(([tag]) => tag === a.name.toLowerCase())?.[1] ?? 0;
-					const bWeight = tagWeights.find(([tag]) => tag === b.name.toLowerCase())?.[1] ?? 0;
+			...(archive.artists ? archive.artists.map((tag) => ({ ...tag, type: TagType.ARTIST })) : []),
+			...(archive.circles ? archive.circles.map((tag) => ({ ...tag, type: TagType.CIRCLE })) : []),
+			...(archive.parodies
+				? archive.parodies
+						.map((tag) => ({ ...tag, type: TagType.PARODY }))
+						.filter((tag) => !['original-work', 'original'].includes(tag.slug))
+				: []),
+			...(archive.tags
+				? archive.tags
+						.map((tag) => ({ ...tag, type: TagType.TAG }))
+						.filter((tag) => !tagsExcludeCount.includes(tag.name.toLowerCase()))
+						.sort((a, b) => {
+							const aWeight = tagWeights.find(([tag]) => tag === a.name.toLowerCase())?.[1] ?? 0;
+							const bWeight = tagWeights.find(([tag]) => tag === b.name.toLowerCase())?.[1] ?? 0;
 
-					if (aWeight === bWeight) {
-						return a.name.length - b.name.length;
-					}
+							if (aWeight === bWeight) {
+								return a.name.length - b.name.length;
+							}
 
-					return bWeight - aWeight;
-				}),
+							return bWeight - aWeight;
+						})
+				: []),
 		];
 
 		let tagCount = tags.length;
@@ -88,7 +92,7 @@
 
 	<div class="h-fit space-y-1.5">
 		<a
-			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
 			href={`/g/${archive.id}${$page.url.search}`}
 			title={archive.title}
 		>

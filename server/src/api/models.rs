@@ -1,7 +1,6 @@
 use crate::db;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Serialize)]
 pub struct Archive {
@@ -85,6 +84,7 @@ pub struct ArchiveData {
   pub artists: Vec<Taxonomy>,
   pub circles: Vec<Taxonomy>,
   pub magazines: Vec<Taxonomy>,
+  pub events: Vec<Taxonomy>,
   pub publishers: Vec<Taxonomy>,
   pub parodies: Vec<Taxonomy>,
   pub tags: Vec<Tag>,
@@ -109,6 +109,7 @@ impl From<db::ArchiveRelations> for ArchiveData {
       artists,
       circles,
       magazines,
+      events,
       publishers,
       parodies,
       tags,
@@ -131,6 +132,7 @@ impl From<db::ArchiveRelations> for ArchiveData {
       artists: artists.into_iter().map(|t| t.into()).collect(),
       circles: circles.into_iter().map(|t| t.into()).collect(),
       magazines: magazines.into_iter().map(|t| t.into()).collect(),
+      events: events.into_iter().map(|t| t.into()).collect(),
       publishers: publishers.into_iter().map(|t| t.into()).collect(),
       parodies: parodies.into_iter().map(|t| t.into()).collect(),
       tags: tags.into_iter().map(|t| t.into()).collect(),
@@ -193,11 +195,19 @@ pub struct ArchiveListItem {
   pub hash: String,
   pub title: String,
   pub cover: Option<ImageDimensions>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub artists: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub circles: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub magazines: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub publishers: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
+  pub events: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub parodies: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub tags: Vec<Taxonomy>,
 }
 
@@ -220,5 +230,4 @@ pub struct LibraryPage {
   pub page: usize,
   pub limit: usize,
   pub total: i64,
-  pub errors: Value,
 }

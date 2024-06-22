@@ -85,18 +85,18 @@ export function generateFilename(archive: Archive) {
 	const { artists, circles, magazines } = archive;
 	const splits: string[] = [];
 
-	if (!circles.length) {
-		if (artists.length === 1) {
+	if (!circles?.length) {
+		if (artists?.length === 1) {
 			splits.push(`[${artists[0].name}]`);
-		} else if (artists.length === 2) {
+		} else if (artists?.length === 2) {
 			splits.push(`[${artists[0].name} & ${artists[1].name}]`);
-		} else if (artists.length > 2) {
+		} else if (artists && artists.length > 2) {
 			splits.push(`[Various]`);
 		}
 	} else if (circles.length === 1) {
-		if (artists.length === 1) {
+		if (artists?.length === 1) {
 			splits.push(`[${circles[0].name} (${artists[0].name})]`);
-		} else if (artists.length === 2) {
+		} else if (artists?.length === 2) {
 			splits.push(`[${circles[0].name} (${artists[0].name} & ${artists[1].name})]`);
 		} else {
 			splits.push(`[${circles[0].name}]`);
@@ -107,7 +107,7 @@ export function generateFilename(archive: Archive) {
 
 	splits.push(archive.title);
 
-	if (magazines.length === 1) {
+	if (magazines?.length === 1) {
 		splits.push(`(${magazines[0].name})`);
 	}
 
@@ -185,13 +185,13 @@ export function getMetadata(archive: Archive) {
 	return {
 		Title: archive.title,
 		Description: archive.description ?? undefined,
-		Artist: archive.artists.map((artist) => artist.name)?.join(', '),
-		Groups: archive.circles.map((circle) => circle.name)?.join(', '),
-		Magazine: archive.magazines.map((magazine) => magazine.name)?.join(', '),
-		Parody: archive.parodies.map((parody) => parody.name)?.join(', '),
-		Publisher: archive.publishers.map((publisher) => publisher.name).join(', '),
+		Artist: archive.artists?.map((artist) => artist.name)?.join(', '),
+		Groups: archive.circles?.map((circle) => circle.name)?.join(', '),
+		Magazine: archive.magazines?.map((magazine) => magazine.name)?.join(', '),
+		Parody: archive.parodies?.map((parody) => parody.name)?.join(', '),
+		Publisher: archive.publishers?.map((publisher) => publisher.name).join(', '),
 		Pages: archive.pages,
-		Tags: archive.tags.map((tag) => tag.name),
+		Tags: archive.tags?.map((tag) => tag.name),
 		Source: `https://${location.hostname}/g/${archive.id}`,
 		Released: new Date(archive.released_at).getTime() / 1000,
 		Thumbnail: archive.thumbnail - 1,
@@ -252,7 +252,6 @@ export function isTag(tag: Taxonomy | Tag): tag is Tag {
 export function processTags(tags: Tag[]) {
 	const tagNamespaces = tags.map((tag) => `${tag.namespace}:${tag.name}`);
 
-	// Step 1: Create a frequency map for the substrings after the colon
 	const frequencyMap = tagNamespaces.reduce(
 		(acc, item) => {
 			const afterColon = item.split(':')[1];
@@ -262,9 +261,8 @@ export function processTags(tags: Tag[]) {
 		{} as { [key: string]: number }
 	);
 
-	// Step 2: Generate the result array based on the frequency map
 	const result = tagNamespaces.map((item) => {
-		const [beforeColon, afterColon] = item.split(':');
+		const afterColon = item.split(':')[1];
 		if (frequencyMap[afterColon] === 1) {
 			return afterColon;
 		} else {

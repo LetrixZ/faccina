@@ -15,7 +15,7 @@
 
 <main class="container relative space-y-2">
 	{#await data.libraryPage}
-		<p class="text-foreground text-xl font-semibold">Browse</p>
+		<p class="text-xl font-semibold text-foreground">Browse</p>
 
 		<div class="grid items-end gap-2 md:flex">
 			<SortOptions />
@@ -43,7 +43,7 @@
 			{/each}
 		</div>
 	{:then libraryPage}
-		<p class="text-foreground text-xl font-semibold">Browse ({libraryPage.total})</p>
+		<p class="text-xl font-semibold text-foreground">Browse ({libraryPage.total})</p>
 
 		<div class="grid items-end gap-2 md:flex">
 			<SortOptions />
