@@ -366,7 +366,7 @@ async fn insert_archive(
   } = data;
 
   let rec = sqlx::query!(
-    r#"SELECT id, slug, title FROM archives WHERE hash = $1"#,
+    r#"SELECT id, slug, title FROM archives WHERE hash ILIKE $1"#,
     hash
   )
   .fetch_optional(&mut **transaction)
