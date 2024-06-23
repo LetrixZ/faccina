@@ -30,6 +30,7 @@ pub enum Commands {
   GenerateThumbnails(GenerateThumbnailArgs),
   #[command(about="Calculate image dimensions. Useful to fix image ordering.", long_about = None)]
   CalculateDimensions(CalculateDimensionsArgs),
+  #[command(about="Scrape metadata for archives.", long_about = None)]
   Scrape(ScrapeArgs),
 }
 
