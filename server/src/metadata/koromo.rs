@@ -1,117 +1,79 @@
+use super::MultiTextField;
 use crate::{config::CONFIG, db, utils};
-use chrono::DateTime;
-use itertools::Itertools;
 use serde::Deserialize;
+use slug::slugify;
 
 #[derive(Deserialize)]
-#[serde(untagged)]
-enum MultiField {
-  Single(String),
-  Many(Vec<String>),
-}
-
-#[derive(Deserialize)]
-struct Metadata {
+pub struct Metadata {
   #[serde(rename = "Title")]
   pub title: String,
-  #[serde(rename = "Description")]
+  #[serde(rename = "Description", default)]
   pub description: Option<String>,
   #[serde(rename = "Source", default)]
   pub source: Option<String>,
   #[serde(rename = "URL", default)]
   pub url: Option<String>,
-  #[serde(rename = "Artist")]
-  pub artists: Option<MultiField>,
-  #[serde(rename = "Groups", alias = "Circle")]
-  pub groups: Option<MultiField>,
-  #[serde(rename = "Magazine")]
-  pub magazines: Option<MultiField>,
-  #[serde(rename = "Publisher")]
-  pub publishers: Option<MultiField>,
-  #[serde(rename = "Parody")]
-  pub parodies: Option<MultiField>,
-  #[serde(rename = "Tags")]
-  pub tags: Vec<String>,
-  #[serde(rename = "Thumbnail")]
+  #[serde(rename = "Artist", default)]
+  pub artists: Option<MultiTextField>,
+  #[serde(rename = "Groups", alias = "Circle", default)]
+  pub groups: Option<MultiTextField>,
+  #[serde(rename = "Magazine", default)]
+  pub magazines: Option<MultiTextField>,
+  #[serde(rename = "Publisher", default)]
+  pub publishers: Option<MultiTextField>,
+  #[serde(rename = "Parody", default)]
+  pub parodies: Option<MultiTextField>,
+  #[serde(rename = "Tags", default)]
+  pub tags: Option<Vec<String>>,
+  #[serde(rename = "Thumbnail", default)]
   pub thumb_index: Option<i16>,
   #[serde(rename = "Released", default)]
   pub released: Option<i64>,
 }
 
-pub fn add_metadata(json: &str, archive: &mut db::InsertArchive) -> anyhow::Result<()> {
-  let info = serde_json::from_str::<Metadata>(json)?;
-
-  if CONFIG.metadata.parse_filename_title {
-    archive.title = utils::parse_filename(&info.title).0;
+pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyhow::Result<()> {
+  archive.title = if CONFIG.metadata.parse_filename_title {
+    utils::parse_filename(&info.title).0
   } else {
-    archive.title = info.title.to_string();
-  }
+    Some(info.title)
+  };
 
+  archive.slug = archive.title.as_ref().map(slugify);
   archive.description = info.description;
-  archive.tags = info
-    .tags
-    .iter()
-    .map(|t| (utils::capitalize_words(t), None))
-    .collect();
+  archive.thumbnail = info.thumb_index.map(|index| index + 1);
+  archive.released_at = utils::map_timestamp(info.released);
 
-  if let Some(data) = info.artists {
-    archive.artists = match data {
-      MultiField::Single(str) => str.split(",").map(|s| s.trim().to_string()).collect_vec(),
-      MultiField::Many(vec) => vec,
-    };
-  }
+  archive.artists = info.artists.map(|field| field.to_vec());
+  archive.circles = info.groups.map(|field| field.to_vec());
+  archive.magazines = info.magazines.map(|field| field.to_vec());
+  archive.publishers = info.publishers.map(|field| field.to_vec());
+  archive.parodies = info.parodies.map(|field| field.to_vec());
+  archive.tags = info.tags.map(|tags| {
+    tags
+      .into_iter()
+      .map(|tag| (utils::capitalize_words(&tag), "".to_string()))
+      .collect()
+  });
 
-  if let Some(data) = info.groups {
-    archive.circles = match data {
-      MultiField::Single(str) => str.split(",").map(|s| s.trim().to_string()).collect_vec(),
-      MultiField::Many(vec) => vec,
-    };
-  }
-
-  if let Some(data) = info.magazines {
-    archive.magazines = match data {
-      MultiField::Single(str) => str.split(",").map(|s| s.trim().to_string()).collect_vec(),
-      MultiField::Many(vec) => vec,
-    };
-  }
-
-  if let Some(data) = info.publishers {
-    archive.publishers = match data {
-      MultiField::Single(str) => str.split(",").map(|s| s.trim().to_string()).collect_vec(),
-      MultiField::Many(vec) => vec,
-    };
-  }
-
-  if let Some(data) = info.parodies {
-    archive.parodies = match data {
-      MultiField::Single(str) => str.split(",").map(|s| s.trim().to_string()).collect_vec(),
-      MultiField::Many(vec) => vec,
-    };
-  }
-
-  archive.thumbnail = info.thumb_index.map(|thumb| thumb + 1).unwrap_or(1);
-
-  if let Some(released) = info.released {
-    archive.released_at = Some(DateTime::from_timestamp(released, 0).unwrap().naive_utc());
-  }
-
-  let mut sources: Vec<db::Source> = vec![];
+  let mut sources: Vec<db::ArchiveSource> = vec![];
 
   if let Some(url) = info.url {
-    sources.push(db::Source {
+    sources.push(db::ArchiveSource {
       name: utils::parse_source_name(&url),
       url: Some(url),
     });
   }
 
   if let Some(url) = info.source {
-    sources.push(db::Source {
+    sources.push(db::ArchiveSource {
       name: utils::parse_source_name(&url),
       url: Some(url),
     });
   }
 
-  archive.sources = sources;
+  if !sources.is_empty() {
+    archive.sources = Some(sources);
+  }
 
   Ok(())
 }

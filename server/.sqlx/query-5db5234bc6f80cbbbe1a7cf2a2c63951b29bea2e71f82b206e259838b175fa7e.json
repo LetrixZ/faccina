@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO archives (slug, title, description, path, hash, pages, size, thumbnail, language, translated, released_at)\n      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, NOW())) RETURNING id",
+  "query": "INSERT INTO archives (\n        slug, title, description, path, hash, pages, size, thumbnail, language, released_at, has_metadata\n      ) VALUES (\n       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11\n      ) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -20,13 +20,13 @@
         "Int8",
         "Int2",
         "Varchar",
-        "Bool",
-        "Timestamptz"
+        "Timestamp",
+        "Bool"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "f73846c497995e0e65ec350459ee8881c1dcdb73a6bab9cfb84f065e174dbcdc"
+  "hash": "5db5234bc6f80cbbbe1a7cf2a2c63951b29bea2e71f82b206e259838b175fa7e"
 }

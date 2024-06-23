@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM archive_images WHERE archive_id = $1 AND page_number = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3fdc6b7129c57d8319832dd866ec1f7233965a42443669a93ea3e2772e0706f7"
+}

@@ -1,40 +1,40 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, path, pages, thumbnail FROM archives WHERE hash = $1",
+  "query": "SELECT filename, page_number, width, height FROM archive_images WHERE archive_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
-        "type_info": "Int8"
+        "name": "filename",
+        "type_info": "Varchar"
       },
       {
         "ordinal": 1,
-        "name": "path",
-        "type_info": "Text"
+        "name": "page_number",
+        "type_info": "Int2"
       },
       {
         "ordinal": 2,
-        "name": "pages",
+        "name": "width",
         "type_info": "Int2"
       },
       {
         "ordinal": 3,
-        "name": "thumbnail",
+        "name": "height",
         "type_info": "Int2"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Int8"
       ]
     },
     "nullable": [
       false,
       false,
       true,
-      false
+      true
     ]
   },
-  "hash": "9acd14ae3efa2033341ec20c7cefa50342b36f549fc2c6d2f440129a76d67ef9"
+  "hash": "24b7b5dbb3fd18bb8501598966311228931037e452b2b99f671ce343aabda673"
 }

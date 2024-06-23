@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM archive_sources WHERE archive_id = $1 AND name = $2 AND url = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a9cba841c31f302b9530bdc941dbb66f861d12f111de2b8ff09e56ae8792a053"
+}

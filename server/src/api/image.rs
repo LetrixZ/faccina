@@ -15,16 +15,17 @@ use axum::{
 use image::GenericImageView;
 use itertools::Itertools;
 use sqlx::PgPool;
+use std::io::Cursor;
 use tokio::fs::{self, File};
 use tokio::io::{AsyncReadExt, BufReader};
-use tracing::{error, warn};
+use tracing::warn;
 
 const TARGET: &str = "server::image";
 
 pub fn get_routes() -> Router<AppState> {
   Router::new()
     .route("/image/:hash/cover", get(get_cover))
-    .route("/image/:hash/:page", get(get_page))
+    .route("/image/:hash/:filename", get(get_file))
     .route("/image/:hash/:page/thumb", get(get_page_thumbnail))
 }
 
@@ -133,7 +134,7 @@ async fn get_cover(
 
       if filename.to_string().contains(&format!(
         "{}.c.",
-        leading_zeros(archive.thumbnail, archive.pages)
+        leading_zeros(archive.thumbnail, archive.pages.unwrap_or_default())
       )) {
         files.push(entry);
       }
@@ -149,7 +150,7 @@ async fn get_cover(
       target = TARGET,
       "Cover image file not found. Generating cover."
     );
-    let filename = utils::leading_zeros(archive.thumbnail, archive.pages);
+    let filename = utils::leading_zeros(archive.thumbnail, archive.pages.unwrap_or_default());
 
     encode_page(&state.pool, archive.id, archive.thumbnail, &filename, true).await?
   } else {
@@ -164,13 +165,10 @@ async fn get_cover(
 
   let body = Body::from(buf);
   let headers = [
-    (
-      header::CONTENT_TYPE,
-      format!("image/{}", format.extension()),
-    ),
+    (header::CONTENT_TYPE, format.media_type()),
     (
       header::CACHE_CONTROL,
-      "public, max-age=259200, immutable".into(),
+      "public, max-age=259200, immutable",
     ),
   ];
 
@@ -194,10 +192,10 @@ async fn get_page_thumbnail(
     while let Ok(Some(entry)) = dir.next_entry().await {
       let filename = entry.file_name();
 
-      if filename
-        .to_string()
-        .contains(&format!("{}.t.", leading_zeros(page, archive.pages)))
-      {
+      if filename.to_string().contains(&format!(
+        "{}.t.",
+        leading_zeros(page, archive.pages.unwrap_or_default())
+      )) {
         files.push(entry);
       }
     }
@@ -212,7 +210,7 @@ async fn get_page_thumbnail(
       target = TARGET,
       "Page thumbnail image file not found. Generating thumbnail."
     );
-    let filename = utils::leading_zeros(page, archive.pages);
+    let filename = utils::leading_zeros(page, archive.pages.unwrap_or_default());
 
     encode_page(&state.pool, archive.id, page, &filename, false).await?
   } else {
@@ -227,109 +225,82 @@ async fn get_page_thumbnail(
 
   let body = Body::from(buf);
   let headers = [
-    (
-      header::CONTENT_TYPE,
-      format!("image/{}", format.extension()),
-    ),
+    (header::CONTENT_TYPE, format.media_type()),
     (
       header::CACHE_CONTROL,
-      "public, max-age=259200, immutable".into(),
+      "public, max-age=259200, immutable",
     ),
   ];
 
   Ok((headers, body).into_response())
 }
 
-async fn get_page(
+async fn get_file(
   State(state): State<AppState>,
-  Path((hash, page)): Path<(String, i16)>,
+  Path((hash, filename)): Path<(String, String)>,
 ) -> Result<Response, ApiError> {
-  let archive = sqlx::query!(
-    r#"SELECT id, path,
-    (SELECT filename FROM archive_images WHERE archive_id = id AND page_number = $2)
-    FROM archives WHERE hash = $1"#,
+  let archive_image = sqlx::query!(
+    r#"SELECT id, path, filename, page_number, width, height FROM archives
+    INNER JOIN archive_images ON archive_id = id AND filename = $2
+    WHERE hash = $1"#,
     hash,
-    page
+    filename
   )
   .fetch_optional(&state.pool)
   .await?
   .ok_or(ApiError::NotFound)?;
 
-  let path = CONFIG.directories.links.join(archive.id.to_string());
+  let path = CONFIG.directories.links.join(archive_image.id.to_string());
   let file = File::open(&path).await?;
   let reader = BufReader::new(file);
   let mut zip = ZipFileReader::with_tokio(reader).await?;
 
-  let buf = if let Some(filename) = archive.filename {
-    let (file_index, _) = zip
-      .file()
-      .entries()
-      .iter()
-      .enumerate()
-      .map(|(i, entry)| (i, entry.filename().to_string()))
-      .filter(|(_, filename)| utils::is_image(filename))
-      .find(|(_, _filename)| _filename.eq(&filename))
-      .ok_or(ApiError::ImageNotFound)?;
+  let (file_index, _) = zip
+    .file()
+    .entries()
+    .iter()
+    .enumerate()
+    .map(|(i, entry)| (i, entry.filename().to_string()))
+    .filter(|(_, filename)| utils::is_image(filename))
+    .find(|(_, _filename)| _filename.eq(&archive_image.filename))
+    .ok_or(ApiError::ImageNotFound)?;
 
-    let mut reader = zip.reader_with_entry(file_index).await?;
-    let mut buf = vec![];
-    reader.read_to_end_checked(&mut buf).await?;
-    buf
-  } else {
-    let image_files = zip
-      .file()
-      .entries()
-      .iter()
-      .enumerate()
-      .map(|(i, entry)| (i, entry.filename().to_string()))
-      .filter(|(_, filename)| utils::is_image(filename))
-      .sorted_by(|a, b| natord::compare(&a.1, &b.1))
-      .collect_vec();
+  let mut reader = zip.reader_with_entry(file_index).await?;
+  let mut buf = vec![];
+  reader.read_to_end_checked(&mut buf).await?;
 
-    let file = image_files
-      .get((page - 1) as usize)
-      .ok_or(ApiError::ImageNotFound)?;
+  let format = file_format::FileFormat::from_bytes(&buf);
 
-    let mut reader = zip.reader_with_entry(file.0).await?;
-    let mut buf = vec![];
-    reader.read_to_end_checked(&mut buf).await?;
-
-    if let Ok(image) = ::image::load_from_memory(&buf) {
-      let (w, h) = image.dimensions();
+  if archive_image.width.is_none() || archive_image.height.is_none() {
+    let cursor = Cursor::new(&buf);
+    if let Ok(img) = ::image::io::Reader::new(cursor)
+      .with_guessed_format()?
+      .decode()
+    {
+      let (w, h) = img.dimensions();
 
       if let Err(err) = sqlx::query!(
-        r#"INSERT INTO archive_images (archive_id, filename, page_number, width, height)
-        VALUES ($1, $2, $3, $4, $5)"#,
-        archive.id,
-        file.1,
-        page,
-        w as i32,
-        h as i32,
+        r#"UPDATE archive_images
+        SET width = $3, height = $4 WHERE archive_id = $1 AND page_number = $2"#,
+        archive_image.id,
+        archive_image.page_number,
+        w as i16,
+        h as i16
       )
       .execute(&state.pool)
       .await
       {
-        error!(
-          "Failed to save image dimensions for page {} archive ID {}: {err}",
-          page, archive.id
-        );
+        warn!(target: "api::image::read", "Failed to calculate image dimensions for page {} of archive ID {}: {err}", archive_image.page_number, archive_image.id)
       }
     }
-
-    buf
-  };
-
-  let format = file_format::FileFormat::from_bytes(&buf);
+  }
 
   let body = Body::from(buf);
   let headers = [
-    (
-      header::CONTENT_TYPE,
-      format!("image/{}", format.extension()),
-    ),
+    (header::CONTENT_TYPE, format.media_type()),
     (
       header::CACHE_CONTROL,
-      "public, max-age=259200, immutable".into(),
+      "public, max-age=259200, immutable",
     ),
   ];
 

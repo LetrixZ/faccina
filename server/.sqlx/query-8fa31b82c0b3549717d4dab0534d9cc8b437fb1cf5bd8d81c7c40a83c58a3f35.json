@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, path, pages, thumbnail FROM archives WHERE hash = $1",
+  "query": "SELECT id, slug, path, hash FROM archives WHERE (id = $1 OR path = $2 OR hash = $3) AND deleted_at IS NULL",
   "describe": {
     "columns": [
       {
@@ -10,31 +10,33 @@
       },
       {
         "ordinal": 1,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
         "name": "path",
         "type_info": "Text"
       },
       {
-        "ordinal": 2,
-        "name": "pages",
-        "type_info": "Int2"
-      },
-      {
         "ordinal": 3,
-        "name": "thumbnail",
-        "type_info": "Int2"
+        "name": "hash",
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
+        "Int8",
+        "Text",
         "Text"
       ]
     },
     "nullable": [
       false,
       false,
-      true,
+      false,
       false
     ]
   },
-  "hash": "9acd14ae3efa2033341ec20c7cefa50342b36f549fc2c6d2f440129a76d67ef9"
+  "hash": "8fa31b82c0b3549717d4dab0534d9cc8b437fb1cf5bd8d81c7c40a83c58a3f35"
 }

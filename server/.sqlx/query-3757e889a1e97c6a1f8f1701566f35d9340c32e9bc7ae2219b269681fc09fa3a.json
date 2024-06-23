@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM archive_tags WHERE archive_id = $1 AND tag_id = $2 AND namespace = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3757e889a1e97c6a1f8f1701566f35d9340c32e9bc7ae2219b269681fc09fa3a"
+}

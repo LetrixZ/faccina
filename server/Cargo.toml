@@ -40,3 +40,4 @@ time = "0.3.36"
 webp = "0.3.0"
 natord = "1.0.9"
 lava_torrent = "0.11.1"
+ureq = { version = "2.9.7", features = ["json"] }

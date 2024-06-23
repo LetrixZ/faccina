@@ -1,15 +1,20 @@
-use crate::archive::TagType;
+use crate::api;
 use crate::config::CONFIG;
+use crate::utils::tag_alias;
 use crate::{
   api::{
-    models::{ArchiveListItem, Image, ImageDimensions},
+    models::{ArchiveListItem, ImageDimensions},
     routes::SearchQuery,
   },
   utils,
 };
+use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use funty::Fundamental;
+use indicatif::MultiProgress;
 use itertools::Itertools;
+use slug::slugify;
+use sqlx::Transaction;
 use sqlx::{
   postgres::{PgConnectOptions, PgSslMode},
   types::Json,
@@ -17,6 +22,56 @@ use sqlx::{
 };
 use std::collections::HashSet;
 use std::ops::Mul;
+use tracing::warn;
+
+#[derive(PartialEq, Eq, Debug)]
+pub enum TagType {
+  Artist,
+  Circle,
+  Magazine,
+  Event,
+  Publisher,
+  Parody,
+  Tag,
+}
+
+impl TagType {
+  pub fn table(&self) -> String {
+    match self {
+      TagType::Artist => "artists".to_string(),
+      TagType::Circle => "circles".to_string(),
+      TagType::Magazine => "magazines".to_string(),
+      TagType::Event => "events".to_string(),
+      TagType::Publisher => "publishers".to_string(),
+      TagType::Parody => "parodies".to_string(),
+      TagType::Tag => "tags".to_string(),
+    }
+  }
+
+  pub fn id(&self) -> String {
+    match self {
+      TagType::Artist => "artist_id".to_string(),
+      TagType::Circle => "circle_id".to_string(),
+      TagType::Magazine => "magazine_id".to_string(),
+      TagType::Event => "event_id".to_string(),
+      TagType::Publisher => "publisher_id".to_string(),
+      TagType::Parody => "parody_id".to_string(),
+      TagType::Tag => "tag_id".to_string(),
+    }
+  }
+
+  pub fn relation(&self) -> String {
+    match self {
+      TagType::Artist => "archive_artists".to_string(),
+      TagType::Circle => "archive_circles".to_string(),
+      TagType::Magazine => "archive_magazines".to_string(),
+      TagType::Event => "archive_events".to_string(),
+      TagType::Publisher => "archive_publishers".to_string(),
+      TagType::Parody => "archive_parodies".to_string(),
+      TagType::Tag => "archive_tags".to_string(),
+    }
+  }
+}
 
 #[derive(Default)]
 pub struct Archive {
@@ -29,7 +84,7 @@ pub struct Archive {
   pub size: i64,
   pub cover: Option<ImageDimensions>,
   pub thumbnail: i16,
-  pub images: Vec<Image>,
+  pub images: Vec<api::models::Image>,
   pub created_at: NaiveDateTime,
   pub released_at: NaiveDateTime,
 }
@@ -41,21 +96,29 @@ pub struct ArchiveFile {
   pub thumbnail: i16,
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Default, Debug, Clone)]
+pub struct ArchiveImage {
+  pub filename: String,
+  pub page_number: i16,
+  pub width: Option<i16>,
+  pub height: Option<i16>,
+}
+
+#[derive(sqlx::FromRow, Clone, Debug)]
 pub struct Taxonomy {
   pub slug: String,
   pub name: String,
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Debug)]
 pub struct Tag {
   pub slug: String,
   pub name: String,
-  pub namespace: Option<String>,
+  pub namespace: String,
 }
 
-#[derive(sqlx::FromRow, Debug)]
-pub struct Source {
+#[derive(sqlx::FromRow, Debug, Clone)]
+pub struct ArchiveSource {
   pub name: String,
   pub url: Option<String>,
 }
@@ -76,7 +139,7 @@ pub struct ArchiveRelations {
   pub size: i64,
   pub cover: Option<ImageDimensions>,
   pub thumbnail: i16,
-  pub images: Vec<Image>,
+  pub images: Vec<api::models::Image>,
   pub created_at: NaiveDateTime,
   pub released_at: NaiveDateTime,
   pub artists: Vec<Taxonomy>,
@@ -86,7 +149,7 @@ pub struct ArchiveRelations {
   pub publishers: Vec<Taxonomy>,
   pub parodies: Vec<Taxonomy>,
   pub tags: Vec<Tag>,
-  pub sources: Vec<Source>,
+  pub sources: Vec<ArchiveSource>,
 }
 
 impl From<Archive> for ArchiveRelations {
@@ -131,55 +194,43 @@ impl From<Archive> for ArchiveRelations {
   }
 }
 
-#[derive(Debug)]
-pub struct InsertArchive {
-  pub id: i64,
-  pub slug: String,
-  pub title: String,
+#[derive(Default, Debug, Clone)]
+pub struct UpsertArchiveData {
+  pub id: Option<i64>,
+  pub title: Option<String>,
+  pub slug: Option<String>,
   pub description: Option<String>,
-  pub path: String,
-  pub hash: String,
-  pub pages: i16,
-  pub size: i64,
-  pub thumbnail: i16,
+  pub path: Option<String>,
+  pub hash: Option<String>,
+  pub pages: Option<i16>,
+  pub size: Option<i64>,
+  pub thumbnail: Option<i16>,
   pub language: Option<String>,
-  pub translated: Option<bool>,
   pub released_at: Option<NaiveDateTime>,
-  pub artists: Vec<String>,
-  pub circles: Vec<String>,
-  pub magazines: Vec<String>,
-  pub events: Vec<String>,
-  pub publishers: Vec<String>,
-  pub parodies: Vec<String>,
-  pub tags: Vec<(String, Option<String>)>,
-  pub sources: Vec<Source>,
+  pub deleted_at: Option<NaiveDateTime>,
+  pub has_metadata: Option<bool>,
+  pub artists: Option<Vec<String>>,
+  pub circles: Option<Vec<String>>,
+  pub magazines: Option<Vec<String>>,
+  pub events: Option<Vec<String>>,
+  pub publishers: Option<Vec<String>>,
+  pub parodies: Option<Vec<String>>,
+  pub tags: Option<Vec<(String, String)>>,
+  pub sources: Option<Vec<ArchiveSource>>,
+  pub images: Option<Vec<ArchiveImage>>,
 }
 
-impl Default for InsertArchive {
-  fn default() -> Self {
-    Self {
-      id: Default::default(),
-      slug: Default::default(),
-      title: Default::default(),
-      description: Default::default(),
-      path: Default::default(),
-      hash: Default::default(),
-      pages: Default::default(),
-      size: Default::default(),
-      thumbnail: 1,
-      language: Default::default(),
-      translated: Default::default(),
-      released_at: Default::default(),
-      artists: Default::default(),
-      circles: Default::default(),
-      magazines: Default::default(),
-      events: Default::default(),
-      publishers: Default::default(),
-      parodies: Default::default(),
-      tags: Default::default(),
-      sources: Default::default(),
-    }
-  }
+#[derive(Debug, Clone)]
+pub struct Relations {
+  pub artists: Option<Vec<String>>,
+  pub circles: Option<Vec<String>>,
+  pub magazines: Option<Vec<String>>,
+  pub events: Option<Vec<String>>,
+  pub publishers: Option<Vec<String>>,
+  pub parodies: Option<Vec<String>>,
+  pub tags: Option<Vec<(String, String)>>,
+  pub sources: Option<Vec<ArchiveSource>>,
+  pub images: Option<Vec<ArchiveImage>>,
 }
 
 pub async fn get_pool() -> anyhow::Result<PgPool> {
@@ -242,7 +293,7 @@ pub async fn fetch_relations(
     Vec<Taxonomy>,
     Vec<Taxonomy>,
     Vec<Tag>,
-    Vec<Source>,
+    Vec<ArchiveSource>,
   ),
   sqlx::Error,
 > {
@@ -255,7 +306,7 @@ pub async fn fetch_relations(
   let tags = fetch_tag_data(pool, archive_id).await?;
 
   let sources = sqlx::query_as!(
-    Source,
+    ArchiveSource,
     "SELECT name, url FROM archive_sources WHERE archive_id = $1 ORDER BY name ASC",
     archive_id
   )
@@ -274,7 +325,7 @@ pub async fn fetch_archive_data(
   let row = sqlx::query!(
     r#"SELECT id, slug, title, description, hash, pages, size, thumbnail,
     (SELECT json_build_object('width', width, 'height', height) FROM archive_images WHERE archive_id = id AND page_number = archives.thumbnail) cover,
-    (SELECT json_agg(image) FROM (SELECT json_build_object('page_number', page_number, 'width', width, 'height', height) AS image FROM archive_images WHERE archive_id = id ORDER BY page_number ASC) AS ordered_images) images,
+    (SELECT json_agg(image) FROM (SELECT json_build_object('filename', filename, 'page_number', page_number, 'width', width, 'height', height) AS image FROM archive_images WHERE archive_id = id ORDER BY page_number ASC) AS ordered_images) images,
     created_at, released_at FROM archives WHERE id = $1"#,
     id
   ).fetch_optional(pool).await?;
@@ -286,7 +337,7 @@ pub async fn fetch_archive_data(
       title: row.title,
       description: row.description,
       hash: row.hash,
-      pages: row.pages,
+      pages: row.pages.unwrap_or_default(),
       size: row.size,
       thumbnail: row.thumbnail,
       cover: row
@@ -326,18 +377,18 @@ fn parse_query(query: &str) -> String {
   }
 
   let parsed_query = query
-    .replace("&", " ")
-    .split(" ")
-    .map(|s| s.split(":").last().unwrap())
+    .replace('&', " ")
+    .split(' ')
+    .map(|s| s.split(':').last().unwrap())
     .map(|s| {
-      if s.ends_with("$") {
-        s.trim_end_matches("$").to_string()
+      if s.ends_with('$') {
+        s.trim_end_matches('$').to_string()
       } else {
         format!("{s}:*").to_string()
       }
     })
     .map(|s| {
-      if s.starts_with("-") {
+      if s.starts_with('-') {
         s.replacen('-', "!", 1)
       } else {
         s
@@ -346,7 +397,7 @@ fn parse_query(query: &str) -> String {
     .collect::<Vec<_>>()
     .join("&");
   let mut parsed_query = parsed_query
-    .split("|")
+    .split('|')
     .map(|s| s.to_string())
     .collect::<Vec<String>>();
 
@@ -405,8 +456,8 @@ fn parse_query(query: &str) -> String {
     .enumerate()
     .map(|(i, s)| {
       if i < parsed_query.len() - 1 {
-        if s.ends_with("$") {
-          s.trim_end_matches("$").to_string()
+        if s.ends_with('$') {
+          s.trim_end_matches('$').to_string()
         } else {
           format!("{}:*", s)
         }
@@ -420,7 +471,7 @@ fn parse_query(query: &str) -> String {
   parsed_query
 }
 
-fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &str) {
+fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
   let re = regex::Regex::new(
     r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
   )
@@ -428,16 +479,8 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &st
 
   let captures = re.captures_iter(value).collect_vec();
 
-  for (i, capture) in captures.into_iter().enumerate() {
-    if i == 0 {
-      if has_parsed {
-        qb.push(" AND (");
-      } else {
-        qb.push(" WHERE (\n");
-      }
-    } else {
-      qb.push(" AND (");
-    }
+  for capture in captures.into_iter() {
+    qb.push(" AND (");
 
     let negate = capture.get(0).unwrap().as_str().starts_with('-');
     let condition = if negate { "NOT EXISTS" } else { "EXISTS" };
@@ -481,14 +524,13 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, has_parsed: bool, value: &st
       .trim_matches('\"')
       .trim_matches('\'')
       .replace('*', "%")
-      .replace("(", "")
-      .replace(")", "");
+      .replace(['(', ')'], "");
 
-    let or_splits = value.split("|").collect_vec();
+    let or_splits = value.split('|').collect_vec();
 
     for (i, or_split) in or_splits.iter().enumerate() {
       qb.push("  (\n");
-      let and_splits = or_split.split("&").collect_vec();
+      let and_splits = or_split.split('&').collect_vec();
 
       if i == 0 {
         qb.push("    (\n");
@@ -542,7 +584,7 @@ fn clean_value(query: &str) -> String {
     value = value.replace(capture.as_str(), "");
   }
 
-  value.trim().replace(":", "").to_string()
+  value.trim().replace(':', "").to_string()
 }
 
 pub async fn search(
@@ -561,18 +603,18 @@ pub async fn search(
   let parsed = parse_query(clean);
 
   let mut qb = QueryBuilder::new(
-    r#"SELECT COUNT(*) FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id"#,
+    r#"SELECT COUNT(*) FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#,
   );
 
   if !parsed.is_empty() {
     qb.push(
-      r#" WHERE (title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv) @@ to_tsquery('english', "#,
+      r#" AND (title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv) @@ to_tsquery('english', "#,
     )
     .push_bind(&parsed)
     .push(")");
   }
 
-  add_tag_matches(&mut qb, !parsed.is_empty(), &query.value);
+  add_tag_matches(&mut qb, &query.value);
 
   let count: i64 = qb.build_query_scalar().fetch_one(pool).await?;
 
@@ -584,17 +626,17 @@ pub async fn search(
       .push(")) rank");
   }
 
-  qb.push(r#" FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id"#);
+  qb.push(r#" FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#);
 
   if !parsed.is_empty() {
     qb.push(
-      r#" WHERE (title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv) @@ to_tsquery('english', "#,
+      r#" AND (title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv) @@ to_tsquery('english', "#,
     )
     .push_bind(&parsed)
     .push(")");
   }
 
-  add_tag_matches(&mut qb, !parsed.is_empty(), &query.value);
+  add_tag_matches(&mut qb, &query.value);
 
   qb.push(" GROUP BY archives.id, fts.archive_id");
 
@@ -695,4 +737,631 @@ pub async fn search(
     .collect();
 
   Ok((archives, count))
+}
+
+async fn copy_archive(
+  old_hash: String,
+  new_hash: String,
+  transaction: &mut Transaction<'_, Postgres>,
+) -> anyhow::Result<i64> {
+  let rec = sqlx::query!(
+    r#"SELECT slug, title, description, path, pages, size, thumbnail, language, released_at, has_metadata FROM archives WHERE hash = $1"#,
+    old_hash
+  )
+  .fetch_one(&mut **transaction)
+  .await?;
+
+  let new_id = sqlx::query_scalar!(
+      r#"INSERT INTO archives (
+        slug, title, description, path, hash, pages, size, thumbnail, language, released_at, has_metadata
+      ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+      ) RETURNING id"#,
+    rec.slug,
+    rec.title,
+    rec.description,
+    rec.path,
+    new_hash,
+    rec.pages,
+    rec.size,
+    rec.thumbnail,
+    rec.language,
+    rec.released_at,
+    rec.has_metadata
+  ).fetch_one(&mut **transaction).await?;
+
+  Ok(new_id)
+}
+
+async fn upsert_relations(
+  data: Relations,
+  archive_id: i64,
+  transaction: &mut Transaction<'_, Postgres>,
+) -> Result<(), sqlx::Error> {
+  if let Some(artists) = data.artists {
+    upsert_taxonomy(artists, TagType::Artist, archive_id, transaction).await?;
+  }
+
+  if let Some(circles) = data.circles {
+    upsert_taxonomy(circles, TagType::Circle, archive_id, transaction).await?;
+  }
+
+  if let Some(magazines) = data.magazines {
+    upsert_taxonomy(magazines, TagType::Magazine, archive_id, transaction).await?;
+  }
+
+  if let Some(events) = data.events {
+    upsert_taxonomy(events, TagType::Event, archive_id, transaction).await?;
+  }
+
+  if let Some(publishers) = data.publishers {
+    upsert_taxonomy(publishers, TagType::Publisher, archive_id, transaction).await?;
+  }
+
+  if let Some(parodies) = data.parodies {
+    upsert_taxonomy(parodies, TagType::Parody, archive_id, transaction).await?;
+  }
+
+  if let Some(tags) = data.tags {
+    upsert_tags(tags, archive_id, transaction).await?;
+  }
+
+  if let Some(source) = data.sources {
+    upsert_sources(source, archive_id, true, transaction).await?;
+  }
+
+  if let Some(images) = data.images {
+    upsert_images(images, archive_id, transaction).await?;
+  }
+
+  Ok(())
+}
+
+pub async fn upsert_archive(
+  data: UpsertArchiveData,
+  pool: &PgPool,
+  mp: &MultiProgress,
+) -> anyhow::Result<i64> {
+  let mut path_link = None;
+
+  let mut transaction = pool.begin().await?;
+
+  let rec = sqlx::query!(
+    r#"SELECT id, slug, path, hash FROM archives WHERE (id = $1 OR path = $2 OR hash = $3) AND deleted_at IS NULL"#,
+    data.id,
+    data.path,
+    data.hash
+  )
+  .fetch_optional(&mut *transaction)
+  .await?;
+
+  let archive_id = if let Some(rec) = rec {
+    if let Some(hash) = data.hash {
+      if hash != rec.hash {
+        mp.suspend(|| {
+          warn!(
+            target: "db::upsert_archive",
+            "Hash mismatch - OLD: {}, NEW: {}", rec.hash, hash
+          );
+          warn!(
+            target: "db::upsert_archive",
+            "A new copy of the old archive will be created and it will replace the old one."
+          );
+        });
+
+        let new_id = copy_archive(rec.hash, hash, &mut transaction).await?;
+
+        upsert_relations(
+          Relations {
+            artists: data.artists,
+            circles: data.circles,
+            magazines: data.magazines,
+            events: data.events,
+            publishers: data.publishers,
+            parodies: data.parodies,
+            tags: data.tags,
+            sources: data.sources,
+            images: data.images,
+          },
+          new_id,
+          &mut transaction,
+        )
+        .await?;
+
+        sqlx::query!(
+          "UPDATE archives SET deleted_at = NOW() WHERE id = $1",
+          rec.id,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        utils::create_symlink(
+          &rec.path,
+          &CONFIG.directories.links.join(new_id.to_string()),
+        )?;
+
+        return Ok(new_id);
+      }
+    }
+
+    let mut qb = QueryBuilder::new("UPDATE archives SET");
+
+    if let Some(title) = data.title {
+      qb.push(" title = ").push_bind(title).push(",");
+    }
+
+    if let Some(slug) = data.slug {
+      qb.push(" slug = ").push_bind(slug).push(",");
+    }
+
+    qb.push(" description = ")
+      .push_bind(data.description.clone())
+      .push(",");
+
+    if let Some(path) = data.path {
+      path_link = Some(path.clone());
+
+      if path != rec.path {
+        qb.push(" path = ").push_bind(path).push(",");
+      }
+    }
+
+    if let Some(pages) = data.pages {
+      qb.push(" pages = ").push_bind(pages).push(",");
+    }
+
+    if let Some(size) = data.size {
+      qb.push(" size = ").push_bind(size).push(",");
+    }
+
+    if let Some(thumbnail) = data.thumbnail {
+      qb.push(" thumbnail = ").push_bind(thumbnail).push(",");
+    }
+
+    qb.push(" language = ")
+      .push_bind(data.language.clone())
+      .push(",");
+
+    if let Some(released_at) = data.released_at {
+      qb.push(" released_at = ").push_bind(released_at).push(",");
+    }
+
+    qb.push(" deleted_at = ")
+      .push_bind(data.deleted_at)
+      .push(",");
+
+    if let Some(has_metadata) = data.has_metadata {
+      qb.push(" has_metadata = ")
+        .push_bind(has_metadata)
+        .push(",");
+    }
+
+    qb.push(" updated_at = NOW()");
+
+    qb.push(" WHERE id = ")
+      .push_bind(rec.id)
+      .push(" RETURNING id");
+
+    qb.build().fetch_one(&mut *transaction).await?;
+
+    rec.id
+  } else if let (Some(title), Some(path), Some(hash), Some(pages), Some(size), Some(thumbnail)) = (
+    data.title,
+    data.path,
+    data.hash,
+    data.pages,
+    data.size,
+    data.thumbnail,
+  ) {
+    let slug = data.slug.unwrap_or(slugify(&title));
+
+    let id = sqlx::query_scalar!(
+    r#"INSERT INTO archives (
+      slug, title, description, path, hash, pages, size, thumbnail, language, released_at, has_metadata
+    ) VALUES (
+     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    ) RETURNING id"#,
+    slug,
+    title,
+    data.description,
+    path,
+    hash,
+    pages,
+    size,
+    thumbnail,
+    data.language,
+    data.released_at,
+    data.has_metadata.unwrap_or_default()
+  ).fetch_one(&mut *transaction).await?;
+
+    path_link = Some(path);
+
+    id
+  } else {
+    return Err(anyhow!("Insufficient archive data to insert"));
+  };
+
+  upsert_relations(
+    Relations {
+      artists: data.artists,
+      circles: data.circles,
+      magazines: data.magazines,
+      events: data.events,
+      publishers: data.publishers,
+      parodies: data.parodies,
+      tags: data.tags,
+      sources: data.sources,
+      images: data.images,
+    },
+    archive_id,
+    &mut transaction,
+  )
+  .await?;
+
+  transaction.commit().await?;
+
+  if let Some(path) = path_link {
+    utils::create_symlink(
+      &path,
+      &CONFIG.directories.links.join(archive_id.to_string()),
+    )?;
+  }
+
+  Ok(archive_id)
+}
+
+async fn upsert_taxonomy(
+  tags: Vec<String>,
+  r#type: TagType,
+  archive_id: i64,
+  transaction: &mut Transaction<'_, Postgres>,
+) -> Result<(), sqlx::Error> {
+  #[derive(sqlx::FromRow, Debug)]
+  struct TaxonomyRow {
+    id: i64,
+    slug: String,
+  }
+
+  #[derive(sqlx::FromRow, Debug)]
+  struct RelationRow {
+    taxonomy_id: i64,
+    slug: String,
+  }
+
+  let archive_tags = tags
+    .into_iter()
+    .map(|name| Taxonomy {
+      slug: slugify(&name),
+      name,
+    })
+    .collect_vec();
+
+  let table = r#type.table();
+  let relation_name = r#type.relation();
+  let relation_id = r#type.id();
+
+  let mut tags: Vec<TaxonomyRow> = sqlx::query_as(&format!(
+    r#"SELECT id, slug FROM {table} WHERE slug = ANY($1)"#
+  ))
+  .bind(
+    &archive_tags
+      .iter()
+      .map(|tag| tag.slug.to_string())
+      .collect_vec(),
+  )
+  .fetch_all(&mut **transaction)
+  .await?;
+
+  let tags_to_insert = archive_tags
+    .iter()
+    .filter(|tag| tags.iter().all(|row| row.slug != tag.slug))
+    .unique_by(|tag| tag.slug.to_string())
+    .collect_vec();
+
+  let mut db_tags = vec![];
+  db_tags.append(&mut tags);
+
+  if !tags_to_insert.is_empty() {
+    let mut new_tags: Vec<TaxonomyRow> = sqlx::query_as(&format!(
+      r#"INSERT INTO {table} (name, slug)
+      SELECT * FROM UNNEST($1::text[], $2::text[]) RETURNING id, slug"#
+    ))
+    .bind(
+      &tags_to_insert
+        .iter()
+        .map(|tag| tag.name.clone())
+        .collect_vec(),
+    )
+    .bind(
+      &tags_to_insert
+        .iter()
+        .map(|tag| tag.slug.clone())
+        .collect_vec(),
+    )
+    .fetch_all(&mut **transaction)
+    .await?;
+
+    db_tags.append(&mut new_tags);
+  }
+
+  let archive_tags_relation: Vec<RelationRow> = sqlx::query_as(&format!(
+    r#"SELECT {relation_id} AS taxonomy_id, slug FROM {relation_name}
+    INNER JOIN {table} ON id = {relation_id} WHERE archive_id = $1"#
+  ))
+  .bind(archive_id)
+  .fetch_all(&mut **transaction)
+  .await?;
+
+  let relations_to_delete = archive_tags_relation
+    .iter()
+    .filter(|relation| !archive_tags.iter().any(|tag| tag.slug == relation.slug))
+    .collect_vec();
+
+  for relation in relations_to_delete {
+    sqlx::query(&format!(
+      r#"DELETE FROM {relation_name} WHERE archive_id = $1 AND {relation_id} = $2"#
+    ))
+    .bind(archive_id)
+    .bind(relation.taxonomy_id)
+    .execute(&mut **transaction)
+    .await?;
+  }
+
+  let relations_to_insert = archive_tags
+    .iter()
+    .filter(|tag| {
+      !archive_tags_relation
+        .iter()
+        .any(|relation| relation.slug == tag.slug)
+    })
+    .collect_vec();
+
+  let tag_ids = relations_to_insert
+    .iter()
+    .map(|tag| db_tags.iter().find(|t| t.slug.eq(&tag.slug)).unwrap().id)
+    .collect_vec();
+
+  sqlx::query(&format!(
+    r#"INSERT INTO {relation_name} (archive_id, {relation_id})
+    SELECT * FROM UNNEST($1::bigint[], $2::bigint[])"#
+  ))
+  .bind(&vec![archive_id; tag_ids.len()])
+  .bind(&tag_ids)
+  .execute(&mut **transaction)
+  .await?;
+
+  Ok(())
+}
+
+async fn upsert_tags(
+  tags: Vec<(String, String)>,
+  archive_id: i64,
+  transaction: &mut Transaction<'_, Postgres>,
+) -> Result<(), sqlx::Error> {
+  #[derive(sqlx::FromRow, Debug)]
+  struct TagRow {
+    id: i64,
+    slug: String,
+  }
+
+  #[derive(sqlx::FromRow, Debug)]
+  struct RelationRow {
+    tag_id: i64,
+    slug: String,
+    namespace: String,
+  }
+
+  let archive_tags = tags
+    .into_iter()
+    .map(|(name, namespace)| {
+      let slug = slugify(&name);
+      let name = tag_alias(&name, &slug);
+      Tag {
+        slug,
+        name,
+        namespace,
+      }
+    })
+    .collect_vec();
+
+  let mut tags = sqlx::query_as!(
+    TagRow,
+    r#"SELECT id, slug FROM tags WHERE slug = ANY($1)"#,
+    &archive_tags
+      .iter()
+      .map(|tag| tag.slug.to_string())
+      .collect_vec()
+  )
+  .fetch_all(&mut **transaction)
+  .await?;
+
+  let tags_to_insert = archive_tags
+    .iter()
+    .filter(|tag| tags.iter().all(|row| row.slug != tag.slug))
+    .unique_by(|tag| tag.slug.to_string())
+    .collect_vec();
+
+  let mut db_tags = vec![];
+  db_tags.append(&mut tags);
+
+  if !tags_to_insert.is_empty() {
+    let mut new_tags = sqlx::query_as!(
+      TagRow,
+      r#"INSERT INTO tags (name, slug) SELECT * FROM UNNEST($1::text[], $2::text[]) RETURNING id, slug"#,
+      &tags_to_insert.iter().map(|tag| tag.name.clone()).collect_vec(),
+      &tags_to_insert
+        .iter()
+        .map(|tag| tag.slug.clone())
+        .collect_vec()
+    ).fetch_all(&mut **transaction).await?;
+
+    db_tags.append(&mut new_tags);
+  }
+
+  let archive_tags_relation = sqlx::query_as!(
+    RelationRow,
+    r#"SELECT tag_id, slug, namespace FROM archive_tags
+    INNER JOIN tags ON id = tag_id WHERE archive_id = $1"#,
+    archive_id
+  )
+  .fetch_all(&mut **transaction)
+  .await?;
+
+  let relations_to_delete = archive_tags_relation
+    .iter()
+    .filter(|relation| {
+      !archive_tags
+        .iter()
+        .any(|tag| tag.slug == relation.slug && tag.namespace == relation.namespace)
+    })
+    .collect_vec();
+
+  for relation in relations_to_delete {
+    sqlx::query!(
+      r#"DELETE FROM archive_tags WHERE archive_id = $1 AND tag_id = $2 AND namespace = $3"#,
+      archive_id,
+      relation.tag_id,
+      relation.namespace,
+    )
+    .execute(&mut **transaction)
+    .await?;
+  }
+
+  let relations_to_insert = archive_tags
+    .iter()
+    .filter(|tag| {
+      !archive_tags_relation
+        .iter()
+        .any(|relation| relation.slug == tag.slug && relation.namespace == tag.namespace)
+    })
+    .collect_vec();
+
+  let tag_ids = relations_to_insert
+    .iter()
+    .map(|tag| db_tags.iter().find(|t| t.slug.eq(&tag.slug)).unwrap().id)
+    .collect_vec();
+
+  sqlx::query!(
+    r#"INSERT INTO archive_tags (archive_id, tag_id, namespace) SELECT * FROM UNNEST($1::bigint[], $2::bigint[], $3::text[])"#,
+    &vec![archive_id; tag_ids.len()],
+    &tag_ids,
+    &relations_to_insert
+      .into_iter()
+      .map(|tag| tag.namespace.clone())
+      .collect_vec()
+  ).execute(&mut **transaction).await?;
+
+  Ok(())
+}
+
+async fn upsert_sources(
+  sources: Vec<ArchiveSource>,
+  archive_id: i64,
+  merge: bool,
+  transaction: &mut Transaction<'_, Postgres>,
+) -> Result<(), sqlx::Error> {
+  let existing_sources = sqlx::query_as!(
+    ArchiveSource,
+    r#"SELECT name, url FROM archive_sources WHERE archive_id = $1"#,
+    archive_id
+  )
+  .fetch_all(&mut **transaction)
+  .await?;
+
+  if !merge {
+    let relations_to_delete = existing_sources
+      .iter()
+      .filter(|relation| {
+        !sources
+          .iter()
+          .any(|source| source.name == relation.name && source.url == relation.url)
+      })
+      .collect_vec();
+
+    for relation in relations_to_delete {
+      sqlx::query!(
+        r#"DELETE FROM archive_sources WHERE archive_id = $1 AND name = $2 AND url = $3"#,
+        archive_id,
+        relation.name,
+        relation.url
+      )
+      .execute(&mut **transaction)
+      .await?;
+    }
+  }
+
+  let relations_to_insert = sources
+    .iter()
+    .filter(|source| {
+      !existing_sources
+        .iter()
+        .any(|relation| relation.name == source.name && relation.url == source.url)
+    })
+    .collect_vec();
+
+  for source in relations_to_insert {
+    sqlx::query!(
+      r#"INSERT INTO archive_sources (archive_id, name, url) VALUES ($1, $2, $3)
+      ON CONFLICT (archive_id, name) DO UPDATE SET url = EXCLUDED.url"#,
+      archive_id,
+      source.name,
+      source.url
+    )
+    .execute(&mut **transaction)
+    .await?;
+  }
+
+  Ok(())
+}
+
+async fn upsert_images(
+  images: Vec<ArchiveImage>,
+  archive_id: i64,
+  transaction: &mut Transaction<'_, Postgres>,
+) -> Result<(), sqlx::Error> {
+  let existing_images = sqlx::query_as!(
+    ArchiveImage,
+    r#"SELECT filename, page_number, width, height FROM archive_images WHERE archive_id = $1"#,
+    archive_id
+  )
+  .fetch_all(&mut **transaction)
+  .await?;
+
+  let relations_to_delete = existing_images
+    .iter()
+    .filter(|relation| {
+      !images
+        .iter()
+        .any(|source| source.page_number == relation.page_number)
+    })
+    .collect_vec();
+
+  for relation in relations_to_delete {
+    sqlx::query!(
+      r#"DELETE FROM archive_images WHERE archive_id = $1 AND page_number = $2"#,
+      archive_id,
+      relation.page_number,
+    )
+    .execute(&mut **transaction)
+    .await?;
+  }
+
+  for image in images {
+    sqlx::query!(
+      r#"INSERT INTO archive_images (archive_id, filename, page_number, width, height)
+      VALUES ($1, $2, $3, $4, $5) ON CONFLICT (archive_id, page_number) DO UPDATE
+      SET filename = EXCLUDED.filename, width = EXCLUDED.width, height = EXCLUDED.height"#,
+      archive_id,
+      image.filename,
+      image.page_number,
+      image.width,
+      image.height
+    )
+    .execute(&mut **transaction)
+    .await?;
+  }
+
+  Ok(())
 }

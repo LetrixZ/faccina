@@ -64,14 +64,15 @@ export interface Source {
 }
 
 export interface Image {
+	filename: string;
 	page_number: number;
-	width: number;
-	height: number;
+	width: number | undefined;
+	height: number | undefined;
 }
 
 export interface ImageDimensions {
-	width: number;
-	height: number;
+	width: number | undefined;
+	height: number | undefined;
 }
 
 export interface LibraryPage {

@@ -1,16 +1,16 @@
-use crate::archive::get_image_files;
+use crate::archive::ZipArchiveData;
 use crate::db::ArchiveFile;
 use crate::image::ImageCodec;
-use crate::torrents;
 use crate::{archive, config::CONFIG, db};
-use anyhow::anyhow;
+use crate::{scraper, torrents, utils};
 use clap::{Args, Parser, Subcommand};
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use itertools::Itertools;
-use sqlx::{PgPool, Postgres, QueryBuilder};
+use sqlx::{PgPool, QueryBuilder};
 use std::path::PathBuf;
-use tracing::{error, info};
+use std::time::{Duration, Instant};
+use tokio::time::sleep;
+use tracing::{debug, error, info};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -30,6 +30,7 @@ pub enum Commands {
   GenerateThumbnails(GenerateThumbnailArgs),
   #[command(about="Calculate image dimensions. Useful to fix image ordering.", long_about = None)]
   CalculateDimensions(CalculateDimensionsArgs),
+  Scrape(ScrapeArgs),
 }
 
 #[derive(Args, Clone)]
@@ -45,11 +46,13 @@ pub struct IndexArgs {
   #[arg(
     long,
     default_value = "false",
-    help = "Re-index and update existing archives"
+    help = "Reindex and update existing archives"
   )]
   pub reindex: bool,
-  #[arg(long, default_value = "false", help = "Skip generating thumbnails")]
-  pub skip_thumbnails: bool,
+  #[arg(long, default_value = "false", help = "Calculate image dimensions")]
+  pub dimensions: bool,
+  #[arg(long, default_value = "false", help = "Generate thumbnails")]
+  pub thumbnails: bool,
   #[arg(
     long,
     help = "Start re-indexing from this path. Useful for resuming after an error."
@@ -112,43 +115,26 @@ pub struct GenerateThumbnailArgs {
 pub struct CalculateDimensionsArgs {
   #[arg(long, help = "List of archive IDs or range (ex: 1-10,14,230-400)")]
   pub id: Option<String>,
+  #[arg(
+    long,
+    default_value = "false",
+    help = "Recalculate existing image dimensions"
+  )]
+  pub recalculate: Option<bool>,
 }
 
-pub fn add_id_ranges(qb: &mut QueryBuilder<Postgres>, id_ranges: &str) {
-  let id_ranges = id_ranges.split(",").map(|s| s.trim()).collect_vec();
-  let mut ids = vec![];
-  let mut ranges = vec![];
-
-  for range in id_ranges {
-    let splits = range.split("-").filter(|s| !s.is_empty()).collect_vec();
-
-    if splits.len() == 1 {
-      let id = splits.first().unwrap();
-      ids.push(id.parse::<i64>().unwrap());
-    } else if splits.len() == 2 {
-      let start = splits.first().unwrap();
-      let end = splits.last().unwrap();
-      ranges.push((start.parse::<i64>().unwrap(), end.parse::<i64>().unwrap()))
-    }
-  }
-
-  qb.push(" id = ANY(").push_bind(ids).push(")");
-
-  if !ranges.is_empty() {
-    qb.push(" OR");
-  }
-
-  for (i, (start, end)) in ranges.clone().into_iter().enumerate() {
-    qb.push(" (id >= ")
-      .push(start)
-      .push(" AND id <= ")
-      .push_bind(end)
-      .push(")");
-
-    if i != ranges.len() - 1 {
-      qb.push(" OR");
-    }
-  }
+#[derive(Args, Clone)]
+pub struct ScrapeArgs {
+  #[arg(help = "Site to scrape")]
+  pub site: scraper::ScrapeSite,
+  #[arg(long, help = "List of archive IDs or range (ex: 1-10,14,230-400)")]
+  pub id: Option<String>,
+  #[arg(
+    long,
+    default_value = "1000",
+    help = "Miliseconds to wait between archives"
+  )]
+  pub sleep: u64,
 }
 
 async fn fetch_archives(
@@ -156,12 +142,12 @@ async fn fetch_archives(
   id_ranges: &Option<String>,
 ) -> Result<Vec<db::ArchiveFile>, sqlx::Error> {
   if let Some(id_ranges) = id_ranges {
-    let mut qb = QueryBuilder::new("SELECT id, path, pages, thumbnail FROM archives WHERE");
+    let mut qb = QueryBuilder::new("SELECT id, path, thumbnail FROM archives WHERE");
 
-    add_id_ranges(&mut qb, id_ranges);
+    utils::add_id_ranges(&mut qb, id_ranges);
 
     let archives = qb
-      .push(" ORDER BY id ASC")
+      .push(" AND deleted_at IS NULL ORDER BY id ASC")
       .build_query_as::<db::ArchiveFile>()
       .fetch_all(pool)
       .await?;
@@ -170,7 +156,7 @@ async fn fetch_archives(
   } else {
     let archives = sqlx::query_as!(
       db::ArchiveFile,
-      "SELECT id, path, thumbnail FROM archives ORDER BY id ASC"
+      "SELECT id, path, thumbnail FROM archives WHERE deleted_at IS NULL ORDER BY id ASC"
     )
     .fetch_all(pool)
     .await?;
@@ -179,8 +165,12 @@ async fn fetch_archives(
   }
 }
 
-pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
+pub async fn index(mut args: IndexArgs) -> anyhow::Result<()> {
   let has_path_arg = args.paths.is_some();
+
+  if !has_path_arg {
+    args.recursive = true;
+  }
 
   let paths = args
     .paths
@@ -236,20 +226,37 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
   }
 
   let pool = db::get_pool().await?;
-  let multi = MultiProgress::new();
+  let mp = MultiProgress::new();
   let pb = ProgressBar::new(paths_to_index.len().as_u64());
 
   pb.set_style(
     ProgressStyle::with_template("[{elapsed_precise}] {bar:40.green/white} {pos:>7}/{len:7}")
       .unwrap(),
   );
-  multi.add(pb.clone());
+  mp.add(pb.clone());
 
   let mut count = 0;
 
+  let start = Instant::now();
+
   for path in paths_to_index {
-    match archive::index_archive(&pool, &multi, archive::IndexArgs::with_args(&args, &path)).await {
-      Ok(_) => count += 1,
+    match archive::index(
+      &path,
+      archive::IndexOptions {
+        reindex: args.reindex,
+        dimensions: args.dimensions,
+        thumbnails: args.thumbnails,
+      },
+      &pool,
+      &mp,
+    )
+    .await
+    {
+      Ok(indexed) => {
+        if indexed {
+          count += 1
+        }
+      }
       Err(err) => pb.suspend(
         || error!(target: "cmd::index", "Failed to index archive '{}' - {err}", path.display()),
       ),
@@ -260,7 +267,9 @@ pub async fn index(args: IndexArgs) -> anyhow::Result<()> {
 
   pb.finish_and_clear();
 
-  info!(target: "cmd::index", "Indexed {count} archives");
+  let end = Instant::now();
+
+  info!(target: "cmd::index", "Indexed {count} archives in {:?}", end - start);
 
   Ok(())
 }
@@ -332,50 +341,57 @@ pub async fn generate_thumbnails(args: GenerateThumbnailArgs) -> anyhow::Result<
   let pool = db::get_pool().await?;
   let archives = fetch_archives(&pool, &args.id).await?;
 
-  let multi = MultiProgress::new();
-  let args = &args.into();
+  let mp = MultiProgress::new();
+  let opts = &args.into();
 
-  info!(target: "archive::generate_thumbnails", "Image encoding options\n{args:?}");
+  info!(target: "archive::generate_thumbnails", "Image encoding options\n{opts:?}");
 
   for archive in archives {
     if let Err(err) = || -> anyhow::Result<()> {
       let path = CONFIG.directories.links.join(archive.path);
-      let mut zip =
-        archive::read_zip(&path).map_err(|err| anyhow!("Failed to read zip archive: {err}"))?;
-      let mut image_files = get_image_files(&mut zip.file)?;
+      let ZipArchiveData { mut file, .. } = archive::read_zip(&path)?;
+      let images = archive::get_image_filenames(&mut file)?;
+      let mut files = archive::get_zip_files(images, &mut file)?;
 
-      archive::generate_thumbnails(
-        args,
-        &multi,
-        image_files.as_mut_slice(),
+      mp.suspend(|| info!(target: "archive::generate_thumbnails", "Generating thumbnails for archive ID {}", archive.id));
+
+      archive::images::generate_thumbnails(
         archive.id,
-        archive.thumbnail.as_usize(),
+        archive.thumbnail as usize,
+        &mut files,
+        opts,
+        &mp,
       )?;
 
       Ok(())
     }() {
-      error!(
-        "Failed to generate thumbnails for archive ID {}: {}",
-        archive.id, err
-      )
+      mp.suspend(|| {
+        error!(
+          target: "archive::generate_thumbnails",
+          "Failed to generate thumbnails for archive ID {}: {}",
+          archive.id, err
+        )
+      })
     }
   }
 
   Ok(())
 }
 
-async fn calculate_archive_dimensions(
+async fn calculate_dimensions_archive(
+  archive: &ArchiveFile,
+  recalculate: bool,
   pool: &PgPool,
   multi: &MultiProgress,
-  archive: &ArchiveFile,
 ) -> anyhow::Result<()> {
-  let mut conn = pool.acquire().await?;
   let path = CONFIG.directories.links.join(&archive.path);
-  let mut zip =
-    archive::read_zip(&path).map_err(|err| anyhow!("Failed to read zip archive: {err}"))?;
-  let mut image_files = get_image_files(&mut zip.file)?;
+  let ZipArchiveData { mut file, .. } = archive::read_zip(&path)?;
+  let images = archive::get_image_filenames(&mut file)?;
+  let mut files = archive::get_zip_files(images, &mut file)?;
 
-  archive::calculate_dimensions(&mut conn, multi, true, &mut image_files, archive.id).await?;
+  multi.suspend(|| info!(target: "archive::calculate_dimensions", "Calculating image dimensions for archive ID {}", archive.id));
+
+  archive::images::calculate_dimensions(archive.id, recalculate, &mut files, pool, multi).await?;
 
   Ok(())
 }
@@ -384,14 +400,59 @@ pub async fn calculate_dimensions(args: CalculateDimensionsArgs) -> anyhow::Resu
   let pool = db::get_pool().await?;
   let archives = fetch_archives(&pool, &args.id).await?;
 
-  let multi = MultiProgress::new();
+  let mp = MultiProgress::new();
+
+  let recalculate = args.recalculate.unwrap_or_default();
 
   for archive in archives {
-    if let Err(err) = calculate_archive_dimensions(&pool, &multi, &archive).await {
-      error!(
-        "Failed to generate thumbnails for archive ID {}: {}",
-        archive.id, err
-      )
+    if let Err(err) = calculate_dimensions_archive(&archive, recalculate, &pool, &mp).await {
+      mp.suspend(|| {
+        error!(
+          target: "archive::calculate_dimensions",
+          "Failed to calculate dimensions for archive ID {}: {}",
+          archive.id, err
+        )
+      })
+    }
+  }
+
+  Ok(())
+}
+
+pub async fn scrape(args: ScrapeArgs) -> anyhow::Result<()> {
+  let pool = db::get_pool().await?;
+
+  let archives = if let Some(id_ranges) = args.id {
+    let mut qb = QueryBuilder::new("SELECT id FROM archives WHERE");
+
+    utils::add_id_ranges(&mut qb, &id_ranges);
+
+    qb.push(" AND deleted_at IS NULL ORDER BY id ASC")
+      .build_query_scalar()
+      .fetch_all(&pool)
+      .await?
+  } else {
+    sqlx::query_scalar!(
+      "SELECT id FROM archives WHERE has_metadata IS FALSE AND deleted_at IS NULL ORDER BY id ASC"
+    )
+    .fetch_all(&pool)
+    .await?
+  };
+
+  let mp = MultiProgress::new();
+
+  let should_sleep = archives.len() > 1;
+
+  for id in archives {
+    mp.suspend(|| info!(target: "archive::scrape", "Scraping metadata for archive ID {}", id));
+
+    if let Err(err) = scraper::scrape(id, args.site, &pool, &mp).await {
+      mp.suspend(|| error!("Failed to scrape metadata for archive ID {id}: {err}"));
+    }
+
+    if should_sleep {
+      mp.suspend(|| debug!("Sleeping for {}ms", args.sleep));
+      sleep(Duration::from_millis(args.sleep)).await;
     }
   }
 

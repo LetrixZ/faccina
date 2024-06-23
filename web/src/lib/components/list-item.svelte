@@ -9,8 +9,11 @@
 
 	export let archive: ArchiveListItem;
 
-	$: width = archive.cover && 640;
-	$: height = archive.cover && Math.round((640 / archive.cover.width) * archive.cover.height);
+	$: width = archive.cover?.width && 640;
+	$: height =
+		archive.cover?.width &&
+		archive.cover?.height &&
+		Math.round((640 / archive.cover.width) * archive.cover.height);
 
 	$: [reducedTags, moreCount] = (() => {
 		const maxWidth = 290;

@@ -73,7 +73,7 @@
 				await pMap(
 					archive.images,
 					async (image) => {
-						const url = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.page_number}`;
+						const url = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.filename}`;
 						const response = await fetch(url);
 
 						if (!response.ok) {
@@ -81,8 +81,7 @@
 						}
 
 						const blob = await response.blob();
-						const extension = blob!.type.split('/').at(-1);
-						const imageFile = new ZipPassThrough(`${image.page_number}.${extension}`);
+						const imageFile = new ZipPassThrough(image.filename);
 						zip.add(imageFile);
 
 						await blob!
@@ -91,7 +90,7 @@
 
 						task.update((task) => ({ ...task, progress: task.progress + 1 }));
 					},
-					{ concurrency: 2 }
+					{ concurrency: 3 }
 				);
 
 				zip.end();
@@ -138,8 +137,6 @@
 </script>
 
 <svelte:head>
-	<title>Faccina</title>
-
 	{#await data.archive}
 		<title>Faccina</title>
 	{:then archive}
@@ -149,14 +146,14 @@
 
 <main class="container flex flex-col gap-2 md:flex-row">
 	{#await data.archive}
-		<div class="@container w-full space-y-2 md:w-80">
+		<div class="w-full space-y-2 @container md:w-80">
 			<div class="aspect-[90/127] w-full">
 				<Skeleton class="h-full w-full" />
 			</div>
 
-			<div class="@xs:grid-cols-2 grid gap-2">
+			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
-					class="shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80"
+					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
 					variant="secondary"
 					disabled
 				>
@@ -165,7 +162,7 @@
 				</Button>
 
 				<Button
-					class="shadow-shadow flex w-full bg-green-700 text-center font-semibold text-white shadow hover:bg-green-700/80"
+					class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
 					variant="secondary"
 					disabled
 				>
@@ -174,11 +171,19 @@
 				</Button>
 			</div>
 
-			<div class="shadow-shadow w-full overflow-clip rounded shadow-md md:w-auto">
+			<div class="w-full overflow-clip rounded shadow-md shadow-shadow md:w-auto">
 				<InfoSection class="space-y-1">
 					<div class="flex flex-col gap-2">
 						<Skeleton class="h-6 w-full" />
 						<Skeleton class="h-10 w-full" />
+					</div>
+				</InfoSection>
+
+				<InfoSection name="Description">
+					<div class="space-y-1">
+						<Skeleton class="h-4 w-[90%]" />
+						<Skeleton class="h-4 w-[80%]" />
+						<Skeleton class="h-4 w-[60%]" />
 					</div>
 				</InfoSection>
 
@@ -215,13 +220,13 @@
 			</div>
 		</div>
 	{:then archive}
-		<div class="@container w-full space-y-2 md:w-80">
+		<div class="w-full space-y-2 @container md:w-80">
 			<div class="w-full">
 				<a href={`./${archive.id}/read/1/${$page.url.search}`}>
 					<img
-						class="shadow-shadow h-full w-full rounded-md bg-neutral-300 shadow-md dark:bg-neutral-600"
-						width={archive.cover ? 640 : undefined}
-						height={archive.cover
+						class="h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
+						width={archive.cover?.width ? 640 : undefined}
+						height={archive.cover?.width && archive.cover?.height
 							? Math.round((640 / archive.cover.width) * archive.cover.height)
 							: undefined}
 						loading="eager"
@@ -231,10 +236,10 @@
 				</a>
 			</div>
 
-			<div class="@xs:grid-cols-2 grid gap-2">
+			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
 					href={`./${archive.id}/read/1${$page.url.search}`}
-					class="shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80"
+					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
 					variant="secondary"
 				>
 					<AiOutlineRead class="size-5 shrink-0" />
@@ -243,7 +248,7 @@
 
 				<Button
 					variant="secondary"
-					class="shadow-shadow flex w-full bg-green-700 text-center font-semibold text-white shadow hover:bg-green-700/80"
+					class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
 					on:click={() => startDownload(archive)}
 				>
 					<BiSolidDownload class="size-5 shrink-0" />
@@ -251,13 +256,19 @@
 				</Button>
 			</div>
 
-			<div class="shadow-shadow overflow-clip rounded shadow-md">
+			<div class="overflow-clip rounded shadow-md shadow-shadow">
 				<InfoSection class="space-y-1">
 					<p class="text-lg font-semibold leading-6">{archive.title}</p>
-					<p class="text-muted-foreground-light text-sm">
+					<p class="text-sm text-muted-foreground-light">
 						{generateFilename(archive)}
 					</p>
 				</InfoSection>
+
+				{#if archive.description?.length}
+					<InfoSection name="Description">
+						<p class="text-sm">{archive.description}</p>
+					</InfoSection>
+				{/if}
 
 				{#if archive.artists?.length || archive.circles?.length}
 					<InfoSection name="Artists">

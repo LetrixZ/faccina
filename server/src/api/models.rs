@@ -160,7 +160,7 @@ impl From<db::Taxonomy> for Taxonomy {
 pub struct Tag {
   pub slug: String,
   pub name: String,
-  pub namespace: Option<String>,
+  pub namespace: String,
 }
 
 impl From<db::Tag> for Tag {
@@ -179,8 +179,8 @@ pub struct Source {
   pub url: Option<String>,
 }
 
-impl From<db::Source> for Source {
-  fn from(item: db::Source) -> Self {
+impl From<db::ArchiveSource> for Source {
+  fn from(item: db::ArchiveSource) -> Self {
     Source {
       name: item.name,
       url: item.url,
@@ -213,14 +213,19 @@ pub struct ArchiveListItem {
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageDimensions {
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub width: Option<i16>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub height: Option<i16>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Image {
+  pub filename: String,
   pub page_number: i16,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub width: Option<i16>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub height: Option<i16>,
 }
 
