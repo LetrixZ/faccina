@@ -23,7 +23,6 @@ pub static REGEX: Lazy<RegexCollection> = Lazy::new(|| {
   let eze = Regex::new(r#"("group":|"artist":|"male":|"female":)\["#).unwrap();
   let eze_sad = Regex::new(r#""gallery_info":\{"#).unwrap();
   let koromo = Regex::new(r#"(("Tags":)\[)|("Artist":")"#).unwrap();
-  let koromo_alt = Regex::new(r#"(("tags":)\[)|("artists":")"#).unwrap();
 
   RegexCollection {
     hentag,
@@ -31,7 +30,6 @@ pub static REGEX: Lazy<RegexCollection> = Lazy::new(|| {
     eze,
     eze_sad,
     koromo,
-    koromo_alt,
   }
 });
 
@@ -41,7 +39,6 @@ pub struct RegexCollection {
   pub eze: Regex,
   pub eze_sad: Regex,
   pub koromo: Regex,
-  pub koromo_alt: Regex,
 }
 
 #[serde_inline_default]

@@ -1,49 +1,27 @@
+use super::{MultiIdField, MultiTextField};
 use crate::{db, utils};
-use chrono::DateTime;
 use serde::Deserialize;
-use std::{collections::HashMap, fmt::Display};
+use slug::slugify;
+use std::collections::HashMap;
 
 #[derive(Deserialize)]
-#[serde(untagged)]
-enum MultiField {
-  Single(String),
-  Many(Vec<String>),
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum MultiIdField {
-  Integer(i64),
-  String(String),
-}
-
-impl Display for MultiIdField {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      MultiIdField::Integer(id) => write!(f, "{id}"),
-      MultiIdField::String(id) => write!(f, "{id}"),
-    }
-  }
-}
-
-#[derive(Deserialize)]
-struct Metadata {
+pub struct Metadata {
   #[serde(rename = "Title")]
   pub title: String,
   #[serde(rename = "Description", default)]
   pub description: Option<String>,
   #[serde(rename = "Artist", default)]
-  pub artists: Option<MultiField>,
+  pub artists: Option<MultiTextField>,
   #[serde(rename = "Circle", default)]
-  pub circles: Option<MultiField>,
+  pub circles: Option<MultiTextField>,
   #[serde(rename = "Magazine", default)]
-  pub magazines: Option<MultiField>,
+  pub magazines: Option<MultiTextField>,
   #[serde(rename = "Event", default)]
-  pub events: Option<MultiField>,
+  pub events: Option<MultiTextField>,
   #[serde(rename = "Publisher", default)]
-  pub publishers: Option<MultiField>,
+  pub publishers: Option<MultiTextField>,
   #[serde(rename = "Parody", default)]
-  pub parodies: Option<MultiField>,
+  pub parodies: Option<MultiTextField>,
   #[serde(rename = "Tags", default)]
   pub tags: Option<Vec<String>>,
   #[serde(rename = "URL", default)]
@@ -52,87 +30,34 @@ struct Metadata {
   pub source_ids: Option<HashMap<String, MultiIdField>>,
   #[serde(rename = "Released", default)]
   pub released: Option<i64>,
-  #[serde(rename = "ThumbnailIndex")]
+  #[serde(rename = "ThumbnailIndex", default)]
   pub thumb_index: Option<i16>,
+  #[serde(rename = "Files", default)]
+  pub files: Option<Vec<String>>,
 }
 
-pub fn add_metadata(yaml: &str, archive: &mut db::InsertArchive) -> anyhow::Result<()> {
-  let info = serde_yaml::from_str::<Metadata>(yaml)?;
-  archive.title = info.title;
+pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyhow::Result<()> {
+  archive.title = Some(info.title);
+  archive.slug = archive.title.as_ref().map(slugify);
   archive.description = info.description;
+  archive.thumbnail = info.thumb_index.map(|index| index + 1);
+  archive.released_at = utils::map_timestamp(info.released);
 
-  if let Some(artists) = info.artists {
-    match artists {
-      MultiField::Single(artists) => {
-        archive.artists = artists.split(",").map(|s| s.trim().to_string()).collect()
-      }
-      MultiField::Many(artists) => archive.artists = artists,
-    }
-  }
+  archive.artists = info.artists.map(|field| field.to_vec());
+  archive.circles = info.circles.map(|field| field.to_vec());
+  archive.magazines = info.magazines.map(|field| field.to_vec());
+  archive.events = info.events.map(|field| field.to_vec());
+  archive.publishers = info.publishers.map(|field| field.to_vec());
+  archive.parodies = info.parodies.map(|field| field.to_vec());
+  archive.tags = info
+    .tags
+    .map(|tags| tags.into_iter().map(|tag| (tag, "".to_string())).collect());
 
-  if let Some(circles) = info.circles {
-    match circles {
-      MultiField::Single(circles) => {
-        archive.circles = circles.split(",").map(|s| s.trim().to_string()).collect()
-      }
-      MultiField::Many(circles) => archive.circles = circles,
-    }
-  }
-
-  if let Some(magazines) = info.magazines {
-    match magazines {
-      MultiField::Single(magazines) => {
-        archive.magazines = magazines.split(",").map(|s| s.trim().to_string()).collect()
-      }
-      MultiField::Many(magazines) => archive.magazines = magazines,
-    }
-  }
-
-  if let Some(events) = info.events {
-    match events {
-      MultiField::Single(events) => {
-        archive.events = events.split(",").map(|s| s.trim().to_string()).collect()
-      }
-      MultiField::Many(events) => archive.events = events,
-    }
-  }
-
-  if let Some(publishers) = info.publishers {
-    match publishers {
-      MultiField::Single(publishers) => {
-        archive.publishers = publishers
-          .split(",")
-          .map(|s| s.trim().to_string())
-          .collect()
-      }
-      MultiField::Many(publishers) => archive.publishers = publishers,
-    }
-  }
-
-  if let Some(parodies) = info.parodies {
-    match parodies {
-      MultiField::Single(parodies) => {
-        archive.parodies = parodies.split(",").map(|s| s.trim().to_string()).collect()
-      }
-      MultiField::Many(parodies) => archive.parodies = parodies,
-    }
-  }
-
-  if let Some(tags) = info.tags {
-    archive.tags = tags.into_iter().map(|t| (t, None)).collect();
-  }
-
-  archive.thumbnail = info.thumb_index.map(|t| t + 1).unwrap_or(1);
-
-  if let Some(released) = info.released {
-    archive.released_at = Some(DateTime::from_timestamp(released, 0).unwrap().naive_utc());
-  }
-
-  let mut sources: Vec<db::Source> = vec![];
+  let mut sources: Vec<db::ArchiveSource> = vec![];
 
   if let Some(urls) = info.urls {
     for (name, url) in urls {
-      sources.push(db::Source {
+      sources.push(db::ArchiveSource {
         name: utils::parse_source_name(&name),
         url: Some(url),
       })
@@ -141,14 +66,26 @@ pub fn add_metadata(yaml: &str, archive: &mut db::InsertArchive) -> anyhow::Resu
 
   if let Some(source_ids) = info.source_ids {
     for (name, id) in source_ids {
-      sources.push(db::Source {
+      sources.push(db::ArchiveSource {
         name: utils::parse_source_name(&name),
         url: parse_source_id(name, id),
       })
     }
   }
 
-  archive.sources = sources;
+  archive.sources = Some(sources);
+
+  archive.images = info.files.map(|files| {
+    files
+      .iter()
+      .enumerate()
+      .map(|(i, file)| db::ArchiveImage {
+        filename: file.to_string(),
+        page_number: (i + 1) as i16,
+        ..Default::default()
+      })
+      .collect()
+  });
 
   Ok(())
 }

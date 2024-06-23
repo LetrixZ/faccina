@@ -1,12 +1,16 @@
+use anyhow::anyhow;
 use async_zip::ZipString;
 use chrono::{DateTime, NaiveDateTime};
 use funty::Numeric;
 use itertools::Itertools;
 use regex::Regex;
 use ring::digest::{Context, Digest, SHA256};
+use sqlx::{Postgres, QueryBuilder};
 use std::{
   ffi::OsStr,
+  fs,
   io::Read,
+  os,
   path::{Path, PathBuf},
 };
 use time::OffsetDateTime;
@@ -26,12 +30,14 @@ pub fn sha256_digest<R: Read>(mut reader: R) -> anyhow::Result<Digest> {
   Ok(context.finish())
 }
 
-pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
+pub fn parse_filename(
+  filename: &str,
+) -> (Option<String>, Option<Vec<String>>, Option<Vec<String>>) {
   let filename: &str = filename.trim();
 
-  let mut title = String::new();
-  let mut artists = vec![];
-  let mut circles = vec![];
+  let mut title = None;
+  let mut artists = None;
+  let mut circles = None;
 
   let re = Regex::new(r"(\(|\[|\{)?[^\(\[\{\}\]\)]+(\}\)|\])?").unwrap();
   let mut captures: Vec<String> = vec![];
@@ -39,7 +45,7 @@ pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
   for (i, cap) in re.captures_iter(filename).enumerate() {
     let str = cap[0].trim().to_string();
 
-    if i == 2 && (str.starts_with("[") || str.starts_with("(")) {
+    if i == 2 && (str.starts_with('[') || str.starts_with('(')) {
       continue;
     }
 
@@ -48,60 +54,37 @@ pub fn parse_filename(filename: &str) -> (String, Vec<String>, Vec<String>) {
     }
   }
 
-  let mut captures = captures.iter();
+  let captures = captures.iter().collect_vec();
 
-  match captures.len() {
-    0 => {}
-    1 => {
-      title = captures.next().unwrap().to_string();
-    }
-    2 => {
-      artists = captures
-        .next()
-        .unwrap()
-        .split(',')
-        .map(|s| s.trim_matches('[').trim_matches(']').trim().to_string())
-        .collect_vec();
-
-      title = captures.next().unwrap().to_string();
-    }
-    _ => {
-      let str = captures.next().unwrap();
-
-      if str.starts_with('(') {
-        artists = str
+  if let (Some(first), Some(second)) = (captures.first(), captures.get(1)) {
+    if !second.starts_with('[') && !second.starts_with('(') {
+      title = Some(second.to_string());
+      artists = Some(
+        first
           .split(',')
-          .map(|s| s.trim_matches('(').trim_matches('(').trim().to_string())
-          .collect_vec();
-      } else if str.starts_with('[') {
-        circles = str
+          .map(|s| s.trim_matches(&['(', ')', '[', ']']).trim().to_string())
+          .collect_vec(),
+      );
+    } else {
+      circles = Some(
+        first
           .split(',')
-          .map(|s| s.trim_matches('[').trim_matches(']').trim().to_string())
-          .collect_vec();
-      } else {
-        title = str.to_string();
-      }
-
-      let str = captures.next().unwrap();
-
-      if str.starts_with('(') {
-        artists = str
+          .map(|s| s.trim_matches(&['(', ')', '[', ']']).trim().to_string())
+          .collect_vec(),
+      );
+      artists = Some(
+        second
           .split(',')
-          .map(|s| s.trim_matches('(').trim_matches('(').trim().to_string())
-          .collect_vec();
-      } else if str.starts_with('[') {
-        circles = str
-          .split(',')
-          .map(|s| s.trim_matches('[').trim_matches(']').trim().to_string())
-          .collect_vec();
-      } else {
-        title = str.to_string()
-      }
+          .map(|s| s.trim_matches(&['(', ')', '[', ']']).trim().to_string())
+          .collect_vec(),
+      );
 
-      if title.is_empty() {
-        title = captures.next().unwrap().to_string();
+      if let Some(third) = captures.get(2) {
+        title = Some(third.to_string());
       }
     }
+  } else if let Some(first) = captures.first() {
+    title = Some(first.to_string());
   }
 
   (title, artists, circles)
@@ -113,29 +96,28 @@ pub fn parse_source_name(str: &str) -> String {
   if str.contains("fakku") {
     "FAKKU".into()
   } else if str.contains("irodori") {
-    return "Irodori Comics".into();
-  } else if str.contains("projecth") {
-    return "Project Hentai".into();
+    "Irodori Comics".into()
+  } else if str.contains("projecth") || str.contains("project-xxx") || str.contains("projectxxx") {
+    "Project Hentai".into()
   } else if str.contains("pixiv") {
-    return "Pixiv".into();
+    "Pixiv".into()
   } else if str.contains("patreon") {
-    return "Patreon".into();
+    "Patreon".into()
   } else if str.contains("anchira") {
-    return "Anchira".into();
+    "Anchira".into()
   } else if str.contains("hentainexus") || str.contains("hentai nexus") {
-    return "HentaiNexus".into();
-  } else if str.contains("e-hentai") {
-    return "E-Hentai".into();
+    "HentaiNexus".into()
+  } else if str.contains("e-hentai") || str.contains("ehentai") {
+    "E-Hentai".into()
   } else if str.contains("exhentai") || str.contains("ex-hentai") {
-    return "ExHentai".into();
+    "ExHentai".into()
   } else if str.contains("hentag") {
-    return "HenTag".into();
+    "HenTag".into()
   } else {
-    return if let Ok(url) = url::Url::parse(&str) {
-      capitalize_words(url.host_str().unwrap_or(&str))
-    } else {
-      capitalize_words(&str)
-    };
+    url::Url::parse(&str)
+      .ok()
+      .and_then(|url| url.host_str().map(capitalize_words))
+      .unwrap_or(capitalize_words(&str))
   }
 }
 
@@ -221,4 +203,105 @@ pub fn parse_zip_date(date: zip::DateTime) -> NaiveDateTime {
   DateTime::from_timestamp(OffsetDateTime::try_from(date).unwrap().unix_timestamp(), 0)
     .unwrap()
     .naive_utc()
+}
+
+pub fn tag_alias(name: &str, slug: &str) -> String {
+  match slug {
+    "fff-threesome" => "FFF Threesome".to_string(),
+    "fffm-foursome" => "FFFM Foursome".to_string(),
+    "ffm-threesome" => "FFM Threesome".to_string(),
+    "fft-threesome" => "FFT Threesome".to_string(),
+    "mmf-threesome" => "MMF Threesome".to_string(),
+    "mmm-threesome" => "MMM Threesome".to_string(),
+    "mmmf-foursome" => "MMMF Foursome".to_string(),
+    "mmt-threesome" => "MMT Threesome".to_string(),
+    "cg-set" => "CG Set".to_string(),
+    "bss" => "BSS".to_string(),
+    "bl" => "BL".to_string(),
+    "comics-r18" => "Comics R18".to_string(),
+    "sci-fi" => "Sci-Fi".to_string(),
+    "x-ray" => "X-ray".to_string(),
+    "non-h" => "Non-H".to_string(),
+    "sixty-nine" => "Sixty-Nine".to_string(),
+    _ => name.to_string(),
+  }
+}
+
+pub fn map_timestamp(timestamp: Option<i64>) -> Option<NaiveDateTime> {
+  timestamp
+    .and_then(|timestamp| DateTime::from_timestamp(timestamp, 0))
+    .map(|datetime| datetime.naive_utc())
+}
+
+pub fn create_symlink(src: &impl AsRef<Path>, dest: &impl AsRef<Path>) -> anyhow::Result<()> {
+  #[cfg(unix)]
+  if let Err(err) = os::unix::fs::symlink(src, dest) {
+    match err.kind() {
+      std::io::ErrorKind::AlreadyExists => {
+        if fs::remove_file(dest).is_ok() {
+          if let Err(err) = os::unix::fs::symlink(src, dest) {
+            return Err(anyhow!("Couldn't create a symbolic link: {err}"));
+          }
+        }
+      }
+      _ => {
+        return Err(anyhow!("Couldn't create a symbolic link: {err}"));
+      }
+    }
+  }
+
+  #[cfg(windows)]
+  if let Err(err) = os::windows::fs::symlink_file(src, dest) {
+    match err.kind() {
+      std::io::ErrorKind::AlreadyExists => {
+        if fs::remove_file(dest).is_ok() {
+          if let Err(err) = os::windows::fs::symlink(src, dest) {
+            return Err(anyhow!("Couldn't create a symbolic link: {err}"));
+          }
+        }
+      }
+      _ => {
+        return Err(anyhow!("Couldn't create a symbolic link: {err}"));
+      }
+    }
+  }
+
+  Ok(())
+}
+
+pub fn add_id_ranges(qb: &mut QueryBuilder<Postgres>, id_ranges: &str) {
+  let id_ranges = id_ranges.split(',').map(|s| s.trim()).collect_vec();
+  let mut ids = vec![];
+  let mut ranges = vec![];
+
+  for range in id_ranges {
+    let splits = range.split('-').filter(|s| !s.is_empty()).collect_vec();
+
+    if splits.len() == 1 {
+      let id = splits.first().unwrap();
+      ids.push(id.parse::<i64>().unwrap());
+    } else if splits.len() == 2 {
+      let start = splits.first().unwrap();
+      let end = splits.last().unwrap();
+      ranges.push((start.parse::<i64>().unwrap(), end.parse::<i64>().unwrap()))
+    }
+  }
+
+  qb.push(" id = ANY(").push_bind(ids).push(")");
+
+  if !ranges.is_empty() {
+    qb.push(" OR");
+  }
+
+  for (i, (start, end)) in ranges.clone().into_iter().enumerate() {
+    qb.push(" (id >= ")
+      .push(start)
+      .push(" AND id <= ")
+      .push_bind(end)
+      .push(")");
+
+    if i != ranges.len() - 1 {
+      qb.push(" OR");
+    }
+  }
 }

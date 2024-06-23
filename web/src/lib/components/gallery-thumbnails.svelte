@@ -12,7 +12,10 @@
 	$: filteredImages = archive?.images.slice(0, maxCount);
 
 	$: wideImages =
-		archive.images.reduce((acc, image) => acc + image.width / image.height, 0) /
+		archive.images.reduce(
+			(acc, image) => acc + (image.width && image.height ? image.width / image.height : 0),
+			0
+		) /
 			archive.images.length >=
 		1;
 </script>
@@ -27,8 +30,8 @@
 							'h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600',
 							isSpread(image) && 'object-contain'
 						)}
-						width={320}
-						height={Math.round((320 / image.width) * image.height)}
+						width={image.width && 320}
+						height={image.width && image.height && Math.round((320 / image.width) * image.height)}
 						loading="eager"
 						alt={`Page ${image.page_number}`}
 						src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.page_number}/thumb`}

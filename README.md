@@ -4,23 +4,19 @@ Archive reader
 
 ## Planned features
 
-- Add downloads support:
-  - [WebTorrents](https://webtorrent.io/) downloads.
-  - Server-side resampled downloads.
-  - Client-side resampled downloads.
-- Trending page.
-- Message of the day.
-- Public API for 3rd-party apps.
-- Admin dashboard to manage the galleries.
-- Listing pages for artists, circles, magazines, parodies and tags.
-- User account support.
-  - User categories.
-- Gallery upload support.
-- Reader improvments:
-  - Add different touch layouts.
-  - Auto scroll.
-- HenTag scraper.
-- Gallery collections.
+- [HenTag scraping](https://github.com/LetrixZ/faccina/issues/4).
+- [Resampled images](https://github.com/LetrixZ/faccina/issues/1)
+- [Trending page](https://github.com/LetrixZ/faccina/issues/3).
+- [WebTorrent integration](https://github.com/LetrixZ/faccina/issues/2)
+- [Admin dashboard to manage the galleries](https://github.com/LetrixZ/faccina/issues/5).
+- [Message of the day](https://github.com/LetrixZ/faccina/issues/6).
+- [Listing pages for artists, circles, magazines, parodies and tags](https://github.com/LetrixZ/faccina/issues/7).
+- [Reader improvments](https://github.com/LetrixZ/faccina/issues/8)
+- [Public API for 3rd-party apps](https://github.com/LetrixZ/faccina/issues/13).
+- [User account support](https://github.com/LetrixZ/faccina/issues/11).
+- [User categories](https://github.com/LetrixZ/faccina/issues/9).
+- [Gallery collections](https://github.com/LetrixZ/faccina/issues/10).
+- [Gallery upload support](https://github.com/LetrixZ/faccina/issues/12).
 
 ## Screenshots
 

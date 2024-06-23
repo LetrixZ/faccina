@@ -7,13 +7,14 @@ use crate::db;
 use axum::extract::rejection::QueryRejection;
 use axum::extract::FromRequest;
 use axum::extract::{MatchedPath, Request};
-use axum::http::{Method, StatusCode};
+use axum::http::{HeaderName, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use serde::Serialize;
 use sqlx::PgPool;
 use std::io;
+use std::str::FromStr;
 use thiserror::Error;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -107,8 +108,9 @@ pub async fn start_server() -> anyhow::Result<()> {
   let state = AppState { pool };
 
   let cors = CorsLayer::new()
-    .allow_methods([Method::GET, Method::POST])
-    .allow_origin(Any);
+    .allow_methods(Any)
+    .allow_origin(Any)
+    .vary([HeaderName::from_str("Accept-Encoding").unwrap()]);
 
   let app = Router::new()
     .route("/library", get(routes::library))

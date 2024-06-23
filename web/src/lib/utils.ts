@@ -185,13 +185,26 @@ export function getMetadata(archive: Archive) {
 	return {
 		Title: archive.title,
 		Description: archive.description ?? undefined,
-		Artist: archive.artists?.map((artist) => artist.name)?.join(', '),
-		Groups: archive.circles?.map((circle) => circle.name)?.join(', '),
-		Magazine: archive.magazines?.map((magazine) => magazine.name)?.join(', '),
-		Parody: archive.parodies?.map((parody) => parody.name)?.join(', '),
-		Publisher: archive.publishers?.map((publisher) => publisher.name).join(', '),
+		Artist: archive.artists?.length
+			? archive.artists.map((artist) => artist.name)?.join(', ')
+			: undefined,
+		Groups: archive.circles?.length
+			? archive.circles.map((circle) => circle.name)?.join(', ')
+			: undefined,
+		Magazine: archive.magazines?.length
+			? archive.magazines.map((magazine) => magazine.name)?.join(', ')
+			: undefined,
+		Event: archive.events?.length
+			? archive.events.map((event) => event.name)?.join(', ')
+			: undefined,
+		Parody: archive.parodies?.length
+			? archive.parodies.map((parody) => parody.name)?.join(', ')
+			: undefined,
+		Publisher: archive.publishers?.length
+			? archive.publishers.map((publisher) => publisher.name).join(', ')
+			: undefined,
 		Pages: archive.pages,
-		Tags: archive.tags?.map((tag) => tag.name),
+		Tags: archive.tags?.length ? archive.tags.map((tag) => tag.name) : undefined,
 		Source: `https://${location.hostname}/g/${archive.id}`,
 		Released: new Date(archive.released_at).getTime() / 1000,
 		Thumbnail: archive.thumbnail - 1,

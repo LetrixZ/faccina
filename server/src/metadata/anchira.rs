@@ -1,8 +1,9 @@
 use crate::{db, utils};
-use chrono::DateTime;
+use serde::Deserialize;
+use slug::slugify;
 
-#[derive(serde::Deserialize)]
-struct Metadata {
+#[derive(Deserialize)]
+pub struct Metadata {
   #[serde(rename = "Title")]
   pub title: String,
   #[serde(rename = "Description")]
@@ -17,51 +18,56 @@ struct Metadata {
   pub circles: Option<Vec<String>>,
   #[serde(rename = "Magazine", default)]
   pub magazines: Option<Vec<String>>,
+  #[serde(rename = "Event", default)]
+  pub events: Option<Vec<String>>,
   #[serde(rename = "Publisher", default)]
   pub publishers: Option<Vec<String>>,
   #[serde(rename = "Parody", default)]
   pub parodies: Option<Vec<String>>,
-  #[serde(rename = "Tags")]
-  pub tags: Vec<String>,
-  #[serde(rename = "Thumbnail")]
-  pub thumb_index: Option<i16>,
+  #[serde(rename = "Tags", default)]
+  pub tags: Option<Vec<String>>,
+  #[serde(rename = "Thumbnail", default)]
+  pub thumbnail: Option<i16>,
   #[serde(rename = "Released", default)]
   pub released: Option<i64>,
 }
 
-pub fn add_metadata(yaml: &str, archive: &mut db::InsertArchive) -> anyhow::Result<()> {
-  let info = serde_yaml::from_str::<Metadata>(yaml)?;
-  archive.title = info.title;
+pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyhow::Result<()> {
+  archive.title = Some(info.title);
+  archive.slug = archive.title.as_ref().map(slugify);
   archive.description = info.description;
-  archive.tags = info.tags.into_iter().map(|t| (t, None)).collect();
-  archive.artists = info.artists.unwrap_or_default();
-  archive.circles = info.circles.unwrap_or_default();
-  archive.magazines = info.magazines.unwrap_or_default();
-  archive.publishers = info.publishers.unwrap_or_default();
-  archive.parodies = info.parodies.unwrap_or_default();
-  archive.thumbnail = info.thumb_index.unwrap_or(1);
+  archive.thumbnail = info.thumbnail;
+  archive.released_at = utils::map_timestamp(info.released);
 
-  let mut sources: Vec<db::Source> = vec![];
+  archive.artists = info.artists;
+  archive.circles = info.circles;
+  archive.magazines = info.magazines;
+  archive.events = info.events;
+  archive.publishers = info.publishers;
+  archive.parodies = info.parodies;
+  archive.tags = info
+    .tags
+    .map(|tags| tags.into_iter().map(|tag| (tag, "".to_string())).collect());
+
+  let mut sources: Vec<db::ArchiveSource> = vec![];
 
   if let Some(url) = info.url {
-    sources.push(db::Source {
+    sources.push(db::ArchiveSource {
       name: utils::parse_source_name(&url),
       url: Some(url),
     });
   }
 
   if let Some(url) = info.source {
-    sources.push(db::Source {
+    sources.push(db::ArchiveSource {
       name: utils::parse_source_name(&url),
       url: Some(url),
     });
   }
 
-  if let Some(released) = info.released {
-    archive.released_at = Some(DateTime::from_timestamp(released, 0).unwrap().naive_utc());
+  if !sources.is_empty() {
+    archive.sources = Some(sources);
   }
-
-  archive.sources = sources;
 
   Ok(())
 }

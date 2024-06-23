@@ -10,6 +10,7 @@ mod db;
 mod image;
 mod log;
 mod metadata;
+mod scraper;
 mod torrents;
 mod utils;
 
@@ -25,6 +26,7 @@ async fn run() -> anyhow::Result<()> {
         Commands::IndexTorrent(args) => cmd::index_torrents(args.clone()).await?,
         Commands::GenerateThumbnails(args) => cmd::generate_thumbnails(args.clone()).await?,
         Commands::CalculateDimensions(args) => cmd::calculate_dimensions(args.clone()).await?,
+        Commands::Scrape(args) => cmd::scrape(args.clone()).await?,
       }
     }
     None => api::start_server().await?,

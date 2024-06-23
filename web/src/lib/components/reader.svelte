@@ -54,7 +54,7 @@
 		}
 
 		const newImage = new Image(imageInfo.width, imageInfo.height);
-		newImage.src = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${page}`;
+		newImage.src = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${imageInfo.filename}`;
 		newImage.alt = `Page ${currentPage}`;
 		newImage.onerror = () => toast.error('Failed to load the page');
 
@@ -83,12 +83,12 @@
 				.filter((page) => pageState.find((state) => state.page_number === page)!.state === 'idle')
 				.map((page) => archive.images.find(({ page_number }) => page_number === page)!),
 			async (imageInfo) => {
-				const { page_number } = imageInfo;
+				const { filename, page_number } = imageInfo;
 
 				changePageState(page_number, 'preloading');
 
 				const newImage = new Image(imageInfo.width, imageInfo.height);
-				newImage.src = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${page_number}`;
+				newImage.src = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${filename}`;
 
 				if (newImage.complete) {
 					newImage.addEventListener('error', () => changePageState(page_number, 'preloaded'));
@@ -106,13 +106,15 @@
 			return;
 		}
 
-		const base = `aspect-ratio: ${image.width / image.height};`;
+		const base = `aspect-ratio: ${image.width && image.height && image.width / image.height};`;
 
 		switch ($prefs.fitMode) {
 			case ImageFitMode.MaxWidth:
-				if ($prefs.maxWidth) {
+				if ($prefs.maxWidth && image.width && image.height) {
 					return base + `max-height: ${($prefs.maxWidth * image.height) / image.width}px;`;
 				}
+
+				return base;
 			case ImageFitMode.ImageWidth:
 				return base + `max-height: ${image.height}px;`;
 			case ImageFitMode.FitHeight:
@@ -233,7 +235,7 @@
 			height={image?.height}
 			width={image?.width}
 			alt={`Page ${currentPage}`}
-			src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${currentPage}`}
+			src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image?.filename}`}
 			loading="eager"
 			style={getImageStyle($prefs)}
 			class="m-auto bg-neutral-500"

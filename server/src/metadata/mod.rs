@@ -2,10 +2,9 @@ mod anchira;
 mod ccdc06;
 mod eze;
 mod gallerydl;
-mod hentag;
+pub mod hentag;
 mod hentainexus;
 mod koromo;
-mod koromo_alt;
 
 use crate::{
   config::REGEX,
@@ -13,14 +12,52 @@ use crate::{
   utils::{self, ToStringExt},
 };
 use anyhow::anyhow;
+use regex::Regex;
+use serde::Deserialize;
 use serde_json::Value as JsonValue;
 use serde_yaml::Value as YamlValue;
 use std::{
+  collections::HashMap,
+  fmt::Display,
   fs,
   io::{Cursor, Read},
   path::Path,
 };
 use zip::ZipArchive;
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum MultiTextField {
+  Single(String),
+  Many(Vec<String>),
+  Map(HashMap<usize, String>),
+}
+
+impl MultiTextField {
+  fn to_vec(&self) -> Vec<String> {
+    match self {
+      MultiTextField::Single(value) => value.split(',').map(|s| s.trim().to_string()).collect(),
+      MultiTextField::Many(value) => value.to_vec(),
+      MultiTextField::Map(value) => value.values().map(|s| s.to_string()).collect(),
+    }
+  }
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum MultiIdField {
+  Integer(i64),
+  String(String),
+}
+
+impl Display for MultiIdField {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      MultiIdField::Integer(id) => write!(f, "{id}"),
+      MultiIdField::String(id) => write!(f, "{id}"),
+    }
+  }
+}
 
 enum MetadataFormat {
   Yaml(MetadataFormatYaml),
@@ -37,26 +74,45 @@ enum MetadataFormatJson {
   HenTag(String),
   Eze(String),
   Koromo(String),
-  KoromoAlt(String),
   GalleryDL(String),
 }
 
 fn handle_metadata_format(
-  archive: &mut db::InsertArchive,
+  archive: &mut db::UpsertArchiveData,
   format: MetadataFormat,
 ) -> anyhow::Result<()> {
   match format {
     MetadataFormat::Yaml(yaml) => match yaml {
-      MetadataFormatYaml::Anchira(yaml) => anchira::add_metadata(&yaml, archive)?,
-      MetadataFormatYaml::HentaiNexus(yaml) => hentainexus::add_metadata(&yaml, archive)?,
-      MetadataFormatYaml::CCDC06(yaml) => ccdc06::add_metadata(&yaml, archive)?,
+      MetadataFormatYaml::Anchira(yaml) => {
+        let metadata = serde_yaml::from_str(&yaml)?;
+        anchira::add_metadata(metadata, archive)?
+      }
+      MetadataFormatYaml::HentaiNexus(yaml) => {
+        let metadata = serde_yaml::from_str(&yaml)?;
+        hentainexus::add_metadata(metadata, archive)?
+      }
+      MetadataFormatYaml::CCDC06(yaml) => {
+        let metadata = serde_yaml::from_str(&yaml)?;
+        ccdc06::add_metadata(metadata, archive)?
+      }
     },
     MetadataFormat::Json(json) => match json {
-      MetadataFormatJson::HenTag(json) => hentag::add_metadata(&json, archive)?,
-      MetadataFormatJson::Eze(json) => eze::add_metadata(&json, archive)?,
-      MetadataFormatJson::Koromo(json) => koromo::add_metadata(&json, archive)?,
-      MetadataFormatJson::KoromoAlt(json) => koromo_alt::add_metadata(&json, archive)?,
-      MetadataFormatJson::GalleryDL(json) => gallerydl::add_metadata(&json, archive)?,
+      MetadataFormatJson::HenTag(json) => {
+        let metadata = serde_json::from_str(&json)?;
+        hentag::add_metadata(metadata, archive)?
+      }
+      MetadataFormatJson::Eze(json) => {
+        let metadata = serde_json::from_str(&json)?;
+        eze::add_metadata(metadata, archive)?
+      }
+      MetadataFormatJson::Koromo(json) => {
+        let metadata = serde_json::from_str(&json)?;
+        koromo::add_metadata(metadata, archive)?
+      }
+      MetadataFormatJson::GalleryDL(json) => {
+        let metadata = serde_json::from_str(&json)?;
+        gallerydl::add_metadata(metadata, archive)?
+      }
     },
   }
 
@@ -119,40 +175,36 @@ fn get_json_type(json: String) -> anyhow::Result<MetadataFormatJson> {
     return Ok(MetadataFormatJson::GalleryDL(minified));
   } else if REGEX.koromo.is_match(&minified) {
     return Ok(MetadataFormatJson::Koromo(minified));
-  } else if REGEX.koromo_alt.is_match(&minified) {
-    return Ok(MetadataFormatJson::KoromoAlt(minified));
   }
 
   Err(anyhow!("Failed to get metadata type from JSON"))
 }
 
-pub fn add_external_metadata(path: &Path, archive: &mut db::InsertArchive) -> anyhow::Result<()> {
-  let yaml_path = path
-    .parent()
-    .unwrap()
-    .join(format!("{}.yaml", path.file_stem().unwrap().to_string()));
+pub fn add_external_metadata(
+  path: &Path,
+  archive: &mut db::UpsertArchiveData,
+) -> anyhow::Result<()> {
+  let re = Regex::new(r#"\.(cbz|zip)"#).unwrap();
 
-  let json_path = path
-    .parent()
-    .unwrap()
-    .join(format!("{}.json", path.file_stem().unwrap().to_string()));
+  let yaml_path = re.replace_all(&path.to_string(), ".yaml").to_string();
+  let json_path = re.replace_all(&path.to_string(), ".json").to_string();
 
   if let Ok(yaml) = fs::read_to_string(yaml_path) {
     handle_metadata_format(archive, MetadataFormat::Yaml(get_yaml_type(yaml)?))?;
-
-    Ok(())
   } else if let Ok(json) = fs::read_to_string(json_path) {
     handle_metadata_format(archive, MetadataFormat::Json(get_json_type(json)?))?;
-
-    Ok(())
   } else {
-    Err(anyhow!("Couldn't find external metadata file"))
+    return Err(anyhow!("Couldn't find external metadata file"));
   }
+
+  archive.has_metadata = Some(true);
+
+  Ok(())
 }
 
 pub fn add_metadata(
   zip: &mut ZipArchive<Cursor<Vec<u8>>>,
-  archive: &mut db::InsertArchive,
+  archive: &mut db::UpsertArchiveData,
 ) -> anyhow::Result<()> {
   if let Ok((yaml, date)) = zip.by_name("info.yaml").map(|mut file| {
     let mut str = String::new();
@@ -165,8 +217,6 @@ pub fn add_metadata(
 
     archive.released_at = date.map(utils::parse_zip_date);
     handle_metadata_format(archive, MetadataFormat::Yaml(get_yaml_type(yaml)?))?;
-
-    Ok(())
   } else if let Ok((json, date)) = zip.by_name("info.json").map(|mut file| {
     let mut str = String::new();
     let _ = file.read_to_string(&mut str);
@@ -178,9 +228,11 @@ pub fn add_metadata(
 
     archive.released_at = date.map(utils::parse_zip_date);
     handle_metadata_format(archive, MetadataFormat::Json(get_json_type(json)?))?;
-
-    Ok(())
   } else {
-    Err(anyhow!("Couldn't find metadata file"))
+    return Err(anyhow!("Couldn't find metadata file"));
   }
+
+  archive.has_metadata = Some(true);
+
+  Ok(())
 }

@@ -1,80 +1,99 @@
 use crate::{config::CONFIG, db, utils};
-use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use serde::Deserialize;
+use slug::slugify;
 
 #[derive(Deserialize)]
-struct Metadata {
+pub struct Metadata {
   pub title: String,
-  pub language: String,
-  pub date: String,
-  pub tags: Vec<String>,
+  #[serde(default)]
+  pub language: Option<String>,
+  #[serde(default)]
+  pub date: Option<String>,
+  #[serde(default)]
+  pub tags: Option<Vec<String>>,
+  #[serde(default)]
+  pub category: Option<String>,
   #[serde(default)]
   pub gallery_id: Option<i64>,
   #[serde(default)]
   pub gallery_token: Option<String>,
 }
 
-pub fn add_metadata(json: &str, archive: &mut db::InsertArchive) -> anyhow::Result<()> {
-  let info = serde_json::from_str::<Metadata>(json)?;
-
-  if CONFIG.metadata.parse_filename_title {
-    archive.title = utils::parse_filename(&info.title).0;
+pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyhow::Result<()> {
+  archive.title = if CONFIG.metadata.parse_filename_title {
+    utils::parse_filename(&info.title).0
   } else {
-    archive.title = info.title.to_string();
-  }
+    Some(info.title)
+  };
+  archive.slug = archive.title.as_ref().map(slugify);
+  archive.thumbnail = Some(1);
+  archive.language = info.language.map(|s| utils::capitalize_words(&s));
+  archive.released_at = info
+    .date
+    .and_then(|date| NaiveDateTime::parse_from_str(&date, "%Y-%m-%d %H:%M:%S").ok());
 
-  archive.thumbnail = 1;
-  archive.language = Some(utils::capitalize_words(&info.language));
+  if let Some(tags) = info.tags {
+    let mut artists = vec![];
+    let mut circles = vec![];
+    let mut parodies = vec![];
+    let mut archive_tags = vec![];
 
-  let mut translated = None;
-  let mut artists = vec![];
-  let mut circles = vec![];
-  let mut parodies = vec![];
-  let mut tags = vec![];
+    for tag in tags {
+      let mut split = tag.split(':');
 
-  for tag in info.tags {
-    let mut split = tag.split(":");
+      let namespace = split.next().unwrap();
 
-    let namespace = split.next().unwrap();
-
-    if let Some(tag) = split.next() {
-      match namespace {
-        "artist" => artists.push(utils::capitalize_words(tag)),
-        "group" => circles.push(utils::capitalize_words(tag)),
-        "parody" => parodies.push(utils::capitalize_words(tag)),
-        "male" => tags.push((utils::capitalize_words(tag), Some("male".to_string()))),
-        "female" => tags.push((utils::capitalize_words(tag), Some("female".to_string()))),
-        "other" => tags.push((utils::capitalize_words(tag), Some("misc".to_string()))),
-        "language" => {
-          if tag == "translated" {
-            translated = Some(true)
-          }
+      if let Some(tag) = split.next() {
+        match namespace {
+          "artist" => artists.push(utils::capitalize_words(tag)),
+          "group" => circles.push(utils::capitalize_words(tag)),
+          "parody" => parodies.push(utils::capitalize_words(tag)),
+          "male" => archive_tags.push((utils::capitalize_words(tag), "male".to_string())),
+          "female" => archive_tags.push((utils::capitalize_words(tag), "female".to_string())),
+          "other" => archive_tags.push((utils::capitalize_words(tag), "misc".to_string())),
+          _ => archive_tags.push((utils::capitalize_words(tag), namespace.to_string())),
         }
-        _ => tags.push((utils::capitalize_words(tag), Some("misc".to_string()))),
+      } else {
+        archive_tags.push((utils::capitalize_words(namespace), "misc".to_string()));
       }
-    } else {
-      tags.push((utils::capitalize_words(namespace), Some("misc".to_string())));
+    }
+
+    if !artists.is_empty() {
+      archive.artists = Some(artists);
+    }
+
+    if !circles.is_empty() {
+      archive.circles = Some(circles);
+    }
+
+    if !parodies.is_empty() {
+      archive.parodies = Some(parodies);
+    }
+
+    if !archive_tags.is_empty() {
+      archive.tags = Some(archive_tags);
     }
   }
 
-  archive.artists = artists;
-  archive.circles = circles;
-  archive.parodies = parodies;
-  archive.tags = tags;
-  archive.translated = translated;
-  archive.released_at = Some(
-    NaiveDateTime::parse_from_str(&info.date, "%Y-%m-%d %H:%M:%S")
-      .map_err(|err| anyhow!("Couldn't parse date the date '{}': {err}", info.date))?,
-  );
+  if let Some(category) = info.category {
+    let url = if category == "e-hentai" || category == "exhentai" {
+      if let (Some(id), Some(token)) = (info.gallery_id, info.gallery_token) {
+        Some(format!("https://exhentai.org/g/{}/{}", id, token))
+      } else {
+        None
+      }
+    } else {
+      None
+    };
 
-  if let (Some(id), Some(token)) = (info.gallery_id, info.gallery_token) {
-    let url = format!("https://exhentai.org/g/{}/{}", id, token);
+    let source = db::ArchiveSource {
+      name: utils::parse_source_name(&category),
+      url,
+    };
 
-    archive.sources = vec![db::Source {
-      name: utils::parse_source_name(&url),
-      url: Some(url),
-    }];
+    archive.sources = Some(vec![source]);
   }
+
   Ok(())
 }

@@ -103,7 +103,7 @@ pub async fn index(
 
     if let Some(id_ranges) = args.id {
       qb.push(" AND");
-      cmd::add_id_ranges(&mut qb, &id_ranges);
+      utils::add_id_ranges(&mut qb, &id_ranges);
     }
 
     #[derive(sqlx::FromRow, Debug)]
