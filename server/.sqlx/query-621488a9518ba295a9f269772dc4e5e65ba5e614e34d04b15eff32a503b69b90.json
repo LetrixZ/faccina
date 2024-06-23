@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, path,\n    (SELECT filename FROM archive_images WHERE archive_id = id AND page_number = $2)\n    FROM archives WHERE hash = $1",
+  "query": "SELECT id, path, thumbnail FROM archives WHERE deleted_at IS NULL ORDER BY id ASC",
   "describe": {
     "columns": [
       {
@@ -15,21 +15,18 @@
       },
       {
         "ordinal": 2,
-        "name": "filename",
-        "type_info": "Varchar"
+        "name": "thumbnail",
+        "type_info": "Int2"
       }
     ],
     "parameters": {
-      "Left": [
-        "Text",
-        "Int2"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
       false,
-      null
+      false
     ]
   },
-  "hash": "57d6770cb90813105add82b3d570cdca4bbecb99bc15978983c3a9acb073dbe7"
+  "hash": "621488a9518ba295a9f269772dc4e5e65ba5e614e34d04b15eff32a503b69b90"
 }
