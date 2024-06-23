@@ -1,11 +1,9 @@
-use std::path::Path;
-
 use crate::{db, metadata::hentag, utils::ToStringExt};
 use clap::ValueEnum;
 use indicatif::MultiProgress;
 use serde::Deserialize;
-use serde_json::json;
 use sqlx::PgPool;
+use std::path::Path;
 
 #[derive(Copy, Clone, ValueEnum, Deserialize)]
 #[clap(rename_all = "lower")]
@@ -23,15 +21,12 @@ async fn scrape_hentag(id: i64, pool: &PgPool, mp: &MultiProgress) -> anyhow::Re
   .fetch_all(pool)
   .await?;
 
-  let request = if let Some((_, url)) = sources
+  let res = if let Some((_, url)) = sources
     .iter()
     .filter_map(|rec| rec.url.as_ref().map(|url| (rec.name.clone(), url)))
     .find(|(name, _)| ["FAKKU", "Irodori Comics", "E-Hentai", "ExHentai"].contains(&name.as_str()))
   {
-    let client = reqwest::Client::new();
-    client
-      .post(format!("{HENTAG_API}/url"))
-      .json(&json!({"urls": [url]}))
+    ureq::post(&format!("{HENTAG_API}/url")).send_json(ureq::json!({"urls": [url]}))?
   } else {
     let path = sqlx::query_scalar!("SELECT path FROM archives WHERE id = $1", id)
       .fetch_one(pool)
@@ -39,14 +34,10 @@ async fn scrape_hentag(id: i64, pool: &PgPool, mp: &MultiProgress) -> anyhow::Re
 
     let filename = Path::new(&path).file_stem().unwrap().to_string();
 
-    let client = reqwest::Client::new();
-    client
-      .post(format!("{HENTAG_API}/title"))
-      .json(&json!({"title": filename}))
+    ureq::post(&format!("{HENTAG_API}/title")).send_json(ureq::json!({"title": filename}))?
   };
 
-  let res = request.send().await?;
-  let data: Vec<hentag::Metadata> = res.json().await?;
+  let data: Vec<hentag::Metadata> = res.into_json()?;
 
   if let Some(info) = data.first() {
     let mut data = db::UpsertArchiveData {
