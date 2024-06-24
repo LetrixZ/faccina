@@ -32,6 +32,10 @@ pub enum Commands {
   CalculateDimensions(CalculateDimensionsArgs),
   #[command(about="Scrape metadata for archives.", long_about = None)]
   Scrape(ScrapeArgs),
+  #[command(about="Show given archives from the search results.", long_about = None)]
+  Publish(PublishArgs),
+  #[command(about="Hide given archives from the search results.", long_about = None)]
+  Unpublish(PublishArgs),
 }
 
 #[derive(Args, Clone)]
@@ -136,6 +140,12 @@ pub struct ScrapeArgs {
     help = "Miliseconds to wait between archives"
   )]
   pub sleep: u64,
+}
+
+#[derive(Args, Clone)]
+pub struct PublishArgs {
+  #[arg(help = "List of archive IDs or range (ex: 1-10,14,230-400)")]
+  pub id: String,
 }
 
 async fn fetch_archives(
@@ -456,6 +466,27 @@ pub async fn scrape(args: ScrapeArgs) -> anyhow::Result<()> {
       sleep(Duration::from_millis(args.sleep)).await;
     }
   }
+
+  Ok(())
+}
+
+pub async fn pusblish(args: PublishArgs, publish: bool) -> anyhow::Result<()> {
+  let pool = db::get_pool().await?;
+
+  let mut qb = QueryBuilder::new("UPDATE archives SET ");
+
+  if publish {
+    qb.push("deleted_at = NULL");
+  } else {
+    qb.push("deleted_at = NOW()");
+  }
+
+  qb.push(" WHERE");
+
+  utils::add_id_ranges(&mut qb, &args.id);
+  let affected = qb.build().execute(&pool).await?;
+
+  info!("{} archives updated", affected.rows_affected());
 
   Ok(())
 }

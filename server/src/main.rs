@@ -27,6 +27,8 @@ async fn run() -> anyhow::Result<()> {
         Commands::GenerateThumbnails(args) => cmd::generate_thumbnails(args.clone()).await?,
         Commands::CalculateDimensions(args) => cmd::calculate_dimensions(args.clone()).await?,
         Commands::Scrape(args) => cmd::scrape(args.clone()).await?,
+        Commands::Publish(args) => cmd::pusblish(args.clone(), true).await?,
+        Commands::Unpublish(args) => cmd::pusblish(args.clone(), false).await?,
       }
     }
     None => api::start_server().await?,

@@ -119,6 +119,13 @@ It will replace any data already present in the archive. Only sources are merged
 - `--id <ID_RANGE>`: Indicate one or multiple archive IDs to scrape metadata for.
 - `--sleep <MS>`: Indicate how much milliseconds to wait between archives to avoid rate limits. Default is 1000.
 
+### Publish and Unpublish archives
+
+Run `./server publish <ID>` or `./server unpublish <ID>`.
+`<ID>` can be a range. Example: `1-10,14,230-400`
+
+This will change the visiblity of the given archives.
+
 ### Start server
 
 Run the `./server` binary to run the server.

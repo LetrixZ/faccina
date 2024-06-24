@@ -111,13 +111,15 @@ pub async fn index(
   pool: &PgPool,
   mp: &MultiProgress,
 ) -> anyhow::Result<bool> {
-  if !opts.reindex && sqlx::query_scalar!(
+  if !opts.reindex
+    && sqlx::query_scalar!(
       r#"SELECT id FROM archives WHERE path = $1 AND deleted_at IS NULL"#,
       path.to_string()
     )
     .fetch_optional(pool)
     .await?
-    .is_some() {
+    .is_some()
+  {
     return Ok(false);
   }
 
@@ -248,6 +250,8 @@ pub async fn index(
       }
     }
   }
+
+  mp.suspend(|| info!("Indexed '{}' with ID {}", path.to_string(), archive_id));
 
   Ok(true)
 }
