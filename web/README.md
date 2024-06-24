@@ -6,6 +6,7 @@ You need to configure the following environment variables:
 
 - `SERVER_URL`: the **internal** URL where the server is hosted. This can be internal as it will only be used by the web server locally.
 - `PUBLIC_CDN_URL` the **public** URL where the server is hosted. This will be used to load images so it needs to be publicly accesible to users.
+- `API_KEY`: specify this to protect the API routes.
 
 ## Building
 
