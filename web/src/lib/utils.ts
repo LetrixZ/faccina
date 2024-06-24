@@ -165,7 +165,11 @@ export const tagWeights: [string, number][] = [
 ];
 
 export function isSpread(image: Image) {
-	return image.width > image.height;
+	if (image.width && image.height) {
+		return image.width > image.height;
+	}
+
+	return false;
 }
 
 // https://stackoverflow.com/a/1349426
@@ -249,12 +253,12 @@ export function randomInt(min: number, max: number) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export async function handleFetchError(res: Response) {
+export async function handleFetchError<T>(res: Response) {
 	if (!res.ok) {
 		const { message } = await res.json();
 		error(res.status, { status: res.status, message });
 	} else {
-		return res.json();
+		return res.json() as T;
 	}
 }
 

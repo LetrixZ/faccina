@@ -2,11 +2,11 @@ export interface Archive {
 	id: number;
 	slug: string;
 	title: string;
-	description: string | null;
+	description?: string;
 	hash: string;
 	pages: number;
 	size: number;
-	cover: ImageDimensions | null;
+	cover?: ImageDimensions;
 	thumbnail: number;
 	images: Image[];
 	created_at: string;
@@ -18,7 +18,7 @@ export interface Archive {
 	publishers?: Taxonomy[];
 	parodies?: Taxonomy[];
 	tags?: Tag[];
-	sources: Source[];
+	sources?: Source[];
 }
 
 export type ArchiveId = Pick<Archive, 'id' | 'slug'>;

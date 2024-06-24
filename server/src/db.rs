@@ -331,6 +331,12 @@ pub async fn fetch_archive_data(
   ).fetch_optional(pool).await?;
 
   if let Some(row) = row {
+    let cover = row
+      .cover
+      .map(|cover: serde_json::Value| serde_json::from_value(cover).ok())
+      .unwrap_or_default()
+      .filter(|cover: &ImageDimensions| cover.width.is_some() || cover.height.is_some());
+
     let archive = Archive {
       id: row.id,
       slug: row.slug,
@@ -340,10 +346,7 @@ pub async fn fetch_archive_data(
       pages: row.pages.unwrap_or_default(),
       size: row.size,
       thumbnail: row.thumbnail,
-      cover: row
-        .cover
-        .map(|cover| serde_json::from_value(cover).ok())
-        .unwrap_or_default(),
+      cover,
       images: row
         .images
         .and_then(|images| serde_json::from_value(images).ok())
@@ -720,19 +723,27 @@ pub async fn search(
 
   let archives = rows
     .iter()
-    .map(|row| ArchiveListItem {
-      id: row.get(0),
-      slug: row.get(1),
-      hash: row.get(2),
-      title: row.get(3),
-      cover: row.try_get::<Json<_>, _>(4).map(|r| r.0).unwrap_or(None),
-      artists: row.get::<Json<_>, _>(5).0,
-      circles: row.get::<Json<_>, _>(6).0,
-      magazines: row.get::<Json<_>, _>(7).0,
-      events: row.get::<Json<_>, _>(8).0,
-      publishers: row.get::<Json<_>, _>(9).0,
-      parodies: row.get::<Json<_>, _>(10).0,
-      tags: row.get::<Json<_>, _>(11).0,
+    .map(|row| {
+      let cover = row
+        .try_get::<Json<_>, _>(4)
+        .map(|r| r.0)
+        .unwrap_or(None)
+        .filter(|cover: &ImageDimensions| cover.width.is_some() || cover.height.is_some());
+
+      ArchiveListItem {
+        id: row.get(0),
+        slug: row.get(1),
+        hash: row.get(2),
+        title: row.get(3),
+        cover,
+        artists: row.get::<Json<_>, _>(5).0,
+        circles: row.get::<Json<_>, _>(6).0,
+        magazines: row.get::<Json<_>, _>(7).0,
+        events: row.get::<Json<_>, _>(8).0,
+        publishers: row.get::<Json<_>, _>(9).0,
+        parodies: row.get::<Json<_>, _>(10).0,
+        tags: row.get::<Json<_>, _>(11).0,
+      }
     })
     .collect();
 

@@ -76,18 +76,27 @@ pub struct ArchiveData {
   pub hash: String,
   pub pages: i16,
   pub size: i64,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub cover: Option<ImageDimensions>,
   pub thumbnail: i16,
   pub images: Vec<Image>,
   pub created_at: NaiveDateTime,
   pub released_at: NaiveDateTime,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub artists: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub circles: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub magazines: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub events: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub publishers: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub parodies: Vec<Taxonomy>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub tags: Vec<Tag>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub sources: Vec<Source>,
 }
 
@@ -194,6 +203,7 @@ pub struct ArchiveListItem {
   pub slug: String,
   pub hash: String,
   pub title: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub cover: Option<ImageDimensions>,
   #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub artists: Vec<Taxonomy>,
