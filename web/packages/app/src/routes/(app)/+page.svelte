@@ -1,21 +1,10 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import ListItem from '$lib/components/list-item.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { randomInt } from '$lib/utils';
-	import { Separator, SortOptions, ListPagination } from 'shared';
+	import { ListPagination, Separator, SortOptions } from 'shared';
 
 	export let data;
-
-	$: currentPage = (() => {
-		const currentPage = $page.url.searchParams.get('page');
-
-		if (currentPage) {
-			return parseInt(currentPage);
-		} else {
-			return 1;
-		}
-	})();
 </script>
 
 <svelte:head>

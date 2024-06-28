@@ -6,7 +6,7 @@ export const updateArchive = async (
 	callback?: (archive: ArchiveData) => void
 ) => {
 	try {
-		const res = await fetch('http://localhost:3001/archive', {
+		const res = await fetch('/archive', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(archive)
@@ -39,7 +39,7 @@ export const scrape = async (
 	site: ScrapeSite,
 	callback?: (archives: ArchiveData[]) => void
 ) => {
-	const res = await fetch(`http://localhost:3001/scrape/${site}`, {
+	const res = await fetch(`/scrape/${site}`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(ids)
@@ -55,7 +55,7 @@ export const scrape = async (
 };
 
 export const reindex = async (ids: number[], callback?: (archives: ArchiveData[]) => void) => {
-	const res = await fetch(`http://localhost:3001/reindex`, {
+	const res = await fetch(`/reindex`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(ids)

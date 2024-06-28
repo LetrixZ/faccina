@@ -26,7 +26,7 @@
 				class="h-full rounded-md bg-neutral-300 dark:bg-neutral-600"
 				loading="lazy"
 				alt={`'${archive.title}' cover`}
-				src={`http://localhost:3001/image/${archive.hash}/cover`}
+				src={`/image/${archive.hash}/cover`}
 			/>
 		</div>
 	</a>

@@ -1,7 +1,6 @@
 import { derived, writable } from 'svelte/store';
 
 export function createUrlStore(ssrUrl?: string) {
-	// Ideally a bundler constant so that it's tree-shakable
 	if (typeof window === 'undefined') {
 		const { subscribe } = writable(ssrUrl);
 		return { subscribe };
@@ -32,5 +31,4 @@ export function createUrlStore(ssrUrl?: string) {
 	};
 }
 
-// If you're using in a pure SPA, you can return a store directly and share it everywhere
 export default createUrlStore();

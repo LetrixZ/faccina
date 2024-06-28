@@ -1,31 +1,16 @@
 <script lang="ts">
 	import dayjs from 'dayjs';
 	import { PlusIcon, Trash } from 'lucide-svelte';
-	import {
-		HentagLogo,
-		Input,
-		InputChip,
-		Label,
-		Search,
-		Separator,
-		SourceIcon,
-		Textarea
-	} from 'shared';
+	import { HentagLogo, Input, InputChip, Label, Separator, SourceIcon, Textarea } from 'shared';
 	import { Button } from 'shared/components/ui/button';
 	import { Checkbox } from 'shared/components/ui/checkbox';
 	import { toast } from 'shared/components/ui/sonner';
 	import { ScrapeSite, TagType, type ArchiveData, type Source } from 'shared/models';
 	import { onMount } from 'svelte';
-	import { replace } from 'svelte-spa-router';
 	import { reindex, scrape } from '../lib/fetch';
-	import { searchParams } from '../lib/stores';
+	import Header from '../components/header.svelte';
 
 	export let params: { id: string };
-
-	const onSearch = (event: any) => {
-		searchParams.setParams({ query: event.detail.query, page: 1 });
-		replace('/');
-	};
 
 	let title = '';
 	let slug = '';
@@ -86,7 +71,7 @@
 	};
 
 	const save = async () => {
-		const res = await fetch('http://localhost:3001/archive', {
+		const res = await fetch('/archive', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -130,7 +115,7 @@
 	};
 
 	onMount(() => {
-		fetch(`http://localhost:3001/g/${params.id}`)
+		fetch(`/g/${params.id}`)
 			.then((res) => res.json())
 			.then((data) => {
 				archive = data;
@@ -140,10 +125,6 @@
 </script>
 
 <main class="container relative space-y-2">
-	<Search query={$searchParams.query} on:search={onSearch} />
-
-	<Separator />
-
 	<div class="flex items-center gap-2">
 		{#if archive}
 			<p>
@@ -166,8 +147,10 @@
 							success: () => 'Archive re-indexed',
 							error: (error) => error.message
 						}
-					)}>Reindex</Button
+					)}
 			>
+				Reindex
+			</Button>
 			<Button
 				variant="outline"
 				class="border-[#7c3aed]/50 py-0 hover:bg-[#7c3aed]/20"
@@ -307,7 +290,7 @@
 			<InputChip id="parodies" type={TagType.PARODY} bind:value={parodies} />
 		</div>
 
-		<div class="col-span-2 flex flex-col gap-1.5 py-2">
+		<div class="col-span-2 flex flex-col gap-1.5 py-2 lg:col-span-3">
 			<Label for="tags" class="font-medium">Tags</Label>
 			<InputChip id="tags" type={TagType.TAG} bind:value={tags} />
 		</div>

@@ -10,8 +10,7 @@
 		derived(searchParams, () => ({
 			placeholderData: (previousData) => previousData,
 			queryKey: ['library', searchParams.toString()],
-			queryFn: async () =>
-				await fetch(`http://localhost:3001/library${searchParams.toString()}`).then((r) => r.json())
+			queryFn: async () => await fetch(`/library${searchParams.toString()}`).then((r) => r.json())
 		}))
 	);
 
@@ -26,10 +25,6 @@
 <svelte:window on:popstate={() => searchParams.setFromURL()} />
 
 <main class="container relative space-y-2">
-	<Search query={$searchParams.query} on:search={onSearch} />
-
-	<Separator />
-
 	<p class="text-foreground text-xl font-semibold">
 		Browse {#if total}
 			({total})

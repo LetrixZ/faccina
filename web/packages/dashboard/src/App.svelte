@@ -4,6 +4,7 @@
 	import Home from './routes/home.svelte';
 	import GalleryDetail from './routes/gallery-detail.svelte';
 	import Router from 'svelte-spa-router';
+	import Header from './components/header.svelte';
 
 	const queryClient = new QueryClient();
 
@@ -16,5 +17,9 @@
 <Toaster richColors position="top-right" />
 
 <QueryClientProvider client={queryClient}>
-	<Router {routes} />
+	<Header />
+
+	<div class="pt-12">
+		<Router {routes} />
+	</div>
 </QueryClientProvider>
