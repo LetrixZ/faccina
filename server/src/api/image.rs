@@ -166,10 +166,7 @@ async fn get_cover(
   let body = Body::from(buf);
   let headers = [
     (header::CONTENT_TYPE, format.media_type()),
-    (
-      header::CACHE_CONTROL,
-      "public, max-age=259200, immutable",
-    ),
+    (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
   ];
 
   Ok((headers, body).into_response())
@@ -226,10 +223,7 @@ async fn get_page_thumbnail(
   let body = Body::from(buf);
   let headers = [
     (header::CONTENT_TYPE, format.media_type()),
-    (
-      header::CACHE_CONTROL,
-      "public, max-age=259200, immutable",
-    ),
+    (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
   ];
 
   Ok((headers, body).into_response())
@@ -298,10 +292,7 @@ async fn get_file(
   let body = Body::from(buf);
   let headers = [
     (header::CONTENT_TYPE, format.media_type()),
-    (
-      header::CACHE_CONTROL,
-      "public, max-age=259200, immutable",
-    ),
+    (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
   ];
 
   Ok((headers, body).into_response())

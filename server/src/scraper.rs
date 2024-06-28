@@ -1,22 +1,22 @@
 use crate::{db, metadata::hentag, utils::ToStringExt};
 use clap::ValueEnum;
-use indicatif::MultiProgress;
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::path::Path;
 
 #[derive(Copy, Clone, ValueEnum, Deserialize)]
 #[clap(rename_all = "lower")]
+#[serde(rename_all = "lowercase")]
 pub enum ScrapeSite {
   HenTag,
 }
 
 const HENTAG_API: &str = "https://hentag.com/api/v1/search/vault";
 
-async fn scrape_hentag(id: i64, pool: &PgPool, mp: &MultiProgress) -> anyhow::Result<()> {
+async fn scrape_hentag(info: &db::ArchiveId, pool: &PgPool) -> anyhow::Result<()> {
   let sources = sqlx::query!(
     "SELECT name, url FROM archive_sources WHERE archive_id = $1",
-    id
+    info.id
   )
   .fetch_all(pool)
   .await?;
@@ -28,7 +28,7 @@ async fn scrape_hentag(id: i64, pool: &PgPool, mp: &MultiProgress) -> anyhow::Re
   {
     ureq::post(&format!("{HENTAG_API}/url")).send_json(ureq::json!({"urls": [url]}))?
   } else {
-    let path = sqlx::query_scalar!("SELECT path FROM archives WHERE id = $1", id)
+    let path = sqlx::query_scalar!("SELECT path FROM archives WHERE id = $1", info.id)
       .fetch_one(pool)
       .await?;
 
@@ -39,29 +39,24 @@ async fn scrape_hentag(id: i64, pool: &PgPool, mp: &MultiProgress) -> anyhow::Re
 
   let data: Vec<hentag::Metadata> = res.into_json()?;
 
-  if let Some(info) = data.first() {
+  if let Some(metadata) = data.first() {
     let mut data = db::UpsertArchiveData {
-      id: Some(id),
+      id: Some(info.id),
       ..Default::default()
     };
 
     data.has_metadata = Some(true);
 
-    hentag::add_metadata(info.clone(), &mut data)?;
-    db::upsert_archive(data, pool, mp).await?;
+    hentag::add_metadata(metadata.clone(), &mut data)?;
+    db::update_archive(data, &info, true, pool).await?;
   }
 
   Ok(())
 }
 
-pub async fn scrape(
-  id: i64,
-  site: ScrapeSite,
-  pool: &PgPool,
-  mp: &MultiProgress,
-) -> anyhow::Result<()> {
+pub async fn scrape(info: &db::ArchiveId, site: ScrapeSite, pool: &PgPool) -> anyhow::Result<()> {
   match site {
-    ScrapeSite::HenTag => scrape_hentag(id, pool, mp).await?,
+    ScrapeSite::HenTag => scrape_hentag(info, pool).await?,
   };
 
   Ok(())

@@ -10,9 +10,9 @@ use crate::{
 };
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
-use funty::Fundamental;
 use indicatif::MultiProgress;
 use itertools::Itertools;
+use serde::Deserialize;
 use slug::slugify;
 use sqlx::Transaction;
 use sqlx::{
@@ -23,6 +23,12 @@ use sqlx::{
 use std::collections::HashSet;
 use std::ops::Mul;
 use tracing::warn;
+
+#[derive(sqlx::FromRow)]
+pub struct ArchiveId {
+  pub id: i64,
+  pub path: String,
+}
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum TagType {
@@ -96,7 +102,7 @@ pub struct ArchiveFile {
   pub thumbnail: i16,
 }
 
-#[derive(sqlx::FromRow, Default, Debug, Clone)]
+#[derive(sqlx::FromRow, Default, Debug, Clone, Deserialize)]
 pub struct ArchiveImage {
   pub filename: String,
   pub page_number: i16,
@@ -117,29 +123,21 @@ pub struct Tag {
   pub namespace: String,
 }
 
-#[derive(sqlx::FromRow, Debug, Clone)]
+#[derive(sqlx::FromRow, Debug, Clone, Deserialize)]
 pub struct ArchiveSource {
   pub name: String,
   pub url: Option<String>,
 }
 
-#[derive(sqlx::FromRow)]
-pub struct ArchiveId {
-  pub id: i64,
-  pub slug: String,
-}
-
 pub struct ArchiveRelations {
   pub id: i64,
-  pub slug: String,
   pub title: String,
+  pub slug: String,
   pub description: Option<String>,
   pub hash: String,
   pub pages: i16,
   pub size: i64,
-  pub cover: Option<ImageDimensions>,
   pub thumbnail: i16,
-  pub images: Vec<api::models::Image>,
   pub created_at: NaiveDateTime,
   pub released_at: NaiveDateTime,
   pub artists: Vec<Taxonomy>,
@@ -150,6 +148,8 @@ pub struct ArchiveRelations {
   pub parodies: Vec<Taxonomy>,
   pub tags: Vec<Tag>,
   pub sources: Vec<ArchiveSource>,
+  pub images: Vec<api::models::Image>,
+  pub cover: Option<ImageDimensions>,
 }
 
 impl From<Archive> for ArchiveRelations {
@@ -194,7 +194,7 @@ impl From<Archive> for ArchiveRelations {
   }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Deserialize)]
 pub struct UpsertArchiveData {
   pub id: Option<i64>,
   pub title: Option<String>,
@@ -592,8 +592,9 @@ fn clean_value(query: &str) -> String {
 
 pub async fn search(
   query: &SearchQuery,
+  include_deleted: bool,
   pool: &PgPool,
-) -> Result<(Vec<ArchiveListItem>, i64), sqlx::Error> {
+) -> Result<(Vec<i64>, i64), sqlx::Error> {
   let strip_set: HashSet<char> = vec!['[', ']', '(', ')', '~', '&'].into_iter().collect();
   let stripped: String = query
     .value
@@ -606,8 +607,12 @@ pub async fn search(
   let parsed = parse_query(clean);
 
   let mut qb = QueryBuilder::new(
-    r#"SELECT COUNT(*) FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#,
+    r#"SELECT COUNT(*) FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id"#,
   );
+
+  if !include_deleted {
+    qb.push(" WHERE deleted_at IS NULL");
+  }
 
   if !parsed.is_empty() {
     qb.push(
@@ -629,7 +634,11 @@ pub async fn search(
       .push(")) rank");
   }
 
-  qb.push(r#" FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#);
+  qb.push(r#" FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id"#);
+
+  if !include_deleted {
+    qb.push(" WHERE deleted_at IS NULL");
+  }
 
   if !parsed.is_empty() {
     qb.push(
@@ -671,15 +680,22 @@ pub async fn search(
     }
   };
 
-  qb.push(" LIMIT ")
-    .push_bind(24)
-    .push(" OFFSET ")
-    .push_bind(24.mul(query.page - 1).as_i32());
+  if query.limit > 0 {
+    qb.push(" LIMIT ")
+      .push_bind(query.limit as i32)
+      .push(" OFFSET ")
+      .push_bind(query.limit.mul(query.page - 1) as i32);
+  }
 
   let rows = qb.build().fetch_all(pool).await?;
 
-  let ids: Vec<i64> = rows.iter().map(|row| row.get(0)).collect();
+  Ok((rows.iter().map(|row| row.get(0)).collect(), count))
+}
 
+pub async fn get_list_items(
+  ids: Vec<i64>,
+  pool: &PgPool,
+) -> Result<Vec<ArchiveListItem>, sqlx::Error> {
   let mut qb = QueryBuilder::new(
     r#"SELECT id, slug, hash, title,
     (
@@ -747,14 +763,14 @@ pub async fn search(
     })
     .collect();
 
-  Ok((archives, count))
+  Ok(archives)
 }
 
 async fn copy_archive(
   old_hash: String,
   new_hash: String,
   transaction: &mut Transaction<'_, Postgres>,
-) -> anyhow::Result<i64> {
+) -> Result<i64, sqlx::Error> {
   let rec = sqlx::query!(
     r#"SELECT slug, title, description, path, pages, size, thumbnail, language, released_at, has_metadata FROM archives WHERE hash = $1"#,
     old_hash
@@ -787,6 +803,7 @@ async fn copy_archive(
 async fn upsert_relations(
   data: Relations,
   archive_id: i64,
+  merge_sources: bool,
   transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<(), sqlx::Error> {
   if let Some(artists) = data.artists {
@@ -818,7 +835,7 @@ async fn upsert_relations(
   }
 
   if let Some(source) = data.sources {
-    upsert_sources(source, archive_id, true, transaction).await?;
+    upsert_sources(source, archive_id, merge_sources, transaction).await?;
   }
 
   if let Some(images) = data.images {
@@ -831,7 +848,7 @@ async fn upsert_relations(
 pub async fn upsert_archive(
   data: UpsertArchiveData,
   pool: &PgPool,
-  mp: &MultiProgress,
+  mp: Option<&MultiProgress>,
 ) -> anyhow::Result<i64> {
   let mut path_link = None;
 
@@ -849,16 +866,18 @@ pub async fn upsert_archive(
   let archive_id = if let Some(rec) = rec {
     if let Some(hash) = data.hash {
       if hash != rec.hash {
-        mp.suspend(|| {
-          warn!(
-            target: "db::upsert_archive",
-            "Hash mismatch - OLD: {}, NEW: {}", rec.hash, hash
-          );
-          warn!(
-            target: "db::upsert_archive",
-            "A new copy of the old archive will be created and it will replace the old one."
-          );
-        });
+        if let Some(mp) = mp {
+          mp.suspend(|| {
+            warn!(
+              target: "db::upsert_archive",
+              "Hash mismatch - OLD: {}, NEW: {}", rec.hash, hash
+            );
+            warn!(
+              target: "db::upsert_archive",
+              "A new copy of the old archive will be created and it will replace the old one."
+            );
+          });
+        }
 
         let new_id = copy_archive(rec.hash, hash, &mut transaction).await?;
 
@@ -875,6 +894,7 @@ pub async fn upsert_archive(
             images: data.images,
           },
           new_id,
+          true,
           &mut transaction,
         )
         .await?;
@@ -949,13 +969,11 @@ pub async fn upsert_archive(
         .push(",");
     }
 
-    qb.push(" updated_at = NOW()");
-
-    qb.push(" WHERE id = ")
+    qb.push(" updated_at = NOW() WHERE id = ")
       .push_bind(rec.id)
-      .push(" RETURNING id");
-
-    qb.build().fetch_one(&mut *transaction).await?;
+      .build()
+      .execute(&mut *transaction)
+      .await?;
 
     rec.id
   } else if let (Some(title), Some(path), Some(hash), Some(pages), Some(size), Some(thumbnail)) = (
@@ -1007,6 +1025,7 @@ pub async fn upsert_archive(
       images: data.images,
     },
     archive_id,
+    true,
     &mut transaction,
   )
   .await?;
@@ -1029,6 +1048,12 @@ async fn upsert_taxonomy(
   archive_id: i64,
   transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<(), sqlx::Error> {
+  let tags = tags
+    .into_iter()
+    .filter(|tag| !tag.trim().is_empty())
+    .map(|tag| tag.trim().to_string())
+    .collect_vec();
+
   #[derive(sqlx::FromRow, Debug)]
   struct TaxonomyRow {
     id: i64,
@@ -1151,6 +1176,12 @@ async fn upsert_tags(
   archive_id: i64,
   transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<(), sqlx::Error> {
+  let tags = tags
+    .into_iter()
+    .filter(|tag| !tag.0.trim().is_empty())
+    .map(|tag| (tag.0.trim().to_string(), tag.1.trim().to_string()))
+    .collect_vec();
+
   #[derive(sqlx::FromRow, Debug)]
   struct TagRow {
     id: i64,
@@ -1273,6 +1304,15 @@ async fn upsert_sources(
   merge: bool,
   transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<(), sqlx::Error> {
+  let sources = sources
+    .into_iter()
+    .filter(|source| !source.name.trim().is_empty())
+    .map(|source| ArchiveSource {
+      name: source.name.trim().to_string(),
+      url: source.url,
+    })
+    .collect_vec();
+
   let existing_sources = sqlx::query_as!(
     ArchiveSource,
     r#"SELECT name, url FROM archive_sources WHERE archive_id = $1"#,
@@ -1375,4 +1415,98 @@ async fn upsert_images(
   }
 
   Ok(())
+}
+
+pub async fn update_archive(
+  data: UpsertArchiveData,
+  info: &ArchiveId,
+  merge_sources: bool,
+  pool: &PgPool,
+) -> anyhow::Result<i64> {
+  let mut transaction = pool.begin().await?;
+  let mut path_link = None;
+
+  let mut qb = QueryBuilder::new("UPDATE archives SET");
+
+  if let Some(title) = data.title {
+    qb.push(" title = ").push_bind(title).push(",");
+  }
+
+  if let Some(slug) = data.slug {
+    qb.push(" slug = ").push_bind(slug).push(",");
+  }
+
+  qb.push(" description = ")
+    .push_bind(data.description.clone())
+    .push(",");
+
+  if let Some(path) = data.path {
+    path_link = Some(path.clone());
+
+    if path != info.path {
+      qb.push(" path = ").push_bind(path).push(",");
+    }
+  }
+
+  if let Some(pages) = data.pages {
+    qb.push(" pages = ").push_bind(pages).push(",");
+  }
+
+  if let Some(size) = data.size {
+    qb.push(" size = ").push_bind(size).push(",");
+  }
+
+  if let Some(thumbnail) = data.thumbnail {
+    qb.push(" thumbnail = ").push_bind(thumbnail).push(",");
+  }
+
+  qb.push(" language = ")
+    .push_bind(data.language.clone())
+    .push(",");
+
+  if let Some(released_at) = data.released_at {
+    qb.push(" released_at = ").push_bind(released_at).push(",");
+  }
+
+  qb.push(" deleted_at = ")
+    .push_bind(data.deleted_at)
+    .push(",");
+
+  if let Some(has_metadata) = data.has_metadata {
+    qb.push(" has_metadata = ")
+      .push_bind(has_metadata)
+      .push(",");
+  }
+
+  qb.push(" updated_at = NOW() WHERE id = ")
+    .push_bind(info.id)
+    .build()
+    .execute(&mut *transaction)
+    .await?;
+
+  upsert_relations(
+    Relations {
+      artists: data.artists,
+      circles: data.circles,
+      magazines: data.magazines,
+      events: data.events,
+      publishers: data.publishers,
+      parodies: data.parodies,
+      tags: data.tags,
+      sources: data.sources,
+      images: data.images,
+    },
+    info.id,
+    merge_sources,
+    &mut transaction,
+  )
+  .await?;
+
+  transaction.commit().await?;
+
+  if let Some(path) = path_link {
+    utils::create_symlink(&path, &CONFIG.directories.links.join(info.id.to_string()))?;
+  }
+
+  Ok(1)
 }

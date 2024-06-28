@@ -68,7 +68,7 @@ pub async fn calculate_dimensions(
   recalcualte: bool,
   files: &mut [ZipFile],
   pool: &PgPool,
-  multi: &MultiProgress,
+  mp: Option<&MultiProgress>,
 ) -> anyhow::Result<()> {
   let existing_dimensions = sqlx::query_scalar!(
     r#"SELECT page_number FROM archive_images WHERE archive_id = $1 AND width IS NOT NULL AND height IS NOT NULL"#,
@@ -95,7 +95,10 @@ pub async fn calculate_dimensions(
   pb.set_style(
     ProgressStyle::with_template("[{elapsed_precise}] {bar:40} {pos:>7}/{len:7}").unwrap(),
   );
-  multi.add(pb.clone());
+
+  if let Some(mp) = mp {
+    mp.add(pb.clone());
+  }
 
   let dimensions = file_idx
     .into_par_iter()
@@ -169,7 +172,7 @@ pub fn generate_thumbnails(
   thumbnail: usize,
   files: &mut [ZipFile],
   opts: &ThumbnailOpts,
-  multi: &MultiProgress,
+  mp: Option<&MultiProgress>,
 ) -> anyhow::Result<()> {
   let archive_thumb_dir = CONFIG.directories.thumbs.join(format!("{}", archive_id));
   create_dir_all(&archive_thumb_dir)?;
@@ -222,20 +225,26 @@ pub fn generate_thumbnails(
   pb.set_style(
     ProgressStyle::with_template("[{elapsed_precise}] {bar:40} {pos:>7}/{len:7}").unwrap(),
   );
-  multi.add(pb.clone());
+  if let Some(mp) = mp {
+    mp.add(pb.clone());
+  }
 
   let encode_cover = |buf: &Vec<u8>, name: String| {
     let encoded = image::encode_image(buf, encode_cover_opts).unwrap();
 
     match fs::write(archive_thumb_dir.join(&cover_name), encoded) {
       Ok(_) => {}
-      Err(err) => multi.suspend(|| {
-        error!(
-          target: "archive::generate_thumbnails",
-          "Failed to generate cover '{}' for archive ID '{}': {err}",
-          name, archive_id
-        )
-      }),
+      Err(err) => {
+        if let Some(mp) = mp {
+          mp.suspend(|| {
+            error!(
+              target: "archive::generate_thumbnails",
+              "Failed to generate cover '{}' for archive ID '{}': {err}",
+              name, archive_id
+            )
+          })
+        }
+      }
     }
 
     Ok::<_, anyhow::Error>(())
@@ -259,13 +268,16 @@ pub fn generate_thumbnails(
         Ok(encoded) => {
           match fs::write(archive_thumb_dir.join(&name), encoded) {
             Ok(_) => {}
-            Err(err) => multi.suspend(|| {
-              error!(
-                target: "archive::generate_thumbnails",
-                "Failed to save thumbnail '{}' for archive ID '{}': {err}",
-                name, archive_id
-              )
-            }),
+            Err(err) =>
+            if let Some(mp) = mp {
+              mp.suspend(|| {
+                error!(
+                  target: "archive::generate_thumbnails",
+                  "Failed to save thumbnail '{}' for archive ID '{}': {err}",
+                  name, archive_id
+                )
+              })
+            },
           }
 
           if page == thumbnail

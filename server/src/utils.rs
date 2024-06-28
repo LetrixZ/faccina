@@ -215,6 +215,7 @@ pub fn tag_alias(name: &str, slug: &str) -> String {
     "mmm-threesome" => "MMM Threesome".to_string(),
     "mmmf-foursome" => "MMMF Foursome".to_string(),
     "mmt-threesome" => "MMT Threesome".to_string(),
+    "ttt-threesome" => "TTT Threesome".to_string(),
     "cg-set" => "CG Set".to_string(),
     "bss" => "BSS".to_string(),
     "bl" => "BL".to_string(),

@@ -1,8 +1,8 @@
 use crate::archive::ZipArchiveData;
 use crate::db::ArchiveFile;
 use crate::image::ImageCodec;
+use crate::{api, scraper, torrents, utils};
 use crate::{archive, config::CONFIG, db};
-use crate::{scraper, torrents, utils};
 use clap::{Args, Parser, Subcommand};
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -36,6 +36,8 @@ pub enum Commands {
   Publish(PublishArgs),
   #[command(about="Hide given archives from the search results.", long_about = None)]
   Unpublish(PublishArgs),
+  #[command(about = "Start admin dashboard server.")]
+  Dashboard(DashboardArgs),
 }
 
 #[derive(Args, Clone)]
@@ -146,6 +148,23 @@ pub struct ScrapeArgs {
 pub struct PublishArgs {
   #[arg(help = "List of archive IDs or range (ex: 1-10,14,230-400)")]
   pub id: String,
+}
+
+#[derive(Args, Clone)]
+pub struct DashboardArgs {
+  #[arg(
+    short = 'H',
+    long,
+    default_value = "127.0.0.1",
+    help = "Dashboard host"
+  )]
+  pub host: Option<String>,
+  #[arg(short = 'P', long, default_value = "3001", help = "Dashboard port")]
+  pub port: Option<u16>,
+  #[arg(long, help = "Server host. Defaults to configured server host")]
+  pub server_host: Option<String>,
+  #[arg(long, help = "Server port. Defaults to configured server port")]
+  pub server_port: Option<u16>,
 }
 
 async fn fetch_archives(
@@ -259,7 +278,7 @@ pub async fn index(mut args: IndexArgs) -> anyhow::Result<()> {
         thumbnails: args.thumbnails,
       },
       &pool,
-      &mp,
+      Some(&mp),
     )
     .await
     {
@@ -371,7 +390,7 @@ pub async fn generate_thumbnails(args: GenerateThumbnailArgs) -> anyhow::Result<
         archive.thumbnail as usize,
         &mut files,
         opts,
-        &mp,
+        Some(&mp),
       )?;
 
       Ok(())
@@ -393,16 +412,17 @@ async fn calculate_dimensions_archive(
   archive: &ArchiveFile,
   recalculate: bool,
   pool: &PgPool,
-  multi: &MultiProgress,
+  mp: &MultiProgress,
 ) -> anyhow::Result<()> {
   let path = CONFIG.directories.links.join(&archive.path);
   let ZipArchiveData { mut file, .. } = archive::read_zip(&path)?;
   let images = archive::get_image_filenames(&mut file)?;
   let mut files = archive::get_zip_files(images, &mut file)?;
 
-  multi.suspend(|| info!(target: "archive::calculate_dimensions", "Calculating image dimensions for archive ID {}", archive.id));
+  mp.suspend(|| info!(target: "archive::calculate_dimensions", "Calculating image dimensions for archive ID {}", archive.id));
 
-  archive::images::calculate_dimensions(archive.id, recalculate, &mut files, pool, multi).await?;
+  archive::images::calculate_dimensions(archive.id, recalculate, &mut files, pool, Some(mp))
+    .await?;
 
   Ok(())
 }
@@ -433,38 +453,49 @@ pub async fn calculate_dimensions(args: CalculateDimensionsArgs) -> anyhow::Resu
 pub async fn scrape(args: ScrapeArgs) -> anyhow::Result<()> {
   let pool = db::get_pool().await?;
 
-  let archives = if let Some(id_ranges) = args.id {
-    let mut qb = QueryBuilder::new("SELECT id FROM archives WHERE");
+  let archives: Vec<db::ArchiveId> = if let Some(id_ranges) = args.id {
+    let mut qb = QueryBuilder::new("SELECT id, path FROM archives WHERE");
 
     utils::add_id_ranges(&mut qb, &id_ranges);
 
     qb.push(" AND deleted_at IS NULL ORDER BY id ASC")
-      .build_query_scalar()
+      .build_query_as()
       .fetch_all(&pool)
       .await?
   } else {
-    sqlx::query_scalar!(
-      "SELECT id FROM archives WHERE has_metadata IS FALSE AND deleted_at IS NULL ORDER BY id ASC"
+    sqlx::query_as!(
+      db::ArchiveId,
+      r#"SELECT id, path FROM archives WHERE has_metadata IS FALSE AND deleted_at IS NULL ORDER BY id ASC"#
     )
     .fetch_all(&pool)
     .await?
   };
 
   let mp = MultiProgress::new();
+  let pb = ProgressBar::new(archives.len() as u64);
+  mp.add(pb.clone());
 
   let should_sleep = archives.len() > 1;
 
-  for id in archives {
-    mp.suspend(|| info!(target: "archive::scrape", "Scraping metadata for archive ID {}", id));
+  for info in archives {
+    mp.suspend(|| info!(target: "archive::scrape", "Scraping metadata for archive ID {}", info.id));
 
-    if let Err(err) = scraper::scrape(id, args.site, &pool, &mp).await {
-      mp.suspend(|| error!("Failed to scrape metadata for archive ID {id}: {err}"));
+    if let Err(err) = scraper::scrape(&info, args.site, &pool).await {
+      mp.suspend(|| {
+        error!(
+          target: "archive::scrape",
+          "Failed to scrape metadata for archive ID {}: {err}",
+          info.id
+        )
+      });
     }
 
     if should_sleep {
       mp.suspend(|| debug!("Sleeping for {}ms", args.sleep));
       sleep(Duration::from_millis(args.sleep)).await;
     }
+
+    pb.inc(1);
   }
 
   Ok(())
@@ -489,4 +520,8 @@ pub async fn pusblish(args: PublishArgs, publish: bool) -> anyhow::Result<()> {
   info!("{} archives updated", affected.rows_affected());
 
   Ok(())
+}
+
+pub async fn init_dashboard(args: DashboardArgs) -> anyhow::Result<()> {
+  api::dashboard::serve(args).await
 }

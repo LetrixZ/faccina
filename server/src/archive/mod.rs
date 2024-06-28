@@ -109,7 +109,7 @@ pub async fn index(
   path: &Path,
   opts: IndexOptions,
   pool: &PgPool,
-  mp: &MultiProgress,
+  mp: Option<&MultiProgress>,
 ) -> anyhow::Result<bool> {
   if !opts.reindex
     && sqlx::query_scalar!(
@@ -123,7 +123,9 @@ pub async fn index(
     return Ok(false);
   }
 
-  mp.suspend(|| info!("Indexing '{}'", path.to_string()));
+  if let Some(mp) = mp {
+    mp.suspend(|| info!("Indexing '{}'", path.to_string()));
+  }
 
   let ZipArchiveData {
     mut file,
@@ -145,14 +147,18 @@ pub async fn index(
   let filename = path.file_stem().unwrap().to_string();
 
   if let Err(err) = metadata::add_external_metadata(path, &mut archive_data) {
-    mp.suspend(
-      || warn!(target: "archive::index::metadata", "Failed to get external metadata: {err}"),
-    );
+    if let Some(mp) = mp {
+      mp.suspend(
+        || warn!(target: "archive::index::metadata", "Failed to get external metadata: {err}"),
+      );
+    }
 
     if let Err(err) = metadata::add_metadata(&mut file, &mut archive_data) {
-      mp.suspend(
-        || warn!(target: "archive::index::metadata", "Failed to get embbeded metadata: {err}"),
-      );
+      if let Some(mp) = mp {
+        mp.suspend(
+          || warn!(target: "archive::index::metadata", "Failed to get embbeded metadata: {err}"),
+        );
+      }
 
       let (title, artists, circles) = utils::parse_filename(&filename);
 
@@ -168,12 +174,14 @@ pub async fn index(
   }
 
   if archive_data.title.is_none() {
-    mp.suspend(|| {
-      warn!(
-        target: "archive::index",
-        "Couldn't get a title for the archive. Using filename '{filename}'",
-      )
-    });
+    if let Some(mp) = mp {
+      mp.suspend(|| {
+        warn!(
+          target: "archive::index",
+          "Couldn't get a title for the archive. Using filename '{filename}'",
+        )
+      });
+    }
 
     archive_data.title = Some(filename);
   }
@@ -251,7 +259,9 @@ pub async fn index(
     }
   }
 
-  mp.suspend(|| info!("Indexed '{}' with ID {}", path.to_string(), archive_id));
+  if let Some(mp) = mp {
+    mp.suspend(|| info!("Indexed '{}' with ID {}", path.to_string(), archive_id));
+  }
 
   Ok(true)
 }

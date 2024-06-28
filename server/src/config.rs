@@ -41,17 +41,18 @@ pub struct RegexCollection {
   pub koromo: Regex,
 }
 
-#[serde_inline_default]
 #[derive(Deserialize)]
 pub struct Config {
   pub database: Database,
-  #[serde_inline_default(Server::default())]
+  #[serde(default)]
   pub server: Server,
-  #[serde_inline_default(Directories::default())]
+  #[serde(default)]
+  pub dashboard: Dashboard,
+  #[serde(default)]
   pub directories: Directories,
-  #[serde_inline_default(Thumbnails::default())]
+  #[serde(default)]
   pub thumbnails: Thumbnails,
-  #[serde_inline_default(Metadata::default())]
+  #[serde(default)]
   pub metadata: Metadata,
 }
 
@@ -74,7 +75,7 @@ pub struct Database {
   pub pass: String,
 }
 
-#[serde_inline_default(Server::default())]
+#[serde_inline_default]
 #[derive(Deserialize, Debug)]
 pub struct Server {
   #[serde_inline_default("0.0.0.0".to_string())]
@@ -88,6 +89,24 @@ impl Default for Server {
     Self {
       host: "0.0.0.0".to_string(),
       port: 3000,
+    }
+  }
+}
+
+#[serde_inline_default]
+#[derive(Deserialize, Debug)]
+pub struct Dashboard {
+  #[serde_inline_default("127.0.0.1".to_string())]
+  pub host: String,
+  #[serde_inline_default(3001)]
+  pub port: u16,
+}
+
+impl Default for Dashboard {
+  fn default() -> Self {
+    Self {
+      host: "127.0.0.1".to_string(),
+      port: 3001,
     }
   }
 }

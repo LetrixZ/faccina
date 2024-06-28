@@ -53,33 +53,15 @@ impl From<db::Archive> for Archive {
 }
 
 #[derive(Serialize)]
-pub struct ArchiveId {
-  pub id: i64,
-  pub slug: String,
-}
-
-impl From<db::ArchiveId> for ArchiveId {
-  fn from(value: db::ArchiveId) -> Self {
-    Self {
-      id: value.id,
-      slug: value.slug,
-    }
-  }
-}
-
-#[derive(Serialize)]
 pub struct ArchiveData {
   pub id: i64,
-  pub slug: String,
   pub title: String,
+  pub slug: String,
   pub description: Option<String>,
   pub hash: String,
   pub pages: i16,
   pub size: i64,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub cover: Option<ImageDimensions>,
   pub thumbnail: i16,
-  pub images: Vec<Image>,
   pub created_at: NaiveDateTime,
   pub released_at: NaiveDateTime,
   #[serde(skip_serializing_if = "<[_]>::is_empty")]
@@ -98,6 +80,10 @@ pub struct ArchiveData {
   pub tags: Vec<Tag>,
   #[serde(skip_serializing_if = "<[_]>::is_empty")]
   pub sources: Vec<Source>,
+  #[serde(skip_serializing_if = "<[_]>::is_empty")]
+  pub images: Vec<Image>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub cover: Option<ImageDimensions>,
 }
 
 impl From<db::ArchiveRelations> for ArchiveData {
@@ -150,7 +136,7 @@ impl From<db::ArchiveRelations> for ArchiveData {
   }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Taxonomy {
   pub slug: String,
   pub name: String,
@@ -165,7 +151,7 @@ impl From<db::Taxonomy> for Taxonomy {
   }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Tag {
   pub slug: String,
   pub name: String,
@@ -182,7 +168,7 @@ impl From<db::Tag> for Tag {
   }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Source {
   pub name: String,
   pub url: Option<String>,
@@ -200,9 +186,9 @@ impl From<db::ArchiveSource> for Source {
 #[derive(Serialize)]
 pub struct ArchiveListItem {
   pub id: i64,
+  pub title: String,
   pub slug: String,
   pub hash: String,
-  pub title: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub cover: Option<ImageDimensions>,
   #[serde(skip_serializing_if = "<[_]>::is_empty")]
@@ -221,7 +207,7 @@ pub struct ArchiveListItem {
   pub tags: Vec<Taxonomy>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImageDimensions {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub width: Option<i16>,
@@ -229,7 +215,7 @@ pub struct ImageDimensions {
   pub height: Option<i16>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Image {
   pub filename: String,
   pub page_number: i16,
@@ -240,8 +226,8 @@ pub struct Image {
 }
 
 #[derive(Serialize)]
-pub struct LibraryPage {
-  pub archives: Vec<ArchiveListItem>,
+pub struct LibraryPage<T> {
+  pub archives: Vec<T>,
   pub page: usize,
   pub limit: usize,
   pub total: i64,

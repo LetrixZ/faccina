@@ -1,3 +1,4 @@
+pub mod dashboard;
 mod image;
 pub mod models;
 pub mod routes;
@@ -16,6 +17,7 @@ use sqlx::PgPool;
 use std::io;
 use std::str::FromStr;
 use thiserror::Error;
+use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{debug_span, error, info};
@@ -52,6 +54,8 @@ pub enum ApiError {
   ImageNotFound,
   #[error("404")]
   NotFound,
+  #[error("Update error `{0}`")]
+  UpdateError(String),
 }
 
 impl IntoResponse for ApiError {
@@ -93,6 +97,10 @@ impl IntoResponse for ApiError {
         "Image not found in archive".to_string(),
       ),
       ApiError::NotFound => (StatusCode::NOT_FOUND, "Resource not found".to_string()),
+      ApiError::UpdateError(err) => {
+        error!(%err, "update error");
+        (StatusCode::INTERNAL_SERVER_ERROR, err)
+      }
     };
 
     (status, ApiJson(ErrorResponse { message })).into_response()
@@ -134,7 +142,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     )
     .with_state(state);
 
-  let listener = tokio::net::TcpListener::bind(format!(
+  let listener = TcpListener::bind(format!(
     "{host}:{port}",
     host = CONFIG.server.host,
     port = CONFIG.server.port

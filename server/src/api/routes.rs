@@ -1,5 +1,5 @@
 use super::{
-  models::{ArchiveData, LibraryPage},
+  models::{ArchiveData, ArchiveListItem, LibraryPage},
   ApiError, ApiJson, AppState,
 };
 use crate::db;
@@ -7,11 +7,77 @@ use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
+#[derive(Debug)]
 pub struct SearchQuery {
   pub value: String,
   pub page: usize,
   pub sort: Sorting,
   pub order: Ordering,
+  pub limit: usize,
+  pub deleted: bool,
+}
+
+impl SearchQuery {
+  pub fn from_params_dashboard(params: HashMap<String, String>) -> Self {
+    Self {
+      value: params.get("q").cloned().unwrap_or_default(),
+      page: {
+        if let Some(page) = params.get("page") {
+          page.parse().unwrap_or(1)
+        } else {
+          1
+        }
+      },
+      sort: {
+        if let Some(sort) = params.get("sort") {
+          sort.parse().unwrap_or_default()
+        } else {
+          Sorting::default()
+        }
+      },
+      order: {
+        if let Some(order) = params.get("order") {
+          order.parse().unwrap_or_default()
+        } else {
+          Ordering::default()
+        }
+      },
+      limit: params
+        .get("limit")
+        .and_then(|param| param.parse().ok())
+        .unwrap_or(0),
+      deleted: params.get("unpublished").is_some(),
+    }
+  }
+
+  pub fn from_params(params: HashMap<String, String>) -> Self {
+    Self {
+      value: params.get("q").cloned().unwrap_or_default(),
+      page: {
+        if let Some(page) = params.get("page") {
+          page.parse().unwrap_or(1)
+        } else {
+          1
+        }
+      },
+      sort: {
+        if let Some(sort) = params.get("sort") {
+          sort.parse().unwrap_or_default()
+        } else {
+          Sorting::default()
+        }
+      },
+      order: {
+        if let Some(order) = params.get("order") {
+          order.parse().unwrap_or_default()
+        } else {
+          Ordering::default()
+        }
+      },
+      limit: 24,
+      deleted: false,
+    }
+  }
 }
 
 impl Display for Ordering {
@@ -23,6 +89,7 @@ impl Display for Ordering {
   }
 }
 
+#[derive(Debug)]
 pub enum Sorting {
   Relevance,
   ReleasedAt,
@@ -55,6 +122,7 @@ impl FromStr for Sorting {
   }
 }
 
+#[derive(Debug)]
 pub enum Ordering {
   Asc,
   Desc,
@@ -84,37 +152,14 @@ impl FromStr for Ordering {
 pub async fn library(
   Query(params): Query<HashMap<String, String>>,
   State(state): State<AppState>,
-) -> Result<ApiJson<LibraryPage>, ApiError> {
-  let search_query = SearchQuery {
-    value: params.get("q").cloned().unwrap_or_default(),
-    page: {
-      if let Some(page) = params.get("page") {
-        page.parse().unwrap_or(1)
-      } else {
-        1
-      }
-    },
-    sort: {
-      if let Some(sort) = params.get("sort") {
-        sort.parse().unwrap_or_default()
-      } else {
-        Sorting::default()
-      }
-    },
-    order: {
-      if let Some(order) = params.get("order") {
-        order.parse().unwrap_or_default()
-      } else {
-        Ordering::default()
-      }
-    },
-  };
-
-  let (archives, total) = db::search(&search_query, &state.pool).await?;
+) -> Result<ApiJson<LibraryPage<ArchiveListItem>>, ApiError> {
+  let query = SearchQuery::from_params(params);
+  let (ids, total) = db::search(&query, query.deleted, &state.pool).await?;
+  let archives = db::get_list_items(ids, &state.pool).await?;
 
   Ok(ApiJson(LibraryPage {
     archives,
-    page: search_query.page,
+    page: query.page,
     limit: 24,
     total,
   }))
