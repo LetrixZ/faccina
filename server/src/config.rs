@@ -60,8 +60,8 @@ impl Display for Config {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "{:?}\n{:?}\n{:?}\n{:?}\n{:?}",
-      self.database, self.server, self.directories, self.thumbnails, self.metadata
+      "{:?}\n{:?}\n{:?}\n{:?}\n{:?}\n{:?}",
+      self.database, self.server, self.dashboard, self.directories, self.thumbnails, self.metadata
     )
   }
 }

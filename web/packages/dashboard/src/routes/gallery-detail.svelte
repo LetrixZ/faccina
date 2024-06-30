@@ -1,14 +1,22 @@
 <script lang="ts">
 	import dayjs from 'dayjs';
 	import { PlusIcon, Trash } from 'lucide-svelte';
-	import { HentagLogo, Input, InputChip, Label, Separator, SourceIcon, Textarea } from 'shared';
+	import {
+		HentagLogo,
+		Input,
+		InputChip,
+		Label,
+		Separator,
+		SourceIcon,
+		Switch,
+		Textarea
+	} from 'shared';
 	import { Button } from 'shared/components/ui/button';
 	import { Checkbox } from 'shared/components/ui/checkbox';
 	import { toast } from 'shared/components/ui/sonner';
 	import { ScrapeSite, TagType, type ArchiveData, type Source } from 'shared/models';
 	import { onMount } from 'svelte';
 	import { reindex, scrape } from '../lib/fetch';
-	import Header from '../components/header.svelte';
 
 	export let params: { id: string };
 
@@ -115,7 +123,7 @@
 	};
 
 	onMount(() => {
-		fetch(`/g/${params.id}`)
+		fetch(`http://localhost:3001/g/${params.id}`)
 			.then((res) => res.json())
 			.then((data) => {
 				archive = data;
@@ -125,15 +133,15 @@
 </script>
 
 <main class="container relative space-y-2">
-	<div class="flex items-center gap-2">
+	<div class="flex flex-wrap items-center gap-2">
 		{#if archive}
-			<p>
+			<div class="w-full text-center md:w-fit">
 				<span class="text-muted-foreground my-auto text-sm font-medium"> [{archive.id}]</span>
 				<span class="font-semibold">{archive.title}</span>
-			</p>
+			</div>
 		{/if}
 
-		<div class="ms-auto flex flex-shrink-0 items-center gap-2">
+		<div class="mx-auto flex flex-shrink-0 items-center gap-2 md:me-0">
 			<Button
 				variant="ghost"
 				on:click={() =>
@@ -167,132 +175,154 @@
 
 	<Separator />
 
-	<p class="text-lg font-medium">Info</p>
+	<div class="border-muted flex flex-col gap-2 rounded-md border p-3">
+		<p class="text-lg font-medium">Info</p>
 
-	<div class="flex flex-col gap-1.5 py-2">
-		<Label for="title" class="font-medium">Title</Label>
-		<Input id="title" bind:value={title} />
-	</div>
+		<div class="grid gap-2 lg:grid-cols-2">
+			<div class="flex flex-col gap-1.5">
+				<Label for="title" class="font-medium">Title</Label>
+				<Input id="title" bind:value={title} />
+			</div>
 
-	<div class="flex flex-col gap-1.5 py-2">
-		<div class="flex w-full items-end">
-			<Label for="slug" class="flex-grow font-medium">Slug</Label>
-			<div class="flex items-center">
-				<Checkbox id="keep-slug" class="scale-75" bind:checked={keepSlug} />
-				<Label for="keep-slug" class="ps-1 text-xs font-medium">Keep</Label>
+			<div class="flex flex-col gap-1.5">
+				<div class="flex w-full items-end">
+					<Label for="slug" class="flex-grow font-medium">Slug</Label>
+					<div class="flex items-center">
+						<Checkbox id="keep-slug" class="scale-75" bind:checked={keepSlug} />
+						<Label for="keep-slug" class="ps-1 text-xs font-medium">Keep</Label>
+					</div>
+				</div>
+				<Input id="slug" bind:value={slug} />
 			</div>
 		</div>
-		<Input id="slug" bind:value={slug} />
-	</div>
 
-	<div class="flex flex-col gap-1.5 py-2">
-		<Label class="font-medium">Hash</Label>
-		<Input value={hash} readonly />
-	</div>
+		<div class="grid gap-2 lg:grid-cols-2">
+			<div class="flex flex-col gap-1.5">
+				<Label class="font-medium">Hash</Label>
+				<Input value={hash} readonly />
+			</div>
 
-	<div class="flex flex-col gap-1.5 py-2">
-		<Label for="path" class="font-medium">Path</Label>
-		<Input id="path" bind:value={path} />
-	</div>
-
-	<div class="flex flex-col gap-1.5 py-2">
-		<Label for="description" class="font-medium">Description</Label>
-		<Textarea id="description" bind:value={description} />
-	</div>
-
-	<div class="flex gap-2">
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="language" class="font-medium">Language</Label>
-			<Input id="language" bind:value={language} class="w-fit" />
+			<div class="flex flex-col gap-1.5">
+				<Label for="path" class="font-medium">Path</Label>
+				<Input id="path" bind:value={path} />
+			</div>
 		</div>
 
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="created" class="font-medium">Added</Label>
-			<Input id="created" bind:value={created_at} type="datetime-local" readonly class="w-fit" />
-		</div>
-
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="released" class="font-medium">Released</Label>
-			<Input id="released" bind:value={released_at} type="date" class="w-fit" />
-		</div>
-
-		<div class="flex items-center pt-5">
-			<Checkbox id="has-metadata" bind:checked={has_metadata} class="w-fit" />
-			<Label for="has-metadata" class="ps-2 font-medium">Has Metadata?</Label>
+		<div class="flex flex-col gap-1.5">
+			<Label for="description" class="font-medium">Description</Label>
+			<Textarea id="description" bind:value={description} />
 		</div>
 	</div>
 
-	<Separator />
-
-	<p class="flex gap-2 text-lg font-medium">
-		Sources
-		<Button
-			variant="ghost"
-			class="h-fit p-1.5"
-			disabled={sources.some(({ name }) => !name.trim().length)}
-			on:click={() => (sources = [...sources, { name: '' }])}
-		>
-			<PlusIcon class="text-muted-foreground-light size-4" />
-			<span class="sr-only">Add source</span>
-		</Button>
-	</p>
-
-	<div class="flex flex-col gap-2">
-		{#each sources as source}
-			<div class="flex items-center gap-2">
-				<SourceIcon name={source.name} class="size-[1.875rem]" />
-				<Input bind:value={source.name} class="h-fit w-[8rem] py-1.5" />
-				<Input bind:value={source.url} class="h-fit py-1.5" />
+	<div class="grid gap-2 lg:grid-cols-2">
+		<div class="border-muted space-y-2 rounded-md border p-3">
+			<div class="m flex gap-2">
+				<span class="text-lg font-medium"> Sources </span>
 				<Button
 					variant="ghost"
-					class="h-fit p-0.5"
-					on:click={() => (sources = sources.filter(({ name }) => name !== source.name))}
+					class="h-fit p-1.5"
+					disabled={sources.some(({ name }) => !name.trim().length)}
+					on:click={() => (sources = [...sources, { name: '' }])}
 				>
-					<Trash class="text-primary/70 size-4" />
-					<span class="sr-only">Remove source</span>
+					<PlusIcon class="text-muted-foreground-light size-4" />
+					<span class="sr-only">Add source</span>
 				</Button>
 			</div>
-		{/each}
+
+			<div class="flex flex-col gap-2">
+				{#each sources as source}
+					<div class="flex items-center gap-2">
+						<SourceIcon name={source.name} class="size-[1.875rem]" />
+						<Input bind:value={source.name} class="h-fit w-[8rem] py-1.5" />
+						<Input bind:value={source.url} class="h-fit py-1.5" />
+						<Button
+							variant="ghost"
+							class="size-[2.125rem] flex-shrink-0 p-0.5"
+							on:click={() => (sources = sources.filter(({ name }) => name !== source.name))}
+						>
+							<Trash class="text-primary/70 size-4" />
+							<span class="sr-only">Remove source</span>
+						</Button>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<div class="border-muted flex flex-col gap-2 rounded-md border p-3">
+			<p class="text-lg font-medium">Misc</p>
+
+			<div class="flex flex-wrap gap-2 lg:flex-col">
+				<div class="flex flex-wrap gap-2">
+					<div class="flex flex-col gap-1.5">
+						<Label for="created" class="font-medium">Added</Label>
+						<Input
+							id="created"
+							bind:value={created_at}
+							type="datetime-local"
+							readonly
+							class="w-fit"
+						/>
+					</div>
+
+					<div class="flex flex-col gap-1.5">
+						<Label for="released" class="font-medium">Released</Label>
+						<Input id="released" bind:value={released_at} type="date" class="w-fit" />
+					</div>
+
+					<div class="flex flex-col gap-1.5">
+						<Label for="language" class="font-medium">Language</Label>
+						<Input id="language" bind:value={language} />
+					</div>
+				</div>
+
+				<div class="flex h-[3.75rem] items-center">
+					<Switch id="has-metadata" bind:checked={has_metadata} />
+					<Label for="has-metadata" class="ps-2 font-medium">Has Metadata?</Label>
+				</div>
+			</div>
+		</div>
 	</div>
 
-	<Separator />
+	<div class="border-muted flex flex-col gap-2 rounded-md border p-3">
+		<p class="text-lg font-medium">Taxonomy</p>
 
-	<p class="text-lg font-medium">Taxonomy</p>
+		<div class="grid gap-2 lg:grid-cols-2">
+			<div class="grid gap-2 lg:grid-cols-2">
+				<div class="flex flex-col gap-1.5">
+					<Label for="artists" class="font-medium">Artists</Label>
+					<InputChip id="artists" type={TagType.ARTIST} bind:value={artists} />
+				</div>
 
-	<div class="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="artists" class="font-medium">Artists</Label>
-			<InputChip id="artists" type={TagType.ARTIST} bind:value={artists} />
-		</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="circles" class="font-medium">Circles</Label>
+					<InputChip id="circles" type={TagType.CIRCLE} bind:value={circles} />
+				</div>
 
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="circles" class="font-medium">Circles</Label>
-			<InputChip id="circles" type={TagType.CIRCLE} bind:value={circles} />
-		</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="magazines" class="font-medium">Magazines</Label>
+					<InputChip id="magazines" type={TagType.MAGAZINE} bind:value={magazines} />
+				</div>
 
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="magazines" class="font-medium">Magazines</Label>
-			<InputChip id="magazines" type={TagType.MAGAZINE} bind:value={magazines} />
-		</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="events" class="font-medium">Events</Label>
+					<InputChip id="events" type={TagType.EVENT} bind:value={events} />
+				</div>
 
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="events" class="font-medium">Events</Label>
-			<InputChip id="events" type={TagType.EVENT} bind:value={events} />
-		</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="publishers" class="font-medium">Publishers</Label>
+					<InputChip id="publishers" type={TagType.PUBLISHER} bind:value={publishers} />
+				</div>
 
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="publishers" class="font-medium">Publishers</Label>
-			<InputChip id="publishers" type={TagType.PUBLISHER} bind:value={publishers} />
-		</div>
+				<div class="flex flex-col gap-1.5">
+					<Label for="parodies" class="font-medium">Parodies</Label>
+					<InputChip id="parodies" type={TagType.PARODY} bind:value={parodies} />
+				</div>
+			</div>
 
-		<div class="flex flex-col gap-1.5 py-2">
-			<Label for="parodies" class="font-medium">Parodies</Label>
-			<InputChip id="parodies" type={TagType.PARODY} bind:value={parodies} />
-		</div>
-
-		<div class="col-span-2 flex flex-col gap-1.5 py-2 lg:col-span-3">
-			<Label for="tags" class="font-medium">Tags</Label>
-			<InputChip id="tags" type={TagType.TAG} bind:value={tags} />
+			<div class="flex flex-col gap-1.5">
+				<Label for="tags" class="font-medium">Tags</Label>
+				<InputChip id="tags" type={TagType.TAG} bind:value={tags} />
+			</div>
 		</div>
 	</div>
 </main>

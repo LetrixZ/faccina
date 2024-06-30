@@ -474,16 +474,16 @@ fn parse_query(query: &str) -> String {
   parsed_query
 }
 
-fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
+fn add_namespace_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
   let re = regex::Regex::new(
-    r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
+    r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages|id):(".*?"|'.*?'|[^\s]+)"#,
   )
   .unwrap();
 
   let captures = re.captures_iter(value).collect_vec();
 
   for capture in captures.into_iter() {
-    qb.push(" AND (");
+    qb.push(" AND \n(");
 
     let negate = capture.get(0).unwrap().as_str().starts_with('-');
     let condition = if negate { "NOT EXISTS" } else { "EXISTS" };
@@ -532,7 +532,7 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
     let or_splits = value.split('|').collect_vec();
 
     for (i, or_split) in or_splits.iter().enumerate() {
-      qb.push("  (\n");
+      qb.push("\n  (\n");
       let and_splits = or_split.split('&').collect_vec();
 
       if i == 0 {
@@ -554,13 +554,18 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
           "male" => push_tag_sql_sql(qb, TagType::Tag, and_split, "male".to_string()),
           "female" => push_tag_sql_sql(qb, TagType::Tag, and_split, "female".to_string()),
           "misc" | "other" => push_tag_sql_sql(qb, TagType::Tag, and_split, "misc".to_string()),
+          "id" => {
+            qb.push("SELECT 1 WHERE");
+            utils::add_id_ranges(qb, &and_split);
+            qb.push("\n        )\n      )");
+          }
           _ => {}
         }
 
         if j != and_splits.len() - 1 {
           qb.push(" AND ");
         } else {
-          qb.push("    )");
+          qb.push("\n    )");
         }
       }
 
@@ -569,7 +574,7 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
       }
     }
 
-    qb.push("))");
+    qb.push("\n  )\n)");
   }
 }
 
@@ -577,7 +582,7 @@ fn clean_value(query: &str) -> String {
   let mut value = query.to_owned();
 
   let re = regex::Regex::new(
-    r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
+    r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages|id):(".*?"|'.*?'|[^\s]+)"#,
   )
   .unwrap();
   let captures = re.captures_iter(query).collect_vec();
@@ -622,7 +627,7 @@ pub async fn search(
     .push(")");
   }
 
-  add_tag_matches(&mut qb, &query.value);
+  add_namespace_matches(&mut qb, &query.value);
 
   let count: i64 = qb.build_query_scalar().fetch_one(pool).await?;
 
@@ -648,7 +653,7 @@ pub async fn search(
     .push(")");
   }
 
-  add_tag_matches(&mut qb, &query.value);
+  add_namespace_matches(&mut qb, &query.value);
 
   qb.push(" GROUP BY archives.id, fts.archive_id");
 

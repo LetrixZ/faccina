@@ -44,5 +44,13 @@
 				<ChipList item={tag} type={tag.type} />
 			{/each}
 		</div>
+
+		<div class="border-border bg-border w-fit break-all rounded-md p-2 text-sm font-medium">
+			{archive.hash}
+		</div>
+
+		<div class="border-border bg-border w-fit break-all rounded-md p-2 text-sm font-medium">
+			{archive.path}
+		</div>
 	</div>
 </div>

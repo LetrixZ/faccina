@@ -5,6 +5,7 @@ export { Textarea } from "./components/ui/textarea";
 export { Label } from "./components/ui/label";
 export { Toaster, toast } from "./components/ui/sonner";
 export { Checkbox } from "./components/ui/checkbox";
+export { Switch } from "./components/ui/switch";
 
 export { default as ListPagination } from "./components/list-pagination.svelte";
 export { default as SortOptions } from "./components/sort-options.svelte";

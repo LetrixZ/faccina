@@ -203,6 +203,8 @@ async fn save_archive(
     archive.slug = archive.title.as_ref().map(|title| slugify(&title));
   }
 
+  archive.pages = archive.images.as_ref().map(|images| images.len() as i16);
+
   db::update_archive(archive, &info, false, &state.pool)
     .await
     .map_err(|err| ApiError::UpdateError(err.to_string()))?;
