@@ -502,7 +502,10 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
     let push_taxonomy_sql = |qb: &mut QueryBuilder<Postgres>, tag_type: TagType, value: String| {
       qb.push(get_sql(&tag_type, "name"))
         .push_bind(value.clone())
-        .push(format!("\n        ) OR\n        {condition} (\n          "))
+        .push(format!(
+          "\n        ) {condition_op}\n        {condition} (\n          ",
+          condition_op = if negate { "AND" } else { "OR" }
+        ))
         .push(get_sql(&tag_type, "slug"))
         .push_bind(value)
         .push("\n        )\n      )\n".to_string());
@@ -513,7 +516,10 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
         qb.push(get_sql(&tag_type, "name"))
           .push_bind(value.clone())
           .push(format!(" AND namespace ILIKE '{namespace}'"))
-          .push(format!("\n        ) OR\n        {condition} (\n          "))
+          .push(format!(
+            "\n        ) {condition_op}\n        {condition} (\n          ",
+            condition_op = if negate { "AND" } else { "OR" }
+          ))
           .push(get_sql(&tag_type, "slug"))
           .push_bind(value)
           .push(format!(" AND namespace ILIKE '{namespace}'"))
