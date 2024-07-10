@@ -1,18 +1,53 @@
 use clap::Parser;
 use cmd::{Cli, Commands};
-use tracing::error;
+use colored::Colorize;
+use config::CONFIG;
+use sqlx::{
+  postgres::{PgConnectOptions, PgSslMode},
+  PgPool,
+};
 
-mod api;
 mod archive;
+mod archives;
 mod cmd;
 mod config;
-mod db;
+mod dashboard;
 mod image;
 mod log;
-mod metadata;
 mod scraper;
+mod thumbnails;
 mod torrents;
 mod utils;
+
+pub async fn establish_connection() -> Result<PgPool, sqlx::Error> {
+  let pool = PgPool::connect_with(
+    PgConnectOptions::new()
+      .host(&CONFIG.database.host)
+      .port(CONFIG.database.port)
+      .database(&CONFIG.database.name)
+      .username(&CONFIG.database.user)
+      .password(&CONFIG.database.pass)
+      .ssl_mode(PgSslMode::Allow),
+  )
+  .await?;
+
+  sqlx::migrate!("./migrations").run(&pool).await?;
+
+  let count = sqlx::query_scalar!("SELECT COUNT(*) FROM archives WHERE length(key) != 8")
+    .fetch_one(&pool)
+    .await?;
+
+  if let Some(count) = count {
+    if count > 0 {
+      tracing::warn!(
+        "Found {count} archive that were not migrated. Use the {} command to migrate them.",
+        "migrate".bold()
+      );
+    }
+  }
+
+  Ok(pool)
+}
 
 async fn run() -> anyhow::Result<()> {
   let cli = Cli::parse();
@@ -21,18 +56,17 @@ async fn run() -> anyhow::Result<()> {
     Some(command) => {
       crate::log::cli_logging();
 
+      let pool = establish_connection().await?;
+
       match command {
-        Commands::Index(args) => cmd::index(args.clone()).await?,
-        Commands::IndexTorrent(args) => cmd::index_torrents(args.clone()).await?,
-        Commands::GenerateThumbnails(args) => cmd::generate_thumbnails(args.clone()).await?,
-        Commands::CalculateDimensions(args) => cmd::calculate_dimensions(args.clone()).await?,
-        Commands::Scrape(args) => cmd::scrape(args.clone()).await?,
-        Commands::Publish(args) => cmd::pusblish(args.clone(), true).await?,
-        Commands::Unpublish(args) => cmd::pusblish(args.clone(), false).await?,
-        Commands::Dashboard(args) => cmd::init_dashboard(args.clone()).await?,
+        Commands::Index(args) => archives::index(args, pool).await?,
+        Commands::Dashboard(args) => dashboard::init_server(args, pool).await?,
       }
     }
-    None => api::start_server().await?,
+    None => {
+      todo!("Start the server");
+      // api::start_server().await?
+    }
   }
 
   Ok(())
@@ -41,7 +75,7 @@ async fn run() -> anyhow::Result<()> {
 #[tokio::main]
 async fn main() {
   if let Err(ref error) = run().await {
-    error!(
+    tracing::error!(
         error = format!("{error:#}"),
         backtrace = %error.backtrace(),
         "process exited with ERROR"

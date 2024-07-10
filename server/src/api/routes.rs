@@ -1,161 +1,20 @@
 use super::{
-  models::{ArchiveData, ArchiveListItem, LibraryPage},
+  images::DimensionArgs,
+  models::{ArchiveListItem, LibraryPage},
   ApiError, ApiJson, AppState,
 };
-use crate::db;
 use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
-
-#[derive(Debug)]
-pub struct SearchQuery {
-  pub value: String,
-  pub page: usize,
-  pub sort: Sorting,
-  pub order: Ordering,
-  pub limit: usize,
-  pub deleted: bool,
-}
-
-impl SearchQuery {
-  pub fn from_params_dashboard(params: HashMap<String, String>) -> Self {
-    Self {
-      value: params.get("q").cloned().unwrap_or_default(),
-      page: {
-        if let Some(page) = params.get("page") {
-          page.parse().unwrap_or(1)
-        } else {
-          1
-        }
-      },
-      sort: {
-        if let Some(sort) = params.get("sort") {
-          sort.parse().unwrap_or_default()
-        } else {
-          Sorting::default()
-        }
-      },
-      order: {
-        if let Some(order) = params.get("order") {
-          order.parse().unwrap_or_default()
-        } else {
-          Ordering::default()
-        }
-      },
-      limit: params
-        .get("limit")
-        .and_then(|param| param.parse().ok())
-        .unwrap_or(0),
-      deleted: params.get("unpublished").is_some(),
-    }
-  }
-
-  pub fn from_params(params: HashMap<String, String>) -> Self {
-    Self {
-      value: params.get("q").cloned().unwrap_or_default(),
-      page: {
-        if let Some(page) = params.get("page") {
-          page.parse().unwrap_or(1)
-        } else {
-          1
-        }
-      },
-      sort: {
-        if let Some(sort) = params.get("sort") {
-          sort.parse().unwrap_or_default()
-        } else {
-          Sorting::default()
-        }
-      },
-      order: {
-        if let Some(order) = params.get("order") {
-          order.parse().unwrap_or_default()
-        } else {
-          Ordering::default()
-        }
-      },
-      limit: 24,
-      deleted: false,
-    }
-  }
-}
-
-impl Display for Ordering {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Ordering::Asc => write!(f, "ASC"),
-      Ordering::Desc => write!(f, "DESC"),
-    }
-  }
-}
-
-#[derive(Debug)]
-pub enum Sorting {
-  Relevance,
-  ReleasedAt,
-  CreatedAt,
-  Title,
-  Pages,
-}
-
-impl Default for Sorting {
-  fn default() -> Self {
-    Self::ReleasedAt
-  }
-}
-
-impl FromStr for Sorting {
-  type Err = anyhow::Error;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let s = s.to_lowercase();
-    let s = s.as_str();
-
-    match s {
-      "relevance" => Ok(Self::Relevance),
-      "released_at" => Ok(Self::ReleasedAt),
-      "created_at" => Ok(Self::CreatedAt),
-      "title" => Ok(Self::Title),
-      "pages" => Ok(Self::Pages),
-      _ => Err(anyhow!("Invalid sort value '{s}'")),
-    }
-  }
-}
-
-#[derive(Debug)]
-pub enum Ordering {
-  Asc,
-  Desc,
-}
-
-impl Default for Ordering {
-  fn default() -> Self {
-    Self::Desc
-  }
-}
-
-impl FromStr for Ordering {
-  type Err = anyhow::Error;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    let s = s.to_lowercase();
-    let s = s.as_str();
-
-    match s {
-      "asc" => Ok(Self::Asc),
-      "desc" => Ok(Self::Desc),
-      _ => Err(anyhow!("Invalid ordering value '{s}'")),
-    }
-  }
-}
+use tokio::sync::oneshot;
 
 pub async fn library(
   Query(params): Query<HashMap<String, String>>,
   State(state): State<AppState>,
 ) -> Result<ApiJson<LibraryPage<ArchiveListItem>>, ApiError> {
   let query = SearchQuery::from_params(params);
-  let (ids, total) = db::search(&query, query.deleted, &state.pool).await?;
-  let archives = db::get_list_items(ids, &state.pool).await?;
+  let (ids, total) = query::search(&query, query.deleted, &state.pool).await?;
+  let archives = query::get_list_items(ids, &state.pool).await?;
 
   Ok(ApiJson(LibraryPage {
     archives,
@@ -168,12 +27,46 @@ pub async fn library(
 pub async fn archive_data(
   Path(id): Path<i64>,
   State(state): State<AppState>,
-) -> Result<ApiJson<ArchiveData>, ApiError> {
-  let archive = db::fetch_archive_data(&state.pool, id).await?;
+) -> Result<ApiJson<query::ArchiveData>, ApiError> {
+  let mut archive = query::get_data(id, &state.pool)
+    .await?
+    .ok_or(ApiError::NotFound)?;
 
-  if let Some(archive) = archive {
-    Ok(ApiJson(archive.into()))
-  } else {
-    Err(ApiError::NotFound)
+  if archive.images.is_empty()
+    || archive
+      .images
+      .iter()
+      .any(|image| image.width.is_none() || image.height.is_none())
+  {
+    let mut in_progress = state.dimensions.in_progress.lock().await;
+
+    if let Some(waiters) = in_progress.get_mut(&id) {
+      let (responder_tx, responder_rx) = oneshot::channel();
+      waiters.push(responder_tx);
+
+      drop(in_progress);
+
+      if let Ok(images) = responder_rx.await? {
+        archive.images = images;
+      }
+    } else {
+      let (responder_tx, responder_rx) = oneshot::channel();
+      in_progress.insert(id, vec![responder_tx]);
+      drop(in_progress);
+      state
+        .dimensions
+        .queue_tx
+        .send(DimensionArgs {
+          id,
+          pool: state.pool,
+        })
+        .unwrap();
+
+      if let Ok(images) = responder_rx.await? {
+        archive.images = images;
+      }
+    }
   }
+
+  Ok(ApiJson(archive))
 }

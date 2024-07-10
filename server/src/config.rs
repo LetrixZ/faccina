@@ -1,6 +1,5 @@
 use crate::image;
 use once_cell::sync::Lazy;
-use regex::Regex;
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 use std::{env, fmt::Display, fs, path::PathBuf};
@@ -16,30 +15,6 @@ pub static CONFIG: Lazy<Config> = Lazy::new(|| {
   config.directories.create_dirs();
   config
 });
-
-pub static REGEX: Lazy<RegexCollection> = Lazy::new(|| {
-  let hentag = Regex::new(r#"("coverImageUrl"|"maleTags"|"femaleTags")"#).unwrap();
-  let gallery_dl = Regex::new(r#"("artist:.*"|"group:.*"|"male:.*"|"female:.*")"#).unwrap();
-  let eze = Regex::new(r#"("group":|"artist":|"male":|"female":)\["#).unwrap();
-  let eze_sad = Regex::new(r#""gallery_info":\{"#).unwrap();
-  let koromo = Regex::new(r#"(("Tags":)\[)|("Artist":")"#).unwrap();
-
-  RegexCollection {
-    hentag,
-    gallery_dl,
-    eze,
-    eze_sad,
-    koromo,
-  }
-});
-
-pub struct RegexCollection {
-  pub hentag: Regex,
-  pub gallery_dl: Regex,
-  pub eze: Regex,
-  pub eze_sad: Regex,
-  pub koromo: Regex,
-}
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -93,6 +68,7 @@ impl Default for Server {
   }
 }
 
+#[allow(dead_code)]
 #[serde_inline_default]
 #[derive(Deserialize, Debug)]
 pub struct Dashboard {

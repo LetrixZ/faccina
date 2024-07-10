@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use async_zip::ZipString;
 use chrono::{DateTime, NaiveDateTime};
 use funty::Numeric;
@@ -8,12 +7,9 @@ use ring::digest::{Context, Digest, SHA256};
 use sqlx::{Postgres, QueryBuilder};
 use std::{
   ffi::OsStr,
-  fs,
   io::Read,
-  os,
   path::{Path, PathBuf},
 };
-use time::OffsetDateTime;
 
 pub fn sha256_digest<R: Read>(mut reader: R) -> anyhow::Result<Digest> {
   let mut context = Context::new(&SHA256);
@@ -199,12 +195,6 @@ pub fn capitalize_words(s: &str) -> String {
     .join(" ")
 }
 
-pub fn parse_zip_date(date: zip::DateTime) -> NaiveDateTime {
-  DateTime::from_timestamp(OffsetDateTime::try_from(date).unwrap().unix_timestamp(), 0)
-    .unwrap()
-    .naive_utc()
-}
-
 pub fn tag_alias(name: &str, slug: &str) -> String {
   match slug {
     "fff-threesome" => "FFF Threesome".to_string(),
@@ -217,13 +207,18 @@ pub fn tag_alias(name: &str, slug: &str) -> String {
     "mmt-threesome" => "MMT Threesome".to_string(),
     "ttt-threesome" => "TTT Threesome".to_string(),
     "cg-set" => "CG Set".to_string(),
+    "bdsm" => "BDSM".to_string(),
     "bss" => "BSS".to_string(),
     "bl" => "BL".to_string(),
-    "comics-r18" => "Comics R18".to_string(),
     "sci-fi" => "Sci-Fi".to_string(),
     "x-ray" => "X-ray".to_string(),
     "non-h" => "Non-H".to_string(),
+    "ntr" => "NTR".to_string(),
     "sixty-nine" => "Sixty-Nine".to_string(),
+    "romance-centric" => "Romance-centric".to_string(),
+    "valentine-sale" => "Valentine-sale".to_string(),
+    "slice-of-life" => "Slice of Life".to_string(),
+    "comics-r18" => "Comics R18".to_string(),
     _ => name.to_string(),
   }
 }
@@ -232,42 +227,6 @@ pub fn map_timestamp(timestamp: Option<i64>) -> Option<NaiveDateTime> {
   timestamp
     .and_then(|timestamp| DateTime::from_timestamp(timestamp, 0))
     .map(|datetime| datetime.naive_utc())
-}
-
-pub fn create_symlink(src: &impl AsRef<Path>, dest: &impl AsRef<Path>) -> anyhow::Result<()> {
-  #[cfg(unix)]
-  if let Err(err) = os::unix::fs::symlink(src, dest) {
-    match err.kind() {
-      std::io::ErrorKind::AlreadyExists => {
-        if fs::remove_file(dest).is_ok() {
-          if let Err(err) = os::unix::fs::symlink(src, dest) {
-            return Err(anyhow!("Couldn't create a symbolic link: {err}"));
-          }
-        }
-      }
-      _ => {
-        return Err(anyhow!("Couldn't create a symbolic link: {err}"));
-      }
-    }
-  }
-
-  #[cfg(windows)]
-  if let Err(err) = os::windows::fs::symlink_file(src, dest) {
-    match err.kind() {
-      std::io::ErrorKind::AlreadyExists => {
-        if fs::remove_file(dest).is_ok() {
-          if let Err(err) = os::windows::fs::symlink(src, dest) {
-            return Err(anyhow!("Couldn't create a symbolic link: {err}"));
-          }
-        }
-      }
-      _ => {
-        return Err(anyhow!("Couldn't create a symbolic link: {err}"));
-      }
-    }
-  }
-
-  Ok(())
 }
 
 pub fn add_id_ranges(qb: &mut QueryBuilder<Postgres>, id_ranges: &str) {

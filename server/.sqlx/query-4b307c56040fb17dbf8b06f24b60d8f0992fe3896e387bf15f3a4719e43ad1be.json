@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO archives (\n            key, title, description, path, pages, size,\n            thumbnail, language, released_at, has_metadata\n          )\n          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Text",
+        "Int2",
+        "Int8",
+        "Int2",
+        "Varchar",
+        "Timestamp",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4b307c56040fb17dbf8b06f24b60d8f0992fe3896e387bf15f3a4719e43ad1be"
+}

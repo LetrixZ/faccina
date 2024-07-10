@@ -1,10 +1,9 @@
 use super::models::{Image, ImageDimensions, LibraryPage, Source, Tag, Taxonomy};
 use super::routes::SearchQuery;
-use super::{ApiError, ApiJson, AppState};
-use crate::api::image;
+use super::{ApiError, ApiJson};
 use crate::config::CONFIG;
 use crate::db::{self, TagType};
-use crate::{archive, cmd, scraper};
+use crate::{archives, cmd, scraper};
 use axum::extract::{Json, Path, State};
 use axum::routing::post;
 use axum::Router;
@@ -23,6 +22,11 @@ use tokio::time::sleep;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing::{error, info};
+
+#[derive(Clone)]
+pub struct AppState {
+  pool: PgPool,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ArchiveData {
@@ -205,9 +209,10 @@ async fn save_archive(
 
   archive.pages = archive.images.as_ref().map(|images| images.len() as i16);
 
-  db::update_archive(archive, &info, false, &state.pool)
-    .await
-    .map_err(|err| ApiError::UpdateError(err.to_string()))?;
+  // FIXME:
+  // db::update_archive(archive, &info, false, &state.pool)
+  //   .await
+  //   .map_err(|err| ApiError::UpdateError(err.to_string()))?;
 
   let archives = get_data(vec![id], &state.pool).await?;
   let archive = archives.first().cloned();
@@ -264,15 +269,13 @@ async fn reindex(
   .await?;
 
   for info in archives {
-    if let Err(err) = archive::index(
-      &path::Path::new(&info.path),
-      archive::IndexOptions {
+    if let Err(err) = archives::index(
+      &cmd::IndexArgs {
+        paths: Some(vec![path::Path::new(&info.path).to_path_buf()]),
         reindex: true,
-        dimensions: false,
-        thumbnails: false,
+        ..Default::default()
       },
       &state.pool,
-      None,
     )
     .await
     {
@@ -307,7 +310,7 @@ pub async fn serve(args: cmd::DashboardArgs) -> anyhow::Result<()> {
     .route("/archive", post(save_archive))
     .route("/scrape/:site", post(scrape))
     .route("/reindex", post(reindex))
-    .merge(image::get_routes())
+    // FIXME: .merge(images::get_routes())
     .fallback_service(ServeDir::new(dashboard_path))
     .layer(cors)
     .with_state(state);

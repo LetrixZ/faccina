@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM archives\n      WHERE has_metadata IS FALSE AND deleted_at IS NULL ORDER BY id ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9accba04c4c26fc18ff97d596ca845ad068a7c65fa7e8fdb43fe4cc1b236def3"
+}

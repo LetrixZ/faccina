@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, key, title, description, thumbnail, pages, size, released_at, created_at,\n    (\n      SELECT json_agg(artist) FROM (\n        SELECT json_build_object('name', name, 'slug', slug) AS artist\n        FROM archive_artists JOIN artists ON id = artist_id WHERE archive_id = archives.id\n      )\n    ) AS artists,\n    (\n      SELECT json_agg(circle) FROM (\n        SELECT json_build_object('name', name, 'slug', slug) AS circle\n        FROM archive_circles JOIN circles ON id = circle_id WHERE archive_id = archives.id\n      )\n    ) AS circles,\n    (\n      SELECT json_agg(magazine) FROM (\n        SELECT json_build_object('name', name, 'slug', slug) AS magazine\n        FROM archive_magazines JOIN magazines ON id = magazine_id WHERE archive_id = archives.id\n      )\n    ) AS magazines,\n    (\n      SELECT json_agg(event) FROM (\n        SELECT json_build_object('name', name, 'slug', slug) AS event\n        FROM archive_events JOIN events ON id = event_id WHERE archive_id = archives.id\n      )\n    ) AS events,\n    (\n      SELECT json_agg(publisher) FROM (\n        SELECT json_build_object('name', name, 'slug', slug) AS publisher\n        FROM archive_publishers JOIN publishers ON id = publisher_id WHERE archive_id = archives.id\n      )\n    ) AS publishers,\n    (\n      SELECT json_agg(parody) FROM (\n        SELECT json_build_object('name', name, 'slug', slug) AS parody\n        FROM archive_parodies JOIN parodies ON id = parody_id WHERE archive_id = archives.id\n      )\n    ) AS parodies,\n    (\n      SELECT json_agg(tag) FROM (\n        SELECT json_build_object('name', name, 'slug', slug, 'namespace', namespace) AS tag\n        FROM archive_tags JOIN tags ON id = tag_id WHERE archive_id = archives.id ORDER BY name ASC\n      )\n    ) AS tags,\n     (\n      SELECT json_agg(source) FROM (\n        SELECT json_build_object('name', name, 'url', url) AS source\n        FROM archive_sources WHERE archive_id = archives.id\n      )\n    ) AS sources,\n     (\n      SELECT json_agg(image) FROM (\n        SELECT json_build_object('filename', filename, 'page_number', page_number, 'width', width, 'height', height) AS image\n        FROM archive_images WHERE archive_id = archives.id ORDER BY page_number ASC\n      )\n    ) AS images\n    FROM archives WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "key",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "thumbnail",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 5,
+        "name": "pages",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 6,
+        "name": "size",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "released_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 9,
+        "name": "artists",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 10,
+        "name": "circles",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 11,
+        "name": "magazines",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 12,
+        "name": "events",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 13,
+        "name": "publishers",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 14,
+        "name": "parodies",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 15,
+        "name": "tags",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 16,
+        "name": "sources",
+        "type_info": "Json"
+      },
+      {
+        "ordinal": 17,
+        "name": "images",
+        "type_info": "Json"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "eb4166f5ff30acb8a8dc63d307ab817c83681e5e2aa0ca9dc3ad55120649c2f7"
+}

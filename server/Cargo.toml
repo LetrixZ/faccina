@@ -9,16 +9,24 @@ async_zip = { version = "0.0.17", features = ["full"] }
 axum = { version = "0.7.5", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.5.4", features = ["derive"] }
+colored = "2.1.0"
+dashmap = "6.0.1"
 data-encoding = "2.6.0"
 file-format = "0.25.0"
 funty = "2.0.0"
 globwalk = "0.9.1"
 image = { version = "0.25.1", features = ["rayon"] }
+include_dir = "0.7.4"
 indicatif = "0.17.8"
 itertools = "0.13.0"
 lava_torrent = "0.11.1"
 natord = "1.0.9"
 once_cell = "1.19.0"
+open = "5.2.0"
+parking_lot = "0.12.3"
+pathdiff = "0.2.1"
+poem = { version = "3.0.1", features = ["static-files"] }
+poem-openapi = { version = "5.0.2", features = ["chrono", "swagger-ui"] }
 rayon = "1.10.0"
 regex = "1.10.4"
 ring = "0.17.8"
@@ -35,6 +43,7 @@ tokio = { version = "1.38.0", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["io-util"] }
 toml = "0.8.14"
 tower-http = { version = "0.5.2", features = ["full"] }
+tower-serve-static = "0.1.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ureq = { version = "2.9.7", features = ["json"] }

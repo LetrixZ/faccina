@@ -1,4 +1,4 @@
-use crate::db;
+use crate::query;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
@@ -18,9 +18,9 @@ pub struct Archive {
   pub released_at: NaiveDateTime,
 }
 
-impl From<db::Archive> for Archive {
+impl From<query::Archive> for Archive {
   fn from(
-    db::Archive {
+    query::Archive {
       id,
       slug,
       title,
@@ -33,7 +33,7 @@ impl From<db::Archive> for Archive {
       images,
       created_at,
       released_at,
-    }: db::Archive,
+    }: query::Archive,
   ) -> Self {
     Self {
       id,
@@ -86,9 +86,9 @@ pub struct ArchiveData {
   pub cover: Option<ImageDimensions>,
 }
 
-impl From<db::ArchiveRelations> for ArchiveData {
+impl From<query::ArchiveRelations> for ArchiveData {
   fn from(
-    db::ArchiveRelations {
+    query::ArchiveRelations {
       id,
       slug,
       title,
@@ -109,7 +109,7 @@ impl From<db::ArchiveRelations> for ArchiveData {
       parodies,
       tags,
       sources,
-    }: db::ArchiveRelations,
+    }: query::ArchiveRelations,
   ) -> Self {
     Self {
       id,
@@ -142,8 +142,8 @@ pub struct Taxonomy {
   pub name: String,
 }
 
-impl From<db::Taxonomy> for Taxonomy {
-  fn from(item: db::Taxonomy) -> Self {
+impl From<query::Taxonomy> for Taxonomy {
+  fn from(item: query::Taxonomy) -> Self {
     Taxonomy {
       slug: item.slug,
       name: item.name,
@@ -158,8 +158,8 @@ pub struct Tag {
   pub namespace: String,
 }
 
-impl From<db::Tag> for Tag {
-  fn from(item: db::Tag) -> Self {
+impl From<query::Tag> for Tag {
+  fn from(item: query::Tag) -> Self {
     Tag {
       slug: item.slug,
       name: item.name,
@@ -174,8 +174,8 @@ pub struct Source {
   pub url: Option<String>,
 }
 
-impl From<db::ArchiveSource> for Source {
-  fn from(item: db::ArchiveSource) -> Self {
+impl From<query::ArchiveSource> for Source {
+  fn from(item: query::ArchiveSource) -> Self {
     Source {
       name: item.name,
       url: item.url,
@@ -189,6 +189,8 @@ pub struct ArchiveListItem {
   pub title: String,
   pub slug: String,
   pub hash: String,
+  pub thumbnail: i16,
+  pub pages: Option<i16>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub cover: Option<ImageDimensions>,
   #[serde(skip_serializing_if = "<[_]>::is_empty")]

@@ -1,71 +1,15 @@
 use crate::archive::ZipArchiveData;
-use crate::db::ArchiveFile;
 use crate::image::ImageCodec;
-use crate::{api, scraper, torrents, utils};
-use crate::{archive, config::CONFIG, db};
+use crate::{archive, config::CONFIG};
+use crate::{archives, dashboard, scraper, torrents, utils};
 use clap::{Args, Parser, Subcommand};
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use sqlx::{PgPool, QueryBuilder};
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::time::sleep;
 use tracing::{debug, error, info};
-
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-#[command(propagate_version = true)]
-pub struct Cli {
-  #[command(subcommand)]
-  pub command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-pub enum Commands {
-  #[command(about="Index archive(s) located in the given path(s). Defaults to configured content path.", long_about = None)]
-  Index(IndexArgs),
-  #[command(about = "Index archive(s) torrents for indexed archives", long_about = None)]
-  IndexTorrent(IndexTorrentArsgs),
-  #[command(about="Generate thumbnails for indexed archives", long_about = None)]
-  GenerateThumbnails(GenerateThumbnailArgs),
-  #[command(about="Calculate image dimensions. Useful to fix image ordering.", long_about = None)]
-  CalculateDimensions(CalculateDimensionsArgs),
-  #[command(about="Scrape metadata for archives.", long_about = None)]
-  Scrape(ScrapeArgs),
-  #[command(about="Show given archives from the search results.", long_about = None)]
-  Publish(PublishArgs),
-  #[command(about="Hide given archives from the search results.", long_about = None)]
-  Unpublish(PublishArgs),
-  #[command(about = "Start admin dashboard server.")]
-  Dashboard(DashboardArgs),
-}
-
-#[derive(Args, Clone)]
-pub struct IndexArgs {
-  pub paths: Option<Vec<PathBuf>>,
-  #[arg(
-    short,
-    long,
-    default_value = "false",
-    help = "Navigate directory recursively"
-  )]
-  pub recursive: bool,
-  #[arg(
-    long,
-    default_value = "false",
-    help = "Reindex and update existing archives"
-  )]
-  pub reindex: bool,
-  #[arg(long, default_value = "false", help = "Calculate image dimensions")]
-  pub dimensions: bool,
-  #[arg(long, default_value = "false", help = "Generate thumbnails")]
-  pub thumbnails: bool,
-  #[arg(
-    long,
-    help = "Start re-indexing from this path. Useful for resuming after an error."
-  )]
-  pub from_path: Option<PathBuf>,
-}
 
 #[derive(Args, Clone)]
 pub struct IndexTorrentArsgs {
@@ -150,27 +94,17 @@ pub struct PublishArgs {
   pub id: String,
 }
 
-#[derive(Args, Clone)]
-pub struct DashboardArgs {
-  #[arg(
-    short = 'H',
-    long,
-    default_value = "127.0.0.1",
-    help = "Dashboard host"
-  )]
-  pub host: Option<String>,
-  #[arg(short = 'P', long, default_value = "3001", help = "Dashboard port")]
-  pub port: Option<u16>,
-  #[arg(long, help = "Server host. Defaults to configured server host")]
-  pub server_host: Option<String>,
-  #[arg(long, help = "Server port. Defaults to configured server port")]
-  pub server_port: Option<u16>,
+#[derive(sqlx::FromRow)]
+struct ArchiveFile {
+  id: i64,
+  path: String,
+  thumbnail: i16,
 }
 
 async fn fetch_archives(
   pool: &PgPool,
   id_ranges: &Option<String>,
-) -> Result<Vec<db::ArchiveFile>, sqlx::Error> {
+) -> Result<Vec<ArchiveFile>, sqlx::Error> {
   if let Some(id_ranges) = id_ranges {
     let mut qb = QueryBuilder::new("SELECT id, path, thumbnail FROM archives WHERE");
 
@@ -178,14 +112,14 @@ async fn fetch_archives(
 
     let archives = qb
       .push(" AND deleted_at IS NULL ORDER BY id ASC")
-      .build_query_as::<db::ArchiveFile>()
+      .build_query_as::<ArchiveFile>()
       .fetch_all(pool)
       .await?;
 
     Ok(archives)
   } else {
     let archives = sqlx::query_as!(
-      db::ArchiveFile,
+      ArchiveFile,
       "SELECT id, path, thumbnail FROM archives WHERE deleted_at IS NULL ORDER BY id ASC"
     )
     .fetch_all(pool)
@@ -195,116 +129,7 @@ async fn fetch_archives(
   }
 }
 
-pub async fn index(mut args: IndexArgs) -> anyhow::Result<()> {
-  let has_path_arg = args.paths.is_some();
-
-  if !has_path_arg {
-    args.recursive = true;
-  }
-
-  let paths = args
-    .paths
-    .clone()
-    .unwrap_or(vec![CONFIG.directories.content.clone()]);
-
-  let mut paths_to_index = vec![];
-
-  for path in paths {
-    if path.is_dir() {
-      let pattern = if args.recursive {
-        format!("{}/**/*.{{cbz,zip}}", path.to_str().unwrap())
-      } else {
-        format!("{}/*.{{cbz,zip}}", path.to_str().unwrap())
-      };
-
-      let walker = globwalk::glob(&pattern).unwrap();
-
-      for entry in walker {
-        let entry = entry.unwrap();
-        paths_to_index.push(entry.path().to_owned());
-      }
-    } else if path.is_file() {
-      paths_to_index.push(path);
-    } else {
-      error!(
-        target: "cmd::index",
-        "The given path is not a valid path or couldn't be accessed: {}",
-        path.display()
-      );
-    }
-  }
-
-  if !has_path_arg {
-    if let Some(from_path) = &args.from_path {
-      let mut should_add = false;
-      let mut paths = vec![];
-
-      for path in &paths_to_index {
-        if path.eq(from_path) {
-          should_add = true;
-        }
-
-        if !should_add {
-          continue;
-        }
-
-        paths.push(path.to_path_buf());
-      }
-
-      paths_to_index = paths;
-    }
-  }
-
-  let pool = db::get_pool().await?;
-  let mp = MultiProgress::new();
-  let pb = ProgressBar::new(paths_to_index.len().as_u64());
-
-  pb.set_style(
-    ProgressStyle::with_template("[{elapsed_precise}] {bar:40.green/white} {pos:>7}/{len:7}")
-      .unwrap(),
-  );
-  mp.add(pb.clone());
-
-  let mut count = 0;
-
-  let start = Instant::now();
-
-  for path in paths_to_index {
-    match archive::index(
-      &path,
-      archive::IndexOptions {
-        reindex: args.reindex,
-        dimensions: args.dimensions,
-        thumbnails: args.thumbnails,
-      },
-      &pool,
-      Some(&mp),
-    )
-    .await
-    {
-      Ok(indexed) => {
-        if indexed {
-          count += 1
-        }
-      }
-      Err(err) => pb.suspend(
-        || error!(target: "cmd::index", "Failed to index archive '{}' - {err}", path.display()),
-      ),
-    }
-
-    pb.inc(1)
-  }
-
-  pb.finish_and_clear();
-
-  let end = Instant::now();
-
-  info!(target: "cmd::index", "Indexed {count} archives in {:?}", end - start);
-
-  Ok(())
-}
-
-pub async fn index_torrents(args: IndexTorrentArsgs) -> anyhow::Result<()> {
+pub async fn index_torrents(args: IndexTorrentArsgs, pool: &PgPool) -> anyhow::Result<()> {
   let paths = args
     .paths
     .clone()
@@ -337,7 +162,6 @@ pub async fn index_torrents(args: IndexTorrentArsgs) -> anyhow::Result<()> {
     }
   }
 
-  let pool = db::get_pool().await?;
   let multi = MultiProgress::new();
   let pb = ProgressBar::new(paths_to_index.len().as_u64());
 
@@ -367,8 +191,7 @@ pub async fn index_torrents(args: IndexTorrentArsgs) -> anyhow::Result<()> {
   Ok(())
 }
 
-pub async fn generate_thumbnails(args: GenerateThumbnailArgs) -> anyhow::Result<()> {
-  let pool = db::get_pool().await?;
+pub async fn generate_thumbnails(args: GenerateThumbnailArgs, pool: &PgPool) -> anyhow::Result<()> {
   let archives = fetch_archives(&pool, &args.id).await?;
 
   let mp = MultiProgress::new();
@@ -409,26 +232,28 @@ pub async fn generate_thumbnails(args: GenerateThumbnailArgs) -> anyhow::Result<
 }
 
 async fn calculate_dimensions_archive(
-  archive: &ArchiveFile,
+  id: i64,
+  path: &str,
   recalculate: bool,
   pool: &PgPool,
   mp: &MultiProgress,
 ) -> anyhow::Result<()> {
-  let path = CONFIG.directories.links.join(&archive.path);
+  let path = CONFIG.directories.links.join(&path);
   let ZipArchiveData { mut file, .. } = archive::read_zip(&path)?;
   let images = archive::get_image_filenames(&mut file)?;
   let mut files = archive::get_zip_files(images, &mut file)?;
 
-  mp.suspend(|| info!(target: "archive::calculate_dimensions", "Calculating image dimensions for archive ID {}", archive.id));
+  mp.suspend(|| info!(target: "archive::calculate_dimensions", "Calculating image dimensions for archive ID {id}"));
 
-  archive::images::calculate_dimensions(archive.id, recalculate, &mut files, pool, Some(mp))
-    .await?;
+  archive::images::calculate_dimensions(id, recalculate, &mut files, pool, Some(mp)).await?;
 
   Ok(())
 }
 
-pub async fn calculate_dimensions(args: CalculateDimensionsArgs) -> anyhow::Result<()> {
-  let pool = db::get_pool().await?;
+pub async fn calculate_dimensions(
+  args: CalculateDimensionsArgs,
+  pool: &PgPool,
+) -> anyhow::Result<()> {
   let archives = fetch_archives(&pool, &args.id).await?;
 
   let mp = MultiProgress::new();
@@ -436,7 +261,9 @@ pub async fn calculate_dimensions(args: CalculateDimensionsArgs) -> anyhow::Resu
   let recalculate = args.recalculate.unwrap_or_default();
 
   for archive in archives {
-    if let Err(err) = calculate_dimensions_archive(&archive, recalculate, &pool, &mp).await {
+    if let Err(err) =
+      calculate_dimensions_archive(archive.id, &archive.path, recalculate, &pool, &mp).await
+    {
       mp.suspend(|| {
         error!(
           target: "archive::calculate_dimensions",
@@ -450,24 +277,22 @@ pub async fn calculate_dimensions(args: CalculateDimensionsArgs) -> anyhow::Resu
   Ok(())
 }
 
-pub async fn scrape(args: ScrapeArgs) -> anyhow::Result<()> {
-  let pool = db::get_pool().await?;
-
-  let archives: Vec<db::ArchiveId> = if let Some(id_ranges) = args.id {
-    let mut qb = QueryBuilder::new("SELECT id, path FROM archives WHERE");
+pub async fn scrape(args: ScrapeArgs, pool: &PgPool) -> anyhow::Result<()> {
+  let archives: Vec<i64> = if let Some(id_ranges) = args.id {
+    let mut qb = QueryBuilder::new("SELECT id FROM archives WHERE");
 
     utils::add_id_ranges(&mut qb, &id_ranges);
 
     qb.push(" AND deleted_at IS NULL ORDER BY id ASC")
-      .build_query_as()
-      .fetch_all(&pool)
+      .build_query_scalar()
+      .fetch_all(pool)
       .await?
   } else {
-    sqlx::query_as!(
-      db::ArchiveId,
-      r#"SELECT id, path FROM archives WHERE has_metadata IS FALSE AND deleted_at IS NULL ORDER BY id ASC"#
+    sqlx::query_scalar!(
+      r#"SELECT id FROM archives
+      WHERE has_metadata IS FALSE AND deleted_at IS NULL ORDER BY id ASC"#
     )
-    .fetch_all(&pool)
+    .fetch_all(pool)
     .await?
   };
 
@@ -477,15 +302,14 @@ pub async fn scrape(args: ScrapeArgs) -> anyhow::Result<()> {
 
   let should_sleep = archives.len() > 1;
 
-  for info in archives {
-    mp.suspend(|| info!(target: "archive::scrape", "Scraping metadata for archive ID {}", info.id));
+  for id in archives {
+    mp.suspend(|| info!(target: "archive::scrape", "Scraping metadata for archive ID {}", id));
 
-    if let Err(err) = scraper::scrape(&info, args.site, &pool).await {
+    if let Err(err) = scraper::scrape(id, args.site, &pool).await {
       mp.suspend(|| {
         error!(
           target: "archive::scrape",
-          "Failed to scrape metadata for archive ID {}: {err}",
-          info.id
+          "Failed to scrape metadata for archive ID {id}: {err}",
         )
       });
     }
@@ -501,27 +325,18 @@ pub async fn scrape(args: ScrapeArgs) -> anyhow::Result<()> {
   Ok(())
 }
 
-pub async fn pusblish(args: PublishArgs, publish: bool) -> anyhow::Result<()> {
-  let pool = db::get_pool().await?;
-
-  let mut qb = QueryBuilder::new("UPDATE archives SET ");
-
-  if publish {
-    qb.push("deleted_at = NULL");
-  } else {
-    qb.push("deleted_at = NOW()");
-  }
-
-  qb.push(" WHERE");
-
-  utils::add_id_ranges(&mut qb, &args.id);
-  let affected = qb.build().execute(&pool).await?;
-
-  info!("{} archives updated", affected.rows_affected());
-
-  Ok(())
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+#[command(propagate_version = true)]
+pub struct Cli {
+  #[command(subcommand)]
+  pub command: Option<Commands>,
 }
 
-pub async fn init_dashboard(args: DashboardArgs) -> anyhow::Result<()> {
-  api::dashboard::serve(args).await
+#[derive(Subcommand)]
+pub enum Commands {
+  #[command(about = "Index archive(s) located in the configured path.")]
+  Index(archives::IndexArgs),
+  #[command(about = "Start admin dashboard server.")]
+  Dashboard(dashboard::DashboardArgs),
 }
