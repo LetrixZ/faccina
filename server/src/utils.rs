@@ -113,6 +113,8 @@ pub fn parse_source_name(str: &str) -> String {
     "ExHentai".into()
   } else if str.contains("hentag") {
     "HenTag".into()
+  } else if str.contains("koharu") || str.contains("schale") {
+    "Koharu".into()
   } else {
     url::Url::parse(&str)
       .ok()

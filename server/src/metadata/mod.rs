@@ -4,6 +4,7 @@ mod eze;
 mod gallerydl;
 pub mod hentag;
 mod hentainexus;
+mod koharu;
 mod koromo;
 
 use crate::{
@@ -68,6 +69,7 @@ enum MetadataFormatYaml {
   Anchira(String),
   HentaiNexus(String),
   CCDC06(String),
+  Koharu(String),
 }
 
 enum MetadataFormatJson {
@@ -95,6 +97,10 @@ fn handle_metadata_format(
         let metadata = serde_yaml::from_str(&yaml)?;
         ccdc06::add_metadata(metadata, archive)?
       }
+      MetadataFormatYaml::Koharu(yaml) => {
+        let metadata = serde_yaml::from_str(&yaml)?;
+        koharu::add_metadata(metadata, archive)?
+      }
     },
     MetadataFormat::Json(json) => match json {
       MetadataFormatJson::HenTag(json) => {
@@ -120,6 +126,10 @@ fn handle_metadata_format(
 }
 
 fn get_yaml_type(yaml: String) -> anyhow::Result<MetadataFormatYaml> {
+  if yaml.contains("title") || yaml.contains("general") {
+    return Ok(MetadataFormatYaml::Koharu(yaml));
+  }
+
   if yaml.contains("DownloadSource") || yaml.contains("ThumbnailIndex") || yaml.contains("Files") {
     return Ok(MetadataFormatYaml::CCDC06(yaml));
   }

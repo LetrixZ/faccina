@@ -1,14 +1,15 @@
 <script lang="ts">
-	import type { Source } from '$lib/models';
-	import Irodori from '$assets/irodori.webp';
-	import Fakku from '$assets/fakku.svg';
 	import Anchira from '$assets/anchira.webp';
-	import HentaiNexus from '$assets/hentainexus.webp';
 	import ExHentai from '$assets/exhentai.ico';
-	import Pixiv from '$assets/pixiv.webp';
-	import Patreon from '$assets/patreon.webp';
-	import ProjectHentai from '$assets/project-hentai.webp';
+	import Fakku from '$assets/fakku.svg';
 	import HenTag from '$assets/hentag.webp';
+	import HentaiNexus from '$assets/hentainexus.webp';
+	import Irodori from '$assets/irodori.webp';
+	import Koharu from '$assets/koharu.png';
+	import Patreon from '$assets/patreon.webp';
+	import Pixiv from '$assets/pixiv.webp';
+	import ProjectHentai from '$assets/project-hentai.webp';
+	import type { Source } from '$lib/models';
 	import IcBaselineQuestionMark from '~icons/ic/baseline-question-mark';
 
 	export let source: Source;
@@ -35,6 +36,8 @@
 				return ProjectHentai;
 			case 'hentag':
 				return HenTag;
+			case 'koharu':
+				return Koharu;
 			default:
 				return;
 		}
