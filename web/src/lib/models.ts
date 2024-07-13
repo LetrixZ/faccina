@@ -27,6 +27,7 @@ export interface ArchiveListItem {
 	id: number;
 	hash: string;
 	title: string;
+	pages: number;
 	cover?: ImageDimensions;
 	artists?: Taxonomy[];
 	circles?: Taxonomy[];
@@ -110,6 +111,8 @@ export interface Task {
 
 export enum ImageFitMode {
 	ImageWidth = 'image-width',
+	MinWidth = 'min-width',
 	MaxWidth = 'max-width',
 	FitHeight = 'fit-height',
+	FillHeight = 'fill-height',
 }

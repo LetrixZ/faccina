@@ -22,10 +22,12 @@
 		showBar,
 	} from '$lib/reader-store';
 	import { cn, remToPx, type BarPlacement } from '$lib/utils';
+	import cookie from 'cookie';
 	import dayjs from 'dayjs';
 	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
@@ -58,9 +60,18 @@
 		}
 	}
 
+	let isMounted = true;
+
+	onMount(() => {
+		isMounted = true;
+	});
+
 	$: {
-		if (browser) {
-			document.cookie = `reader=${JSON.stringify($prefs)}; Path=/; Max-Age=${dayjs(dayjs().add(1, 'year')).diff(dayjs(), 'seconds')}`;
+		if (browser && isMounted) {
+			document.cookie = cookie.serialize('reader', JSON.stringify($prefs), {
+				path: '/',
+				maxAge: dayjs().add(1, 'year').diff(dayjs(), 'seconds'),
+			});
 		}
 	}
 </script>
@@ -219,11 +230,25 @@
 			type="single"
 			value={$prefs.fitMode}
 			onValueChange={onModeChange}
+			class="flex flex-wrap"
 		>
 			<ToggleGroup.Item value={ImageFitMode.FitHeight}>Fit Height</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageFitMode.FillHeight}>Fill Height</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageFitMode.MinWidth}>Min Width</ToggleGroup.Item>
 			<ToggleGroup.Item value={ImageFitMode.MaxWidth}>Max Width</ToggleGroup.Item>
 			<ToggleGroup.Item value={ImageFitMode.ImageWidth}>Image Width</ToggleGroup.Item>
 		</ToggleGroup.Root>
+
+		<div class="flex items-center">
+			<Label for="min-width" class="w-full">Min width</Label>
+			<Input
+				id="min-width"
+				type="number"
+				value={$prefs.minWidth}
+				class="w-24"
+				on:change={(event) => ($prefs.minWidth = parseInt(event.currentTarget.value) || undefined)}
+			/>
+		</div>
 
 		<div class="flex items-center">
 			<Label for="max-width" class="w-full">Max width</Label>

@@ -7,6 +7,7 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
+			'~': './src',
 			$assets: './src/assets',
 		},
 	},

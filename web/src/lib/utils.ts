@@ -216,7 +216,8 @@ export function getMetadata(archive: Archive) {
 }
 
 export const preferencesSchema = z.object({
-	fitMode: z.nativeEnum(ImageFitMode).catch(ImageFitMode.FitHeight),
+	fitMode: z.nativeEnum(ImageFitMode).catch(ImageFitMode.FillHeight),
+	minWidth: z.number().optional().catch(1000),
 	maxWidth: z.number().optional().catch(1000),
 	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
 });

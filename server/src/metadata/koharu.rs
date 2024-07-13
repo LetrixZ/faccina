@@ -114,7 +114,7 @@ pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyh
       name: utils::parse_source_name(&url),
       url: Some(format!(
         "https://koharu.to{}",
-        url.split(":").last().unwrap()
+        url.split(':').last().unwrap()
       )),
     });
   }

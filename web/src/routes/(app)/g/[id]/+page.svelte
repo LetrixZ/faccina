@@ -35,9 +35,9 @@
 		});
 		const { createWriteStream } = await import('streamsaver');
 
-		const chunks: any[] = [];
+		const chunks: Uint8Array[] = [];
 
-		const promise = new Promise<void>(async (resolve, reject) => {
+		const promise = new Promise<void>((resolve, reject) => {
 			const fileStream = createWriteStream(`${generateFilename(archive)}.cbz`);
 			const writer = fileStream.getWriter();
 
@@ -70,7 +70,7 @@
 
 				metadataFile.push(strToU8(JSON.stringify(getMetadata(archive), null, 2)), true);
 
-				await pMap(
+				pMap(
 					archive.images,
 					async (image) => {
 						const url = `${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.filename}`;
@@ -91,18 +91,16 @@
 						task.update((task) => ({ ...task, progress: task.progress + 1 }));
 					},
 					{ concurrency: 3 }
-				);
+				).then(() => {
+					zip.end();
 
-				zip.end();
+					task.update((task) => ({ ...task, complete: true }));
 
-				task.update((task) => ({ ...task, complete: true }));
-
-				resolve();
+					resolve();
+				});
 			} catch (e) {
 				console.error(e);
-				await writer.abort();
-
-				reject(e);
+				writer.abort().then(() => reject(e));
 			}
 		});
 

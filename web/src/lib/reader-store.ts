@@ -16,7 +16,7 @@ export const nextPage = writable<number | undefined>();
 export const prefs = writable<ReaderPreferences>(preferencesSchema.parse({}));
 
 export const readerTimeout = (() => {
-	let timeout = 0;
+	let timeout: NodeJS.Timeout;
 
 	const clear = () => clearTimeout(timeout);
 	const reset = () => {

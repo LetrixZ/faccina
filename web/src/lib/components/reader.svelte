@@ -9,6 +9,7 @@
 		nextPage,
 		preferencesOpen,
 		prefs,
+		previewLayout,
 		prevPage,
 		readerPage,
 		showBar,
@@ -23,8 +24,6 @@
 
 	let imageEl: HTMLImageElement;
 	let container: HTMLDivElement;
-
-	let previewLayout = false;
 
 	let pageState: (Image & { state: ImageState })[] = archive.images.map((image) => ({
 		...image,
@@ -106,21 +105,25 @@
 			return;
 		}
 
-		const base = `aspect-ratio: ${image.width && image.height && image.width / image.height};`;
-
 		switch ($prefs.fitMode) {
-			case ImageFitMode.MaxWidth:
-				if ($prefs.maxWidth && image.width && image.height) {
-					return base + `max-height: ${($prefs.maxWidth * image.height) / image.width}px;`;
+			case ImageFitMode.MinWidth:
+				if (image.width && image.height) {
+					return `min-height: min(${image.height}px, 100%); aspect-ratio: ${image.width / image.height};`;
 				}
 
-				return base;
+				return;
+			case ImageFitMode.MaxWidth:
+				if (image.width && image.height) {
+					return `min-height: min(${image.height}px, 100%);`;
+				}
+
+				return;
 			case ImageFitMode.ImageWidth:
-				return base + `max-height: ${image.height}px;`;
+				return `max-height: ${image.height}px;`;
 			case ImageFitMode.FitHeight:
-				return base + 'max-height: 100%';
-			default:
-				return base;
+				return 'max-height: 100%;';
+			case ImageFitMode.FillHeight:
+				return 'min-height: 100%;';
 		}
 	};
 
@@ -128,6 +131,8 @@
 		switch ($prefs.fitMode) {
 			case ImageFitMode.ImageWidth:
 				return ``;
+			case ImageFitMode.MinWidth:
+				return `width: ${$prefs.minWidth}px;`;
 			case ImageFitMode.MaxWidth:
 				if ($prefs.maxWidth) {
 					return `max-width: clamp(0px, ${$prefs.maxWidth}px, 100%);`;
@@ -136,6 +141,8 @@
 				}
 			case ImageFitMode.FitHeight:
 				return `width: auto; max-height: 100%;`;
+			case ImageFitMode.FillHeight:
+				return `width: auto; min-height: 100%; object-fit: contain;`;
 		}
 	};
 
@@ -193,7 +200,7 @@
 			style={getContainerStyle($prefs, image)}
 		>
 			<a
-				class={cn('relative h-full flex-grow outline-none', previewLayout && 'bg-blue-500/50 ')}
+				class={cn('relative h-full flex-grow outline-none', $previewLayout && 'bg-blue-500/50 ')}
 				href={prevPageUrl}
 				draggable="false"
 				on:click|preventDefault={() => changePage($prevPage)}
@@ -205,7 +212,7 @@
 				on:click={() => ($showBar = !$showBar)}
 			/>
 			<a
-				class={cn('relative h-full flex-grow outline-none', previewLayout && 'bg-red-500/50')}
+				class={cn('relative h-full flex-grow outline-none', $previewLayout && 'bg-red-500/50')}
 				href={nextPageUrl}
 				draggable="false"
 				on:click|preventDefault={() => changePage($nextPage)}
@@ -214,7 +221,7 @@
 			</a>
 		</div>
 
-		{#if previewLayout}
+		{#if $previewLayout}
 			<div class="pointer-events-none fixed inset-0 flex h-full min-w-full max-w-full opacity-100">
 				<div class="relative flex h-full flex-grow items-center justify-center">
 					<span class="stroke rounded-md text-2xl font-semibold uppercase tracking-wider">
@@ -238,7 +245,7 @@
 			src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image?.filename}`}
 			loading="eager"
 			style={getImageStyle($prefs)}
-			class="m-auto bg-neutral-500"
+			class="m-auto"
 			on:error={() => toast.error('Failed to load the page')}
 		/>
 	</div>

@@ -203,6 +203,7 @@ pub struct ArchiveListItem {
   pub slug: String,
   pub hash: String,
   pub title: String,
+  pub pages: i16,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub cover: Option<ImageDimensions>,
   #[serde(skip_serializing_if = "<[_]>::is_empty")]
