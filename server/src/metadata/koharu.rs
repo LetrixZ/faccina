@@ -1,4 +1,4 @@
-use crate::{db, utils};
+use crate::{config::CONFIG, db, utils};
 use serde::Deserialize;
 use slug::slugify;
 
@@ -22,7 +22,11 @@ pub struct Metadata {
 }
 
 pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyhow::Result<()> {
-  archive.title = Some(info.title);
+  archive.title = if CONFIG.metadata.parse_filename_title {
+    utils::parse_filename(&info.title).0
+  } else {
+    Some(info.title)
+  };
   archive.slug = archive.title.as_ref().map(slugify);
   archive.description = info.description;
   archive.thumbnail = Some(1);
