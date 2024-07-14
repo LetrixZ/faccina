@@ -14,6 +14,8 @@ mod scraper;
 mod torrents;
 mod utils;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 async fn run() -> anyhow::Result<()> {
   let cli = Cli::parse();
 

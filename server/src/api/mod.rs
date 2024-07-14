@@ -3,7 +3,7 @@ pub mod models;
 pub mod routes;
 
 use crate::config::CONFIG;
-use crate::db;
+use crate::{db, VERSION};
 use axum::extract::rejection::QueryRejection;
 use axum::extract::FromRequest;
 use axum::extract::{MatchedPath, Request};
@@ -102,7 +102,8 @@ impl IntoResponse for ApiError {
 pub async fn start_server() -> anyhow::Result<()> {
   crate::log::server_logging();
 
-  info!(target: "server::config", "Server config\n{}", *CONFIG);
+  info!("Server version {}", VERSION);
+  info!("Server config\n{}", *CONFIG);
 
   let pool = db::get_pool().await?;
   let state = AppState { pool };
@@ -113,6 +114,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     .vary([HeaderName::from_str("Accept-Encoding").unwrap()]);
 
   let app = Router::new()
+    .route("/", get(|| async { VERSION.into_response() }))
     .route("/library", get(routes::library))
     .route("/archive/:id", get(routes::archive_data))
     .merge(image::get_routes())

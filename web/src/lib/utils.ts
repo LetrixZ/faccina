@@ -6,7 +6,7 @@ import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-import { ImageFitMode, type Archive, type Image, type Tag, type Taxonomy } from './models';
+import { ImageSize, type Archive, type Image, type Tag, type Taxonomy } from './models';
 
 dayjs.extend(localizedFormat);
 
@@ -216,28 +216,20 @@ export function getMetadata(archive: Archive) {
 }
 
 export const preferencesSchema = z.object({
-	fitMode: z.nativeEnum(ImageFitMode).catch(ImageFitMode.FillHeight),
-	minWidth: z.number().optional().catch(1000),
-	maxWidth: z.number().optional().catch(1000),
+	imageSize: z.nativeEnum(ImageSize).catch(ImageSize.Original),
+	minWidth: z.number().optional(),
+	maxWidth: z.number().optional().default(1280),
 	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
 });
 
-export type ReaderPreferences = z.infer<typeof preferencesSchema>;
-export type BarPlacement = ReaderPreferences['barPlacement'];
-
-export function getReaderPreferencesFromCookie(cookie: string | undefined) {
-	if (cookie) {
-		try {
-			const saved = JSON.parse(cookie);
-			const validated = preferencesSchema.parse(saved);
-			return validated;
-		} catch {
-			return preferencesSchema.parse({});
-		}
-	}
-
-	return preferencesSchema.parse({});
+export interface ReaderPreferences {
+	imageSize: ImageSize;
+	minWidth: number | undefined;
+	maxWidth: number | undefined;
+	barPlacement: 'top' | 'bottom';
 }
+
+export type BarPlacement = ReaderPreferences['barPlacement'];
 
 export function isScrolledIntoView(el: HTMLElement, currentTop: number) {
 	const rect = el.getBoundingClientRect();

@@ -5,7 +5,7 @@ import { handleFetchError } from '$lib/utils';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ params, request, setHeaders }) => {
+export const GET: RequestHandler = async ({ params, request, fetch, setHeaders }) => {
 	const key = request.headers.get('X-Api-Key');
 
 	if (env.API_KEY?.length && key !== env.API_KEY) {

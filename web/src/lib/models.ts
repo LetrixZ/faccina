@@ -67,13 +67,13 @@ export interface Source {
 export interface Image {
 	filename: string;
 	page_number: number;
-	width: number | undefined;
-	height: number | undefined;
+	width: number;
+	height: number;
 }
 
 export interface ImageDimensions {
-	width: number | undefined;
-	height: number | undefined;
+	width: number;
+	height: number;
 }
 
 export interface LibraryPage {
@@ -109,10 +109,8 @@ export interface Task {
 	complete: boolean;
 }
 
-export enum ImageFitMode {
-	ImageWidth = 'image-width',
-	MinWidth = 'min-width',
-	MaxWidth = 'max-width',
-	FitHeight = 'fit-height',
+export enum ImageSize {
+	Original = 'original',
+	FillWidth = 'fill-width',
 	FillHeight = 'fill-height',
 }

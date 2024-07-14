@@ -9,7 +9,6 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
-	import { ImageFitMode } from '$lib/models';
 	import {
 		currentArchive,
 		nextPage,
@@ -29,8 +28,10 @@
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
+	import { ImageSize } from '../models';
 
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
+	$: total = $currentArchive ? $currentArchive.images.length : 0;
 
 	$: prevPageUrl = $prevPage ? `${$prevPage}${$page.url.search}` : undefined;
 	$: nextPageUrl = $nextPage ? `${$nextPage}${$page.url.search}` : undefined;
@@ -42,7 +43,7 @@
 	};
 
 	const onModeChange = (mode: string | undefined) => {
-		$prefs.fitMode = (mode ?? ImageFitMode.FitHeight) as ImageFitMode;
+		$prefs.imageSize = (mode ?? ImageSize.Original) as ImageSize;
 	};
 
 	$: {
@@ -137,33 +138,31 @@
 				</a>
 
 				<div class="relative w-20 sm:w-24">
-					{#if $currentArchive}
-						<select
-							bind:this={pageSelect}
-							class="absolute inset-0 -z-10 mx-auto w-fit opacity-0"
-							name="page"
-							on:change={(ev) => ($readerPage = parseInt(ev.currentTarget.value))}
-						>
-							{#each $currentArchive.images as image}
-								<option value={image.page_number} selected={currentPage === image.page_number}>
-									{image.page_number}
-								</option>
-							{/each}
+					<select
+						bind:this={pageSelect}
+						class="absolute inset-0 -z-10 mx-auto w-fit opacity-0"
+						name="page"
+						on:change={(ev) => ($readerPage = parseInt(ev.currentTarget.value))}
+					>
+						{#each new Array(total).map((_, i) => i + 1) as pageNumber}
+							<option value={pageNumber} selected={currentPage === pageNumber}>
+								{pageNumber}
+							</option>
+						{/each}
 
-							<span> {currentPage}</span> /
-							<span>{$currentArchive.images.length}</span>
-						</select>
+						<span> {currentPage}</span> /
+						<span>{total}</span>
+					</select>
 
-						<Button
-							variant="link"
-							class="w-full whitespace-pre font-medium underline-offset-4"
-							on:click={() => pageSelect.showPicker()}
-						>
-							<span>{currentPage}</span>&ThickSpace;/&ThickSpace;<span>
-								{$currentArchive.images.length}
-							</span>
-						</Button>
-					{/if}
+					<Button
+						variant="link"
+						class="w-full whitespace-pre font-medium underline-offset-4"
+						on:click={() => pageSelect.showPicker()}
+					>
+						<span>{currentPage}</span>&ThickSpace;/&ThickSpace;<span>
+							{total}
+						</span>
+					</Button>
 				</div>
 
 				<a
@@ -228,15 +227,13 @@
 			id="fit-mode"
 			variant="outline"
 			type="single"
-			value={$prefs.fitMode}
+			value={$prefs.imageSize}
 			onValueChange={onModeChange}
 			class="flex flex-wrap"
 		>
-			<ToggleGroup.Item value={ImageFitMode.FitHeight}>Fit Height</ToggleGroup.Item>
-			<ToggleGroup.Item value={ImageFitMode.FillHeight}>Fill Height</ToggleGroup.Item>
-			<ToggleGroup.Item value={ImageFitMode.MinWidth}>Min Width</ToggleGroup.Item>
-			<ToggleGroup.Item value={ImageFitMode.MaxWidth}>Max Width</ToggleGroup.Item>
-			<ToggleGroup.Item value={ImageFitMode.ImageWidth}>Image Width</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageSize.Original}>Original</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageSize.FillWidth}>Fill Width</ToggleGroup.Item>
+			<ToggleGroup.Item value={ImageSize.FillHeight}>Fill Height</ToggleGroup.Item>
 		</ToggleGroup.Root>
 
 		<div class="flex items-center">
@@ -246,7 +243,10 @@
 				type="number"
 				value={$prefs.minWidth}
 				class="w-24"
-				on:change={(event) => ($prefs.minWidth = parseInt(event.currentTarget.value) || undefined)}
+				on:change={(event) =>
+					($prefs.minWidth = event.currentTarget.value.length
+						? parseInt(event.currentTarget.value)
+						: undefined)}
 			/>
 		</div>
 
@@ -257,7 +257,10 @@
 				type="number"
 				value={$prefs.maxWidth}
 				class="w-24"
-				on:change={(event) => ($prefs.maxWidth = parseInt(event.currentTarget.value) || undefined)}
+				on:change={(event) =>
+					($prefs.maxWidth = event.currentTarget.value.length
+						? parseInt(event.currentTarget.value)
+						: undefined)}
 			/>
 		</div>
 	</Dialog.Content>

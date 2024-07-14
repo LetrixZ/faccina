@@ -13,14 +13,15 @@ export const readerPage = writable<number | undefined>();
 export const prevPage = writable<number | undefined>();
 export const nextPage = writable<number | undefined>();
 
-export const prefs = writable<ReaderPreferences>(preferencesSchema.parse({}));
+export const prefs = writable<ReaderPreferences>(preferencesSchema.parse({}) as ReaderPreferences);
 
 export const readerTimeout = (() => {
-	let timeout: NodeJS.Timeout;
+	let timeout: number | undefined;
 
 	const clear = () => clearTimeout(timeout);
 	const reset = () => {
 		clear();
+
 		timeout = setTimeout(() => {
 			showBar.set(false);
 		}, 3000);

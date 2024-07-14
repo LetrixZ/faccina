@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import type { Archive } from '$lib/models';
-	import { ImageFitMode, type Image } from '$lib/models';
+	import { ImageSize, type Image } from '$lib/models';
 	import {
 		currentArchive,
 		nextPage,
@@ -25,13 +25,16 @@
 	let imageEl: HTMLImageElement;
 	let container: HTMLDivElement;
 
+	let imageStyle = '';
+	let containerStyle = '';
+
 	let pageState: (Image & { state: ImageState })[] = archive.images.map((image) => ({
 		...image,
 		state: 'idle',
 	}));
 
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
-	$: image = archive.images.find((image) => image?.page_number === currentPage);
+	$: image = archive.images.find((image) => image?.page_number === currentPage)!;
 
 	$: {
 		$prevPage = currentPage > 1 ? currentPage - 1 : undefined;
@@ -41,8 +44,10 @@
 	$: prevPageUrl = $prevPage ? `${$prevPage}${$page.url.search}` : undefined;
 	$: nextPageUrl = $nextPage ? `${$nextPage}${$page.url.search}` : undefined;
 
+	$: $currentArchive = archive;
+
 	const changePage = (page?: number) => {
-		if (!page) {
+		if (!page || !container) {
 			return;
 		}
 
@@ -57,8 +62,8 @@
 		newImage.alt = `Page ${currentPage}`;
 		newImage.onerror = () => toast.error('Failed to load the page');
 
-		imageEl.classList.forEach((className) => newImage.classList.add(className));
-		imageEl.replaceWith(newImage);
+		imageEl?.classList.forEach((className) => newImage.classList.add(className));
+		imageEl?.replaceWith(newImage);
 		imageEl = newImage;
 
 		replaceState(page.toString(), { page });
@@ -75,7 +80,7 @@
 		});
 	};
 
-	const preloadImages = async () => {
+	const preloadImages = async (currentPage: number) => {
 		await pMap(
 			[currentPage + 1, currentPage + 2, currentPage - 1, currentPage + 3, currentPage - 2]
 				.filter((page) => archive.images.some(({ page_number }) => page_number === page))
@@ -83,6 +88,10 @@
 				.map((page) => archive.images.find(({ page_number }) => page_number === page)!),
 			async (imageInfo) => {
 				const { filename, page_number } = imageInfo;
+
+				if (pageState.find((state) => state.page_number === page_number)!.state !== 'idle') {
+					return;
+				}
 
 				changePageState(page_number, 'preloading');
 
@@ -100,74 +109,51 @@
 		);
 	};
 
-	const getContainerStyle = ($prefs: ReaderPreferences, image: Image | undefined) => {
-		if (!image) {
-			return;
-		}
-
-		switch ($prefs.fitMode) {
-			case ImageFitMode.MinWidth:
-				if (image.width && image.height) {
-					return `min-height: min(${image.height}px, 100%); aspect-ratio: ${image.width / image.height};`;
-				}
-
-				return;
-			case ImageFitMode.MaxWidth:
-				if (image.width && image.height) {
-					return `min-height: min(${image.height}px, 100%);`;
-				}
-
-				return;
-			case ImageFitMode.ImageWidth:
-				return `max-height: ${image.height}px;`;
-			case ImageFitMode.FitHeight:
-				return 'max-height: 100%;';
-			case ImageFitMode.FillHeight:
-				return 'min-height: 100%;';
-		}
-	};
-
-	const getImageStyle = ($prefs: ReaderPreferences) => {
-		switch ($prefs.fitMode) {
-			case ImageFitMode.ImageWidth:
-				return ``;
-			case ImageFitMode.MinWidth:
-				return `width: ${$prefs.minWidth}px;`;
-			case ImageFitMode.MaxWidth:
-				if ($prefs.maxWidth) {
-					return `max-width: clamp(0px, ${$prefs.maxWidth}px, 100%);`;
+	const getImageStyle = (
+		{ imageSize: fitMode, minWidth, maxWidth }: ReaderPreferences,
+		image: Image
+	) => {
+		switch (fitMode) {
+			case ImageSize.FillWidth:
+				if (maxWidth && minWidth) {
+					return `width: clamp(${Math.min(maxWidth, Math.max(image.width, minWidth))}px, 100%, ${maxWidth}px); height: auto;`;
+				} else if (minWidth) {
+					return `width: max(${Math.max(image.width, minWidth)}px, 100%); height: auto;`;
+				} else if (maxWidth) {
+					return `width: min(${Math.max(image.width, maxWidth)}px, 100%); height: auto;`;
 				} else {
-					return `max-width: '100%';`;
+					return `width: 100%; height: auto;`;
 				}
-			case ImageFitMode.FitHeight:
-				return `width: auto; max-height: 100%;`;
-			case ImageFitMode.FillHeight:
-				return `width: auto; min-height: 100%; object-fit: contain;`;
+			case ImageSize.FillHeight:
+				return `height: 100%; width: auto; object-fit: contain;`;
+			case ImageSize.Original:
+			default:
+				if (maxWidth && minWidth) {
+					return `width: min(${Math.max(image.width, minWidth)}px, min(${maxWidth}px, 100%));`;
+				} else if (minWidth) {
+					return `width: min(${Math.max(image.width, minWidth)}px, 100%);`;
+				} else {
+					return ``;
+				}
 		}
 	};
 
-	$: {
-		if (imageEl && currentPage) {
-			preloadImages();
+	const updateStyles = (prefs: ReaderPreferences, image: Image) => {
+		imageStyle = getImageStyle(prefs, image);
+		setTimeout(() => (containerStyle = `min-height: ${imageEl?.scrollHeight}px`));
+
+		if (imageEl) {
+			imageEl.style.cssText = imageStyle;
 		}
-	}
+	};
 
-	$: {
-		if (imageEl && $prefs) {
-			imageEl.style.cssText = getImageStyle($prefs);
-		}
-	}
-
-	$: {
-		changePage($readerPage);
-	}
-
-	$: {
-		$currentArchive = archive;
-	}
+	$: updateStyles($prefs, image);
+	$: preloadImages(currentPage);
+	$: changePage($readerPage);
 </script>
 
 <svelte:window
+	on:resize={() => updateStyles($prefs, image)}
 	on:keydown={(event) => {
 		if ($preferencesOpen) {
 			return;
@@ -186,8 +172,7 @@
 					changePage($nextPage);
 				}
 				break;
-			case 'ArrowUp':
-			case 'KeyW':
+			case 'Backspace':
 				goto(`/g/${archive.id}${$page.url.search}`);
 		}
 	}}
@@ -195,10 +180,7 @@
 
 <div class="flex h-dvh w-full flex-col overflow-clip">
 	<div bind:this={container} class="relative my-auto flex h-full overflow-auto">
-		<div
-			class="absolute inset-0 flex min-h-full min-w-full max-w-full"
-			style={getContainerStyle($prefs, image)}
-		>
+		<div class="absolute inset-0 flex min-h-full min-w-full max-w-full" style={containerStyle}>
 			<a
 				class={cn('relative h-full flex-grow outline-none', $previewLayout && 'bg-blue-500/50 ')}
 				href={prevPageUrl}
@@ -244,7 +226,7 @@
 			alt={`Page ${currentPage}`}
 			src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image?.filename}`}
 			loading="eager"
-			style={getImageStyle($prefs)}
+			style={imageStyle}
 			class="m-auto"
 			on:error={() => toast.error('Failed to load the page')}
 		/>
