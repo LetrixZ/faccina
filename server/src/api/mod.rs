@@ -3,7 +3,10 @@ pub mod models;
 pub mod routes;
 
 use crate::config::CONFIG;
-use crate::{db, VERSION};
+use crate::utils::ToStringExt;
+use crate::{db, utils, VERSION};
+use ::image::GenericImageView;
+use async_zip::tokio::read::seek::ZipFileReader;
 use axum::extract::rejection::QueryRejection;
 use axum::extract::FromRequest;
 use axum::extract::{MatchedPath, Request};
@@ -11,18 +14,29 @@ use axum::http::{HeaderName, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
+use itertools::Itertools;
 use serde::Serialize;
 use sqlx::PgPool;
-use std::io;
+use std::collections::HashMap;
+use std::io::{self, Cursor};
 use std::str::FromStr;
+use std::sync::Arc;
 use thiserror::Error;
+use tokio::fs::File;
+use tokio::io::BufReader;
+use tokio::sync::{mpsc, oneshot, Mutex};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{debug_span, error, info};
 
+type DimensionsTasksMap =
+  Arc<Mutex<HashMap<i64, Vec<oneshot::Sender<Result<Vec<db::ArchiveImage>, ()>>>>>>;
+
 #[derive(Clone)]
 pub struct AppState {
   pool: PgPool,
+  dimensions_queue: mpsc::UnboundedSender<i64>,
+  dimensions_in_progress: DimensionsTasksMap,
 }
 
 #[derive(FromRequest)]
@@ -101,13 +115,13 @@ impl IntoResponse for ApiError {
         StatusCode::INTERNAL_SERVER_ERROR,
         format!("Failed to encode image '{filename}' for archive ID '{archive_id}'"),
       ),
-        ApiError::RecvError(err) => {
-          error!(%err, "receiver error");
-          (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Something went wrong".to_owned(),
-          )
-        },
+      ApiError::RecvError(err) => {
+        error!(%err, "receiver error");
+        (
+          StatusCode::INTERNAL_SERVER_ERROR,
+          "Something went wrong".to_owned(),
+        )
+      }
     };
 
     (status, ApiJson(ErrorResponse { message })).into_response()
@@ -126,6 +140,15 @@ pub async fn start_server() -> anyhow::Result<()> {
     .allow_methods(Any)
     .allow_origin(Any)
     .vary([HeaderName::from_str("Accept-Encoding").unwrap()]);
+
+  let (dimensions_queue_tx, dimensions_queue_rx) = mpsc::unbounded_channel();
+  let dimensions_in_progress = Arc::new(Mutex::new(HashMap::new()));
+
+  tokio::spawn(dimensions_worker(
+    dimensions_queue_rx,
+    dimensions_in_progress.clone(),
+    pool.clone(),
+  ));
 
   let app = Router::new()
     .route("/", get(|| async { VERSION.into_response() }))
@@ -148,7 +171,11 @@ pub async fn start_server() -> anyhow::Result<()> {
         })
         .on_failure(()),
     )
-    .with_state(AppState { pool: pool.clone() });
+    .with_state(AppState {
+      pool: pool.clone(),
+      dimensions_queue: dimensions_queue_tx,
+      dimensions_in_progress: dimensions_in_progress.clone(),
+    });
 
   let listener = tokio::net::TcpListener::bind(format!(
     "{host}:{port}",
@@ -165,4 +192,144 @@ pub async fn start_server() -> anyhow::Result<()> {
   axum::serve(listener, app).await?;
 
   Ok(())
+}
+
+pub async fn dimensions_worker(
+  mut queue_rx: mpsc::UnboundedReceiver<i64>,
+  in_progress: DimensionsTasksMap,
+  pool: PgPool,
+) {
+  while let Some(id) = queue_rx.recv().await {
+    let mut in_progress = in_progress.lock().await;
+
+    match calculate_dimensions(id, &pool).await {
+      Ok(images) => {
+        if let Some(waiters) = in_progress.remove(&id) {
+          for waiter in waiters {
+            let _ = waiter.send(Ok(images.clone()));
+          }
+        }
+      }
+      Err(err) => {
+        error!("Failed to calculate image dimensions for archive ID {id}: {err}",);
+
+        if let Some(waiters) = in_progress.remove(&id) {
+          for waiter in waiters {
+            let _ = waiter.send(Err(()));
+          }
+        }
+      }
+    }
+  }
+}
+
+async fn calculate_dimensions(id: i64, pool: &PgPool) -> Result<Vec<db::ArchiveImage>, ApiError> {
+  let mut images = sqlx::query_as!(
+    db::ArchiveImage,
+    "SELECT filename, page_number, width, height FROM archive_images WHERE archive_id = $1 ORDER BY page_number ASC",
+    id
+  )
+  .fetch_all(pool)
+  .await?;
+
+  info!("Calculating image dimensions for archive ID {id}");
+
+  let path = sqlx::query_scalar!(r#"SELECT path FROM archives WHERE id = $1"#, id)
+    .fetch_one(pool)
+    .await?;
+
+  let file = File::open(CONFIG.directories.content.join(path)).await?;
+  let reader = BufReader::new(file);
+  let mut zip = ZipFileReader::with_tokio(reader).await?;
+
+  if images.is_empty() {
+    let mut images = vec![];
+    let image_files = zip
+      .file()
+      .entries()
+      .iter()
+      .enumerate()
+      .map(|(i, entry)| (i, entry.filename().to_string()))
+      .filter(|(_, filename)| utils::is_image(filename))
+      .sorted_by(|a, b| natord::compare(&a.1, &b.1))
+      .collect_vec();
+
+    for (index, filename) in image_files {
+      let mut reader = zip.reader_with_entry(index).await?;
+      let mut buf = vec![];
+      reader.read_to_end_checked(&mut buf).await?;
+
+      let cursor = Cursor::new(&buf);
+
+      if let Ok(img) = ::image::io::Reader::new(cursor)
+        .with_guessed_format()?
+        .decode()
+      {
+        let (w, h) = img.dimensions();
+
+        sqlx::query!(
+          r#"INSERT INTO archive_images (filename, page_number, width, height, archive_id)
+            VALUES ($1, $2, $3, $4, $5)"#,
+          filename,
+          (index + 1) as i16,
+          w as i16,
+          h as i16,
+          id,
+        )
+        .execute(pool)
+        .await?;
+
+        images.push(db::ArchiveImage {
+          filename,
+          page_number: (index + 1) as i16,
+          width: Some(w as i16),
+          height: Some(h as i16),
+        })
+      }
+    }
+
+    Ok(images)
+  } else {
+    for image in images.iter_mut() {
+      if image.width.is_none() || image.height.is_none() {
+        if let Some((index, filename)) = zip
+          .file()
+          .entries()
+          .iter()
+          .enumerate()
+          .map(|(i, entry)| (i, entry.filename().to_string()))
+          .find(|(_, filename)| *filename == image.filename)
+        {
+          let mut reader = zip.reader_with_entry(index).await?;
+          let mut buf = vec![];
+          reader.read_to_end_checked(&mut buf).await?;
+
+          let cursor = Cursor::new(&buf);
+
+          if let Ok(img) = ::image::io::Reader::new(cursor)
+            .with_guessed_format()?
+            .decode()
+          {
+            let (w, h) = img.dimensions();
+
+            image.width = Some(w as i16);
+            image.height = Some(h as i16);
+
+            sqlx::query!(
+                r#"INSERT INTO archive_images (filename, page_number, width, height, archive_id)
+                VALUES ($1, $2, $3, $4, $5) ON CONFLICT (archive_id, page_number) DO UPDATE SET width = $3, height = $4"#,
+                filename,
+                (index + 1) as i16,
+                w as i16,
+                h as i16,
+                id,
+              )
+              .execute(pool)
+              .await?;
+          }
+        }
+      }
+    }
+    Ok(images)
+  }
 }

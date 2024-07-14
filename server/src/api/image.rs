@@ -24,16 +24,16 @@ use std::sync::Arc;
 use tokio::fs::{self, File};
 use tokio::io::BufReader;
 use tokio::sync::{mpsc, oneshot, Mutex};
-use tracing::warn;
+use tracing::{error, info, warn};
 
 const TARGET: &str = "server::image";
 
 pub fn get_routes(pool: PgPool) -> Router<AppState> {
-  let (encoding_queue_tx, encoding_queue_rw) = mpsc::unbounded_channel();
+  let (encoding_queue_tx, encoding_queue_rx) = mpsc::unbounded_channel();
   let encoding_in_progress = Arc::new(Mutex::new(HashMap::new()));
 
   tokio::spawn(encoding_worker(
-    encoding_queue_rw,
+    encoding_queue_rx,
     encoding_in_progress.clone(),
     pool.clone(),
   ));
@@ -118,7 +118,11 @@ pub async fn encoding_worker(
           }
         }
       }
-      Err(_) => {
+      Err(err) => {
+        error!(
+          "Failed to calculate image dimensions for archive ID {}: {err}",
+          args.id
+        );
         if let Some(waiters) = in_progress.remove(&task_id) {
           for waiter in waiters {
             let _ = waiter.send(Err(()));
@@ -138,7 +142,7 @@ async fn encode_page(
   }: &ImageEncodeArgs,
   pool: &PgPool,
 ) -> Result<Vec<u8>, ApiError> {
-  tracing::info!(
+  info!(
     target = TARGET,
     "Encoding {image_type} image for archive ID {id} page {page}"
   );

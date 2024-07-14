@@ -319,8 +319,8 @@ pub async fn fetch_relations(
 }
 
 pub async fn fetch_archive_data(
-  pool: &PgPool,
   id: i64,
+  pool: &PgPool,
 ) -> Result<Option<ArchiveRelations>, sqlx::Error> {
   let row = sqlx::query!(
     r#"SELECT id, slug, title, description, hash, pages, size, thumbnail,

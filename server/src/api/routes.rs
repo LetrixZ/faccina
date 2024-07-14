@@ -1,11 +1,12 @@
 use super::{
-  models::{ArchiveData, LibraryPage},
+  models::{ArchiveData, Image, LibraryPage},
   ApiError, ApiJson, AppState,
 };
 use crate::db;
 use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
+use tokio::sync::oneshot;
 
 pub struct SearchQuery {
   pub value: String,
@@ -124,11 +125,54 @@ pub async fn archive_data(
   Path(id): Path<i64>,
   State(state): State<AppState>,
 ) -> Result<ApiJson<ArchiveData>, ApiError> {
-  let archive = db::fetch_archive_data(&state.pool, id).await?;
+  let mut archive = db::fetch_archive_data(id, &state.pool)
+    .await?
+    .ok_or(ApiError::NotFound)?;
 
-  if let Some(archive) = archive {
-    Ok(ApiJson(archive.into()))
-  } else {
-    Err(ApiError::NotFound)
+  if archive.images.is_empty()
+    || archive
+      .images
+      .iter()
+      .any(|image| image.width.is_none() || image.height.is_none())
+  {
+    let mut in_progress = state.dimensions_in_progress.lock().await;
+
+    if let Some(waiters) = in_progress.get_mut(&id) {
+      let (responder_tx, responder_rx) = oneshot::channel();
+      waiters.push(responder_tx);
+
+      drop(in_progress);
+
+      if let Ok(images) = responder_rx.await? {
+        archive.images = images
+          .iter()
+          .map(|image| Image {
+            filename: image.filename.clone(),
+            page_number: image.page_number,
+            width: image.width,
+            height: image.height,
+          })
+          .collect();
+      }
+    } else {
+      let (responder_tx, responder_rx) = oneshot::channel();
+      in_progress.insert(id, vec![responder_tx]);
+      drop(in_progress);
+      state.dimensions_queue.send(id).unwrap();
+
+      if let Ok(images) = responder_rx.await? {
+        archive.images = images
+          .iter()
+          .map(|image| Image {
+            filename: image.filename.clone(),
+            page_number: image.page_number,
+            width: image.width,
+            height: image.height,
+          })
+          .collect();
+      }
+    }
   }
+
+  Ok(ApiJson(archive.into()))
 }
