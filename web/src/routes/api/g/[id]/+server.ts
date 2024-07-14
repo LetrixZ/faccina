@@ -5,7 +5,7 @@ import { handleFetchError } from '$lib/utils';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ params, request, fetch, setHeaders }) => {
+export const GET: RequestHandler = async ({ params, request, fetch }) => {
 	const key = request.headers.get('X-Api-Key');
 
 	if (env.API_KEY?.length && key !== env.API_KEY) {
@@ -19,10 +19,8 @@ export const GET: RequestHandler = async ({ params, request, fetch, setHeaders }
 		.then(handleFetchError<Archive>)
 		.then((archive) => ({
 			...archive,
-			thumbnail_url: `${publicEnv.PUBLIC_CDN_URL}/image/${archive.hash}/cover`,
+			thumbnail_url: `${publicEnv.PUBLIC_CDN_URL}/image/${archive.hash}/${archive.thumbnail}/c`,
 		}));
-
-	setHeaders({ 'cache-control': 'public, max-age=300' });
 
 	return json(data);
 };

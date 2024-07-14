@@ -4,13 +4,11 @@ import { handleFetchError } from '$lib/utils';
 import { error, isHttpError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url, fetch, isDataRequest, setHeaders }) => {
+export const load: PageServerLoad = async ({ url, fetch, isDataRequest }) => {
 	try {
 		const promise = fetch(`${env.SERVER_URL}/library${url.search}`).then(
 			handleFetchError
 		) as Promise<LibraryPage>;
-
-		setHeaders({ 'cache-control': 'public, max-age=300' });
 
 		return { libraryPage: isDataRequest ? promise : await promise };
 	} catch (e) {

@@ -9,6 +9,7 @@ async_zip = { version = "0.0.17", features = ["full"] }
 axum = { version = "0.7.5", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.5.4", features = ["derive"] }
+colored = "2.1.0"
 data-encoding = "2.6.0"
 file-format = "0.25.0"
 funty = "2.0.0"

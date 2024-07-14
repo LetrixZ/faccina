@@ -717,7 +717,7 @@ pub async fn search(
     }
   }
 
-  qb.push(", pages");
+  qb.push(", pages, thumbnail");
 
   qb.push(", ARRAY_POSITION(")
     .push_bind(&ids)
@@ -744,6 +744,7 @@ pub async fn search(
         hash: row.get(2),
         title: row.get(3),
         pages: row.get(12),
+        thumbnail: row.get(13),
         cover,
         artists: row.get::<Json<_>, _>(5).0,
         circles: row.get::<Json<_>, _>(6).0,

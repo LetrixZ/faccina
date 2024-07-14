@@ -28,6 +28,7 @@ export interface ArchiveListItem {
 	hash: string;
 	title: string;
 	pages: number;
+	thumbnail: number;
 	cover?: ImageDimensions;
 	artists?: Taxonomy[];
 	circles?: Taxonomy[];

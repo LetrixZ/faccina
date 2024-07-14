@@ -52,6 +52,10 @@ pub enum ApiError {
   ImageNotFound,
   #[error("404")]
   NotFound,
+  #[error("Failed to encode image '{0}' for archive ID '{1}'")]
+  ImageEncodingError(String, i64),
+  #[error(transparent)]
+  RecvError(#[from] tokio::sync::oneshot::error::RecvError),
 }
 
 impl IntoResponse for ApiError {
@@ -93,6 +97,17 @@ impl IntoResponse for ApiError {
         "Image not found in archive".to_string(),
       ),
       ApiError::NotFound => (StatusCode::NOT_FOUND, "Resource not found".to_string()),
+      ApiError::ImageEncodingError(filename, archive_id) => (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!("Failed to encode image '{filename}' for archive ID '{archive_id}'"),
+      ),
+        ApiError::RecvError(err) => {
+          error!(%err, "receiver error");
+          (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Something went wrong".to_owned(),
+          )
+        },
     };
 
     (status, ApiJson(ErrorResponse { message })).into_response()
@@ -106,7 +121,6 @@ pub async fn start_server() -> anyhow::Result<()> {
   info!("Server config\n{}", *CONFIG);
 
   let pool = db::get_pool().await?;
-  let state = AppState { pool };
 
   let cors = CorsLayer::new()
     .allow_methods(Any)
@@ -117,7 +131,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     .route("/", get(|| async { VERSION.into_response() }))
     .route("/library", get(routes::library))
     .route("/archive/:id", get(routes::archive_data))
-    .merge(image::get_routes())
+    .nest("/image", image::get_routes(pool.clone()))
     .layer(cors)
     .layer(
       TraceLayer::new_for_http()
@@ -134,7 +148,7 @@ pub async fn start_server() -> anyhow::Result<()> {
         })
         .on_failure(()),
     )
-    .with_state(state);
+    .with_state(AppState { pool: pool.clone() });
 
   let listener = tokio::net::TcpListener::bind(format!(
     "{host}:{port}",

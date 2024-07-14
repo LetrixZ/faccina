@@ -1,6 +1,6 @@
 use super::{ApiError, AppState};
 use crate::image::ImageEncodeOpts;
-use crate::utils::{leading_zeros, ToStringExt};
+use crate::utils::ToStringExt;
 use crate::{config::CONFIG, utils};
 use async_zip::base::read::seek::ZipFileReader;
 use axum::body::Body;
@@ -12,40 +12,150 @@ use axum::{
   routing::get,
   Router,
 };
+use colored::Colorize;
 use image::GenericImageView;
 use itertools::Itertools;
+use serde::Deserialize;
 use sqlx::PgPool;
+use std::collections::HashMap;
+use std::fmt::Display;
 use std::io::Cursor;
+use std::sync::Arc;
 use tokio::fs::{self, File};
-use tokio::io::{AsyncReadExt, BufReader};
+use tokio::io::BufReader;
+use tokio::sync::{mpsc, oneshot, Mutex};
 use tracing::warn;
 
 const TARGET: &str = "server::image";
 
-pub fn get_routes() -> Router<AppState> {
+pub fn get_routes(pool: PgPool) -> Router<AppState> {
+  let (encoding_queue_tx, encoding_queue_rw) = mpsc::unbounded_channel();
+  let encoding_in_progress = Arc::new(Mutex::new(HashMap::new()));
+
+  tokio::spawn(encoding_worker(
+    encoding_queue_rw,
+    encoding_in_progress.clone(),
+    pool.clone(),
+  ));
+
   Router::new()
-    .route("/image/:hash/cover", get(get_cover))
-    .route("/image/:hash/:filename", get(get_file))
-    .route("/image/:hash/:page/thumb", get(get_page_thumbnail))
+    .route("/:hash/:filename", get(get_file))
+    .route("/:hash/:page/:type", get(load_image))
+    .with_state(ImageState {
+      pool,
+      encoding_queue: encoding_queue_tx,
+      encoding_in_progress: encoding_in_progress.clone(),
+    })
+}
+
+type EncodingTasksMap = Arc<Mutex<HashMap<String, Vec<oneshot::Sender<Result<Vec<u8>, ()>>>>>>;
+
+#[derive(Clone)]
+struct ImageState {
+  pool: PgPool,
+  encoding_queue: mpsc::UnboundedSender<ImageEncodeArgs>,
+  encoding_in_progress: EncodingTasksMap,
+}
+
+#[derive(Debug, Deserialize)]
+enum ImageType {
+  #[serde(rename = "c", alias = "cover")]
+  Cover,
+  #[serde(rename = "t", alias = "thumb")]
+  Thumbnail,
+  #[serde(rename = "r", alias = "resampled")]
+  Resampled,
+}
+
+impl ImageType {
+  fn name(&self) -> String {
+    match self {
+      ImageType::Cover => "c".to_string(),
+      ImageType::Thumbnail => "t".to_string(),
+      ImageType::Resampled => "r".to_string(),
+    }
+  }
+}
+
+impl Display for ImageType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ImageType::Cover => write!(f, "{}over", "c".bold()),
+      ImageType::Thumbnail => write!(f, "{}humbnail", "t".bold()),
+      ImageType::Resampled => write!(f, "{}esampled", "r".bold()),
+    }
+  }
+}
+
+pub struct ImageEncodeArgs {
+  id: i64,
+  page: i16,
+  filename: String,
+  image_type: ImageType,
+}
+
+impl ImageEncodeArgs {
+  fn id(&self) -> String {
+    format!("{}-{}-{}", self.id, self.page, self.image_type)
+  }
+}
+
+pub async fn encoding_worker(
+  mut queue_rx: mpsc::UnboundedReceiver<ImageEncodeArgs>,
+  in_progress: EncodingTasksMap,
+  pool: PgPool,
+) {
+  while let Some(args) = queue_rx.recv().await {
+    let task_id = args.id();
+
+    let mut in_progress = in_progress.lock().await;
+
+    match encode_page(&args, &pool).await {
+      Ok(buf) => {
+        if let Some(waiters) = in_progress.remove(&task_id) {
+          for waiter in waiters {
+            let _ = waiter.send(Ok(buf.clone()));
+          }
+        }
+      }
+      Err(_) => {
+        if let Some(waiters) = in_progress.remove(&task_id) {
+          for waiter in waiters {
+            let _ = waiter.send(Err(()));
+          }
+        }
+      }
+    }
+  }
 }
 
 async fn encode_page(
+  ImageEncodeArgs {
+    id,
+    page,
+    filename,
+    image_type,
+  }: &ImageEncodeArgs,
   pool: &PgPool,
-  archive_id: i64,
-  page: i16,
-  filename: &str,
-  is_cover: bool,
 ) -> Result<Vec<u8>, ApiError> {
+  tracing::info!(
+    target = TARGET,
+    "Encoding {image_type} image for archive ID {id} page {page}"
+  );
+
   let image = sqlx::query!(
-    "SELECT filename FROM archive_images WHERE archive_id = $1 AND page_number = $2",
-    archive_id,
+    r#"SELECT filename FROM archive_images WHERE archive_id = $1 AND page_number = $2"#,
+    id,
     page
   )
   .fetch_optional(pool)
   .await?;
 
-  let path = CONFIG.directories.links.join(archive_id.to_string());
-  let file = File::open(&path).await?;
+  let archive = sqlx::query!(r#"SELECT id, hash, path FROM archives WHERE id = $1"#, id)
+    .fetch_one(pool)
+    .await?;
+
+  let file = File::open(CONFIG.directories.links.join(archive.id.to_string())).await?;
   let reader = BufReader::new(file);
   let mut zip = ZipFileReader::with_tokio(reader).await?;
 
@@ -87,24 +197,19 @@ async fn encode_page(
     buf
   };
 
-  let opts = if is_cover {
-    ImageEncodeOpts::cover_from(CONFIG.thumbnails)
-  } else {
-    ImageEncodeOpts::thumb_from(CONFIG.thumbnails)
+  let opts = match image_type {
+    ImageType::Cover | ImageType::Resampled => ImageEncodeOpts::cover_from(CONFIG.thumbnails),
+    ImageType::Thumbnail => ImageEncodeOpts::thumb_from(CONFIG.thumbnails),
   };
 
   let encoded = crate::image::encode_image(&buf, opts).unwrap();
 
-  let path = CONFIG
-    .directories
-    .thumbs
-    .join(archive_id.to_string())
-    .join(format!(
-      "{}.{}.{}",
-      filename,
-      if is_cover { "c" } else { "t" },
-      opts.codec.extension()
-    ));
+  let path = CONFIG.directories.thumbs.join(&archive.hash).join(format!(
+    "{}.{}.{}",
+    filename,
+    image_type.name(),
+    opts.codec.extension()
+  ));
 
   fs::create_dir_all(path.parent().unwrap()).await?;
   fs::write(&path, &encoded).await?;
@@ -112,134 +217,72 @@ async fn encode_page(
   Ok(encoded)
 }
 
-async fn get_cover(
-  State(state): State<AppState>,
-  Path(hash): Path<String>,
+async fn load_image(
+  State(state): State<ImageState>,
+  Path((hash, page, image_type)): Path<(String, i16, ImageType)>,
 ) -> Result<Response, ApiError> {
   let archive = sqlx::query!(
-    "SELECT id, path, pages, thumbnail FROM archives WHERE hash = $1",
+    r#"SELECT id, path, pages FROM archives WHERE hash = $1"#,
     hash
   )
   .fetch_optional(&state.pool)
   .await?
   .ok_or(ApiError::NotFound)?;
 
-  let files = if let Ok(mut dir) =
-    fs::read_dir(CONFIG.directories.thumbs.join(archive.id.to_string())).await
-  {
-    let mut files = vec![];
+  let filename = utils::leading_zeros(page, archive.pages.unwrap_or_default());
 
-    while let Ok(Some(entry)) = dir.next_entry().await {
-      let filename = entry.file_name();
+  let format = CONFIG.thumbnails.format;
+  let image_path = CONFIG.directories.thumbs.join(&hash).join(format!(
+    "{filename}.{}.{}",
+    &image_type.name(),
+    format.extension()
+  ));
 
-      if filename.to_string().contains(&format!(
-        "{}.c.",
-        leading_zeros(archive.thumbnail, archive.pages.unwrap_or_default())
-      )) {
-        files.push(entry);
-      }
-    }
-
-    files
-  } else {
-    vec![]
-  };
-
-  let buf = if files.is_empty() {
-    warn!(
-      target = TARGET,
-      "Cover image file not found. Generating cover."
-    );
-    let filename = utils::leading_zeros(archive.thumbnail, archive.pages.unwrap_or_default());
-
-    encode_page(&state.pool, archive.id, archive.thumbnail, &filename, true).await?
-  } else {
-    let entry = files.first().unwrap();
-    let mut file = File::open(entry.path()).await?;
-    let mut buf = vec![];
-    file.read_to_end(&mut buf).await?;
+  let buf = if let Ok(buf) = fs::read(&image_path).await {
     buf
+  } else {
+    let mut in_progress = state.encoding_in_progress.lock().await;
+
+    let args = ImageEncodeArgs {
+      id: archive.id,
+      page,
+      filename: filename.clone(),
+      image_type,
+    };
+
+    if let Some(waiters) = in_progress.get_mut(&args.id()) {
+      let (responder_tx, responder_rx) = oneshot::channel();
+      waiters.push(responder_tx);
+      drop(in_progress);
+      responder_rx
+        .await?
+        .map_err(|_| ApiError::ImageEncodingError(filename, archive.id))?
+    } else {
+      let (responder_tx, responder_rx) = oneshot::channel();
+      in_progress.insert(args.id(), vec![responder_tx]);
+      drop(in_progress);
+      state.encoding_queue.send(args).unwrap();
+      responder_rx
+        .await?
+        .map_err(|_| ApiError::ImageEncodingError(filename, archive.id))?
+    }
   };
 
   let format = file_format::FileFormat::from_bytes(&buf);
-
   let body = Body::from(buf);
   let headers = [
     (header::CONTENT_TYPE, format.media_type()),
-    (
-      header::CACHE_CONTROL,
-      "public, max-age=259200, immutable",
-    ),
-  ];
-
-  Ok((headers, body).into_response())
-}
-
-async fn get_page_thumbnail(
-  State(state): State<AppState>,
-  Path((hash, page)): Path<(String, i16)>,
-) -> Result<Response, ApiError> {
-  let archive = sqlx::query!("SELECT id, path, pages FROM archives WHERE hash = $1", hash)
-    .fetch_optional(&state.pool)
-    .await?
-    .ok_or(ApiError::NotFound)?;
-
-  let files = if let Ok(mut dir) =
-    fs::read_dir(CONFIG.directories.thumbs.join(archive.id.to_string())).await
-  {
-    let mut files = vec![];
-
-    while let Ok(Some(entry)) = dir.next_entry().await {
-      let filename = entry.file_name();
-
-      if filename.to_string().contains(&format!(
-        "{}.t.",
-        leading_zeros(page, archive.pages.unwrap_or_default())
-      )) {
-        files.push(entry);
-      }
-    }
-
-    files
-  } else {
-    vec![]
-  };
-
-  let buf = if files.is_empty() {
-    warn!(
-      target = TARGET,
-      "Page thumbnail image file not found. Generating thumbnail."
-    );
-    let filename = utils::leading_zeros(page, archive.pages.unwrap_or_default());
-
-    encode_page(&state.pool, archive.id, page, &filename, false).await?
-  } else {
-    let entry = files.first().unwrap();
-    let mut file = File::open(entry.path()).await?;
-    let mut buf = vec![];
-    file.read_to_end(&mut buf).await?;
-    buf
-  };
-
-  let format = file_format::FileFormat::from_bytes(&buf);
-
-  let body = Body::from(buf);
-  let headers = [
-    (header::CONTENT_TYPE, format.media_type()),
-    (
-      header::CACHE_CONTROL,
-      "public, max-age=259200, immutable",
-    ),
+    (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
   ];
 
   Ok((headers, body).into_response())
 }
 
 async fn get_file(
-  State(state): State<AppState>,
+  State(state): State<ImageState>,
   Path((hash, filename)): Path<(String, String)>,
 ) -> Result<Response, ApiError> {
-  let archive_image = sqlx::query!(
+  let archive = sqlx::query!(
     r#"SELECT id, path, filename, page_number, width, height FROM archives
     INNER JOIN archive_images ON archive_id = id AND filename = $2
     WHERE hash = $1"#,
@@ -250,7 +293,7 @@ async fn get_file(
   .await?
   .ok_or(ApiError::NotFound)?;
 
-  let path = CONFIG.directories.links.join(archive_image.id.to_string());
+  let path = CONFIG.directories.links.join(archive.id.to_string());
   let file = File::open(&path).await?;
   let reader = BufReader::new(file);
   let mut zip = ZipFileReader::with_tokio(reader).await?;
@@ -262,7 +305,7 @@ async fn get_file(
     .enumerate()
     .map(|(i, entry)| (i, entry.filename().to_string()))
     .filter(|(_, filename)| utils::is_image(filename))
-    .find(|(_, _filename)| _filename.eq(&archive_image.filename))
+    .find(|(_, _filename)| _filename.eq(&archive.filename))
     .ok_or(ApiError::ImageNotFound)?;
 
   let mut reader = zip.reader_with_entry(file_index).await?;
@@ -271,7 +314,7 @@ async fn get_file(
 
   let format = file_format::FileFormat::from_bytes(&buf);
 
-  if archive_image.width.is_none() || archive_image.height.is_none() {
+  if archive.width.is_none() || archive.height.is_none() {
     let cursor = Cursor::new(&buf);
     if let Ok(img) = ::image::io::Reader::new(cursor)
       .with_guessed_format()?
@@ -282,15 +325,15 @@ async fn get_file(
       if let Err(err) = sqlx::query!(
         r#"UPDATE archive_images
         SET width = $3, height = $4 WHERE archive_id = $1 AND page_number = $2"#,
-        archive_image.id,
-        archive_image.page_number,
+        archive.id,
+        archive.page_number,
         w as i16,
         h as i16
       )
       .execute(&state.pool)
       .await
       {
-        warn!(target: "api::image::read", "Failed to calculate image dimensions for page {} of archive ID {}: {err}", archive_image.page_number, archive_image.id)
+        warn!(target: "api::image::read", "Failed to calculate image dimensions for page {} of archive ID {}: {err}", archive.page_number, archive.id)
       }
     }
   }
@@ -298,10 +341,7 @@ async fn get_file(
   let body = Body::from(buf);
   let headers = [
     (header::CONTENT_TYPE, format.media_type()),
-    (
-      header::CACHE_CONTROL,
-      "public, max-age=259200, immutable",
-    ),
+    (header::CACHE_CONTROL, "public, max-age=259200, immutable"),
   ];
 
   Ok((headers, body).into_response())

@@ -229,7 +229,7 @@
 							: undefined}
 						loading="eager"
 						alt={`'${archive.title}' cover`}
-						src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/cover`}
+						src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${archive.thumbnail}/c`}
 					/>
 				</a>
 			</div>

@@ -34,7 +34,7 @@
 						height={image.width && image.height && Math.round((320 / image.width) * image.height)}
 						loading="eager"
 						alt={`Page ${image.page_number}`}
-						src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.page_number}/thumb`}
+						src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${image.page_number}/t`}
 					/>
 					{#if !wideImages && isSpread(image)}
 						<span
