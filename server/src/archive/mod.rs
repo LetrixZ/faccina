@@ -190,19 +190,17 @@ pub async fn index(
     }
   }
 
-  if archive_data.images.is_none() {
-    archive_data.images = Some(
-      get_image_filenames(&mut file)?
-        .into_iter()
-        .enumerate()
-        .map(|(i, filename)| db::ArchiveImage {
-          filename,
-          page_number: (i + 1) as i16,
-          ..Default::default()
-        })
-        .collect(),
-    );
-  }
+  archive_data.images = Some(
+    get_image_filenames(&mut file)?
+      .into_iter()
+      .enumerate()
+      .map(|(i, filename)| db::ArchiveImage {
+        filename,
+        page_number: (i + 1) as i16,
+        ..Default::default()
+      })
+      .collect(),
+  );
 
   archive_data.pages = archive_data
     .images
