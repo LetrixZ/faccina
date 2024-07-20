@@ -6,6 +6,8 @@ use crate::{scraper, torrents, utils};
 use clap::{Args, Parser, Subcommand};
 use funty::Fundamental;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use inquire::Confirm;
+use itertools::Itertools;
 use sqlx::{PgPool, QueryBuilder};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -13,7 +15,7 @@ use tokio::time::sleep;
 use tracing::{debug, error, info};
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version, about)]
 #[command(propagate_version = true)]
 pub struct Cli {
   #[command(subcommand)]
@@ -22,20 +24,24 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-  #[command(about="Index archive(s) located in the given path(s). Defaults to configured content path.", long_about = None)]
+  #[command(
+    about = "Index archive(s) located in the given path(s). Defaults to configured content path."
+  )]
   Index(IndexArgs),
-  #[command(about = "Index archive(s) torrents for indexed archives", long_about = None)]
+  #[command(about = "Index archive(s) torrents for indexed archives")]
   IndexTorrent(IndexTorrentArsgs),
-  #[command(about="Generate thumbnails for indexed archives", long_about = None)]
+  #[command(about = "Generate thumbnails for indexed archives")]
   GenerateThumbnails(GenerateThumbnailArgs),
-  #[command(about="Calculate image dimensions. Useful to fix image ordering.", long_about = None)]
+  #[command(about = "Calculate image dimensions. Useful to fix image ordering.")]
   CalculateDimensions(CalculateDimensionsArgs),
-  #[command(about="Scrape metadata for archives.", long_about = None)]
+  #[command(about = "Scrape metadata for archives.")]
   Scrape(ScrapeArgs),
-  #[command(about="Show given archives from the search results.", long_about = None)]
+  #[command(about = "Show given archives from the search results.")]
   Publish(PublishArgs),
-  #[command(about="Hide given archives from the search results.", long_about = None)]
+  #[command(about = "Hide given archives from the search results.")]
   Unpublish(PublishArgs),
+  #[command(about = "Delete indexed archives if they no longer exist in the filesystem.")]
+  Prune,
 }
 
 #[derive(Args, Clone)]
@@ -487,6 +493,43 @@ pub async fn pusblish(args: PublishArgs, publish: bool) -> anyhow::Result<()> {
   let affected = qb.build().execute(&pool).await?;
 
   info!("{} archives updated", affected.rows_affected());
+
+  Ok(())
+}
+
+pub async fn prune() -> anyhow::Result<()> {
+  let pool = db::get_pool().await?;
+
+  info!("Getting list of archives to prune");
+
+  let archives = sqlx::query!("SELECT id, path FROM archives")
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .filter(|archive| !CONFIG.directories.links.join(&archive.path).exists())
+    .collect_vec();
+
+  if archives.is_empty() {
+    info!("No archives to prune");
+
+    return Ok(());
+  }
+
+  let answer = Confirm::new(&format!(
+    "Are you sure you want to prune {} archives?",
+    archives.len()
+  ))
+  .with_default(false)
+  .with_help_message("This action is not reversible")
+  .prompt()?;
+
+  if answer {
+    for archive in archives {
+      sqlx::query!("DELETE FROM archives WHERE id = $1", archive.id)
+        .execute(&pool)
+        .await?;
+    }
+  }
 
   Ok(())
 }

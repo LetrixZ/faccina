@@ -16,6 +16,7 @@ funty = "2.0.0"
 globwalk = "0.9.1"
 image = { version = "0.25.1", features = ["rayon"] }
 indicatif = "0.17.8"
+inquire = "0.7.5"
 itertools = "0.13.0"
 lava_torrent = "0.11.1"
 natord = "1.0.9"

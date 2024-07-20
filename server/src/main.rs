@@ -31,6 +31,7 @@ async fn run() -> anyhow::Result<()> {
         Commands::Scrape(args) => cmd::scrape(args.clone()).await?,
         Commands::Publish(args) => cmd::pusblish(args.clone(), true).await?,
         Commands::Unpublish(args) => cmd::pusblish(args.clone(), false).await?,
+        Commands::Prune => cmd::prune().await?,
       }
     }
     None => api::start_server().await?,
