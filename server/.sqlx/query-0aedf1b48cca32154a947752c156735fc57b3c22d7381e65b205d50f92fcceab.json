@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') circles FROM circles",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "circles",
+        "type_info": "Json"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0aedf1b48cca32154a947752c156735fc57b3c22d7381e65b205d50f92fcceab"
+}

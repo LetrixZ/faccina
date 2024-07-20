@@ -587,8 +587,8 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str, blacklist: &[St
   }
 
   for taxonomy in blacklist {
-    let splits = &taxonomy.split(":").collect::<Vec<&str>>();
-    let namespace = splits.get(0);
+    let splits = &taxonomy.split(':').collect::<Vec<&str>>();
+    let namespace = splits.first();
     let taxonomy_id = splits.get(1).and_then(|s| s.parse::<i64>().ok());
 
     if let (Some(namespace), Some(id)) = (namespace, taxonomy_id) {

@@ -5,7 +5,7 @@ use super::{
 use crate::db;
 use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 use tokio::sync::oneshot;
 
@@ -210,7 +210,7 @@ pub async fn taxonomy(State(state): State<AppState>) -> Result<ApiJson<TaxonomyT
 
   let events = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') events FROM events")
     .fetch_one(&state.pool)
-    .await?;  
+    .await?;
 
   let publishers = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') publishers FROM publishers")
     .fetch_one(&state.pool)
