@@ -80,13 +80,8 @@
 </script>
 
 <div class="group h-auto w-auto space-y-2">
-	<a href={`/g/${archive.id}${$page.url.search}`} tabindex="-1" class="relative">
-		<div
-			class="absolute bottom-1 end-1 w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70"
-		>
-			{archive.pages}P
-		</div>
-		<div class="overflow-clip rounded-md shadow">
+	<a href={`/g/${archive.id}${$page.url.search}`} tabindex="-1">
+		<div class="overflow-clip rounded-md shadow relative">
 			<img
 				class="bg-neutral-300 dark:bg-neutral-600"
 				{width}
@@ -95,6 +90,11 @@
 				alt={`'${archive.title}' cover`}
 				src={`${env.PUBLIC_CDN_URL}/image/${archive.hash}/${archive.thumbnail}/c`}
 			/>
+			<div
+				class="absolute bottom-1 end-1 w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70"
+			>
+				{archive.pages}P
+			</div>
 		</div>
 	</a>
 
