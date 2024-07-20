@@ -4,6 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { cn } from '$lib/utils';
 	import IonMdHome from '~icons/ion/md-home';
+	import MdiSettings from '~icons/mdi/settings';
 	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
 
 	$: query = $page.url.searchParams.get('q') ?? '';
@@ -52,6 +53,15 @@
 			</Button>
 		</form>
 	</div>
+
+	<Button
+		href="/preferences"
+		title="Preferences"
+		variant="ghost"
+		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+	>
+		<MdiSettings class="size-6" />
+	</Button>
 </div>
 
 <div class={cn('pt-12')}>

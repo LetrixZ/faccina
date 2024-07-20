@@ -1,6 +1,5 @@
 use std::fs::OpenOptions;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
 use crate::config::CONFIG;
 
 pub fn server_logging() {

@@ -5,14 +5,17 @@ use super::{
 use crate::db;
 use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 use tokio::sync::oneshot;
 
+#[derive(Debug)]
 pub struct SearchQuery {
   pub value: String,
   pub page: usize,
   pub sort: Sorting,
   pub order: Ordering,
+  pub blacklist: Vec<String>,
 }
 
 impl Display for Ordering {
@@ -24,6 +27,7 @@ impl Display for Ordering {
   }
 }
 
+#[derive(Debug)]
 pub enum Sorting {
   Relevance,
   ReleasedAt,
@@ -56,6 +60,7 @@ impl FromStr for Sorting {
   }
 }
 
+#[derive(Debug)]
 pub enum Ordering {
   Asc,
   Desc,
@@ -109,6 +114,10 @@ pub async fn library(
         Ordering::default()
       }
     },
+    blacklist: params
+      .get("blacklist")
+      .map(|blacklist| blacklist.split('_').map(|s| s.trim().to_owned()).collect())
+      .unwrap_or_default(),
   };
 
   let (archives, total) = db::search(&search_query, &state.pool).await?;
@@ -175,4 +184,53 @@ pub async fn archive_data(
   }
 
   Ok(ApiJson(archive.into()))
+}
+
+#[derive(Serialize, Debug)]
+pub struct TaxonomyTypes {
+  artists: Vec<db::TaxonomyId>,
+  circles: Vec<db::TaxonomyId>,
+  magazines: Vec<db::TaxonomyId>,
+  events: Vec<db::TaxonomyId>,
+  publishers: Vec<db::TaxonomyId>,
+  parodies: Vec<db::TaxonomyId>,
+  tags: Vec<db::TaxonomyId>,
+}
+
+pub async fn taxonomy(State(state): State<AppState>) -> Result<ApiJson<TaxonomyTypes>, ApiError> {
+  let artists = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') artists FROM artists")
+    .fetch_one(&state.pool)
+    .await?;
+
+  let circles = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') circles FROM circles")
+    .fetch_one(&state.pool)
+    .await?;
+
+  let magazines = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') magazines FROM magazines")    .fetch_one(&state.pool)   .await?;
+
+  let events = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') events FROM events")
+    .fetch_one(&state.pool)
+    .await?;  
+
+  let publishers = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') publishers FROM publishers")
+    .fetch_one(&state.pool)
+    .await?;
+
+  let parodies = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') parodies FROM parodies")
+    .fetch_one(&state.pool)
+    .await?;
+
+  let tags = sqlx::query!("SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name, 'slug', slug) ORDER BY name), '[]') tags FROM tags")
+    .fetch_one(&state.pool)
+    .await?;
+
+  Ok(ApiJson(TaxonomyTypes {
+    artists: serde_json::from_value(artists.artists.unwrap()).unwrap_or_default(),
+    circles: serde_json::from_value(circles.circles.unwrap()).unwrap_or_default(),
+    magazines: serde_json::from_value(magazines.magazines.unwrap()).unwrap_or_default(),
+    events: serde_json::from_value(events.events.unwrap()).unwrap_or_default(),
+    publishers: serde_json::from_value(publishers.publishers.unwrap()).unwrap_or_default(),
+    parodies: serde_json::from_value(parodies.parodies.unwrap()).unwrap_or_default(),
+    tags: serde_json::from_value(tags.tags.unwrap()).unwrap_or_default(),
+  }))
 }

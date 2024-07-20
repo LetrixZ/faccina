@@ -54,6 +54,10 @@ export interface Taxonomy {
 	name: string;
 }
 
+export interface TaxonomyId extends Taxonomy {
+	id: number;
+}
+
 export interface Tag {
 	slug: string;
 	name: string;
@@ -114,4 +118,14 @@ export enum ImageSize {
 	Original = 'original',
 	FillWidth = 'fill-width',
 	FillHeight = 'fill-height',
+}
+
+export interface TaxonomyTypes {
+	artists: TaxonomyId[];
+	circles: TaxonomyId[];
+	magazines: TaxonomyId[];
+	events: TaxonomyId[];
+	publishers: TaxonomyId[];
+	parodies: TaxonomyId[];
+	tags: TaxonomyId[];
 }

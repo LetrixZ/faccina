@@ -154,6 +154,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     .route("/", get(|| async { VERSION.into_response() }))
     .route("/library", get(routes::library))
     .route("/archive/:id", get(routes::archive_data))
+    .route("/taxonomy", get(routes::taxonomy))
     .nest("/image", image::get_routes(pool.clone()))
     .layer(cors)
     .layer(

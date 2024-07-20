@@ -13,6 +13,7 @@ use chrono::NaiveDateTime;
 use funty::Fundamental;
 use indicatif::MultiProgress;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use slug::slugify;
 use sqlx::Transaction;
 use sqlx::{
@@ -106,6 +107,13 @@ pub struct ArchiveImage {
 
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct Taxonomy {
+  pub slug: String,
+  pub name: String,
+}
+
+#[derive(sqlx::FromRow, Clone, Debug, Deserialize, Serialize)]
+pub struct TaxonomyId {
+  pub id: i64,
   pub slug: String,
   pub name: String,
 }
@@ -474,7 +482,7 @@ fn parse_query(query: &str) -> String {
   parsed_query
 }
 
-fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
+fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str, blacklist: &[String]) {
   let re = regex::Regex::new(
     r#"(?i)-?(artist|circle|magazine|event|publisher|parody|tag|male|female|misc|other|title|pages):(".*?"|'.*?'|[^\s]+)"#,
   )
@@ -577,6 +585,36 @@ fn add_tag_matches(qb: &mut QueryBuilder<Postgres>, value: &str) {
 
     qb.push("))");
   }
+
+  for taxonomy in blacklist {
+    let splits = &taxonomy.split(":").collect::<Vec<&str>>();
+    let namespace = splits.get(0);
+    let taxonomy_id = splits.get(1).and_then(|s| s.parse::<i64>().ok());
+
+    if let (Some(namespace), Some(id)) = (namespace, taxonomy_id) {
+      let tag_type = match namespace.to_string().as_str() {
+        "a" => TagType::Artist,
+        "c" => TagType::Circle,
+        "m" => TagType::Magazine,
+        "e" => TagType::Event,
+        "ps" => TagType::Publisher,
+        "p" => TagType::Parody,
+        "t" => TagType::Tag,
+        _ => TagType::Tag,
+      };
+
+      qb.push(" AND (");
+      qb.push("  NOT EXISTS (");
+      qb.push(format!(
+        "    SELECT 1 FROM {} WHERE archive_id = archives.id AND {} = ",
+        tag_type.relation(),
+        tag_type.id()
+      ));
+      qb.push_bind(id);
+      qb.push("  )");
+      qb.push(")");
+    }
+  }
 }
 
 fn clean_value(query: &str) -> String {
@@ -623,7 +661,9 @@ pub async fn search(
     .push(")");
   }
 
-  add_tag_matches(&mut qb, &query.value);
+  add_tag_matches(&mut qb, &query.value, &query.blacklist);
+
+  println!("{}", qb.sql());
 
   let count: i64 = qb.build_query_scalar().fetch_one(pool).await?;
 
@@ -645,7 +685,7 @@ pub async fn search(
     .push(")");
   }
 
-  add_tag_matches(&mut qb, &query.value);
+  add_tag_matches(&mut qb, &query.value, &query.blacklist);
 
   qb.push(" GROUP BY archives.id, fts.archive_id");
 
