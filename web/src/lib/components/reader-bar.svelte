@@ -28,7 +28,7 @@
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { ImageSize } from '../models';
+	import { ImageSize, TouchLayout } from '../models';
 
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
 	$: total = $currentArchive ? $currentArchive.images.length : 0;
@@ -44,6 +44,10 @@
 
 	const onModeChange = (mode: string | undefined) => {
 		$prefs.imageSize = (mode ?? ImageSize.Original) as ImageSize;
+	};
+
+	const onLayoutChange = (mode: string | undefined) => {
+		$prefs.touchLayout = (mode ?? TouchLayout.LeftToRight) as TouchLayout;
 	};
 
 	$: {
@@ -213,6 +217,18 @@
 		</RadioGroup.Root>
 
 		<h3 class="text-lg font-medium">Touch layout</h3>
+
+		<ToggleGroup.Root
+			id="fit-mode"
+			variant="outline"
+			type="single"
+			value={$prefs.touchLayout}
+			onValueChange={onLayoutChange}
+			class="flex flex-wrap"
+		>
+			<ToggleGroup.Item value={TouchLayout.LeftToRight}>Left to Right</ToggleGroup.Item>
+			<ToggleGroup.Item value={TouchLayout.RightToLeft}>Right to Left</ToggleGroup.Item>
+		</ToggleGroup.Root>
 
 		<div class="flex items-center">
 			<Label for="preview-layout" class="w-full">Preview touch layout</Label>

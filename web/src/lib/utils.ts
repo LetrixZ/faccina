@@ -6,7 +6,14 @@ import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-import { ImageSize, type Archive, type Image, type Tag, type Taxonomy } from './models';
+import {
+	ImageSize,
+	TouchLayout,
+	type Archive,
+	type Image,
+	type Tag,
+	type Taxonomy,
+} from './models';
 
 dayjs.extend(localizedFormat);
 
@@ -217,6 +224,7 @@ export function getMetadata(archive: Archive) {
 
 export const preferencesSchema = z.object({
 	imageSize: z.nativeEnum(ImageSize).catch(ImageSize.Original),
+	touchLayout: z.nativeEnum(TouchLayout).catch(TouchLayout.LeftToRight),
 	minWidth: z.number().optional(),
 	maxWidth: z.number().optional().default(1280),
 	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
@@ -224,6 +232,7 @@ export const preferencesSchema = z.object({
 
 export interface ReaderPreferences {
 	imageSize: ImageSize;
+	touchLayout: TouchLayout;
 	minWidth: number | undefined;
 	maxWidth: number | undefined;
 	barPlacement: 'top' | 'bottom';

@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { DoorClosed } from 'lucide-svelte';
-	import { onMount } from 'svelte';
-	import Input from '~/lib/components/ui/input/input.svelte';
-	import { cn } from '~/lib/utils';
 	import cookie from 'cookie';
-	import { Label } from '~/lib/components/ui/label/index.js';
+	import { onMount } from 'svelte';
 	import { Checkbox } from '~/lib/components/ui/checkbox/index.js';
+	import Input from '~/lib/components/ui/input/input.svelte';
+	import { Label } from '~/lib/components/ui/label/index.js';
+	import { cn } from '~/lib/utils';
 
 	export let data;
 

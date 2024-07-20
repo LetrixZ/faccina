@@ -3,20 +3,20 @@
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import type { Archive } from '$lib/models';
-	import { ImageSize, type Image } from '$lib/models';
+	import { ImageSize, TouchLayout, type Image } from '$lib/models';
 	import {
 		currentArchive,
 		nextPage,
 		preferencesOpen,
 		prefs,
-		previewLayout,
 		prevPage,
 		readerPage,
-		showBar,
 	} from '$lib/reader-store';
-	import { cn, type ReaderPreferences } from '$lib/utils';
+	import { type ReaderPreferences } from '$lib/utils';
 	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
+	import LeftToRight from './touch-layouts/left-to-right.svelte';
+	import RightToLeft from './touch-layouts/right-to-left.svelte';
 
 	export let archive: Archive;
 
@@ -40,9 +40,6 @@
 		$prevPage = currentPage > 1 ? currentPage - 1 : undefined;
 		$nextPage = currentPage < archive.pages ? currentPage + 1 : undefined;
 	}
-
-	$: prevPageUrl = $prevPage ? `${$prevPage}${$page.url.search}` : undefined;
-	$: nextPageUrl = $nextPage ? `${$nextPage}${$page.url.search}` : undefined;
 
 	$: $currentArchive = archive;
 
@@ -181,43 +178,12 @@
 <div class="flex h-dvh w-full flex-col overflow-clip">
 	<div bind:this={container} class="relative my-auto flex h-full overflow-auto">
 		<div class="absolute inset-0 flex min-h-full min-w-full max-w-full" style={containerStyle}>
-			<a
-				class={cn('relative h-full flex-grow outline-none', $previewLayout && 'bg-blue-500/50 ')}
-				href={prevPageUrl}
-				draggable="false"
-				on:click|preventDefault={() => changePage($prevPage)}
-			>
-				<span class="sr-only"> Previous page </span>
-			</a>
-			<button
-				class="h-full min-w-28 max-w-56 basis-[20%] outline-none"
-				on:click={() => ($showBar = !$showBar)}
-			/>
-			<a
-				class={cn('relative h-full flex-grow outline-none', $previewLayout && 'bg-red-500/50')}
-				href={nextPageUrl}
-				draggable="false"
-				on:click|preventDefault={() => changePage($nextPage)}
-			>
-				<span class="sr-only"> Next page </span>
-			</a>
+			{#if $prefs.touchLayout === TouchLayout.LeftToRight}
+				<LeftToRight {changePage} />
+			{:else if $prefs.touchLayout === TouchLayout.RightToLeft}
+				<RightToLeft {changePage} />
+			{/if}
 		</div>
-
-		{#if $previewLayout}
-			<div class="pointer-events-none fixed inset-0 flex h-full min-w-full max-w-full opacity-100">
-				<div class="relative flex h-full flex-grow items-center justify-center">
-					<span class="stroke rounded-md text-2xl font-semibold uppercase tracking-wider">
-						Prev
-					</span>
-				</div>
-				<div class="h-full min-w-28 max-w-56 basis-[20%]"></div>
-				<div class="relative flex h-full flex-grow items-center justify-center">
-					<span class="stroke rounded-md text-2xl font-semibold uppercase tracking-wider">
-						Next
-					</span>
-				</div>
-			</div>
-		{/if}
 
 		<img
 			bind:this={imageEl}

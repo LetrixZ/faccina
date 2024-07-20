@@ -81,7 +81,7 @@
 
 <div class="group h-auto w-auto space-y-2">
 	<a href={`/g/${archive.id}${$page.url.search}`} tabindex="-1">
-		<div class="overflow-clip rounded-md shadow relative">
+		<div class="relative overflow-clip rounded-md shadow">
 			<img
 				class="bg-neutral-300 dark:bg-neutral-600"
 				{width}

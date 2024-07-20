@@ -120,6 +120,11 @@ export enum ImageSize {
 	FillHeight = 'fill-height',
 }
 
+export enum TouchLayout {
+	LeftToRight = 'ltr',
+	RightToLeft = 'rtl',
+}
+
 export interface TaxonomyTypes {
 	artists: TaxonomyId[];
 	circles: TaxonomyId[];

@@ -4,6 +4,7 @@
 	import cookie from 'cookie';
 	import { onMount } from 'svelte';
 	import '~/app.pcss';
+	import { TouchLayout } from '~/lib/models';
 	import { prefs } from '~/lib/reader-store';
 	import type { ReaderPreferences } from '~/lib/utils';
 
@@ -15,6 +16,10 @@
 		if (Object.entries(cookiePerfs).length) {
 			try {
 				$prefs = JSON.parse(cookiePerfs.reader) as ReaderPreferences;
+
+				if ($prefs.touchLayout === undefined) {
+					$prefs.touchLayout = TouchLayout.LeftToRight;
+				}
 			} finally {
 				isMounted = true;
 			}
