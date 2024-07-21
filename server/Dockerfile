@@ -1,8 +1,8 @@
 FROM rust:1.78 AS builder
 WORKDIR /app
-COPY . .
-COPY .sqlx /app/.sqlx
-COPY migrations /app/migrations
+COPY ./server .
+COPY ./server/.sqlx /app/.sqlx
+COPY ./server/migrations /app/migrations
 ENV SQLX_OFFLINE=true
 RUN \
   --mount=type=cache,target=/app/target/ \
@@ -13,6 +13,7 @@ RUN \
 FROM debian:bookworm-slim AS final
 COPY --from=builder /server /usr/local/bin
 COPY --from=builder /app/config.docker.toml /opt/server/config.toml
+COPY ./.docker/cmd/* /usr/bin/
 WORKDIR /opt/server
 EXPOSE 3000
 ENTRYPOINT [ "server" ]
