@@ -24,7 +24,7 @@
 		<Separator />
 
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each new Array(12) as _}
+			{#each new Array(8) as _}
 				<div class="space-y-2">
 					<div class="aspect-[90/127] w-full">
 						<Skeleton class="h-full w-full" />

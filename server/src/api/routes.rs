@@ -16,6 +16,7 @@ pub struct SearchQuery {
   pub sort: Sorting,
   pub order: Ordering,
   pub blacklist: Vec<String>,
+  pub seed: Option<String>
 }
 
 impl Display for Ordering {
@@ -27,13 +28,14 @@ impl Display for Ordering {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Sorting {
   Relevance,
   ReleasedAt,
   CreatedAt,
   Title,
   Pages,
+  Random,
 }
 
 impl Default for Sorting {
@@ -55,6 +57,7 @@ impl FromStr for Sorting {
       "created_at" => Ok(Self::CreatedAt),
       "title" => Ok(Self::Title),
       "pages" => Ok(Self::Pages),
+      "random" => Ok(Self::Random),
       _ => Err(anyhow!("Invalid sort value '{s}'")),
     }
   }
@@ -118,6 +121,7 @@ pub async fn library(
       .get("blacklist")
       .map(|blacklist| blacklist.split('_').map(|s| s.trim().to_owned()).collect())
       .unwrap_or_default(),
+    seed: params.get("seed").map(|s| s.to_owned()),
   };
 
   let (archives, total) = db::search(&search_query, &state.pool).await?;

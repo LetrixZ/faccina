@@ -100,6 +100,7 @@ export enum Sorting {
 	CREATED_AT = 'created_at',
 	TITLE = 'title',
 	PAGES = 'pages',
+	RANDOM = 'random',
 }
 
 export enum Ordering {

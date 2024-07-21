@@ -7,6 +7,7 @@
 	import { Ordering, Sorting } from '$lib/models.js';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronUp from 'lucide-svelte/icons/chevron-up';
+	import { randomString } from '../utils';
 
 	const sortOptions = [
 		{
@@ -29,6 +30,10 @@
 			label: 'Pages',
 			value: Sorting.PAGES,
 		},
+		{
+			label: 'Random',
+			value: Sorting.RANDOM,
+		},
 	];
 
 	$: sort = ($page.url.searchParams.get('sort') as Sorting) || Sorting.RELEASED_AT;
@@ -46,6 +51,15 @@
 			onSelectedChange={(option) => {
 				const query = new URLSearchParams($page.url.searchParams.toString());
 				query.set('sort', option?.value ?? Sorting.RELEASED_AT);
+
+				if (option?.value === Sorting.RANDOM) {
+					if (!query.get('seed')) {
+						query.set('seed', randomString());
+					}
+				} else {
+					query.delete('seed');
+				}
+
 				goto(`?${query.toString()}`);
 			}}
 		>

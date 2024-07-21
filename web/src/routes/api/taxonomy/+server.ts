@@ -1,8 +1,10 @@
 import { env } from '$env/dynamic/private';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { handleFetchError } from '~/lib/utils';
 
 export const GET: RequestHandler = async ({ fetch }) => {
-	const version = await fetch(`${env.SERVER_URL}/taxonomy`).then((res) => res.text());
+	const taxnomy = await fetch(`${env.SERVER_URL}/taxonomy`).then(handleFetchError);
 
-	return new Response(version, { status: 200 });
+	return json(taxnomy);
 };

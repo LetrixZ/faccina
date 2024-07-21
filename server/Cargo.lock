@@ -2445,6 +2445,7 @@ dependencies = [
  "lava_torrent",
  "natord",
  "once_cell",
+ "rand",
  "rayon",
  "regex",
  "ring",

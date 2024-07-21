@@ -1,4 +1,5 @@
 use crate::api;
+use crate::api::routes::Sorting;
 use crate::config::CONFIG;
 use crate::utils::tag_alias;
 use crate::{
@@ -10,10 +11,13 @@ use crate::{
 };
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
-use funty::Fundamental;
 use indicatif::MultiProgress;
 use itertools::Itertools;
+use rand::prelude::*;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
+use sha2::Sha256;
 use slug::slugify;
 use sqlx::Transaction;
 use sqlx::{
@@ -22,7 +26,6 @@ use sqlx::{
   PgPool, Postgres, QueryBuilder, Row,
 };
 use std::collections::HashSet;
-use std::ops::Mul;
 use tracing::warn;
 
 #[derive(PartialEq, Eq, Debug)]
@@ -650,7 +653,7 @@ pub async fn search(
   let parsed = parse_query(clean);
 
   let mut qb = QueryBuilder::new(
-    r#"SELECT COUNT(*) FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#,
+    r#"SELECT id FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#,
   );
 
   if !parsed.is_empty() {
@@ -663,9 +666,45 @@ pub async fn search(
 
   add_tag_matches(&mut qb, &query.value, &query.blacklist);
 
-  println!("{}", qb.sql());
+  match query.sort {
+    Sorting::Relevance => {
+      if !parsed.is_empty() {
+        qb.push(format!(
+          r#" ORDER BY rank {order}, created_at {order}"#,
+          order = query.order.to_string()
+        ));
+      } else {
+        qb.push(format!(r#" ORDER BY created_at {}"#, query.order));
+      }
+    }
+    Sorting::ReleasedAt => {
+      qb.push(format!(r#" ORDER BY released_at {}"#, query.order));
+    }
+    Sorting::CreatedAt => {
+      qb.push(format!(r#" ORDER BY created_at {}"#, query.order));
+    }
+    Sorting::Title => {
+      qb.push(format!(r#" ORDER BY archives.title {}"#, query.order));
+    }
+    Sorting::Pages => {
+      qb.push(format!(
+        r#" ORDER BY pages {order}, created_at {order}"#,
+        order = query.order
+      ));
+    }
+    _ => (),
+  };
 
-  let count: i64 = qb.build_query_scalar().fetch_one(pool).await?;
+  let mut all_ids: Vec<i64> = qb.build_query_scalar().fetch_all(pool).await?;
+
+  if query.sort == Sorting::Random {
+    let mut hasher = Sha256::new();
+    hasher.update(query.seed.clone().unwrap_or("".to_owned()));
+    let result = hasher.finalize();
+    let seed: [u8; 32] = result.into();
+    let mut rng = StdRng::from_seed(seed);
+    all_ids.shuffle(&mut rng);
+  }
 
   let mut qb = QueryBuilder::new(r#"SELECT archives.id"#);
 
@@ -675,7 +714,9 @@ pub async fn search(
       .push(")) rank");
   }
 
-  qb.push(r#" FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#);
+  qb.push(", ARRAY_POSITION(")
+    .push_bind(&all_ids)
+    .push(", archives.id) AS ord FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL");
 
   if !parsed.is_empty() {
     qb.push(
@@ -687,40 +728,17 @@ pub async fn search(
 
   add_tag_matches(&mut qb, &query.value, &query.blacklist);
 
-  qb.push(" GROUP BY archives.id, fts.archive_id");
+  let paginated_ids = all_ids
+    .iter()
+    .skip((query.page - 1) * 24)
+    .take(24).copied()
+    .collect_vec();
 
-  match query.sort {
-    crate::api::routes::Sorting::Relevance => {
-      if !parsed.is_empty() {
-        qb.push(format!(
-          r#" ORDER BY rank {order}, created_at {order}"#,
-          order = query.order.to_string()
-        ));
-      } else {
-        qb.push(format!(r#" ORDER BY created_at {}"#, query.order));
-      }
-    }
-    crate::api::routes::Sorting::ReleasedAt => {
-      qb.push(format!(r#" ORDER BY released_at {}"#, query.order));
-    }
-    crate::api::routes::Sorting::CreatedAt => {
-      qb.push(format!(r#" ORDER BY created_at {}"#, query.order));
-    }
-    crate::api::routes::Sorting::Title => {
-      qb.push(format!(r#" ORDER BY archives.title {}"#, query.order));
-    }
-    crate::api::routes::Sorting::Pages => {
-      qb.push(format!(
-        r#" ORDER BY pages {order}, created_at {order}"#,
-        order = query.order
-      ));
-    }
-  };
+  qb.push(" AND archives.id = ANY(")
+    .push_bind(paginated_ids)
+    .push(")");
 
-  qb.push(" LIMIT ")
-    .push_bind(24)
-    .push(" OFFSET ")
-    .push_bind(24.mul(query.page - 1).as_i32());
+  qb.push(" GROUP BY archives.id, fts.archive_id ORDER BY ord");
 
   let rows = qb.build().fetch_all(pool).await?;
 
@@ -797,7 +815,7 @@ pub async fn search(
     })
     .collect();
 
-  Ok((archives, count))
+  Ok((archives, all_ids.len().try_into().unwrap()))
 }
 
 async fn copy_archive(
