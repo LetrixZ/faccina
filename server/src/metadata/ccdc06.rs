@@ -25,7 +25,7 @@ pub struct Metadata {
   #[serde(rename = "Tags", default)]
   pub tags: Option<Vec<String>>,
   #[serde(rename = "URL", default)]
-  pub urls: Option<HashMap<String, String>>,
+  pub urls: Option<MultiTextField>,
   #[serde(rename = "Id", default)]
   pub source_ids: Option<HashMap<String, MultiIdField>>,
   #[serde(rename = "Released", default)]
@@ -56,11 +56,27 @@ pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyh
   let mut sources: Vec<db::ArchiveSource> = vec![];
 
   if let Some(urls) = info.urls {
-    for (name, url) in urls {
-      sources.push(db::ArchiveSource {
-        name: utils::parse_source_name(&name),
+    match urls {
+      MultiTextField::Single(url) => sources.push(db::ArchiveSource {
+        name: utils::parse_source_name(&url),
         url: Some(url),
-      })
+      }),
+      MultiTextField::Many(urls) => {
+        for url in urls {
+          sources.push(db::ArchiveSource {
+            name: utils::parse_source_name(&url),
+            url: Some(url),
+          })
+        }
+      }
+      MultiTextField::Map(urls) => {
+        for (_, url) in urls {
+          sources.push(db::ArchiveSource {
+            name: utils::parse_source_name(&url),
+            url: Some(url),
+          })
+        }
+      }
     }
   }
 
