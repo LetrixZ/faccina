@@ -69,7 +69,15 @@ pub fn add_metadata(info: Metadata, archive: &mut db::UpsertArchiveData) -> anyh
           })
         }
       }
-      MultiTextField::Map(urls) => {
+      MultiTextField::MapUsize(urls) => {
+        for (_, url) in urls {
+          sources.push(db::ArchiveSource {
+            name: utils::parse_source_name(&url),
+            url: Some(url),
+          })
+        }
+      }
+      MultiTextField::MapString(urls) => {
         for (_, url) in urls {
           sources.push(db::ArchiveSource {
             name: utils::parse_source_name(&url),
@@ -110,6 +118,7 @@ fn parse_source_id(name: String, id: MultiIdField) -> Option<String> {
   match name.to_lowercase().as_str() {
     "anchira" => Some(format!("https://anchira.to/g/{id}")),
     "hentainexus" => Some(format!("https://hentainexus.com/view/{id}")),
+    "koharu" => Some(format!("https://koharu.to/{id}")),
     _ => None,
   }
 }

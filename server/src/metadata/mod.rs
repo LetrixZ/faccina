@@ -31,7 +31,8 @@ use zip::ZipArchive;
 enum MultiTextField {
   Single(String),
   Many(Vec<String>),
-  Map(HashMap<usize, String>),
+  MapUsize(HashMap<usize, String>),
+  MapString(HashMap<String, String>),
 }
 
 impl MultiTextField {
@@ -39,7 +40,8 @@ impl MultiTextField {
     match self {
       MultiTextField::Single(value) => value.split(',').map(|s| s.trim().to_string()).collect(),
       MultiTextField::Many(value) => value.to_vec(),
-      MultiTextField::Map(value) => value.values().map(|s| s.to_string()).collect(),
+      MultiTextField::MapUsize(value) => value.values().map(|s| s.to_string()).collect(),
+      MultiTextField::MapString(value) => value.values().map(|s| s.to_string()).collect(),
     }
   }
 }
