@@ -299,6 +299,8 @@ async fn calculate_dimensions(id: i64, pool: &PgPool) -> Result<Vec<db::ArchiveI
           .iter()
           .enumerate()
           .map(|(i, entry)| (i, entry.filename().to_string()))
+          .filter(|(_, filename)| utils::is_image(filename))
+          .sorted_by(|a, b| natord::compare(&a.1, &b.1))
           .find(|(_, filename)| *filename == image.filename)
         {
           let mut reader = zip.reader_with_entry(index).await?;
@@ -320,7 +322,7 @@ async fn calculate_dimensions(id: i64, pool: &PgPool) -> Result<Vec<db::ArchiveI
                 r#"INSERT INTO archive_images (filename, page_number, width, height, archive_id)
                 VALUES ($1, $2, $3, $4, $5) ON CONFLICT (archive_id, page_number) DO UPDATE SET width = $3, height = $4"#,
                 filename,
-                (index + 1) as i16,
+                image.page_number,
                 w as i16,
                 h as i16,
                 id,
@@ -331,6 +333,7 @@ async fn calculate_dimensions(id: i64, pool: &PgPool) -> Result<Vec<db::ArchiveI
         }
       }
     }
+
     Ok(images)
   }
 }
