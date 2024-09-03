@@ -652,9 +652,15 @@ pub async fn search(
   let clean = &utils::trim_whitespace(&clean_value(&value));
   let parsed = parse_query(clean);
 
-  let mut qb = QueryBuilder::new(
-    r#"SELECT id FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#,
-  );
+  let mut qb = QueryBuilder::new(r#"SELECT id "#);
+
+  if !parsed.is_empty() {
+    qb.push(", ts_rank((title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv), to_tsquery('english', ")
+      .push_bind(&parsed)
+      .push(")) rank");
+  }
+
+  qb.push(r#" FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL"#);
 
   if !parsed.is_empty() {
     qb.push(
@@ -708,12 +714,6 @@ pub async fn search(
 
   let mut qb = QueryBuilder::new(r#"SELECT archives.id"#);
 
-  if !parsed.is_empty() {
-    qb.push(", ts_rank((title_tsv || artists_tsv || circles_tsv || magazines_tsv || parodies_tsv || tags_tsv), to_tsquery('english', ")
-      .push_bind(&parsed)
-      .push(")) rank");
-  }
-
   qb.push(", ARRAY_POSITION(")
     .push_bind(&all_ids)
     .push(", archives.id) AS ord FROM archives INNER JOIN archive_fts fts ON fts.archive_id = archives.id WHERE deleted_at IS NULL");
@@ -731,7 +731,8 @@ pub async fn search(
   let paginated_ids = all_ids
     .iter()
     .skip((query.page - 1) * 24)
-    .take(24).copied()
+    .take(24)
+    .copied()
     .collect_vec();
 
   qb.push(" AND archives.id = ANY(")
