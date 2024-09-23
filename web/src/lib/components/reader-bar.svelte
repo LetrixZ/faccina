@@ -148,7 +148,7 @@
 						name="page"
 						on:change={(ev) => ($readerPage = parseInt(ev.currentTarget.value))}
 					>
-						{#each new Array(total).map((_, i) => i + 1) as pageNumber}
+						{#each new Array(total).fill(0).map((_, i) => i + 1) as pageNumber}
 							<option value={pageNumber} selected={currentPage === pageNumber}>
 								{pageNumber}
 							</option>
