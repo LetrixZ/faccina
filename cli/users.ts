@@ -1,18 +1,33 @@
 import chalk from 'chalk';
 import { randomBytes } from 'crypto';
+import { generateIdFromEntropySize } from 'lucia';
 
 import config from '../shared/config';
 import db from '../shared/db';
 
 export const loginLink = async (username: string) => {
-	const user = await db
+	let user = await db
 		.selectFrom('users')
 		.select('id')
 		.where('username', '=', username)
 		.executeTakeFirst();
 
 	if (!user) {
-		throw new Error("The specified user doesn't exists");
+		if (config.site.adminUsers.includes(username)) {
+			console.info(chalk.cyan(`Created new user ${chalk.bold(username)}`));
+
+			user = await db
+				.insertInto('users')
+				.values({
+					id: generateIdFromEntropySize(10),
+					username,
+					password_hash: Bun.password.hashSync(randomBytes(24).toString('hex')),
+				})
+				.returning('id')
+				.executeTakeFirstOrThrow();
+		} else {
+			throw new Error("The specified user doesn't exists");
+		}
 	}
 
 	const code = randomBytes(16).toString('hex');
