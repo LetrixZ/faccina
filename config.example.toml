@@ -1,0 +1,13 @@
+[site]
+site_name = 'Faccina'
+enable_users = true
+admin_users = []
+url = "https://example.com"
+
+[directories]
+content = "/path/to/content"
+images = "/path/to/images"
+
+[database]
+vendor = 'sqlite'
+path = ':memory:'

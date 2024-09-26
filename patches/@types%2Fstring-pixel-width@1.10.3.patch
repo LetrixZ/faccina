@@ -1,0 +1,12 @@
+diff --git a/index.d.ts b/index.d.ts
+index d2484f352452dbca66e68db7e11bfc5127938e65..856e329b962cca398e8f8f6e8679f8dbe5e06cab 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -14,6 +14,7 @@ interface Settings {
+         | "georgia"
+         | "helvetica"
+         | "impact"
++        | "inter"
+         | "open sans"
+         | "quantify"
+         | "tahoma"
