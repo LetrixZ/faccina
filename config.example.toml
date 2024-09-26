@@ -10,4 +10,4 @@ images = "/path/to/images"
 
 [database]
 vendor = 'sqlite'
-path = ':memory:'
+path = '/path/to/db.sqlite'
