@@ -1,5 +1,6 @@
-import config from '~shared/config';
 import nodemailer, { type Transporter } from 'nodemailer';
+
+import config from './config';
 
 let _transporter: Transporter | undefined = undefined;
 

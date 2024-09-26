@@ -5,5 +5,5 @@
 </script>
 
 <div class="mx-auto max-w-sm pt-4 md:pt-8">
-	<RegisterForm data={data.form} />
+	<RegisterForm canRecover={data.site.canRecover} data={data.form} />
 </div>

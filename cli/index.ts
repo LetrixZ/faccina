@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 
 import { index, prune } from './archive';
-import { loginLink } from './users';
+import { accessRecovery, loginLink } from './users';
 
 const program = new Command();
 
@@ -46,5 +46,12 @@ program
 	.argument('<username>')
 	.description('Generate a one time login link for the specified user')
 	.action((username) => loginLink(username));
+
+program
+	.command('recovery')
+	.argument('<username>')
+	.option('-c --code', 'Return recovery code without sending an email')
+	.description('Send access recovery code to the specified user if they have an email.')
+	.action((username, { code }: { code: boolean }) => accessRecovery(username, code));
 
 program.parse();

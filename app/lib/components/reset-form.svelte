@@ -11,36 +11,63 @@
 
 	import type { UserFormState } from '../models';
 
-	import { recoverSchema, type RecoverSchema } from '../schemas';
+	import { resetSchema, type ResetSchema } from '../schemas';
 	import { Button } from './ui/button';
 
-	export let data: SuperValidated<Infer<RecoverSchema>>;
+	export let data: SuperValidated<Infer<ResetSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
 	let form = superForm(data, {
-		validators: zodClient(recoverSchema),
+		validators: zodClient(resetSchema),
+		invalidateAll: false,
 		onResult: ({ result }) => {
 			dispatch('result', result);
 
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
 			} else if (result.type === 'success' || result.type === 'redirect') {
-				toast.info('An email with a recovery code will be sent if the user is found.');
+				toast.success('Password reset successful.');
 			}
 		},
 	});
 
-	const { form: formData, enhance } = form;
+	const { form: formData, enhance: enhance } = form;
 </script>
 
-<form action="/recover{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
+<form action="/reset{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
 	<div class="flex flex-col">
-		<Form.Field {form} name="username">
+		<Form.Field {form} name="password">
 			<Form.Control let:attrs>
-				<Form.Label>Username</Form.Label>
-				<Input {...attrs} bind:value={$formData.username} />
+				<Form.Label>New Password</Form.Label>
+				<Input
+					{...attrs}
+					autocomplete="new-password"
+					bind:value={$formData.password}
+					type="password"
+				/>
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+
+		<Form.Field {form} name="confirmPassword">
+			<Form.Control let:attrs>
+				<Form.Label>Confirm Password</Form.Label>
+				<Input
+					{...attrs}
+					autocomplete="new-password"
+					bind:value={$formData.confirmPassword}
+					type="password"
+				/>
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+
+		<Form.Field {form} name="code">
+			<Form.Control let:attrs>
+				<Form.Label>Recovery code</Form.Label>
+				<Input {...attrs} bind:value={$formData.code} />
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
@@ -60,7 +87,6 @@
 		>
 			Login
 		</Button>
-
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/register{$page.url.search}"
@@ -76,19 +102,19 @@
 		</Button>
 	</div>
 
-	<Form.Button class="w-full">Recover</Form.Button>
+	<Form.Button class="w-full">Reset Password</Form.Button>
 
 	<Button
 		class="mx-auto"
-		href="/reset{$page.url.search}"
+		href="/recover{$page.url.search}"
 		on:click={(ev) => {
 			if (changeState && typeof changeState == 'function') {
 				ev.preventDefault();
-				changeState('reset');
+				changeState('recover');
 			}
 		}}
 		variant="link"
 	>
-		I already have a recovery code
+		I don't have a recovery code
 	</Button>
 </form>

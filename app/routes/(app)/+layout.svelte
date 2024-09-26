@@ -22,6 +22,7 @@
 	import LoginForm from '~/lib/components/login-form.svelte';
 	import RecoverForm from '~/lib/components/recover-form.svelte';
 	import RegisterForm from '~/lib/components/register-form.svelte';
+	import ResetForm from '~/lib/components/reset-form.svelte';
 	import { query } from '~/lib/stores.js';
 
 	export let data;
@@ -351,6 +352,7 @@
 	<Dialog.Content class="max-w-[90%] md:max-w-md">
 		{#if userFormState === 'register'}
 			<RegisterForm
+				canRecover={data.site.canRecover}
 				changeState={(state) => (userFormState = state)}
 				data={data.registerForm}
 				on:result={({ detail }) => handleUserFormResult(detail)}
@@ -361,8 +363,15 @@
 				data={data.recoverForm}
 				on:result={({ detail }) => handleUserFormResult(detail)}
 			/>
-		{:else}
+		{:else if userFormState === 'reset'}
+			<ResetForm
+				changeState={(state) => (userFormState = state)}
+				data={data.resetForm}
+				on:result={({ detail }) => handleUserFormResult(detail)}
+			/>
+		{:else if userFormState === 'login'}
 			<LoginForm
+				canRecover={data.site.canRecover}
 				changeState={(state) => (userFormState = state)}
 				data={data.loginForm}
 				on:result={({ detail }) => handleUserFormResult(detail)}

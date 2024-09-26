@@ -142,4 +142,4 @@ export interface TaxonomyTypes {
 	tags: TaxonomyId[];
 }
 
-export type UserFormState = 'login' | 'register' | 'recover';
+export type UserFormState = 'login' | 'register' | 'recover' | 'reset';

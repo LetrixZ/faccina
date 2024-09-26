@@ -164,8 +164,8 @@ const mailerSchema = z.object({
 	host: z.string(),
 	port: z.number(),
 	secure: z.boolean(),
-	user: z.string(),
-	pass: z.string(),
+	user: z.string().optional(),
+	pass: z.string().optional(),
 	from: z.string(),
 });
 

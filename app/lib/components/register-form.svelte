@@ -16,6 +16,7 @@
 
 	export let data: SuperValidated<Infer<RegisterSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
+	export let canRecover: boolean;
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
@@ -96,19 +97,22 @@
 		>
 			Login
 		</Button>
-		<Button
-			class="h-fit p-0 text-sm"
-			href="/recover{$page.url.search}"
-			on:click={(ev) => {
-				if (changeState && typeof changeState == 'function') {
-					ev.preventDefault();
-					changeState('recover');
-				}
-			}}
-			variant="link"
-		>
-			Recover access
-		</Button>
+
+		{#if canRecover}
+			<Button
+				class="h-fit p-0 text-sm"
+				href="/recover{$page.url.search}"
+				on:click={(ev) => {
+					if (changeState && typeof changeState == 'function') {
+						ev.preventDefault();
+						changeState('recover');
+					}
+				}}
+				variant="link"
+			>
+				Recover access
+			</Button>
+		{/if}
 	</div>
 
 	<Form.Button class="w-full">Create Account</Form.Button>

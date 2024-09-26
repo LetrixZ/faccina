@@ -1,17 +1,15 @@
 import { recoverSchema } from '$lib/schemas';
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
-import chalk from 'chalk';
+import { recoveryCode, sendRecoveryEmail } from '~shared/users';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-
-import { transporter } from '~/lib/server/mailer';
 
 import type { Actions } from './$types';
 
 export const load = async () => {
-	if (!config.site.enableUsers) {
+	if (!config.site.enableUsers || !config.mailer) {
 		error(404, { message: 'Not Found' });
 	}
 
@@ -23,32 +21,17 @@ export const load = async () => {
 const recoverAccess = async (username: string) => {
 	const user = await db
 		.selectFrom('users')
-		.select(['id', 'username', 'email'])
+		.select(['id', 'email'])
 		.where('username', '=', username)
-		.where('email', 'is not', null)
 		.executeTakeFirst();
 
-	if (!user) {
+	if (!user || !user.email) {
 		return;
 	}
 
-	// TODO: Implement account recovery
+	const code = await recoveryCode(user.id);
 
-	console.info(
-		`[${new Date().toISOString()}] Recover access email - Sending access recovery email to user ${chalk.bold(user.username)} with email ${chalk.bold(user.email)}`
-	);
-
-	const response = await transporter().sendMail({
-		from: config.mailer!.from,
-		to: user.email!,
-		subject: `${config.site.siteName} | Account Recovery`,
-		html: '<b>Link to recover your password: <a href="https://google.com">https://google.com</></b>',
-	});
-
-	console.info(
-		`[${new Date().toISOString()}] Recover access email - ${chalk.bold(user.username)} (${chalk.bold(user.email)}) - Response`,
-		response
-	);
+	await sendRecoveryEmail(user.email, code, username);
 };
 
 export const actions: Actions = {
@@ -57,7 +40,14 @@ export const actions: Actions = {
 
 		if (!config.site.enableUsers) {
 			return fail(400, {
-				message: 'Users are disabled',
+				message: 'Users are disabled.',
+				form,
+			});
+		}
+
+		if (!config.mailer) {
+			return fail(400, {
+				message: 'Contact the administrator for a recovery code.',
 				form,
 			});
 		}
@@ -71,12 +61,6 @@ export const actions: Actions = {
 		const username = form.data.username;
 
 		recoverAccess(username);
-
-		const redirectTo = event.url.searchParams.get('to');
-
-		if (redirectTo) {
-			redirect(302, redirectTo);
-		}
 
 		return {
 			form,

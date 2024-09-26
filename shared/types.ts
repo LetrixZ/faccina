@@ -152,7 +152,7 @@ export interface UserCodes {
 	code: string;
 	consumed_at: Timestamp | null;
 	created_at: Generated<Timestamp>;
-	type: string;
+	type: 'login' | 'recovery';
 	user_id: string;
 }
 

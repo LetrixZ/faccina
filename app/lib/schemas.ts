@@ -42,6 +42,24 @@ export const recoverSchema = z.object({
 
 export type RecoverSchema = typeof recoverSchema;
 
+export const resetSchema = z
+	.object({
+		code: z.string().length(32, 'Invalid recovery code'),
+		password: passwordSchema,
+		confirmPassword: passwordSchema,
+	})
+	.superRefine(({ confirmPassword, password }, ctx) => {
+		if (confirmPassword !== password) {
+			ctx.addIssue({
+				code: 'custom',
+				message: "The passwords don't match",
+				path: ['confirmPassword'],
+			});
+		}
+	});
+
+export type ResetSchema = typeof resetSchema;
+
 export const archiveSchema = z
 	.object({
 		title: z.string().min(1, 'Title is required'),
