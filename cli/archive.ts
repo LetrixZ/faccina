@@ -390,7 +390,7 @@ export const index = async (opts: IndexOptions) => {
 		const info = await stat(path).catch(() => null);
 
 		if (info?.isDirectory()) {
-			const glob = new Glob(opts.recursive ? '**/*.{{cbz,zip}}' : '*.{{cbz,zip}}');
+			const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
 			indexPaths.push(
 				...(await Array.fromAsync(
 					glob.scan({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
