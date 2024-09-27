@@ -61,18 +61,18 @@ program
 	.description(
 		`Migrate resampled images from v1 data directory to v2 new structure (${chalk.bold('Must be run before migrate:db')})`
 	)
-	.option('--data-dir <dir>', 'Data directory location from v1')
-	.option(
+	.requiredOption('--data-dir <dir>', 'Data directory location from v1')
+	.requiredOption(
 		'--format <format>',
 		'Indicate which image format to move for the old resampled images [webp, jpeg, png, jxl, avif]'
 	)
-	.option('--db-url <url>', 'Connection string for the v1 database')
+	.requiredOption('--db-url <url>', 'Connection string for the v1 database')
 	.action((opts) => import('./migrate').then(({ migrateImages }) => migrateImages(opts)));
 
 program
 	.command('migrate:db')
 	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite')
-	.option('--db-url <url>', 'Connection string for the v1 database')
+	.requiredOption('--db-url <url>', 'Connection string for the v1 database')
 	.action((opts) => import('./migrate').then(({ migrateDatabase }) => migrateDatabase(opts.dbUrl)));
 
 program.parse();
