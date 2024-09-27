@@ -29,7 +29,7 @@ import {
 } from './metadata';
 import { parseFilename } from './metadata/utils';
 
-slugify.extend({ '.': '-', _: '-' });
+slugify.extend({ '.': '-', _: '-', '+': '-' });
 
 const tagAliases = [
 	['fff-threesome', 'FFF Threesome'],
@@ -79,15 +79,17 @@ const upsertTags = async (id: number, archive: Archive) => {
 		).values()
 	);
 
-	const tags = await db
-		.selectFrom('tags')
-		.select(['id', 'slug'])
-		.where(
-			'slug',
-			'in',
-			metadataTags.map((tag) => tag.slug)
-		)
-		.execute();
+	const tags = metadataTags.length
+		? await db
+				.selectFrom('tags')
+				.select(['id', 'slug'])
+				.where(
+					'slug',
+					'in',
+					metadataTags.map((tag) => tag.slug)
+				)
+				.execute()
+		: [];
 
 	const newTags = metadataTags.filter((tag) => tags.every((t) => t.slug !== tag.slug));
 
@@ -114,6 +116,11 @@ const upsertTags = async (id: number, archive: Archive) => {
 				})
 			)
 			.returning(['id', 'slug'])
+			.onConflict((oc) =>
+				oc.column('name').doUpdateSet((eb) => ({
+					slug: eb.ref('excluded.slug'),
+				}))
+			)
 			.execute();
 
 		dbTags.push(...inserted);
@@ -212,6 +219,11 @@ const upsertTaxonomy = async (
 			.insertInto(tableName)
 			.values(newTags)
 			.returning(['id', 'slug'])
+			.onConflict((oc) =>
+				oc.column('name').doUpdateSet((eb) => ({
+					slug: eb.ref('excluded.slug'),
+				}))
+			)
 			.execute();
 
 		dbTags.push(...inserted);
