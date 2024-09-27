@@ -170,3 +170,32 @@ username = "smtp_username"
 password = "smtp_password"
 from = "admin@example.com"
 ```
+
+## Migrate from v1
+
+### Images migration
+
+You can migrate the old resampled images to the new folder structure.
+
+Use the `migrate:images` command.\
+You need to specify the v1 data directory, the format that will be migrated to the default preset and a connection string for the v1 database.
+
+**The image migration must be done before the database migration**
+
+### Database migration
+
+**Backup your database before continuing**
+
+#### PostgreSQL -> SQLite
+
+You can migrate the archives from the v1 database to a new SQLite database.
+
+Use the `migrate:db` command.\
+You need to specify a connection string for the v1 database. Example: `postgres://user:password@hostname:port/database`
+
+Once migrated, make a forced index to finish the process: `bun ./cli index --force`.
+
+#### PostgreSQL -> PostgreSQL
+
+To migrate from a v1 PostgreSQL to a v2 PostgreSQL, you only need to make a forced index.\
+The same database can be used.

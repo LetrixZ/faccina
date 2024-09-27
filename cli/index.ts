@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { Command } from 'commander';
 
 const program = new Command();
@@ -50,9 +51,28 @@ program
 	.command('recovery')
 	.argument('<username>')
 	.option('-c --code', 'Return recovery code without sending an email')
-	.description('Send access recovery code to the specified user if they have an email.')
+	.description('Send access recovery code to the specified user if they have an email')
 	.action((username, { code }: { code: boolean }) =>
 		import('./users').then(({ accessRecovery }) => accessRecovery(username, code))
 	);
+
+program
+	.command('migrate:images')
+	.description(
+		`Migrate resampled images from v1 data directory to v2 new structure (${chalk.bold('Must be run before migrate:db')})`
+	)
+	.option('--data-dir <dir>', 'Data directory location from v1')
+	.option(
+		'--format <format>',
+		'Indicate which image format to move for the old resampled images [webp, jpeg, png, jxl, avif]'
+	)
+	.option('--db-url <url>', 'Connection string for the v1 database')
+	.action((opts) => import('./migrate').then(({ migrateImages }) => migrateImages(opts)));
+
+program
+	.command('migrate:db')
+	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite')
+	.option('--db-url <url>', 'Connection string for the v1 database')
+	.action((opts) => import('./migrate').then(({ migrateDatabase }) => migrateDatabase(opts.dbUrl)));
 
 program.parse();

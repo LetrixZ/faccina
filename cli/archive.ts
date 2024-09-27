@@ -5,7 +5,7 @@ import { sql } from 'kysely';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import { createReadStream } from 'node:fs';
-import { rename, stat } from 'node:fs/promises';
+import { exists, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
 import { parse } from 'path';
@@ -651,9 +651,19 @@ export const index = async (opts: IndexOptions) => {
 
 				id = update.id;
 
-				if (hash !== existingPath.hash) {
+				const moveImages = async () => {
 					const sourcePath = join(config.directories.images, existingPath.hash);
 					const destinationPath = join(config.directories.images, hash);
+
+					if (!(await exists(sourcePath))) {
+						if (opts.verbose) {
+							multibar.log(
+								chalk.yellow(`The source path ${chalk.bold(sourcePath)} does not exists`)
+							);
+						}
+
+						return;
+					}
 
 					if (opts.verbose) {
 						multibar.log(
@@ -672,6 +682,10 @@ export const index = async (opts: IndexOptions) => {
 							)
 						);
 					}
+				};
+
+				if (hash !== existingPath.hash) {
+					await moveImages();
 				}
 			} else {
 				const insert = await db
