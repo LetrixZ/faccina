@@ -1,9 +1,12 @@
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
+import { extname } from 'path';
+import { match } from 'ts-pattern';
 import YAML from 'yaml';
 
 import { readStream } from '../../shared/utils';
 import anchira from './anchira';
+import booru from './booru';
 import ccdc06 from './ccdc06';
 import eze from './eze';
 import ezesad from './ezesad';
@@ -40,6 +43,7 @@ export interface Archive {
 export enum MetadataFormat {
 	JSON = 'JSON',
 	YAML = 'YAML',
+	TXT = 'TXT',
 }
 
 export enum MetadataSchema {
@@ -52,6 +56,7 @@ export enum MetadataSchema {
 	EzeSad = 'Eze (ExHentai)',
 	Koromo = 'Koromo',
 	GalleryDL = 'Gallery-DL',
+	Booru = 'Booru',
 }
 
 export const getYamlSchema = (content: string) => {
@@ -138,6 +143,7 @@ export const getJsonSchema = (content: string) => {
 
 const handleMetadataFormat = async (
 	content: string,
+	filename: string,
 	format: MetadataFormat,
 	archive: Archive
 ): Promise<[Archive, [MetadataSchema, MetadataFormat]]> => {
@@ -188,22 +194,49 @@ const handleMetadataFormat = async (
 
 			return [archive, [schemaType, MetadataFormat.JSON]];
 		}
+
+		case MetadataFormat.TXT: {
+			if (filename.endsWith('booru.txt')) {
+				archive = await booru(content, archive);
+
+				return [archive, [MetadataSchema.Booru, MetadataFormat.TXT]];
+			}
+		}
 	}
+
+	throw new Error('Failed to determine metadata schema');
+};
+
+const metadataFormat = (filename: string) => {
+	const extension = extname(filename);
+
+	return match(extension)
+		.with('.yaml', '.yml', () => MetadataFormat.YAML)
+		.with('.json', () => MetadataFormat.JSON)
+		.with('.txt', () => MetadataFormat.TXT)
+		.otherwise(() => {
+			throw new Error(`Can handle the format for ${filename}`);
+		});
 };
 
 export const addExternalMetadata = async (path: string, archive: Archive) => {
 	archive = structuredClone(archive);
 
-	const yaml = Bun.file(path.replace(/\.(cbz|zip)/, '.yaml'));
+	const files = [
+		Bun.file(path.replace(/\.(cbz|zip)/, '.yaml')),
+		Bun.file(path.replace(/\.(cbz|zip)/, '.yml')),
+		Bun.file(path.replace(/\.(cbz|zip)/, '.json')),
+		Bun.file(path.replace(/\.(cbz|zip)/, '.booru.txt')),
+	];
 
-	if (await yaml.exists()) {
-		return handleMetadataFormat(await yaml.text(), MetadataFormat.YAML, archive);
-	} else {
-		const json = Bun.file(path.replace(/\.(cbz|zip)/, '.json'));
-
-		if (await json.exists()) {
-			return handleMetadataFormat(await json.text(), MetadataFormat.JSON, archive);
+	for (const file of files) {
+		if (!(await file.exists()) || !file.name) {
+			continue;
 		}
+
+		const content = await file.text();
+
+		return handleMetadataFormat(content, file.name, metadataFormat(file.name), archive);
 	}
 
 	throw new Error('No external metadata file found');
@@ -212,24 +245,22 @@ export const addExternalMetadata = async (path: string, archive: Archive) => {
 export const addEmbeddedMetadata = async (zip: StreamZipAsync, archive: Archive) => {
 	archive = structuredClone(archive);
 
-	const entry = await zip.entry('info.yaml');
+	const entries = [
+		await zip.entry('info.yaml'),
+		await zip.entry('info.yml'),
+		await zip.entry('info.json'),
+	];
 
-	if (entry) {
+	for (const entry of entries) {
+		if (!entry) {
+			continue;
+		}
+
 		const stream = await zip.stream(entry);
 		const buffer = await readStream(stream);
-		const yaml = strFromU8(buffer);
+		const content = strFromU8(buffer);
 
-		return handleMetadataFormat(yaml, MetadataFormat.YAML, archive);
-	} else {
-		const entry = await zip.entry('info.json');
-
-		if (entry) {
-			const stream = await zip.stream(entry);
-			const buffer = await readStream(stream);
-			const json = strFromU8(buffer);
-
-			return handleMetadataFormat(json, MetadataFormat.JSON, archive);
-		}
+		return handleMetadataFormat(content, entry.name, metadataFormat(entry.name), archive);
 	}
 
 	throw new Error('No embedded metadata file found');

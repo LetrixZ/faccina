@@ -4,9 +4,11 @@ import StreamZip from 'node-stream-zip';
 
 import {
 	addEmbeddedMetadata,
+	addExternalMetadata,
 	type Archive,
 	getJsonSchema,
 	getYamlSchema,
+	MetadataFormat,
 	MetadataSchema,
 } from '../metadata';
 
@@ -627,6 +629,57 @@ describe('Metadata', () => {
 				sources: [{ name: 'HentaiNexus', url: 'https://hentainexus.com/view/10781' }],
 				has_metadata: true,
 			});
+		});
+	});
+
+	describe('External metadata', () => {
+		test('Booru 1', async () => {
+			const archive: Archive = {};
+
+			expect(addExternalMetadata(__dirname + '/resources/gelbooru.cbz', archive)).resolves.toEqual([
+				{
+					tags: [
+						['Gofelem', ''],
+						['Lene (Fire Emblem)', ''],
+						['Fire Emblem', ''],
+						['Fire Emblem: Genealogy Of The Holy War', ''],
+						['Fire Emblem Cipher', ''],
+						['Fire Emblem Heroes', ''],
+						['Nintendo', ''],
+						['Commission', ''],
+						['1girl', ''],
+						[':D', ''],
+						['Artist Name', ''],
+						['Bare Shoulders', ''],
+						['Bow', ''],
+						['Breasts', ''],
+						['Cleavage', ''],
+						['Dancer', ''],
+						['Detached Sleeves', ''],
+						['Earrings', ''],
+						['Gem', ''],
+						['Green Eyes', ''],
+						['Green Hair', ''],
+						['Hair Between Eyes', ''],
+						['Hair Bow', ''],
+						['Jewelry', ''],
+						['Large Breasts', ''],
+						['Nose', ''],
+						['Official Alternate Costume', ''],
+						['Open Mouth', ''],
+						['Pendant', ''],
+						['Pink Bow', ''],
+						['Ponytail', ''],
+						['Simple Background', ''],
+						['Smile', ''],
+						['Solo', ''],
+						['Teeth', ''],
+						['Upper Body', ''],
+						['White Background', ''],
+					],
+				},
+				[MetadataSchema.Booru, MetadataFormat.TXT],
+			]);
 		});
 	});
 });

@@ -537,6 +537,8 @@ export const index = async (opts: IndexOptions) => {
 		let metadataSchema: MetadataSchema;
 		let metadataFormat: MetadataFormat;
 
+		const filename = parse(path).name;
+
 		try {
 			const zip = new StreamZip.async({ file: path });
 
@@ -574,8 +576,6 @@ export const index = async (opts: IndexOptions) => {
 						);
 					}
 
-					const filename = parse(path).name;
-
 					if (config.metadata?.parseFilenameAsTitle) {
 						const [title, artists, circles] = parseFilename(filename);
 
@@ -585,6 +585,7 @@ export const index = async (opts: IndexOptions) => {
 						archive.circles = circles;
 					} else {
 						archive.title = filename;
+						archive.slug = slugify(archive.title, { lower: true, strict: true });
 					}
 				}
 			}
@@ -603,12 +604,8 @@ export const index = async (opts: IndexOptions) => {
 			}
 
 			if (!archive.title || !archive.slug) {
-				multibar.log(chalk.yellow(`Failed to get a title for ${chalk.bold(path)}, skipping\n`));
-				progress.increment();
-				count++;
-				skipped++;
-
-				continue;
+				archive.title = filename;
+				archive.slug = slugify(archive.title, { lower: true, strict: true });
 			}
 
 			if (!archive.images || !archive.images.length) {

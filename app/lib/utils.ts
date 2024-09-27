@@ -273,7 +273,9 @@ export const isTag = (tag: Taxonomy | Tag): tag is Tag => {
 };
 
 export const processTags = (tags: Tag[]) => {
-	const tagNamespaces = tags.map((tag) => `${tag.namespace}:${tag.name}`);
+	const tagNamespaces = tags.map((tag) =>
+		tag.namespace?.length ? `${tag.namespace}:${tag.name}` : tag.name
+	);
 
 	const frequencyMap = tagNamespaces.reduce(
 		(acc, item) => {
