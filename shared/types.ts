@@ -142,12 +142,6 @@ export interface Tags {
 	slug: string;
 }
 
-export interface TagWeights {
-	id: Generated<number>;
-	slug: string;
-	weight: number;
-}
-
 export interface UserCodes {
 	code: string;
 	consumed_at: Timestamp | null;
@@ -195,7 +189,6 @@ export interface DB {
 	magazines: Magazines;
 	parodies: Parodies;
 	publishers: Publishers;
-	tag_weights: TagWeights;
 	tags: Tags;
 	user_codes: UserCodes;
 	user_favorites: UserFavorites;

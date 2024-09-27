@@ -25,7 +25,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 			if (existingMigrations?.length) {
 				const lastMigration = existingMigrations.at(-1);
 
-				if (lastMigration?.version === '20240622180546') {
+				if (lastMigration?.version === 20240622180546) {
 					await db.schema
 						.alterTable('archives')
 						.addUniqueConstraint('archive_path_key', ['path'])
@@ -41,9 +41,11 @@ export async function up(db: Kysely<any>): Promise<void> {
 
 					return;
 				} else {
-					throw new Error(
+					console.error(
 						`Expected the last migration to be ${chalk.bold(20240622180546)}, but the latest migration found was ${chalk.bold(lastMigration?.version)}. It is not safe to continue. Please migrate it manually to the latest version using the old Rust server.`
 					);
+
+					throw new Error('Migration failed');
 				}
 			}
 		}

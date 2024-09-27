@@ -29,6 +29,8 @@ import {
 } from './metadata';
 import { parseFilename } from './metadata/utils';
 
+slugify.extend({ '.': '-', _: '-' });
+
 const tagAliases = [
 	['fff-threesome', 'FFF Threesome'],
 	['ffm-threesome', 'FFM Threesome'],

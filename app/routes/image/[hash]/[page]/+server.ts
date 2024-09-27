@@ -6,7 +6,7 @@ import { readStream } from '~shared/utils';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
-import { join } from 'path';
+import { extname, join } from 'path';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -24,7 +24,7 @@ type ImageArchive = {
 	height: number | null;
 };
 
-const originalImage = async (archive: ImageArchive) => {
+const originalImage = async (archive: ImageArchive): Promise<[Buffer, string]> => {
 	if (!(await Bun.file(archive.path).exists())) {
 		console.error(
 			chalk.red(
@@ -54,10 +54,13 @@ const originalImage = async (archive: ImageArchive) => {
 		}
 	}
 
-	return buffer;
+	return [buffer, extname(archive.filename)];
 };
 
-const resampledImage = async (archive: ImageArchive, type: string) => {
+const resampledImage = async (
+	archive: ImageArchive,
+	type: string
+): Promise<[Buffer | Uint8Array, string]> => {
 	const result = z.enum(['cover', 'thumb']).safeParse(type);
 
 	if (!result.data) {
@@ -82,7 +85,7 @@ const resampledImage = async (archive: ImageArchive, type: string) => {
 	const file = Bun.file(imagePath);
 
 	if (await file.exists()) {
-		return file.bytes();
+		return [await file.bytes(), extname(imagePath)];
 	}
 
 	try {
@@ -93,7 +96,7 @@ const resampledImage = async (archive: ImageArchive, type: string) => {
 			preset,
 		});
 
-		return encodedImage;
+		return [encodedImage, extname(imagePath)];
 	} catch (err) {
 		console.error(
 			chalk.red(
@@ -138,7 +141,7 @@ export const GET = async ({ params, url, setHeaders }) => {
 
 	const imageType = url.searchParams.get('type');
 
-	const image = await (() => {
+	const [image, extension] = await (() => {
 		if (imageType) {
 			return resampledImage(archive, imageType);
 		} else {
@@ -146,7 +149,13 @@ export const GET = async ({ params, url, setHeaders }) => {
 		}
 	})();
 
-	setHeaders({ 'content-type': filetypemime(image)?.[0] });
+	let mimetype = filetypemime(image)?.[0];
+
+	if (!mimetype || !mimetype.startsWith('image/')) {
+		mimetype = `image/${extension.replace('.', '')}`;
+	}
+
+	setHeaders({ 'content-type': mimetype });
 
 	return new Response(image);
 };
