@@ -42,7 +42,7 @@ export default async (content: string, archive: Archive) => {
 		throw new Error('Failed to parse Koromo metadata');
 	}
 
-	if (config.metadata?.parseFilename) {
+	if (config.metadata?.parseFilenameAsTitle) {
 		archive.title = parseFilename(metadata.data.Title)[0] ?? metadata.data.Title;
 	} else {
 		archive.title = metadata.data.Title;

@@ -9,7 +9,9 @@ import * as R from 'ramda';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 
-export const load = async ({ params, locals }) => {
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ params, locals }) => {
 	const id = parseInt(params.id);
 
 	if (isNaN(id)) {
@@ -158,4 +160,4 @@ export const actions = {
 			form,
 		};
 	},
-};
+} satisfies Actions;

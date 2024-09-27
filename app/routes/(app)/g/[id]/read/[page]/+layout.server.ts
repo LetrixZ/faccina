@@ -4,7 +4,9 @@ import { get } from '$lib/server/db/queries';
 import { error } from '@sveltejs/kit';
 import * as R from 'ramda';
 
-export const load = async ({ params, locals }) => {
+import type { LayoutServerLoad } from './$types';
+
+export const load: LayoutServerLoad = async ({ params, locals }) => {
 	const id = parseInt(params.id);
 
 	if (isNaN(id)) {

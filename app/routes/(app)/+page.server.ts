@@ -1,6 +1,8 @@
 import { libraryItems, search } from '$lib/server/db/queries';
 
-export const load = async ({ url, cookies, locals }) => {
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ url, cookies, locals }) => {
 	const searchParams = new URLSearchParams(url.searchParams);
 	const blacklist = cookies.get('blacklist');
 

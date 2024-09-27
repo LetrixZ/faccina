@@ -1,9 +1,10 @@
+import { lucia } from '$lib/server/auth';
 import { error, redirect } from '@sveltejs/kit';
 import db from '~shared/db';
 
-import { lucia } from '~/lib/server/auth';
+import type { RequestHandler } from './$types';
 
-export const GET = async ({ params, cookies }) => {
+export const GET: RequestHandler = async ({ params, cookies }) => {
 	const code = params.code;
 
 	const user = await db

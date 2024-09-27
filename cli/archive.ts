@@ -14,16 +14,16 @@ import slugify from 'slugify';
 import config from '../shared/config';
 import db from '../shared/db';
 import {
-	ReferenceTable,
-	RelationshipId,
-	RelationshipTable,
+	type ReferenceTable,
+	type RelationshipId,
+	type RelationshipTable,
 	taxonomyTables,
 } from '../shared/taxonomy';
 import { readStream } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
-	Archive,
+	type Archive,
 	MetadataFormat,
 	MetadataSchema,
 } from './metadata';
@@ -552,7 +552,7 @@ export const index = async (opts: IndexOptions) => {
 				if (opts.verbose) {
 					multibar.log(
 						chalk.yellow(
-							`Failed to add external metadata for ${chalk.bold(path)} - ${chalk.bold(error.message)}\n`
+							`Failed to add external metadata for ${chalk.bold(path)} - ${chalk.bold((error as Error).message)}\n`
 						)
 					);
 				}
@@ -569,7 +569,7 @@ export const index = async (opts: IndexOptions) => {
 					if (opts.verbose) {
 						multibar.log(
 							chalk.yellow(
-								`Failed to add embedded metadata for ${chalk.bold(path)} - ${error.message}\n`
+								`Failed to add embedded metadata for ${chalk.bold(path)} - ${(error as Error).message}\n`
 							)
 						);
 					}
@@ -675,10 +675,10 @@ export const index = async (opts: IndexOptions) => {
 
 					try {
 						await rename(sourcePath, destinationPath);
-					} catch (err) {
+					} catch (error) {
 						multibar.log(
 							chalk.red(
-								`Failed to move thumbnails from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)} - ${err.message}\n`
+								`Failed to move thumbnails from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)} - ${(error as Error).message}\n`
 							)
 						);
 					}
@@ -726,7 +726,9 @@ export const index = async (opts: IndexOptions) => {
 
 			indexed++;
 		} catch (error) {
-			multibar.log(chalk.redBright(`Failed to index ${chalk.bold(path)} - ${error.message}\n`));
+			multibar.log(
+				chalk.redBright(`Failed to index ${chalk.bold(path)} - ${(error as Error).message}\n`)
+			);
 		} finally {
 			progress.increment();
 			count++;

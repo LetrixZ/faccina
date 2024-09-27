@@ -1,7 +1,10 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
-		"lib": ["ESNext", "DOM"],
+		"lib": [
+			"ESNext",
+			"DOM"
+		],
 		"target": "ESNext",
 		"module": "ESNext",
 		"moduleDetection": "force",
@@ -18,5 +21,12 @@
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false
 	},
-	"include": ["./app/**/*.js", "./app/**/*.ts", "./app/**/*.svelte", ".svelte-kit/ambient.d.ts"]
+	"include": [
+		"./app/**/*.js",
+		"./app/**/*.ts",
+		"./app/**/*.svelte",
+		".svelte-kit/ambient.d.ts",
+		"./cli/**/*.ts",
+		"./shared/**/*.ts"
+	]
 }

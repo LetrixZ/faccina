@@ -5,9 +5,9 @@ import db from '~shared/db';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
-export const load = async ({ url }) => {
+export const load: PageServerLoad = async ({ url }) => {
 	if (!config.site.enableUsers || !config.mailer) {
 		error(404, { message: 'Not Found' });
 	}

@@ -8,7 +8,9 @@ import config from '~shared/config';
 import db from '~shared/db';
 import { match } from 'ts-pattern';
 
-export const load = async ({ locals, url, cookies }) => {
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	if (!config.site.enableUsers) {
 		error(404, { message: 'Not Found' });
 	}

@@ -5,7 +5,9 @@ import db from '~shared/db';
 import { jsonAgg } from '~shared/db/helpers';
 import { sql } from 'kysely';
 
-export const GET = async ({ url, locals }) => {
+import type { RequestHandler } from './$types';
+
+export const GET: RequestHandler = async ({ url, locals }) => {
 	const searchParams = new URLSearchParams(url.searchParams);
 
 	const { ids, total } = await search(searchParams, !!locals.user);

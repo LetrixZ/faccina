@@ -30,7 +30,7 @@ export default async (content: string, archive: Archive) => {
 		throw new Error('Failed to parse Gallery-DL metadata');
 	}
 
-	if (config.metadata?.parseFilename) {
+	if (config.metadata?.parseFilenameAsTitle) {
 		archive.title = parseFilename(metadata.data.title)[0] ?? metadata.data.title;
 	} else {
 		archive.title = metadata.data.title;

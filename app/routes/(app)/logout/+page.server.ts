@@ -2,6 +2,8 @@ import { lucia } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { fail } from 'sveltekit-superforms';
 
+import type { Actions } from '../$types';
+
 export const actions = {
 	default: async (event) => {
 		if (!event.locals.session) {
@@ -17,4 +19,4 @@ export const actions = {
 
 		redirect(302, event.url.searchParams.get('to')?.toString() ?? '/');
 	},
-};
+} satisfies Actions;

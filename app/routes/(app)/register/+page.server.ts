@@ -7,9 +7,9 @@ import { generateIdFromEntropySize } from 'lucia';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
-export const load = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
 		error(404, { message: 'Not Found' });
 	}

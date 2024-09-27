@@ -1,4 +1,5 @@
 import { dimensionsQueue, encodeQueue } from '$lib/server/image';
+import { leadingZeros } from '$lib/utils';
 import { error } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
@@ -11,7 +12,7 @@ import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { leadingZeros } from '~/lib/utils';
+import type { RequestHandler } from './$types';
 
 type ImageArchive = {
 	id: number;
@@ -112,7 +113,7 @@ const resampledImage = async (
 	}
 };
 
-export const GET = async ({ params, url, setHeaders }) => {
+export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
 	const hash = params.hash;
 	const page = parseInt(params.page);
 
