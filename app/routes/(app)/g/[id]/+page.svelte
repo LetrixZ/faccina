@@ -36,18 +36,20 @@
 	const archive = data.archive;
 
 	const startDownload = async (archive: ArchiveDetail) => {
+		const streamSaver = await import('streamsaver');
+		streamSaver.mitm = '/ss-mitm.html';
+
 		const task = writable<Task>({
 			archive,
 			progress: 0,
 			total: archive.images.length,
 			complete: false,
 		});
-		const { createWriteStream } = await import('streamsaver');
 
 		const chunks: Uint8Array[] = [];
 
 		const promise = new Promise<void>((resolve, reject) => {
-			const fileStream = createWriteStream(`${generateFilename(archive)}.cbz`);
+			const fileStream = streamSaver.createWriteStream(`${generateFilename(archive)}.cbz`);
 			const writer = fileStream.getWriter();
 
 			const zip = new Zip();
@@ -120,7 +122,7 @@
 			componentProps: {
 				task,
 				save: async () => {
-					const fileStream = createWriteStream(`${generateFilename(archive)}.cbz`);
+					const fileStream = streamSaver.createWriteStream(`${generateFilename(archive)}.cbz`);
 					const writer = fileStream.getWriter();
 
 					for (const chunk of chunks) {
