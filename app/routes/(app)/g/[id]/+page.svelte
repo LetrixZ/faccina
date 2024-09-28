@@ -38,7 +38,7 @@
 
 	const startDownload = async (archive: ArchiveDetail) => {
 		const streamSaver = await import('streamsaver');
-		streamSaver.mitm = '/ss-mitm.html';
+		streamSaver.default.mitm = '/ss-mitm.html';
 
 		const task = writable<Task>({
 			archive,

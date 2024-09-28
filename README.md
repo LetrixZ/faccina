@@ -1,5 +1,16 @@
 # Faccina
 
+## Running
+
+To run the server you need to have [Bun](https://bun.sh/) installed.
+
+- Clone the project and enter the directory.
+- Install the dependencies by running `bun install`.
+- Check the configuration.
+- Run `bun build` to build the website.
+
+You can then start the server with `bun ./build` or you can use `bun cluster.ts` to start multiple servers as a [cluster](https://bun.sh/guides/http/cluster).
+
 ## Configuration
 
 The configuration will be read from `./config.toml` by default. Use the environment variable `CONFIG_PATH` to specify another location.\
