@@ -2,8 +2,7 @@ import { Glob } from 'bun';
 import chalk from 'chalk';
 import { cp, exists, mkdir } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { Client } from 'pg';
-import pg from 'pg';
+import pg, { Client } from 'pg';
 import { z } from 'zod';
 
 import config from '../shared/config';
@@ -104,9 +103,51 @@ export const migrateDatabase = async (dbUrl: string) => {
 
 	await client.connect();
 
-	const { rows } = await client.query('SELECT * FROM archives');
+	let { rows } = await client.query('SELECT * FROM archives ORDER BY id ASC');
 
-	const count = rows.length;
+	let count = rows.length;
+
+	if (!count) {
+		console.info(`No archives found in the database.`);
+		await client.end();
+		await db.destroy();
+
+		return;
+	}
+
+	console.info(`Found ${chalk.bold(count)} archives in the database.`);
+
+	const lostArchives: unknown[] = [];
+
+	rows = Object.values(
+		rows.reduce((acc, obj) => {
+			if (!acc[obj.path] || acc[obj.path].id < obj.id) {
+				if (acc[obj.path]) {
+					if (obj.deleted_at !== null) {
+						lostArchives.push(obj);
+					} else {
+						lostArchives.push(acc[obj.path]);
+						acc[obj.path] = obj;
+					}
+				} else {
+					acc[obj.path] = obj;
+				}
+			}
+
+			return acc;
+		}, {})
+	);
+
+	if (count !== rows.length) {
+		const timestamp = new Date().getTime();
+		Bun.write(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
+
+		console.info(
+			`Due to duplicated paths, only ${chalk.bold(count)} archives will be migrated.\nA list containing ${chalk.bold(lostArchives.length)} will be saved at ${chalk.bold(`lost_${timestamp}.json`)}.`
+		);
+
+		count = rows.length;
+	}
 
 	await db
 		.insertInto('archives')
@@ -125,6 +166,6 @@ export const migrateDatabase = async (dbUrl: string) => {
 	await db.destroy();
 
 	console.info(
-		`Migrated ${chalk.bold(count)} archives. Now make a force index to finish the migration\n`
+		`Migrated ${chalk.bold(count)} archives. Now make a force index to finish the migration.`
 	);
 };

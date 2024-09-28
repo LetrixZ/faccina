@@ -191,7 +191,9 @@ You need to specify the v1 data directory, the format that will be migrated to t
 You can migrate the archives from the v1 database to a new SQLite database.
 
 Use the `migrate:db` command.\
-You need to specify a connection string for the v1 database. Example: `postgres://user:password@hostname:port/database`
+You need to specify a connection string for the v1 database. Example: `postgres://user:password@hostname:port/database`.
+
+If you had duplicated paths in the previous database, only the latest non-deleted one will be kept. A list of lost archives will be saved to `./lost_{{timestamp}}.json`.
 
 Once migrated, make a forced index to finish the process: `bun ./cli index --force`.
 
