@@ -3,6 +3,7 @@ import type { ArchiveDetail } from '$lib/models';
 import { archiveSchema } from '$lib/schemas';
 import { get } from '$lib/server/db/queries';
 import { error, fail } from '@sveltejs/kit';
+import { upsertSources } from '~shared/archive';
 import db from '~shared/db';
 import dayjs from 'dayjs';
 import * as R from 'ramda';
@@ -36,6 +37,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 
 	return {
+		...(locals.user?.admin && {
+			extra: { path: archive.path },
+		}),
 		archive: R.omit(['path', 'has_metadata'], archive) satisfies ArchiveDetail,
 		isFavorite,
 		editForm: locals.user?.admin
@@ -44,16 +48,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 						title: archive.title,
 						slug: archive.slug,
 						description: archive.description ?? undefined,
-						hash: archive.hash,
-						path: archive.path,
 						pages: archive.pages,
-						size: archive.size,
 						thumbnail: archive.thumbnail,
 						language: archive.language ?? undefined,
 						releasedAt: archive.released_at
 							? dayjs(archive.released_at).format('YYYY-MM-DD[T]HH:mm')
 							: undefined,
 						hasMetadata: archive.has_metadata!,
+						sources: archive.sources.map(({ name, url }) => ({ name, url: url ?? undefined })),
 					},
 					zod(archiveSchema)
 				)
@@ -141,7 +143,7 @@ export const actions = {
 			});
 		}
 
-		const { title, slug, description, pages, thumbnail, releasedAt } = form.data;
+		const { title, slug, description, pages, thumbnail, releasedAt, sources } = form.data;
 
 		await db
 			.updateTable('archives')
@@ -155,6 +157,11 @@ export const actions = {
 			})
 			.where('id', '=', parseInt(id))
 			.execute();
+
+		await upsertSources(
+			parseInt(id),
+			sources.map((source) => ({ name: source.name, url: source.url ?? undefined }))
+		);
 
 		return {
 			form,

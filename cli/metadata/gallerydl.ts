@@ -4,8 +4,8 @@ import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive } from '.';
 import config from '../../shared/config';
+import { type Archive } from '../../shared/metadata';
 import { parseFilename, parseSourceName } from './utils';
 
 const metadataSchema = z.object({

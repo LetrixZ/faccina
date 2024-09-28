@@ -3,7 +3,8 @@
 
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
-	import { Save } from 'lucide-svelte';
+	import { Plus, Save, Trash } from 'lucide-svelte';
+	import prettyBytes from 'pretty-bytes';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, intProxy, superForm, type SuperValidated } from 'sveltekit-superforms';
@@ -12,17 +13,21 @@
 	import type { ArchiveDetail } from '../models';
 
 	import { archiveSchema, type ArchiveSchema } from '../schemas';
+	import { cn } from '../utils';
+	import GallerySource from './gallery-source.svelte';
 	import { Button } from './ui/button';
 	import { Separator } from './ui/separator';
 	import { Textarea } from './ui/textarea';
 
 	export let data: SuperValidated<Infer<ArchiveSchema>>;
 	export let archive: ArchiveDetail;
+	export let extra: { path: string };
 
 	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
 
 	let form = superForm(data, {
 		validators: zodClient(archiveSchema),
+		dataType: 'json',
 		onResult: ({ result }) => {
 			dispatch('result', result);
 
@@ -34,17 +39,24 @@
 		},
 	});
 
-	const { form: formData, enhance } = form;
+	const { form: formData, enhance, errors } = form;
 
 	const pagesProxy = intProxy(form, 'pages');
-	const sizeProxy = intProxy(form, 'size');
 	const thumbnailProxy = intProxy(form, 'thumbnail');
 
 	$: thumbnail = parseInt($thumbnailProxy);
 	$: thumbnailImage = archive.images[thumbnail - 1];
+
+	$: sourcesValid = $formData.sources.every((source) => source.name);
 </script>
 
-<form action="?/editInfo" class="space-y-4" method="POST" use:enhance>
+<form
+	action="?/editInfo"
+	class="space-y-4"
+	method="POST"
+	on:submit={(ev) => ev.preventDefault()}
+	use:enhance
+>
 	<div class="flex gap-4">
 		<button aria-hidden="true" class="hidden" disabled type="submit"></button>
 
@@ -133,31 +145,72 @@
 
 	<Separator />
 
+	<div class="space-y-2">
+		<div class="grid grid-cols-2">
+			<div>
+				<p class="text-sm font-medium">Hash</p>
+				<p class="font-mono text-sm">{archive.hash}</p>
+			</div>
+
+			<div>
+				<p class="text-sm font-medium">Size</p>
+				<p class="font-mono text-sm">{prettyBytes(archive.size)}</p>
+			</div>
+		</div>
+
+		<div>
+			<p class="flex items-center gap-1.5 text-sm font-medium">Path</p>
+			<p class="font-mono text-sm">{extra.path}</p>
+		</div>
+	</div>
+
+	<Separator />
+
 	<div>
-		<Form.Field {form} name="hash">
-			<Form.Control let:attrs>
-				<Form.Label>Hash</Form.Label>
-				<Input {...attrs} bind:value={$formData.hash} readonly />
-			</Form.Control>
-			<Form.FieldErrors />
-		</Form.Field>
+		<div class="flex flex-col gap-2">
+			{#each $formData.sources as _, i}
+				<div class="flex flex-col gap-1">
+					<div class="flex gap-2">
+						<GallerySource class="my-auto size-8 flex-shrink-0" source={$formData.sources[i]} />
+						<Input
+							bind:value={$formData.sources[i].name}
+							class={cn('h-9 w-32', $errors.sources?.[i]?.name && 'border-destructive')}
+						/>
+						<Input
+							bind:value={$formData.sources[i].url}
+							class={cn('h-9', $errors.sources?.[i]?.url && 'border-destructive')}
+						/>
+						<Button
+							class="size-9 flex-shrink-0 p-2"
+							on:click={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
+							variant="outline"
+						>
+							<Trash />
+						</Button>
+					</div>
 
-		<div class="flex gap-4">
-			<Form.Field class="flex-auto" {form} name="path">
-				<Form.Control let:attrs>
-					<Form.Label>Path</Form.Label>
-					<Input {...attrs} bind:value={$formData.path} />
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
+					<div>
+						{#if $errors.sources?.[i]?.name}
+							<p class="text-sm font-medium text-destructive">
+								{$errors.sources?.[i]?.name}
+							</p>
+						{/if}
+						{#if $errors.sources?.[i]?.url}
+							<p class="text-sm font-medium text-destructive">
+								{$errors.sources?.[i]?.url}
+							</p>
+						{/if}
+					</div>
+				</div>
+			{/each}
 
-			<Form.Field {form} name="size">
-				<Form.Control let:attrs>
-					<Form.Label>Size in bytes</Form.Label>
-					<Input {...attrs} bind:value={$sizeProxy} class="w-32" min={0} readonly type="number" />
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
+			<Button
+				disabled={!sourcesValid}
+				on:click={() => ($formData.sources = [...$formData.sources, { name: '' }])}
+				variant="outline"
+			>
+				<Plus class="me-2 size-5" /> Add source
+			</Button>
 		</div>
 	</div>
 

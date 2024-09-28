@@ -1,7 +1,7 @@
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive } from '.';
+import { type Archive } from '../../shared/metadata';
 import eze from './eze';
 
 const metadataSchema = z.object({

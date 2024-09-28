@@ -4,7 +4,8 @@ import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive, type Source } from '.';
+import type { Archive, Source } from '../../shared/metadata';
+
 import config from '../../shared/config';
 import { mapMultiField, multiTextField } from './schemas';
 import { parseFilename, parseSourceName } from './utils';

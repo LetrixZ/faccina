@@ -4,6 +4,8 @@ import { extname } from 'path';
 import { match } from 'ts-pattern';
 import YAML from 'yaml';
 
+import type { Archive } from '../../shared/metadata';
+
 import { readStream } from '../../shared/utils';
 import anchira from './anchira';
 import booru from './booru';
@@ -15,30 +17,6 @@ import hentag from './hentag';
 import hentainexus from './hentainexus';
 import koharu from './koharu';
 import koromo from './koromo';
-
-export interface Source {
-	name: string;
-	url?: string;
-}
-
-export interface Archive {
-	title?: string;
-	slug?: string;
-	description?: string;
-	thumbnail?: number;
-	language?: string;
-	released_at?: Date;
-	artists?: string[];
-	circles?: string[];
-	magazines?: string[];
-	events?: string[];
-	publishers?: string[];
-	parodies?: string[];
-	tags?: [string, string][];
-	sources?: Source[];
-	images?: { filename: string; page_number: number; width?: number; height?: number }[];
-	has_metadata?: boolean;
-}
 
 export enum MetadataFormat {
 	JSON = 'JSON',

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Source } from '$lib/models';
+	import type { HTMLAnchorAttributes } from 'svelte/elements';
 
 	import Anchira from '$assets/anchira.webp';
 	import ExHentai from '$assets/exhentai.ico';
@@ -14,7 +14,11 @@
 
 	import Pixiv from '~/assets/pixiv.webp';
 
-	export let source: Source;
+	import { cn } from '../utils';
+
+	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
+
+	export let source: { name: string; url?: string | null };
 
 	$: image = (() => {
 		switch (source.name.toLowerCase()) {
@@ -65,10 +69,17 @@
 				return 'background: black;';
 		}
 	})();
+
+	let className: $$Props['class'] = undefined;
+
+	export { className as class };
 </script>
 
 <a
-	class="flex size-6 items-center justify-center overflow-clip rounded-md bg-neutral-400"
+	class={cn(
+		'flex size-6 items-center justify-center overflow-clip rounded-md bg-neutral-400',
+		className
+	)}
 	href={source.url}
 	{style}
 	target="_blank"

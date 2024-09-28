@@ -2,10 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import dayjs from 'dayjs';
 import StreamZip from 'node-stream-zip';
 
+import type { Archive } from '../../shared/metadata';
+
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
-	type Archive,
 	getJsonSchema,
 	getYamlSchema,
 	MetadataFormat,

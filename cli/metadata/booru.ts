@@ -1,7 +1,7 @@
 import capitalize from 'capitalize';
 import { z } from 'zod';
 
-import type { Archive } from '.';
+import type { Archive } from '../../shared/metadata';
 
 const metadataSchema = z.string().transform((val) =>
 	val

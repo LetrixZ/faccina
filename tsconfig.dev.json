@@ -26,5 +26,7 @@
 		"./app/**/*.ts",
 		"./app/**/*.svelte",
 		".svelte-kit/ambient.d.ts",
+		"./cli/**/*.ts",
+		"./shared/**/*.ts"
 	]
 }

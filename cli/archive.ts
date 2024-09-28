@@ -11,6 +11,9 @@ import StreamZip from 'node-stream-zip';
 import { parse } from 'path';
 import slugify from 'slugify';
 
+import type { Archive } from '../shared/metadata';
+
+import { upsertImages, upsertSources } from '../shared/archive';
 import config from '../shared/config';
 import db from '../shared/db';
 import {
@@ -23,7 +26,6 @@ import { readStream } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
-	type Archive,
 	MetadataFormat,
 	MetadataSchema,
 } from './metadata';
@@ -266,110 +268,6 @@ const upsertTaxonomy = async (
 					archive_id: id,
 					[relationId]: tagId,
 				}))
-			)
-			.execute();
-	}
-};
-
-/**
- * Upserts archive sources
- * @param id Archive ID
- * @param archive new archive data
- */
-const upsertSources = async (id: number, archive: Archive) => {
-	const dbSources = await db
-		.selectFrom('archive_sources')
-		.select(['name', 'url'])
-		.where('archive_id', '=', id)
-		.execute();
-
-	if (archive.sources?.length) {
-		const upsertedSources = await db
-			.insertInto('archive_sources')
-			.values(
-				archive.sources.map(({ name, url }) => ({
-					name,
-					url,
-					archive_id: id,
-				}))
-			)
-			.onConflict((oc) =>
-				oc.columns(['archive_id', 'url']).doUpdateSet((eb) => ({
-					name: eb.ref('excluded.name'),
-				}))
-			)
-			.returning(['name', 'url'])
-			.execute();
-
-		dbSources.push(...upsertedSources);
-	}
-
-	const toDelete = dbSources.filter(
-		(source) => !archive.sources?.some((s) => s.url === source.url)
-	);
-
-	if (toDelete.length) {
-		await db
-			.deleteFrom('archive_sources')
-			.where('archive_id', '=', id)
-			.where(
-				'url',
-				'in',
-				toDelete.map((source) => source.url)
-			)
-			.execute();
-	}
-};
-
-/**
- * Upserts archive images
- * @param id Archive ID
- * @param archive new archive data
- */
-const upsertImages = async (id: number, archive: Archive) => {
-	const dbImages = await db
-		.selectFrom('archive_images')
-		.select(['filename', 'page_number', 'width', 'height'])
-		.where('archive_id', '=', id)
-		.execute();
-
-	if (archive.images?.length) {
-		const upsertedImages = await db
-			.insertInto('archive_images')
-			.values(
-				archive.images.map(({ filename, page_number, width, height }) => ({
-					filename,
-					page_number,
-					width,
-					height,
-					archive_id: id,
-				}))
-			)
-			.onConflict((oc) =>
-				oc.columns(['archive_id', 'page_number']).doUpdateSet((eb) => ({
-					filename: eb.ref('excluded.filename'),
-					width: eb.ref('excluded.width'),
-					height: eb.ref('excluded.height'),
-				}))
-			)
-			.returning(['filename', 'page_number', 'width', 'height'])
-			.execute();
-
-		dbImages.push(...upsertedImages);
-	}
-
-	const toDelete = dbImages.filter(
-		(image) => !archive.images?.some((i) => i.page_number === image.page_number)
-	);
-
-	if (toDelete.length) {
-		await db
-			.deleteFrom('archive_images')
-			.where('archive_id', '=', id)
-			.where(
-				'page_number',
-				'in',
-				toDelete.map((image) => image.page_number)
 			)
 			.execute();
 	}
@@ -718,8 +616,13 @@ export const index = async (opts: IndexOptions) => {
 				}
 			}
 
-			await upsertSources(id, archive);
-			await upsertImages(id, archive);
+			if (archive.sources) {
+				await upsertSources(id, archive.sources);
+			}
+
+			if (archive.images) {
+				await upsertImages(id, archive.images);
+			}
 
 			indexed++;
 		} catch (error) {

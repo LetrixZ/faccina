@@ -34,6 +34,7 @@
 	let editOpen = false;
 
 	const archive = data.archive;
+	const extra = data.extra!;
 
 	const startDownload = async (archive: ArchiveDetail) => {
 		const streamSaver = await import('streamsaver');
@@ -484,6 +485,7 @@
 			<ArchiveEditForm
 				{archive}
 				data={data.editForm}
+				{extra}
 				on:close={() => (editOpen = false)}
 				on:result={({ detail }) => {
 					if (detail.type === 'success') {

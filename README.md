@@ -18,7 +18,7 @@ admin_users = ['superuser']
 - `site_name`: Specifies the title showed in pages and emails.
 - `url`: Public URL of the site.
 - `enable_users`: Used to enable/disable user features such as user registration, login and favorites. Use the `uli` command to login as admin.
-- `admin_users`: List of usernames that will be given admin privileges. If you use the `uli` command to login as an admin user and this user does not exists, you will be prompted to create one.
+- `admin_users`: List of usernames that will be given admin privileges. If you use the `uli` command to login as an admin user and this user does not exists, a new one will be created.
 
 ### Directories
 

@@ -65,14 +65,17 @@ export const archiveSchema = z
 		title: z.string().min(1, 'Title is required'),
 		slug: z.string(),
 		description: z.string().optional(),
-		hash: z.string().readonly(),
-		path: z.string().min(1, 'Path is required'),
 		pages: z.number().min(1),
-		size: z.number().min(0),
 		thumbnail: z.number().min(1),
 		language: z.string().optional(),
 		releasedAt: z.string().optional(),
 		hasMetadata: z.boolean(),
+		sources: z.array(
+			z.object({
+				name: z.string().min(1, "Source name can't be empty"),
+				url: z.string().url('The given URL is not valid').optional().or(z.literal('')),
+			})
+		),
 	})
 	.superRefine(({ pages, thumbnail }, ctx) => {
 		if (thumbnail > pages) {

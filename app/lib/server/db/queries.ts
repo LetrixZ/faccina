@@ -123,6 +123,7 @@ export const get = (id: number, hidden: boolean): Promise<Archive | undefined> =
 					.selectFrom('archive_sources')
 					.select(['name', 'url'])
 					.whereRef('archives.id', '=', 'archive_sources.archive_id')
+					.orderBy('name asc')
 			).as('sources'),
 		])
 		.where('id', '=', id);

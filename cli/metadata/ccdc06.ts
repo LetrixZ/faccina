@@ -3,7 +3,7 @@ import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive, type Source } from '.';
+import { type Archive, type Source } from '../../shared/metadata';
 import { mapMultiField, multiTextField } from './schemas';
 import { parseSourceName } from './utils';
 
