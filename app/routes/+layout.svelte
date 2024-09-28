@@ -1,7 +1,7 @@
 <script>
 	import { Toaster } from '$lib/components/ui/sonner';
 
-	import { siteConfig } from '~/lib/stores';
+	import { siteConfig } from '$lib//stores';
 
 	import '../app.pcss';
 
