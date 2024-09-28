@@ -15,7 +15,7 @@ const config = {
 			},
 		},
 		adapter: adapter({
-			precompress: true,
+			reusePort: true,
 		}),
 		alias: {
 			'~': './app',

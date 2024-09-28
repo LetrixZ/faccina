@@ -44,7 +44,7 @@
 		"prettier-plugin-svelte": "^3.2.7",
 		"prettier-plugin-tailwindcss": "^0.6.8",
 		"svelte": "^4.2.19",
-		"svelte-adapter-bun": "^0.5.2",
+		"svelte-adapter-bun": "github:LetrixZ/svelte-adapter-bun",
 		"svelte-check": "^3.8.6",
 		"tailwindcss": "^3.4.13",
 		"tslib": "^2.7.0",
@@ -111,6 +111,7 @@
 		"@sveltejs/kit",
 		"esbuild",
 		"sharp",
+		"svelte-adapter-bun",
 		"svelte-preprocess"
 	]
 }

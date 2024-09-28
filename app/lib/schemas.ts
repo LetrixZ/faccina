@@ -4,7 +4,7 @@ const usernameSchema = z
 	.string()
 	.min(4, 'Username cannot contain at least 4 characters')
 	.max(32, 'Username cannot contain more than 32 characters')
-	.regex(/^[a-z0+-9_-]+$/, 'Username contains invalid characters');
+	.regex(/^[a-z0+-9_-]+$/, 'Username must be lowercase and can contain only letters and numbers');
 const passwordSchema = z
 	.string()
 	.min(4, 'Password must contain at least 4 characters')
