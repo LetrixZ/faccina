@@ -16,7 +16,7 @@
 
 	export let data: SuperValidated<Infer<LoginSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
-	export let canRecover: boolean;
+	export let hasMailer: boolean;
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
@@ -70,21 +70,19 @@
 			Create an account
 		</Button>
 
-		{#if canRecover}
-			<Button
-				class="h-fit p-0 text-sm"
-				href="/recover{$page.url.search}"
-				on:click={(ev) => {
-					if (changeState && typeof changeState == 'function') {
-						ev.preventDefault();
-						changeState('recover');
-					}
-				}}
-				variant="link"
-			>
-				Recover access
-			</Button>
-		{/if}
+		<Button
+			class="h-fit p-0 text-sm"
+			href={hasMailer ? `/recover${$page.url.search}` : `/reset${$page.url.search}`}
+			on:click={(ev) => {
+				if (changeState && typeof changeState == 'function') {
+					ev.preventDefault();
+					changeState(hasMailer ? 'recover' : 'reset');
+				}
+			}}
+			variant="link"
+		>
+			Recover access
+		</Button>
 	</div>
 
 	<Form.Button class="w-full">Login</Form.Button>

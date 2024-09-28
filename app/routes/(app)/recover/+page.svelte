@@ -5,5 +5,5 @@
 </script>
 
 <div class="mx-auto max-w-sm pt-4 md:pt-8">
-	<RecoverForm data={data.form} />
+	<RecoverForm data={data.form} hasMailer={data.site.hasMailer} />
 </div>

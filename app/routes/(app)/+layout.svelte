@@ -352,15 +352,16 @@
 	<Dialog.Content class="max-w-[90%] md:max-w-md">
 		{#if userFormState === 'register'}
 			<RegisterForm
-				canRecover={data.site.canRecover}
 				changeState={(state) => (userFormState = state)}
 				data={data.registerForm}
+				hasMailer={data.site.hasMailer}
 				on:result={({ detail }) => handleUserFormResult(detail)}
 			/>
 		{:else if userFormState === 'recover'}
 			<RecoverForm
 				changeState={(state) => (userFormState = state)}
 				data={data.recoverForm}
+				hasMailer={data.site.hasMailer}
 				on:result={({ detail }) => handleUserFormResult(detail)}
 			/>
 		{:else if userFormState === 'reset'}
@@ -371,9 +372,9 @@
 			/>
 		{:else if userFormState === 'login'}
 			<LoginForm
-				canRecover={data.site.canRecover}
 				changeState={(state) => (userFormState = state)}
 				data={data.loginForm}
+				hasMailer={data.site.hasMailer}
 				on:result={({ detail }) => handleUserFormResult(detail)}
 			/>
 		{/if}

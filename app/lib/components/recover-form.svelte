@@ -16,6 +16,7 @@
 
 	export let data: SuperValidated<Infer<RecoverSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
+	export let hasMailer: boolean;
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
@@ -36,15 +37,21 @@
 </script>
 
 <form action="/recover{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
-	<div class="flex flex-col">
-		<Form.Field {form} name="username">
-			<Form.Control let:attrs>
-				<Form.Label>Username</Form.Label>
-				<Input {...attrs} bind:value={$formData.username} />
-			</Form.Control>
-			<Form.FieldErrors />
-		</Form.Field>
-	</div>
+	{#if hasMailer}
+		<div class="flex flex-col">
+			<Form.Field {form} name="username">
+				<Form.Control let:attrs>
+					<Form.Label>Username</Form.Label>
+					<Input {...attrs} bind:value={$formData.username} />
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+		</div>
+	{:else}
+		<p class="text-center font-medium">
+			The site can't send emails. Make a request to the admin for a recovery code.
+		</p>
+	{/if}
 
 	<div class="flex justify-between">
 		<Button
@@ -76,7 +83,7 @@
 		</Button>
 	</div>
 
-	<Form.Button class="w-full">Recover</Form.Button>
+	<Form.Button class="w-full" disabled={!hasMailer}>Recover</Form.Button>
 
 	<Button
 		class="mx-auto"

@@ -9,7 +9,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import type { Actions } from './$types';
 
 export const load = async () => {
-	if (!config.site.enableUsers || !config.mailer) {
+	if (!config.site.enableUsers) {
 		error(404, { message: 'Not Found' });
 	}
 

@@ -8,7 +8,7 @@ export const load: LayoutServerLoad = ({ locals }) => {
 		site: {
 			name: config.site.siteName,
 			enableUsers: config.site.enableUsers,
-			canRecover: !!config.mailer,
+			hasMailer: !!config.mailer,
 		},
 	};
 };
