@@ -277,7 +277,7 @@ export const processTags = (tags: Tag[]) => {
 
 	const frequencyMap = tagNamespaces.reduce(
 		(acc, item) => {
-			const afterColon = item.split(':')[1];
+			const afterColon = item.split(':').slice(1).join(':');
 			acc[afterColon] = (acc[afterColon] || 0) + 1;
 			return acc;
 		},
@@ -285,7 +285,7 @@ export const processTags = (tags: Tag[]) => {
 	);
 
 	const result = tagNamespaces.map((item) => {
-		const afterColon = item.split(':')[1];
+		const afterColon = item.split(':').slice(1).join(':');
 
 		if (frequencyMap[afterColon] === 1) {
 			return afterColon;
