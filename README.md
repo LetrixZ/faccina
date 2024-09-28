@@ -166,8 +166,8 @@ The server can send emails for account access recovery. If no options are specif
 host = "smtp.example.com"
 port = 465
 secure = true
-username = "smtp_username"
-password = "smtp_password"
+user = "smtp_username"
+pass = "smtp_password"
 from = "admin@example.com"
 ```
 
