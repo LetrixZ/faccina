@@ -490,7 +490,7 @@ export const index = async (opts: IndexOptions) => {
 
 			if (!archive.images) {
 				const filenames = Object.keys(await zip.entries())
-					.filter((key) => key.match(/^[^/]+\.(jpeg|jpg|png|webp|avif|bmp)$/i))
+					.filter((key) => key.match(/.(jpeg|jpg|png|webp|avif|jxl|bmp)$/i))
 					.sort(naturalCompare);
 
 				if (filenames.length) {

@@ -1,22 +1,12 @@
-import { spawn } from 'bun';
+import cluster from 'node:cluster';
+import { cpus } from 'node:os';
 
-const cpus = navigator.hardwareConcurrency; // Number of CPU cores
-const buns = new Array(cpus);
+import serve from './build';
 
-for (let i = 0; i < cpus; i++) {
-	buns[i] = spawn({
-		cmd: ['bun', './build'],
-		stdout: 'inherit',
-		stderr: 'inherit',
-		stdin: 'inherit',
-	});
-}
-
-function kill() {
-	for (const bun of buns) {
-		bun.kill();
+if (cluster.isPrimary) {
+	for (let i = 0; i < cpus().length; i++) {
+		cluster.fork();
 	}
+} else {
+	serve();
 }
-
-process.on('SIGINT', kill);
-process.on('exit', kill);
