@@ -18,7 +18,11 @@
 		<p class="text-xl font-semibold text-foreground">Favorites</p>
 
 		<div class="grid items-end gap-2 md:flex">
-			<SortOptions />
+			<SortOptions
+				defaultOrder={data.site.defaultOrder}
+				defaultSort={data.site.defaultSort}
+				favorites={true}
+			/>
 		</div>
 
 		<Separator />
@@ -46,7 +50,11 @@
 		<p class="text-xl font-semibold text-foreground">Favorites ({libraryPage.total})</p>
 
 		<div class="grid items-end gap-2 md:flex">
-			<SortOptions favorites={true} />
+			<SortOptions
+				defaultOrder={data.site.defaultOrder}
+				defaultSort={data.site.defaultSort}
+				favorites={true}
+			/>
 			<ListPagination
 				class="mx-auto w-fit md:mx-0 md:ms-auto"
 				limit={libraryPage.limit}

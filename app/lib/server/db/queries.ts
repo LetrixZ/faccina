@@ -18,6 +18,8 @@ import { type ExpressionWrapper, type OrderByExpression, sql, type SqlBool } fro
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
 
+import { type Order, orderSchema, type Sort, sortSchema } from '~/lib/schemas';
+
 export enum Sorting {
 	RELEVANCE = 'relevance',
 	RELEASED_AT = 'released_at',
@@ -282,40 +284,35 @@ export const search = async (
 ): Promise<{ ids: number[]; total: number }> => {
 	const { tagMatches, titleMatch, pagesMatch } = parseQuery(searchParams.get('q') ?? '');
 
-	const sorting = searchParams.get('sort') ?? Sorting.RELEASED_AT;
-	const ordering = searchParams.get('order') ?? Ordering.DESC;
+	const sort = sortSchema
+		.nullish()
+		.transform((val) => val ?? config.site.defaultSort)
+		.catch(config.site.defaultSort)
+		.parse(searchParams.get('sort'));
+	const order = orderSchema
+		.nullish()
+		.transform((val) => val ?? config.site.defaultOrder)
+		.catch(config.site.defaultOrder)
+		.parse(searchParams.get('order'));
 
-	const orderBy: OrderByExpression<DB, 'archives', undefined> = (() => {
-		if (ordering === Ordering.DESC) {
-			switch (sorting) {
-				case Sorting.RELEASED_AT:
-					return 'archives.released_at desc';
-				case Sorting.CREATED_AT:
-					return 'archives.created_at desc';
-				case Sorting.TITLE:
-					return config.database.vendor === 'postgresql'
-						? 'archives.title desc'
-						: sql`archives.title collate nocase desc`;
-				case Sorting.PAGES:
-					return 'archives.pages desc';
-			}
-		} else if (ordering === Ordering.ASC) {
-			switch (sorting) {
-				case Sorting.RELEASED_AT:
-					return 'archives.released_at asc';
-				case Sorting.CREATED_AT:
-					return 'archives.created_at asc';
-				case Sorting.TITLE:
-					return config.database.vendor === 'postgresql'
-						? 'archives.title asc'
-						: sql`archives.title collate nocase asc`;
-				case Sorting.PAGES:
-					return 'archives.pages asc';
-			}
+	const sortQuery = (sort: Sort, order: Order) => {
+		switch (sort) {
+			case 'released_at':
+				return `archives.released_at ${order}`;
+			case 'created_at':
+				return `archives.created_at ${order}`;
+			case 'title':
+				return config.database.vendor === 'postgresql'
+					? `archives.title ${order}`
+					: sql`archives.title collate nocase ${sql.raw(order)}`;
+			case 'pages':
+				return `archives.pages ${order}`;
+			default:
+				return sortQuery(config.site.defaultSort, config.site.defaultOrder);
 		}
+	};
 
-		return 'archives.released_at desc';
-	})();
+	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'archives', undefined>;
 
 	const blacklist = searchParams.get('blacklist')?.split(',');
 
@@ -446,15 +443,17 @@ export const search = async (
 
 	query = query
 		.orderBy([orderBy])
-		.orderBy(ordering === Ordering.ASC ? 'archives.created_at asc' : 'archives.created_at desc')
-		.orderBy(ordering === Ordering.ASC ? 'archives.id asc' : 'archives.id desc');
+		.orderBy(order === Ordering.ASC ? 'archives.created_at asc' : 'archives.created_at desc')
+		.orderBy(order === Ordering.ASC ? 'archives.id asc' : 'archives.id desc');
 
 	let filteredResults = await query.execute();
 
-	if (sorting === Sorting.TITLE) {
-		filteredResults = filteredResults.toSorted((a, b) => naturalCompare(a.title, b.title));
+	if (sort === Sorting.TITLE) {
+		filteredResults = filteredResults.toSorted((a, b) =>
+			naturalCompare(a.title.toLowerCase(), b.title.toLowerCase())
+		);
 
-		if (ordering === Ordering.DESC) {
+		if (order === Ordering.DESC) {
 			filteredResults = filteredResults.toReversed();
 		}
 	}
@@ -470,7 +469,7 @@ export const search = async (
 
 	const seed = searchParams.get('seed');
 
-	if (sorting === Sorting.RANDOM && seed) {
+	if (sort === Sorting.RANDOM && seed) {
 		allIds = shuffle(allIds, seed);
 	}
 

@@ -1,3 +1,5 @@
+import type { Order, Sort } from './schemas';
+
 export interface Archive {
 	id: number;
 	slug: string;
@@ -95,23 +97,8 @@ export interface LibraryPage {
 
 export interface SearchParams {
 	query: string;
-	sort: Sorting;
-	order: Ordering;
-}
-
-export enum Sorting {
-	RELEVANCE = 'relevance',
-	RELEASED_AT = 'released_at',
-	CREATED_AT = 'created_at',
-	TITLE = 'title',
-	PAGES = 'pages',
-	RANDOM = 'random',
-	SAVED_AT = 'saved_at',
-}
-
-export enum Ordering {
-	ASC = 'asc',
-	DESC = 'desc',
+	sort: Sort;
+	order: Order;
 }
 
 export interface Task {

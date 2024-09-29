@@ -4,32 +4,28 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import { Ordering, Sorting } from '$lib/models';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronUp from 'lucide-svelte/icons/chevron-up';
+
+	import type { Order, Sort } from '../schemas';
 
 	import { randomString } from '../utils';
 
 	export let favorites = false;
+	export let defaultSort: Sort = 'released_at';
+	export let defaultOrder: Order = 'desc';
 
-	const sortOptions = [
-		{ label: 'Date released', value: Sorting.RELEASED_AT },
-		{ label: 'Date added', value: Sorting.CREATED_AT },
-		// FIXME:
-		// {
-		// 	label: 'Relevance',
-		// 	value: Sorting.RELEVANCE,
-		// },
-		{ label: 'Title', value: Sorting.TITLE },
-		{ label: 'Pages', value: Sorting.PAGES },
-		{ label: 'Random', value: Sorting.RANDOM },
-		...(favorites ? [{ label: 'Favorited on', value: Sorting.SAVED_AT }] : []),
+	const sortOptions: { label: string; value: Sort }[] = [
+		{ label: 'Date released', value: 'released_at' },
+		{ label: 'Date added', value: 'created_at' },
+		{ label: 'Title', value: 'title' },
+		{ label: 'Pages', value: 'pages' },
+		{ label: 'Random', value: 'random' },
+		...(favorites ? [{ label: 'Favorited on', value: 'saved_at' as Sort }] : []),
 	];
 
-	const defaultSort = favorites ? Sorting.SAVED_AT : Sorting.RELEASED_AT;
-
-	$: sort = ($page.url.searchParams.get('sort') as Sorting) ?? defaultSort;
-	$: order = ($page.url.searchParams.get('order') as Ordering) ?? Ordering.DESC;
+	$: sort = (($page.url.searchParams.get('sort') as Sort) ?? favorites) ? 'saved_at' : defaultSort;
+	$: order = ($page.url.searchParams.get('order') as Order) ?? defaultOrder;
 
 	$: sortOption = sort && sortOptions.find((option) => option.value === sort);
 </script>
@@ -41,9 +37,9 @@
 			items={sortOptions}
 			onSelectedChange={(option) => {
 				const query = new URLSearchParams($page.url.searchParams.toString());
-				query.set('sort', option?.value ?? defaultSort);
+				query.set('sort', (option?.value ?? favorites) ? 'saved_at' : defaultSort);
 
-				if (option?.value === Sorting.RANDOM) {
+				if (option?.value === 'random') {
 					if (!query.get('seed')) {
 						query.set('seed', randomString());
 					}
@@ -68,15 +64,15 @@
 
 	<Button
 		class="size-8 p-0 text-muted-foreground-light"
-		disabled={sort === Sorting.RANDOM}
+		disabled={sort === 'random'}
 		on:click={() => {
 			const query = new URLSearchParams($page.url.searchParams.toString());
-			query.set('order', order === Ordering.DESC ? Ordering.ASC : Ordering.DESC);
+			query.set('order', order === 'desc' ? 'asc' : 'desc');
 			goto(`?${query.toString()}`);
 		}}
 		variant="ghost"
 	>
-		{#if order === Ordering.DESC}
+		{#if order === 'desc'}
 			<span class="sr-only">Set ascending order</span>
 			<ChevronDown />
 		{:else}

@@ -88,3 +88,18 @@ export const archiveSchema = z
 	});
 
 export type ArchiveSchema = typeof archiveSchema;
+
+export const sortSchema = z.enum([
+	'released_at',
+	'created_at',
+	'title',
+	'pages',
+	'random',
+	'saved_at',
+]);
+
+export type Sort = z.infer<typeof sortSchema>;
+
+export const orderSchema = z.enum(['asc', 'desc']);
+
+export type Order = z.infer<typeof orderSchema>;

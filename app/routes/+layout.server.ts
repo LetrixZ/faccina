@@ -9,6 +9,8 @@ export const load: LayoutServerLoad = ({ locals }) => {
 			name: config.site.siteName,
 			enableUsers: config.site.enableUsers,
 			hasMailer: !!config.mailer,
+			defaultSort: config.site.defaultSort,
+			defaultOrder: config.site.defaultOrder,
 		},
 	};
 };

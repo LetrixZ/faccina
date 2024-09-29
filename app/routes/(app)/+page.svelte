@@ -18,7 +18,7 @@
 		<p class="text-xl font-semibold text-foreground">Browse</p>
 
 		<div class="grid items-end gap-2 md:flex">
-			<SortOptions />
+			<SortOptions defaultOrder={data.site.defaultOrder} defaultSort={data.site.defaultSort} />
 		</div>
 
 		<Separator />
@@ -46,7 +46,7 @@
 		<p class="text-xl font-semibold text-foreground">Browse ({library.total})</p>
 
 		<div class="grid items-end gap-2 md:flex">
-			<SortOptions />
+			<SortOptions defaultOrder={data.site.defaultOrder} defaultSort={data.site.defaultSort} />
 			<ListPagination
 				class="mx-auto w-fit md:mx-0 md:ms-auto"
 				limit={library.limit}

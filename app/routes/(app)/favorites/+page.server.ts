@@ -1,12 +1,13 @@
 import type { DB } from '~shared/types';
 import type { OrderByExpression } from 'kysely';
 
-import { Ordering, Sorting } from '$lib/models';
 import { libraryItems, search } from '$lib/server/db/queries';
 import { error, redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 import { match } from 'ts-pattern';
+
+import { orderSchema, sortSchema } from '~/lib/schemas';
 
 import type { PageServerLoad } from './$types';
 
@@ -20,20 +21,26 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	}
 
 	const searchParams = new URLSearchParams(url.searchParams);
-	const sorting = searchParams.get('sort') ?? Sorting.SAVED_AT;
-	const ordering = searchParams.get('order') ?? Ordering.DESC;
+	const sort = sortSchema
+		.nullish()
+		.transform((val) => val ?? config.site.defaultSort)
+		.catch(config.site.defaultSort)
+		.parse(searchParams.get('sort'));
+	const order = orderSchema
+		.nullish()
+		.transform((val) => val ?? config.site.defaultOrder)
+		.catch(config.site.defaultOrder)
+		.parse(searchParams.get('order'));
 	const blacklist = cookies.get('blacklist');
 
 	if (blacklist) {
 		searchParams.set('blacklist', blacklist);
 	}
 
-	const orderBy = match(ordering)
-		.with(
-			Ordering.ASC,
-			() => 'created_at asc' as OrderByExpression<DB, 'user_favorites', undefined>
-		)
-		.otherwise(() => 'created_at desc' as OrderByExpression<DB, 'user_favorites', undefined>);
+	const orderBy = match(order)
+		.with('asc', () => 'created_at asc' as OrderByExpression<DB, 'user_favorites', undefined>)
+		.with('desc', () => 'created_at desc' as OrderByExpression<DB, 'user_favorites', undefined>)
+		.exhaustive();
 
 	const favorites = (
 		await db
@@ -59,7 +66,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 
 	return {
 		libraryPage: {
-			archives: await libraryItems(ids, sorting === Sorting.SAVED_AT ? favorites : undefined),
+			archives: await libraryItems(ids, sort === 'saved_at' ? favorites : undefined),
 			page: 1,
 			limit: 24,
 			total,
