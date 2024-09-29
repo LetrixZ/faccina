@@ -22,7 +22,7 @@ export type ImageDimensionsArgs = {
 	dimensions?: { width: number; height: number };
 };
 
-const calculateDimensions = async (args: ImageDimensionsArgs) => {
+export const calculateDimensions = async (args: ImageDimensionsArgs) => {
 	if (!args.dimensions) {
 		const image = await db
 			.selectFrom('archive_images')
@@ -66,7 +66,7 @@ const calculateDimensions = async (args: ImageDimensionsArgs) => {
 
 export const dimensionsQueue = new ProcessingQueue<ImageDimensionsArgs, void>(calculateDimensions);
 
-const encodeImage = async (args: ImageEncodingArgs) => {
+export const encodeImage = async (args: ImageEncodingArgs) => {
 	const image = await db
 		.selectFrom('archive_images')
 		.select(['filename', 'width', 'height'])
@@ -94,7 +94,7 @@ const encodeImage = async (args: ImageEncodingArgs) => {
 		const { width, height } = await pipeline.metadata();
 
 		if (width && height) {
-			dimensionsQueue.enqueue({
+			calculateDimensions({
 				archive: args.archive,
 				page: args.page,
 				dimensions: { width, height },

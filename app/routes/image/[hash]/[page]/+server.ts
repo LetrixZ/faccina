@@ -1,9 +1,8 @@
-import { dimensionsQueue, encodeQueue } from '$lib/server/image';
+import { calculateDimensions, encodeImage } from '$lib/server/image';
 import { error } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
-import { leadingZeros } from '~shared/utils';
-import { readStream } from '~shared/utils';
+import { leadingZeros, readStream } from '~shared/utils';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
@@ -47,7 +46,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer, string]> =
 		const { width, height } = await sharp(buffer).metadata();
 
 		if (width && height) {
-			dimensionsQueue.enqueue({
+			calculateDimensions({
 				archive,
 				page: archive.page_number,
 				dimensions: { width, height },
@@ -90,7 +89,7 @@ const resampledImage = async (
 	}
 
 	try {
-		const encodedImage = await encodeQueue.enqueue({
+		const encodedImage = await encodeImage({
 			archive,
 			page: archive.page_number,
 			savePath: imagePath,
