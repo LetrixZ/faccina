@@ -97,7 +97,8 @@ const presetSchema = z
 	.transform(camelize)
 	.and(z.object({ width: z.number() }));
 
-export type Preset = z.infer<typeof presetSchema>;
+export type _Preset = z.infer<typeof presetSchema>;
+export type Preset = _Preset & { name: string };
 
 const imageSchema = z
 	.object({
@@ -151,7 +152,7 @@ const imageSchema = z
 		...val,
 		preset: Object.entries(val.preset).reduce(
 			(acc, [name, preset]) => ({ ...acc, [name]: { ...preset, name } }),
-			{} as { [key: string]: Preset & { name: string } }
+			{} as { [key: string]: Preset }
 		),
 	}))
 	.transform((val) => ({

@@ -1,8 +1,8 @@
 import { dimensionsQueue, encodeQueue } from '$lib/server/image';
-import { leadingZeros } from '$lib/utils';
 import { error } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
+import { leadingZeros } from '~shared/utils';
 import { readStream } from '~shared/utils';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';

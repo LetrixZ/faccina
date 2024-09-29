@@ -297,13 +297,6 @@ export const processTags = (tags: Tag[]) => {
 	return tags.map((tag, i) => ({ ...tag, name: result[i] }));
 };
 
-export const leadingZeros = <T extends number | string | bigint>(
-	number: T,
-	count: number
-): string => {
-	return number.toString().padStart(count.toString().length, '0');
-};
-
 export const shuffle = <T>(array: T[], seed: string) => {
 	let currentIndex = array.length;
 	let temporaryValue: T;

@@ -42,6 +42,12 @@ program
 	.action(() => import('./archive').then(({ prune }) => prune()));
 
 program
+	.command('generate-images')
+	.description('Generates all resampled images.')
+	.option('-f --force', 'Regenerate already generated images.')
+	.action((options) => import('./archive').then(({ generateImages }) => generateImages(options)));
+
+program
 	.command('uli')
 	.argument('<username>')
 	.description('Generate a one time login link for the specified user')

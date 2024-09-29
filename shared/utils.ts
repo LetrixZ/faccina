@@ -11,3 +11,10 @@ export const readStream = async (stream: NodeJS.ReadableStream) => {
 
 	return Buffer.concat(chunks);
 };
+
+export const leadingZeros = <T extends number | string | bigint>(
+	number: T,
+	count: number
+): string => {
+	return number.toString().padStart(count.toString().length, '0');
+};

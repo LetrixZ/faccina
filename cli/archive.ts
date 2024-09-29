@@ -8,13 +8,16 @@ import { createReadStream } from 'node:fs';
 import { exists, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
+import PQueue from 'p-queue';
 import { parse } from 'path';
+import sharp from 'sharp';
 import slugify from 'slugify';
+import { match } from 'ts-pattern';
 
 import type { Archive } from '../shared/metadata';
 
 import { upsertImages, upsertSources } from '../shared/archive';
-import config from '../shared/config';
+import config, { Preset } from '../shared/config';
 import db from '../shared/db';
 import {
 	type ReferenceTable,
@@ -22,7 +25,7 @@ import {
 	type RelationshipTable,
 	taxonomyTables,
 } from '../shared/taxonomy';
-import { readStream } from '../shared/utils';
+import { leadingZeros, readStream } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
@@ -670,4 +673,128 @@ export const prune = async () => {
 	}
 
 	await db.destroy();
+};
+
+type GenerateImagesOptions = {
+	force: boolean;
+};
+
+import { cpus } from 'node:os';
+
+const queue = new PQueue({ concurrency: cpus().length });
+sharp.concurrency(1);
+
+export const generateImages = async (options: GenerateImagesOptions) => {
+	const archives = await db
+		.selectFrom('archives')
+		.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
+		.execute();
+
+	console.info(`Generating images for ${chalk.bold(archives.length)} archives\n`);
+
+	const multibar = new cliProgress.MultiBar(
+		{ clearOnComplete: true },
+		cliProgress.Presets.shades_grey
+	);
+
+	const totalProgress = multibar.create(archives.length, 0, undefined, {
+		format: `{bar} - {path} - {value}/{total}`,
+	});
+	let count = 0;
+	let generated = 0;
+	let skipped = 0;
+
+	const start = performance.now();
+
+	for (const { id, path, hash, thumbnail, pages } of archives) {
+		try {
+			totalProgress.update(count, { path });
+			const zip = new StreamZip.async({ file: path });
+
+			const images = await db
+				.selectFrom('archive_images')
+				.select(['filename', 'page_number', 'width', 'height'])
+				.where('archive_id', '=', id)
+				.execute();
+
+			for (const { filename, page_number, width, height } of images) {
+				const generateImage = async (preset: Preset) => {
+					const imagePath = join(
+						config.directories.images,
+						hash,
+						preset.name,
+						`${leadingZeros(page_number, pages ?? 1)}.${preset.format}`
+					);
+
+					const exists = await Bun.file(imagePath).exists();
+
+					if (exists && !options.force) {
+						skipped++;
+						return;
+					}
+
+					const stream = await zip.stream(filename);
+					const buffer = await readStream(stream);
+
+					let pipeline = sharp(buffer);
+
+					if (!width || !height) {
+						const { width, height } = await pipeline.metadata();
+
+						if (width && height) {
+							await db
+								.updateTable('archive_images')
+								.set({ width, height })
+								.where('archive_id', '=', id)
+								.where('page_number', '=', page_number)
+								.execute();
+						}
+					}
+
+					pipeline = pipeline.resize({ width: preset.width });
+
+					pipeline = match(preset)
+						.with({ format: 'webp' }, (data) => pipeline.webp(data))
+						.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
+						.with({ format: 'png' }, (data) => pipeline.png(data))
+						.with({ format: 'jxl' }, (data) => pipeline.jxl(data))
+						.with({ format: 'avif' }, (data) => pipeline.avif(data))
+						.exhaustive();
+
+					const newImage = await pipeline.toBuffer();
+
+					try {
+						await Bun.write(imagePath, newImage);
+						generated++;
+					} catch (err) {
+						console.error(
+							chalk.red(
+								`[${new Date().toISOString()}] [encodeImage] ${chalk.magenta(`[ID ${id}]`)} Page number ${chalk.bold(page_number)} - Failed to save resampled image to "${chalk.bold(imagePath)}"`
+							),
+							err
+						);
+					}
+				};
+
+				await queue.add(() => generateImage(config.image.thumbnailPreset));
+
+				if (thumbnail === page_number) {
+					await queue.add(() => generateImage(config.image.coverPreset));
+				}
+			}
+		} finally {
+			totalProgress.increment();
+			count++;
+		}
+	}
+
+	const end = performance.now();
+
+	await db.destroy();
+	await sleep(250);
+
+	multibar.stop();
+
+	console.info(chalk.bold(`~~~ Finished in ${((end - start) / 1000).toFixed(2)} seconds ~~~`));
+	console.info(`Generated ${chalk.bold(generated)} and skipped ${chalk.bold(skipped)} images\n`);
 };
