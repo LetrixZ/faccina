@@ -1,6 +1,11 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "always"
-  },
-  "prettier.prettierPath": "./node_modules/prettier"
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "always",
+	},
+	"prettier.prettierPath": "./node_modules/prettier",
+	"eslint.validate": [
+		"javascript",
+		"svelte"
+	],
 }

@@ -1,6 +1,6 @@
 import {
 	type RawBuilder,
-	SchemaModule,
+	type SchemaModule,
 	type SelectQueryBuilderExpression,
 	type Simplify,
 	sql,

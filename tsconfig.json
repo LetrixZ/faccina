@@ -25,6 +25,6 @@
 		"./app/**/*.js",
 		"./app/**/*.ts",
 		"./app/**/*.svelte",
-		".svelte-kit/ambient.d.ts",
+		".svelte-kit/ambient.d.ts"
 	]
 }

@@ -83,23 +83,13 @@
 		</div>
 
 		<div class="flex-auto">
-			<div class="grid grid-cols-2 gap-4">
-				<Form.Field {form} name="title">
-					<Form.Control let:attrs>
-						<Form.Label>Title</Form.Label>
-						<Input {...attrs} bind:value={$formData.title} />
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-
-				<Form.Field {form} name="slug">
-					<Form.Control let:attrs>
-						<Form.Label>Slug</Form.Label>
-						<Input {...attrs} bind:value={$formData.slug} />
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-			</div>
+			<Form.Field {form} name="title">
+				<Form.Control let:attrs>
+					<Form.Label>Title</Form.Label>
+					<Input {...attrs} bind:value={$formData.title} />
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
 
 			<Form.Field {form} name="description">
 				<Form.Control let:attrs>

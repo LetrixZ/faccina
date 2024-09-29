@@ -12,8 +12,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"kysely": "bunx --bun kysely",
-		"precommit": "bun test && bun prettier -w app cli shared && bun eslint --fix . && bun tsc --noEmit -p tsconfig.dev.json && bun check && bun run build"
+		"kysely": "bunx --bun kysely"
 	},
 	"devDependencies": {
 		"@iconify/json": "^2.2.254",

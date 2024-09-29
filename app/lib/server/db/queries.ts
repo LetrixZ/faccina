@@ -14,7 +14,7 @@ import {
 	relationTable,
 	taxonomyTables,
 } from '~shared/taxonomy';
-import { ExpressionWrapper, type OrderByExpression, sql, type SqlBool } from 'kysely';
+import { type ExpressionWrapper, type OrderByExpression, sql, type SqlBool } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
 
