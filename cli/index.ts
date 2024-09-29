@@ -9,7 +9,7 @@ program
 		'-p --paths <paths...>',
 		`indicate which paths to index (defaults to path defined in CONTENT_DIR)`
 	)
-	.option('--from-path path', `resume indexing from path (not compatible with -p --paths)`)
+	.option('--from-path <path>', `resume indexing from path (not compatible with -p --paths)`)
 	.option(
 		'-r --recursive',
 		'navigate through directories recursively (defaults to true if no path given)'
@@ -44,6 +44,7 @@ program
 program
 	.command('generate-images')
 	.description('Generates all resampled images.')
+	.option('--ids <IDs...>', 'Only generate images for the given IDs.')
 	.option('-f --force', 'Regenerate already generated images.')
 	.action((options) => import('./archive').then(({ generateImages }) => generateImages(options)));
 

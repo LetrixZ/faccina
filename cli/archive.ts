@@ -8,7 +8,6 @@ import { createReadStream } from 'node:fs';
 import { exists, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
-import PQueue from 'p-queue';
 import { parse } from 'path';
 import sharp from 'sharp';
 import slugify from 'slugify';
@@ -676,19 +675,27 @@ export const prune = async () => {
 };
 
 type GenerateImagesOptions = {
+	ids: string[];
 	force: boolean;
 };
 
-import { cpus } from 'node:os';
-
-const queue = new PQueue({ concurrency: cpus().length });
-sharp.concurrency(1);
-
 export const generateImages = async (options: GenerateImagesOptions) => {
-	const archives = await db
-		.selectFrom('archives')
-		.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
-		.execute();
+	const ids = options.ids.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+
+	const archives = await (() => {
+		if (ids.length) {
+			return db
+				.selectFrom('archives')
+				.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
+				.where('id', 'in', ids)
+				.execute();
+		} else {
+			return db
+				.selectFrom('archives')
+				.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
+				.execute();
+		}
+	})();
 
 	console.info(`Generating images for ${chalk.bold(archives.length)} archives\n`);
 
@@ -717,36 +724,40 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				.where('archive_id', '=', id)
 				.execute();
 
-			for (const { filename, page_number, width, height } of images) {
+			for (const image of images) {
 				const generateImage = async (preset: Preset) => {
 					const imagePath = join(
 						config.directories.images,
 						hash,
 						preset.name,
-						`${leadingZeros(page_number, pages ?? 1)}.${preset.format}`
+						`${leadingZeros(image.page_number, pages ?? 1)}.${preset.format}`
 					);
 
 					const exists = await Bun.file(imagePath).exists();
 
 					if (exists && !options.force) {
 						skipped++;
+
 						return;
 					}
 
-					const stream = await zip.stream(filename);
+					const stream = await zip.stream(image.filename);
 					const buffer = await readStream(stream);
 
 					let pipeline = sharp(buffer);
 
-					if (!width || !height) {
+					if (!image.width || !image.height) {
 						const { width, height } = await pipeline.metadata();
 
 						if (width && height) {
+							image.width = width;
+							image.height = height;
+
 							await db
 								.updateTable('archive_images')
 								.set({ width, height })
 								.where('archive_id', '=', id)
-								.where('page_number', '=', page_number)
+								.where('page_number', '=', image.page_number)
 								.execute();
 						}
 					}
@@ -769,19 +780,25 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					} catch (err) {
 						console.error(
 							chalk.red(
-								`[${new Date().toISOString()}] [encodeImage] ${chalk.magenta(`[ID ${id}]`)} Page number ${chalk.bold(page_number)} - Failed to save resampled image to "${chalk.bold(imagePath)}"`
+								`[${new Date().toISOString()}] [encodeImage] ${chalk.magenta(`[ID ${id}]`)} Page number ${chalk.bold(image.page_number)} - Failed to save resampled image to "${chalk.bold(imagePath)}"`
 							),
 							err
 						);
 					}
 				};
 
-				await queue.add(() => generateImage(config.image.thumbnailPreset));
+				try {
+					await generateImage(config.image.thumbnailPreset);
 
-				if (thumbnail === page_number) {
-					await queue.add(() => generateImage(config.image.coverPreset));
+					if (thumbnail === image.page_number) {
+						await generateImage(config.image.coverPreset);
+					}
+				} catch (error) {
+					console.error(error);
 				}
 			}
+		} catch (error) {
+			console.error(error);
 		} finally {
 			totalProgress.increment();
 			count++;
