@@ -190,6 +190,7 @@
 				action={favorites ? '/favorites' : '/'}
 				bind:this={formEl}
 				class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
+				on:submit={() => (popoverOpen = false)}
 			>
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 				<Input

@@ -16,6 +16,7 @@ import {
 } from '~shared/taxonomy';
 import { ExpressionWrapper, type OrderByExpression, sql, type SqlBool } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
+import { z } from 'zod';
 
 export enum Sorting {
 	RELEVANCE = 'relevance',
@@ -142,15 +143,29 @@ export const parseQuery = (query: string) => {
 
 	const titleMatch = query
 		.replaceAll(
-			/-?(artist|circle|magazine|event|publisher|parody|tag|\w+):(".*?"|'.*?'|[^\s]+)/g,
+			/-?(artist|circle|magazine|event|publisher|parody|tag|\w+):(".*?"|'.*?'|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g,
 			''
 		)
 		.trim();
+
+	const pagesMatch = Array.from(query.matchAll(/\bpages(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
+	let pagesNumber: number | undefined = undefined;
+	let pagesExpression: string | undefined = undefined;
+
+	if (pagesMatch) {
+		pagesNumber = parseInt(pagesMatch[2]);
+		pagesExpression = pagesMatch[1];
+	}
 
 	if (!queryMatch) {
 		return {
 			tagMatches: [],
 			titleMatch,
+			pagesMatch: {
+				number: pagesNumber,
+				expression: pagesExpression,
+			},
 		};
 	}
 
@@ -253,6 +268,10 @@ export const parseQuery = (query: string) => {
 	return {
 		tagMatches: matches,
 		titleMatch,
+		pagesMatch: {
+			number: pagesNumber,
+			expression: pagesExpression,
+		},
 	};
 };
 
@@ -261,7 +280,7 @@ export const search = async (
 	hidden: boolean,
 	ids?: number[]
 ): Promise<{ ids: number[]; total: number }> => {
-	const { tagMatches, titleMatch } = parseQuery(searchParams.get('q') ?? '');
+	const { tagMatches, titleMatch, pagesMatch } = parseQuery(searchParams.get('q') ?? '');
 
 	const sorting = searchParams.get('sort') ?? Sorting.RELEASED_AT;
 	const ordering = searchParams.get('order') ?? Ordering.DESC;
@@ -406,6 +425,14 @@ export const search = async (
 
 				return negate ? and(conditions) : or(conditions);
 			});
+		}
+	}
+
+	if (pagesMatch.expression && pagesMatch.number) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(pagesMatch.expression);
+
+		if (data) {
+			query = query.where('pages', data, pagesMatch.number);
 		}
 	}
 
