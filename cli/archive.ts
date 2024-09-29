@@ -675,12 +675,12 @@ export const prune = async () => {
 };
 
 type GenerateImagesOptions = {
-	ids: string[];
+	ids?: string[];
 	force: boolean;
 };
 
 export const generateImages = async (options: GenerateImagesOptions) => {
-	const ids = options.ids.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+	const ids = options.ids?.map((id) => parseInt(id)).filter((id) => !isNaN(id)) ?? [];
 
 	const archives = await (() => {
 		if (ids.length) {
