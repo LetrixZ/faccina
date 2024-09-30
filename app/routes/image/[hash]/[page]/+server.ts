@@ -1,9 +1,10 @@
-import { calculateDimensions, encodeImage } from '$lib/server/image';
+import { calculateDimensions } from '$lib/server/image';
 import { error } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 import { leadingZeros, readStream } from '~shared/utils';
 import chalk from 'chalk';
+import { encodeImage } from 'image-encoder';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
 import { extname, join } from 'path';
@@ -89,14 +90,36 @@ const resampledImage = async (
 	}
 
 	try {
-		const encodedImage = await encodeImage({
-			archive,
-			page: archive.page_number,
+		const encodedImage = encodeImage(archive.path, {
+			filename: archive.filename,
+			options: preset,
 			savePath: imagePath,
-			preset,
 		});
 
-		return [encodedImage, extname(imagePath)];
+		try {
+			await Bun.write(encodedImage.path, encodedImage.contents);
+		} catch (err) {
+			console.error(
+				chalk.red(
+					`[${new Date().toISOString()}] [encodeImage] ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.page_number)} - Failed to save resampled image to "${chalk.bold(imagePath)}"`
+				),
+				err
+			);
+		}
+
+		if (!archive.width || !archive.height) {
+			await db
+				.updateTable('archive_images')
+				.set({
+					width: encodedImage.width,
+					height: encodedImage.height,
+				})
+				.where('archive_id', '=', archive.id)
+				.where('page_number', '=', archive.page_number)
+				.execute();
+		}
+
+		return [encodedImage.contents, extname(imagePath)];
 	} catch (err) {
 		console.error(
 			chalk.red(

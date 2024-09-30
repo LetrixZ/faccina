@@ -1,6 +1,7 @@
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
+import { generateImages as generateImagesRust } from 'image-encoder';
 import { sql } from 'kysely';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
@@ -9,9 +10,7 @@ import { exists, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
 import { parse } from 'path';
-import sharp from 'sharp';
 import slugify from 'slugify';
-import { match } from 'ts-pattern';
 
 import type { Archive } from '../shared/metadata';
 
@@ -704,103 +703,91 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 		cliProgress.Presets.shades_grey
 	);
 
-	const totalProgress = multibar.create(archives.length, 0, undefined, {
-		format: `{bar} - {path} - {value}/{total}`,
-	});
+	const progress = multibar.create(archives.length, 0);
+
 	let count = 0;
 	let generated = 0;
 	let skipped = 0;
 
 	const start = performance.now();
 
-	for (const { id, path, hash, thumbnail, pages } of archives) {
-		try {
-			totalProgress.update(count, { path });
-			const zip = new StreamZip.async({ file: path });
+	for (const archive of archives) {
+		progress.update(count, {
+			path: archive.path,
+		});
 
+		try {
 			const images = await db
 				.selectFrom('archive_images')
 				.select(['filename', 'page_number', 'width', 'height'])
-				.where('archive_id', '=', id)
+				.where('archive_id', '=', archive.id)
 				.execute();
 
+			const missingImages: { filename: string; savePath: string; options: Preset }[] = [];
+
 			for (const image of images) {
-				const generateImage = async (preset: Preset) => {
+				if (image.page_number === archive.thumbnail) {
+					const preset = config.image.coverPreset;
+
 					const imagePath = join(
 						config.directories.images,
-						hash,
+						archive.hash,
 						preset.name,
-						`${leadingZeros(image.page_number, pages ?? 1)}.${preset.format}`
+						`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
 					);
 
 					const exists = await Bun.file(imagePath).exists();
 
-					if (exists && !options.force) {
-						skipped++;
-
-						return;
+					if (!exists || options.force) {
+						missingImages.push({
+							filename: image.filename,
+							savePath: imagePath,
+							options: preset,
+						});
 					}
+				}
 
-					const stream = await zip.stream(image.filename);
-					const buffer = await readStream(stream);
+				const preset = config.image.thumbnailPreset;
 
-					let pipeline = sharp(buffer);
+				const imagePath = join(
+					config.directories.images,
+					archive.hash,
+					preset.name,
+					`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
+				);
 
-					if (!image.width || !image.height) {
-						const { width, height } = await pipeline.metadata();
+				const exists = await Bun.file(imagePath).exists();
 
-						if (width && height) {
-							image.width = width;
-							image.height = height;
-
-							await db
-								.updateTable('archive_images')
-								.set({ width, height })
-								.where('archive_id', '=', id)
-								.where('page_number', '=', image.page_number)
-								.execute();
-						}
-					}
-
-					pipeline = pipeline.resize({ width: preset.width });
-
-					pipeline = match(preset)
-						.with({ format: 'webp' }, (data) => pipeline.webp(data))
-						.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
-						.with({ format: 'png' }, (data) => pipeline.png(data))
-						.with({ format: 'jxl' }, (data) => pipeline.jxl(data))
-						.with({ format: 'avif' }, (data) => pipeline.avif(data))
-						.exhaustive();
-
-					const newImage = await pipeline.toBuffer();
-
-					try {
-						await Bun.write(imagePath, newImage);
-						generated++;
-					} catch (err) {
-						console.error(
-							chalk.red(
-								`[${new Date().toISOString()}] [encodeImage] ${chalk.magenta(`[ID ${id}]`)} Page number ${chalk.bold(image.page_number)} - Failed to save resampled image to "${chalk.bold(imagePath)}"`
-							),
-							err
-						);
-					}
-				};
-
-				try {
-					await generateImage(config.image.thumbnailPreset);
-
-					if (thumbnail === image.page_number) {
-						await generateImage(config.image.coverPreset);
-					}
-				} catch (error) {
-					console.error(error);
+				if (!exists || options.force) {
+					missingImages.push({
+						filename: image.filename,
+						savePath: imagePath,
+						options: preset,
+					});
+				} else {
+					skipped++;
 				}
 			}
+
+			if (!missingImages.length) {
+				continue;
+			}
+
+			const encodedImages = generateImagesRust(archive.path, missingImages, 0);
+
+			generated += encodedImages.length;
+
+			for (const image of encodedImages) {
+				await Bun.write(image.path, image.contents);
+			}
 		} catch (error) {
-			console.error(error);
+			multibar.log(
+				chalk.red(
+					`Failed to generate images for ${chalk.bold(archive.path)} - ${(error as Error).message}`
+				)
+			);
 		} finally {
-			totalProgress.increment();
+			progress.increment();
 			count++;
 		}
 	}

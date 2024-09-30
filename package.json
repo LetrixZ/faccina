@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-alpha.9",
+	"version": "2.0.0-alpha.10",
 	"private": true,
 	"scripts": {
 		"dev": "bunx --bun vite dev",
@@ -74,6 +74,7 @@
 		"dotenv": "^16.4.5",
 		"fflate": "^0.8.2",
 		"formsnap": "^1.0.1",
+		"image-encoder": "github:LetrixZ/image-encoder#9de57aa",
 		"kysely": "^0.27.4",
 		"kysely-bun-sqlite": "^0.3.2",
 		"lucia": "^3.2.0",

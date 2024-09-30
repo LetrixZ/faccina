@@ -99,8 +99,7 @@ const presetSchema = z
 	.transform(camelize)
 	.and(z.object({ width: z.number() }));
 
-export type _Preset = z.infer<typeof presetSchema>;
-export type Preset = _Preset & { name: string };
+export type Preset = z.infer<typeof presetSchema> & { name: string };
 
 const imageSchema = z
 	.object({
