@@ -24,7 +24,7 @@
 		...(favorites ? [{ label: 'Favorited on', value: 'saved_at' as Sort }] : []),
 	];
 
-	$: sort = (($page.url.searchParams.get('sort') as Sort) ?? favorites) ? 'saved_at' : defaultSort;
+	$: sort = ($page.url.searchParams.get('sort') as Sort) ?? (favorites ? 'saved_at' : defaultSort);
 	$: order = ($page.url.searchParams.get('order') as Order) ?? defaultOrder;
 
 	$: sortOption = sort && sortOptions.find((option) => option.value === sort);
@@ -37,7 +37,7 @@
 			items={sortOptions}
 			onSelectedChange={(option) => {
 				const query = new URLSearchParams($page.url.searchParams.toString());
-				query.set('sort', (option?.value ?? favorites) ? 'saved_at' : defaultSort);
+				query.set('sort', option?.value ?? (favorites ? 'saved_at' : defaultSort));
 
 				if (option?.value === 'random') {
 					if (!query.get('seed')) {

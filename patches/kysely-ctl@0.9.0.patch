@@ -1,0 +1,13 @@
+diff --git a/package.json b/package.json
+index ab0a30ede3658f4fbbd6b9e2887162c204ee0e71..72821480ecfbc9b12f05fd26a8d53df81fa89116 100644
+--- a/package.json
++++ b/package.json
+@@ -29,7 +29,7 @@
+   "license": "MIT",
+   "repository": "git://github.com/kysely-org/kysely-ctl.git",
+   "dependencies": {
+-    "c12": "^1.8.0",
++    "c12": "^2.0.0.",
+     "citty": "^0.1.4",
+     "consola": "^3.2.0",
+     "nypm": "^0.3.1",
