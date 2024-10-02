@@ -46,6 +46,7 @@ program
 	.description('Generates all resampled images.')
 	.option('--ids <IDs...>', 'Only generate images for the given IDs.')
 	.option('-f --force', 'Regenerate already generated images.')
+	.option('--batch', 'Generate images in batches.')
 	.action((options) => import('./archive').then(({ generateImages }) => generateImages(options)));
 
 program

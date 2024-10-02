@@ -1,7 +1,7 @@
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
-import { generateImages as generateImagesRust } from 'image-encoder';
+import { generateImagesBatch, generateImages as generateImagesRust } from 'image-encoder';
 import { sql } from 'kysely';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
@@ -676,6 +676,21 @@ export const prune = async () => {
 type GenerateImagesOptions = {
 	ids?: string[];
 	force: boolean;
+	batch: boolean;
+};
+
+type ArchiveGenerate = {
+	id: number;
+	path: string;
+	hash: string;
+	thumbnail: number;
+	pages: number;
+};
+
+type ImageGenerate = {
+	filename: string;
+	savePath: string;
+	options: Preset;
 };
 
 export const generateImages = async (options: GenerateImagesOptions) => {
@@ -687,16 +702,43 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				.selectFrom('archives')
 				.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
 				.where('id', 'in', ids)
+				.orderBy('pages asc')
 				.execute();
 		} else {
 			return db
 				.selectFrom('archives')
 				.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
+				.orderBy('pages asc')
 				.execute();
 		}
 	})();
 
-	console.info(`Generating images for ${chalk.bold(archives.length)} archives\n`);
+	const batches: ArchiveGenerate[][] = [];
+
+	for (const archive of archives) {
+		const lastBatchIndex = batches.findLastIndex(
+			(batch) =>
+				batch.reduce((acc, archive) => acc + archive.pages, 0) <= navigator.hardwareConcurrency
+		);
+
+		if (lastBatchIndex >= 0) {
+			const lastBatch = batches[lastBatchIndex]!;
+
+			if (
+				lastBatch.reduce((acc, archive) => acc + archive.pages, 0) + archive.pages <=
+				navigator.hardwareConcurrency
+			) {
+				batches[lastBatchIndex].push(archive);
+				continue;
+			}
+		}
+
+		batches.push([archive]);
+	}
+
+	console.info(
+		`Generating images for ${chalk.bold(archives.length)} archives in ${batches.length} batches\n`
+	);
 
 	const multibar = new cliProgress.MultiBar(
 		{ clearOnComplete: true },
@@ -711,23 +753,45 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 
 	const start = performance.now();
 
-	for (const archive of archives) {
-		progress.update(count, {
-			path: archive.path,
-		});
+	if (options.batch) {
+		for (const batch of batches) {
+			const missingImagesBatches: {
+				path: string;
+				images: ImageGenerate[];
+			}[] = [];
 
-		try {
-			const images = await db
-				.selectFrom('archive_images')
-				.select(['filename', 'page_number', 'width', 'height'])
-				.where('archive_id', '=', archive.id)
-				.execute();
+			for (const archive of batch) {
+				const missingImages: ImageGenerate[] = [];
 
-			const missingImages: { filename: string; savePath: string; options: Preset }[] = [];
+				const images = await db
+					.selectFrom('archive_images')
+					.select(['filename', 'page_number', 'width', 'height'])
+					.where('archive_id', '=', archive.id)
+					.execute();
 
-			for (const image of images) {
-				if (image.page_number === archive.thumbnail) {
-					const preset = config.image.coverPreset;
+				for (const image of images) {
+					if (image.page_number === archive.thumbnail) {
+						const preset = config.image.coverPreset;
+
+						const imagePath = join(
+							config.directories.images,
+							archive.hash,
+							preset.name,
+							`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
+						);
+
+						const exists = await Bun.file(imagePath).exists();
+
+						if (!exists || options.force) {
+							missingImages.push({
+								filename: image.filename,
+								savePath: imagePath,
+								options: preset,
+							});
+						}
+					}
+
+					const preset = config.image.thumbnailPreset;
 
 					const imagePath = join(
 						config.directories.images,
@@ -744,51 +808,113 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 							savePath: imagePath,
 							options: preset,
 						});
+					} else {
+						skipped++;
 					}
 				}
 
-				const preset = config.image.thumbnailPreset;
-
-				const imagePath = join(
-					config.directories.images,
-					archive.hash,
-					preset.name,
-					`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-				);
-
-				const exists = await Bun.file(imagePath).exists();
-
-				if (!exists || options.force) {
-					missingImages.push({
-						filename: image.filename,
-						savePath: imagePath,
-						options: preset,
-					});
-				} else {
-					skipped++;
+				if (!missingImages.length) {
+					continue;
 				}
+
+				missingImagesBatches.push({
+					path: archive.path,
+					images: missingImages,
+				});
 			}
 
-			if (!missingImages.length) {
+			if (!missingImagesBatches.length) {
 				continue;
 			}
 
-			const encodedImages = generateImagesRust(archive.path, missingImages, 0);
+			const encodedImages = generateImagesBatch(missingImagesBatches);
 
 			generated += encodedImages.length;
 
 			for (const image of encodedImages) {
 				await Bun.write(image.path, image.contents);
 			}
-		} catch (error) {
-			multibar.log(
-				chalk.red(
-					`Failed to generate images for ${chalk.bold(archive.path)} - ${(error as Error).message}`
-				)
-			);
-		} finally {
-			progress.increment();
-			count++;
+		}
+	} else {
+		for (const archive of archives) {
+			progress.update(count, {
+				path: archive.path,
+			});
+
+			try {
+				const images = await db
+					.selectFrom('archive_images')
+					.select(['filename', 'page_number', 'width', 'height'])
+					.where('archive_id', '=', archive.id)
+					.execute();
+
+				const missingImages: { filename: string; savePath: string; options: Preset }[] = [];
+
+				for (const image of images) {
+					if (image.page_number === archive.thumbnail) {
+						const preset = config.image.coverPreset;
+
+						const imagePath = join(
+							config.directories.images,
+							archive.hash,
+							preset.name,
+							`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
+						);
+
+						const exists = await Bun.file(imagePath).exists();
+
+						if (!exists || options.force) {
+							missingImages.push({
+								filename: image.filename,
+								savePath: imagePath,
+								options: preset,
+							});
+						}
+					}
+
+					const preset = config.image.thumbnailPreset;
+
+					const imagePath = join(
+						config.directories.images,
+						archive.hash,
+						preset.name,
+						`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
+					);
+
+					const exists = await Bun.file(imagePath).exists();
+
+					if (!exists || options.force) {
+						missingImages.push({
+							filename: image.filename,
+							savePath: imagePath,
+							options: preset,
+						});
+					} else {
+						skipped++;
+					}
+				}
+
+				if (!missingImages.length) {
+					continue;
+				}
+
+				const encodedImages = generateImagesRust(archive.path, missingImages, 0);
+
+				generated += encodedImages.length;
+
+				for (const image of encodedImages) {
+					await Bun.write(image.path, image.contents);
+				}
+			} catch (error) {
+				multibar.log(
+					chalk.red(
+						`Failed to generate images for ${chalk.bold(archive.path)} - ${(error as Error).message}`
+					)
+				);
+			} finally {
+				progress.increment();
+				count++;
+			}
 		}
 	}
 
