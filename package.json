@@ -74,7 +74,7 @@
 		"dotenv": "^16.4.5",
 		"fflate": "^0.8.2",
 		"formsnap": "^1.0.1",
-		"image-encoder": "git+https://git.letrix.xyz/fermin/image-encoder.git#421bd3c62b",
+		"image-encoder": "git+https://git.letrix.xyz/fermin/image-encoder.git#fce9fd8c3b",
 		"kysely": "^0.27.4",
 		"kysely-bun-sqlite": "^0.3.2",
 		"lucia": "^3.2.0",
