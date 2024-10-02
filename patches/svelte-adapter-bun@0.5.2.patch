@@ -1,0 +1,56 @@
+diff --git a/files/index.js b/files/index.js
+index 3432b163b9d6834ffe831446a63e79c97e4294ab..00b6fae9a53fbe88fdc8d310b746754d1e5f44f5 100644
+--- a/files/index.js
++++ b/files/index.js
+@@ -24,5 +24,11 @@ var serverOptions = {
+   }
+ };
+ websocket && (serverOptions.websocket = websocket);
+-console.info(`Listening on ${hostname + ":" + port}` + (websocket ? " (Websocket)" : ""));
+-serve(serverOptions);
++export default () => {
++  console.info(
++    `[PID: ${process.pid}] Listening on ${hostname + ":" + port}` +
++      (websocket ? " (Websocket)" : ""),
++  );
++
++  serve(serverOptions);
++};
+diff --git a/index.d.ts b/index.d.ts
+index 57789585e495231b7aa0b348db7ea859f75d4835..96765f0e52df697caf6d27a3ef55ba5f83395a68 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -36,6 +36,12 @@ interface BuildOptions {
+    * @default true
+    */
+   assets?: boolean;
++
++  /**
++   * Share the same port across multiple processes
++   * @default false
++   */
++  reusePort?: boolean;
+ }
+ type BuildOptionsMap = keyof BuildOptions;
+ 
+diff --git a/index.js b/index.js
+index 861c61e86bea132fac7926cc1efcd9e1cc01749a..7e138b18df7f6b9e17985aa86553476296d2659f 100644
+--- a/index.js
++++ b/index.js
+@@ -26,6 +26,7 @@ export default function (opts = {}) {
+     dynamic_origin = false,
+     xff_depth = 1,
+     assets = true,
++    reusePort = false,
+   } = opts;
+   return {
+     name: "svelte-adapter-bun",
+@@ -65,7 +66,7 @@ export default function (opts = {}) {
+           MANIFEST: "./manifest.js",
+           ENV_PREFIX: JSON.stringify(envPrefix),
+           dotENV_PREFIX: envPrefix,
+-          BUILD_OPTIONS: JSON.stringify({ development, dynamic_origin, xff_depth, assets }),
++          BUILD_OPTIONS: JSON.stringify({ development, dynamic_origin, xff_depth, assets, reusePort }),
+         },
+       });
+ 

@@ -24,11 +24,11 @@
 	export let limit = 24;
 	export { className as class };
 
-	const getPageUrl = (page: number, searchParams: URLSearchParams) => {
-		const query = new URLSearchParams(searchParams.toString());
+	const getPageUrl = (page: number, url: URL) => {
+		const query = new URLSearchParams(url.searchParams.toString());
 		query.set('page', page.toString());
 
-		return `/?${query.toString()}`;
+		return `${url.pathname}?${query.toString()}`;
 	};
 
 	$: prevPageUrl = (() => {
@@ -36,7 +36,7 @@
 			const query = new URLSearchParams($page.url.searchParams.toString());
 			query.set('page', (currentPage - 1).toString());
 
-			return `/?${query.toString()}`;
+			return `${$page.url.pathname}?${query.toString()}`;
 		}
 	})();
 
@@ -45,7 +45,7 @@
 			const query = new URLSearchParams($page.url.searchParams.toString());
 			query.set('page', (currentPage + 1).toString());
 
-			return `/?${query.toString()}`;
+			return `${$page.url.pathname}?${query.toString()}`;
 		}
 	})();
 </script>
@@ -83,7 +83,7 @@
 			{:else}
 				<Pagination.Item>
 					<Button
-						href={getPageUrl(_page.value, $page.url.searchParams)}
+						href={getPageUrl(_page.value, $page.url)}
 						size="sm"
 						variant={_page.value === currentPage ? 'outline' : 'ghost'}
 					>

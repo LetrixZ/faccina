@@ -26,7 +26,8 @@
 	import { query } from '~/lib/stores.js';
 
 	export let data;
-	export let favorites = $page.url.pathname === '/favorites';
+
+	$: favorites = $page.url.pathname === '/favorites';
 
 	let loginOpen = false;
 	let userFormState: UserFormState = 'login';
