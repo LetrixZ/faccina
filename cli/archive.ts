@@ -1,7 +1,7 @@
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
-import { generateImagesBatch, generateImages as generateImagesRust } from 'image-encoder';
+import { generateImagesBatch } from 'image-encoder';
 import { sql } from 'kysely';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
@@ -17,6 +17,7 @@ import type { Archive } from '../shared/metadata';
 import { upsertImages, upsertSources } from '../shared/archive';
 import config, { Preset } from '../shared/config';
 import db from '../shared/db';
+import { jsonArrayFrom } from '../shared/db/helpers';
 import {
 	type ReferenceTable,
 	type RelationshipId,
@@ -676,7 +677,7 @@ export const prune = async () => {
 type GenerateImagesOptions = {
 	ids?: string[];
 	force: boolean;
-	batch: boolean;
+	batchSize: number;
 };
 
 type ArchiveGenerate = {
@@ -685,6 +686,7 @@ type ArchiveGenerate = {
 	hash: string;
 	thumbnail: number;
 	pages: number;
+	images: { filename: string; page_number: number }[];
 };
 
 type ImageGenerate = {
@@ -696,29 +698,102 @@ type ImageGenerate = {
 export const generateImages = async (options: GenerateImagesOptions) => {
 	const ids = options.ids?.map((id) => parseInt(id)).filter((id) => !isNaN(id)) ?? [];
 
-	const archives = await (() => {
+	let archives: ArchiveGenerate[] = await (() => {
 		if (ids.length) {
 			return db
 				.selectFrom('archives')
-				.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
+				.select((eb) => [
+					'id',
+					'path',
+					'hash',
+					'thumbnail',
+					'pages',
+					jsonArrayFrom(
+						eb
+							.selectFrom('archive_images')
+							.select(['filename', 'page_number'])
+							.whereRef('archive_id', '=', 'archives.id')
+					).as('images'),
+				])
 				.where('id', 'in', ids)
 				.orderBy('pages asc')
 				.execute();
 		} else {
 			return db
 				.selectFrom('archives')
-				.select(['id', 'path', 'hash', 'thumbnail', 'pages'])
+				.select((eb) => [
+					'id',
+					'path',
+					'hash',
+					'thumbnail',
+					'pages',
+					jsonArrayFrom(
+						eb
+							.selectFrom('archive_images')
+							.select(['filename', 'page_number'])
+							.whereRef('archive_id', '=', 'archives.id')
+					).as('images'),
+				])
 				.orderBy('pages asc')
 				.execute();
 		}
 	})();
+
+	let skipped = 0;
+
+	for (const [index, archive] of archives.entries()) {
+		const missingImages: { filename: string; page_number: number }[] = [];
+
+		for (const image of archive.images) {
+			if (image.page_number === archive.thumbnail) {
+				const preset = config.image.coverPreset;
+
+				const imagePath = join(
+					config.directories.images,
+					archive.hash,
+					preset.name,
+					`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
+				);
+
+				const exists = await Bun.file(imagePath).exists();
+
+				if (!exists || options.force) {
+					missingImages.push(image);
+				} else {
+					skipped++;
+				}
+			}
+
+			const preset = config.image.thumbnailPreset;
+
+			const imagePath = join(
+				config.directories.images,
+				archive.hash,
+				preset.name,
+				`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
+			);
+
+			const exists = await Bun.file(imagePath).exists();
+
+			if (!exists || options.force) {
+				missingImages.push(image);
+			} else {
+				skipped++;
+			}
+		}
+
+		archives[index].images = missingImages;
+	}
+
+	archives = archives.filter((archive) => archive.images.length);
 
 	const batches: ArchiveGenerate[][] = [];
 
 	for (const archive of archives) {
 		const lastBatchIndex = batches.findLastIndex(
 			(batch) =>
-				batch.reduce((acc, archive) => acc + archive.pages, 0) <= navigator.hardwareConcurrency
+				batch.reduce((acc, archive) => acc + archive.pages, 0) <=
+				(options.batchSize ?? navigator.hardwareConcurrency * 4)
 		);
 
 		if (lastBatchIndex >= 0) {
@@ -726,9 +801,10 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 
 			if (
 				lastBatch.reduce((acc, archive) => acc + archive.pages, 0) + archive.pages <=
-				navigator.hardwareConcurrency
+				(options.batchSize ?? navigator.hardwareConcurrency * 4)
 			) {
 				batches[lastBatchIndex].push(archive);
+
 				continue;
 			}
 		}
@@ -740,58 +816,28 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 		`Generating images for ${chalk.bold(archives.length)} archives in ${batches.length} batches\n`
 	);
 
-	const multibar = new cliProgress.MultiBar(
-		{ clearOnComplete: true },
-		cliProgress.Presets.shades_grey
-	);
-
-	const progress = multibar.create(archives.length, 0);
-
-	let count = 0;
 	let generated = 0;
-	let skipped = 0;
 
 	const start = performance.now();
 
-	if (options.batch) {
-		for (const batch of batches) {
-			const missingImagesBatches: {
-				path: string;
-				images: ImageGenerate[];
-			}[] = [];
+	for (const batch of batches) {
+		const missingImagesBatches: {
+			path: string;
+			images: ImageGenerate[];
+		}[] = [];
 
-			for (const archive of batch) {
-				const missingImages: ImageGenerate[] = [];
+		for (const archive of batch) {
+			const missingImages: ImageGenerate[] = [];
 
-				const images = await db
-					.selectFrom('archive_images')
-					.select(['filename', 'page_number', 'width', 'height'])
-					.where('archive_id', '=', archive.id)
-					.execute();
+			const images = await db
+				.selectFrom('archive_images')
+				.select(['filename', 'page_number'])
+				.where('archive_id', '=', archive.id)
+				.execute();
 
-				for (const image of images) {
-					if (image.page_number === archive.thumbnail) {
-						const preset = config.image.coverPreset;
-
-						const imagePath = join(
-							config.directories.images,
-							archive.hash,
-							preset.name,
-							`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-						);
-
-						const exists = await Bun.file(imagePath).exists();
-
-						if (!exists || options.force) {
-							missingImages.push({
-								filename: image.filename,
-								savePath: imagePath,
-								options: preset,
-							});
-						}
-					}
-
-					const preset = config.image.thumbnailPreset;
+			for (const image of images) {
+				if (image.page_number === archive.thumbnail) {
+					const preset = config.image.coverPreset;
 
 					const imagePath = join(
 						config.directories.images,
@@ -800,121 +846,33 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
 					);
 
-					const exists = await Bun.file(imagePath).exists();
-
-					if (!exists || options.force) {
-						missingImages.push({
-							filename: image.filename,
-							savePath: imagePath,
-							options: preset,
-						});
-					} else {
-						skipped++;
-					}
+					missingImages.push({ filename: image.filename, savePath: imagePath, options: preset });
 				}
 
-				if (!missingImages.length) {
-					continue;
-				}
+				const preset = config.image.thumbnailPreset;
 
-				missingImagesBatches.push({
-					path: archive.path,
-					images: missingImages,
-				});
-			}
-
-			if (!missingImagesBatches.length) {
-				continue;
-			}
-
-			const encodedImages = generateImagesBatch(missingImagesBatches);
-
-			generated += encodedImages.length;
-
-			for (const image of encodedImages) {
-				await Bun.write(image.path, image.contents);
-			}
-		}
-	} else {
-		for (const archive of archives) {
-			progress.update(count, {
-				path: archive.path,
-			});
-
-			try {
-				const images = await db
-					.selectFrom('archive_images')
-					.select(['filename', 'page_number', 'width', 'height'])
-					.where('archive_id', '=', archive.id)
-					.execute();
-
-				const missingImages: { filename: string; savePath: string; options: Preset }[] = [];
-
-				for (const image of images) {
-					if (image.page_number === archive.thumbnail) {
-						const preset = config.image.coverPreset;
-
-						const imagePath = join(
-							config.directories.images,
-							archive.hash,
-							preset.name,
-							`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-						);
-
-						const exists = await Bun.file(imagePath).exists();
-
-						if (!exists || options.force) {
-							missingImages.push({
-								filename: image.filename,
-								savePath: imagePath,
-								options: preset,
-							});
-						}
-					}
-
-					const preset = config.image.thumbnailPreset;
-
-					const imagePath = join(
-						config.directories.images,
-						archive.hash,
-						preset.name,
-						`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-					);
-
-					const exists = await Bun.file(imagePath).exists();
-
-					if (!exists || options.force) {
-						missingImages.push({
-							filename: image.filename,
-							savePath: imagePath,
-							options: preset,
-						});
-					} else {
-						skipped++;
-					}
-				}
-
-				if (!missingImages.length) {
-					continue;
-				}
-
-				const encodedImages = generateImagesRust(archive.path, missingImages, 0);
-
-				generated += encodedImages.length;
-
-				for (const image of encodedImages) {
-					await Bun.write(image.path, image.contents);
-				}
-			} catch (error) {
-				multibar.log(
-					chalk.red(
-						`Failed to generate images for ${chalk.bold(archive.path)} - ${(error as Error).message}`
-					)
+				const imagePath = join(
+					config.directories.images,
+					archive.hash,
+					preset.name,
+					`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
 				);
-			} finally {
-				progress.increment();
-				count++;
+
+				missingImages.push({ filename: image.filename, savePath: imagePath, options: preset });
 			}
+
+			missingImagesBatches.push({
+				path: archive.path,
+				images: missingImages,
+			});
+		}
+
+		const encodedImages = generateImagesBatch(missingImagesBatches);
+
+		generated += encodedImages.length;
+
+		for (const image of encodedImages) {
+			await Bun.write(image.path, image.contents);
 		}
 	}
 
@@ -923,8 +881,8 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 	await db.destroy();
 	await sleep(250);
 
-	multibar.stop();
-
 	console.info(chalk.bold(`~~~ Finished in ${((end - start) / 1000).toFixed(2)} seconds ~~~`));
-	console.info(`Generated ${chalk.bold(generated)} and skipped ${chalk.bold(skipped)} images\n`);
+	console.info(
+		`Generated ${chalk.bold(generated)} images and skipped ${chalk.bold(skipped)} images\n`
+	);
 };

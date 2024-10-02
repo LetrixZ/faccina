@@ -46,7 +46,10 @@ program
 	.description('Generates all resampled images.')
 	.option('--ids <IDs...>', 'Only generate images for the given IDs.')
 	.option('-f --force', 'Regenerate already generated images.')
-	.option('--batch', 'Generate images in batches.')
+	.option(
+		'--batch-size <size>',
+		'Indicate how much pages a batch can contain. A large size will increase the memory usage with marginal impovements to speed. Defaults to 4 times the core count.'
+	)
 	.action((options) => import('./archive').then(({ generateImages }) => generateImages(options)));
 
 program
