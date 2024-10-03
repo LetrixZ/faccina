@@ -60,7 +60,7 @@ export const resetSchema = z
 
 export type ResetSchema = typeof resetSchema;
 
-export const archiveSchema = z
+export const editArchiveSchema = z
 	.object({
 		title: z.string().min(1, 'Title is required'),
 		slug: z.string(),
@@ -87,7 +87,19 @@ export const archiveSchema = z
 		}
 	});
 
-export type ArchiveSchema = typeof archiveSchema;
+export type EditArchiveSchema = typeof editArchiveSchema;
+
+export const editTaxonomySchema = z.object({
+	artists: z.array(z.string()),
+	circles: z.array(z.string()),
+	magazines: z.array(z.string()),
+	events: z.array(z.string()),
+	publishers: z.array(z.string()),
+	parodies: z.array(z.string()),
+	tags: z.array(z.string()),
+});
+
+export type EditTaxonomySchema = typeof editTaxonomySchema;
 
 export const sortSchema = z.enum([
 	'released_at',

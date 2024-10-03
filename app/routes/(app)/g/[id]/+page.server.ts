@@ -1,10 +1,11 @@
 import type { ArchiveDetail } from '$lib/models';
 
-import { archiveSchema } from '$lib/schemas';
+import { editArchiveSchema, editTaxonomySchema } from '$lib/schemas';
 import { get } from '$lib/server/db/queries';
 import { error, fail } from '@sveltejs/kit';
-import { upsertSources } from '~shared/archive';
+import { upsertSources, upsertTags, upsertTaxonomy } from '~shared/archive';
 import db from '~shared/db';
+import { taxonomyTables } from '~shared/taxonomy';
 import dayjs from 'dayjs';
 import * as R from 'ramda';
 import { superValidate } from 'sveltekit-superforms';
@@ -37,10 +38,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 
 	return {
-		...(locals.user?.admin && {
-			extra: { path: archive.path },
-		}),
-		archive: R.omit(['path', 'has_metadata'], archive) satisfies ArchiveDetail,
+		archive: locals.user?.admin
+			? archive
+			: (R.omit(['path', 'has_metadata'], archive) satisfies ArchiveDetail),
 		isFavorite,
 		editForm: locals.user?.admin
 			? await superValidate(
@@ -57,7 +57,23 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 						hasMetadata: archive.has_metadata!,
 						sources: archive.sources.map(({ name, url }) => ({ name, url: url ?? undefined })),
 					},
-					zod(archiveSchema)
+					zod(editArchiveSchema)
+				)
+			: undefined,
+		editTaxonomyForm: locals.user?.admin
+			? await superValidate(
+					{
+						artists: archive.artists.map((tag) => tag.name),
+						circles: archive.circles.map((tag) => tag.name),
+						magazines: archive.magazines.map((tag) => tag.name),
+						events: archive.events.map((tag) => tag.name),
+						publishers: archive.publishers.map((tag) => tag.name),
+						parodies: archive.parodies.map((tag) => tag.name),
+						tags: archive.tags.map((tag) =>
+							tag.namespace.length ? `${tag.namespace}:${tag.name}` : tag.name
+						),
+					},
+					zod(editTaxonomySchema)
 				)
 			: undefined,
 	};
@@ -135,7 +151,7 @@ export const actions = {
 
 		const { id } = event.params;
 
-		const form = await superValidate(event, zod(archiveSchema));
+		const form = await superValidate(event, zod(editArchiveSchema));
 
 		if (!form.valid) {
 			return fail(400, {
@@ -162,6 +178,58 @@ export const actions = {
 			parseInt(id),
 			sources.map((source) => ({ name: source.name, url: source.url ?? undefined }))
 		);
+
+		return {
+			form,
+		};
+	},
+	editTaxonomy: async (event) => {
+		const admin = event.locals.user?.admin;
+
+		if (!admin) {
+			throw fail(401);
+		}
+
+		const { id } = event.params;
+
+		const form = await superValidate(event, zod(editTaxonomySchema));
+
+		if (!form.valid) {
+			return fail(400, {
+				form,
+			});
+		}
+
+		const { tags } = form.data;
+
+		for (const { relationId, relationTable, referenceTable } of taxonomyTables) {
+			if (
+				referenceTable === 'tags' ||
+				relationTable === 'archive_tags' ||
+				relationId === 'tag_id'
+			) {
+				await upsertTags(
+					parseInt(id),
+					tags.map((tag) => {
+						const [namespace, name] = tag.split(':');
+
+						if (!name || name.startsWith(' ')) {
+							return [namespace, ''];
+						} else {
+							return [name, namespace];
+						}
+					})
+				);
+			} else {
+				await upsertTaxonomy(
+					parseInt(id),
+					form.data[referenceTable],
+					referenceTable,
+					relationTable,
+					relationId
+				);
+			}
+		}
 
 		return {
 			form,

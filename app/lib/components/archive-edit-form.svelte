@@ -12,21 +12,20 @@
 
 	import type { ArchiveDetail } from '../models';
 
-	import { archiveSchema, type ArchiveSchema } from '../schemas';
+	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
 	import { cn } from '../utils';
 	import GallerySource from './gallery-source.svelte';
 	import { Button } from './ui/button';
 	import { Separator } from './ui/separator';
 	import { Textarea } from './ui/textarea';
 
-	export let data: SuperValidated<Infer<ArchiveSchema>>;
+	export let data: SuperValidated<Infer<EditArchiveSchema>>;
 	export let archive: ArchiveDetail;
-	export let extra: { path: string };
 
 	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
 
 	let form = superForm(data, {
-		validators: zodClient(archiveSchema),
+		validators: zodClient(editArchiveSchema),
 		dataType: 'json',
 		onResult: ({ result }) => {
 			dispatch('result', result);
@@ -148,10 +147,12 @@
 			</div>
 		</div>
 
-		<div>
-			<p class="flex items-center gap-1.5 text-sm font-medium">Path</p>
-			<p class="font-mono text-sm">{extra.path}</p>
-		</div>
+		{#if 'path' in archive}
+			<div>
+				<p class="flex items-center gap-1.5 text-sm font-medium">Path</p>
+				<p class="font-mono text-sm">{archive.path}</p>
+			</div>
+		{/if}
 	</div>
 
 	<Separator />

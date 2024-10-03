@@ -4,6 +4,7 @@ import { error } from '@sveltejs/kit';
 import { type ClassValue, clsx } from 'clsx';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+import _slugify from 'slugify';
 import { cubicOut } from 'svelte/easing';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
@@ -16,6 +17,8 @@ import {
 	type Taxonomy,
 	TouchLayout,
 } from './models';
+
+_slugify.extend({ '.': '-', _: '-', '+': '-' });
 
 dayjs.extend(localizedFormat);
 
@@ -339,4 +342,8 @@ export const cleanNested = <T>(obj: T) => {
 	}
 
 	return clonned;
+};
+
+export const slugify = (str: string) => {
+	return _slugify(str, { lower: true, strict: true });
 };

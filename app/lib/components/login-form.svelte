@@ -28,7 +28,7 @@
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
 			} else if (result.type === 'success' || result.type === 'redirect') {
-				toast.success('Logged in successfully.');
+				toast('Logged in successfully.');
 			}
 		},
 	});
@@ -41,7 +41,7 @@
 		<Form.Field {form} name="username">
 			<Form.Control let:attrs>
 				<Form.Label>Username</Form.Label>
-				<Input {...attrs} bind:value={$formData.username} />
+				<Input {...attrs} autocomplete="username" bind:value={$formData.username} />
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
@@ -49,7 +49,12 @@
 		<Form.Field {form} name="password">
 			<Form.Control let:attrs>
 				<Form.Label>Password</Form.Label>
-				<Input {...attrs} bind:value={$formData.password} type="password" />
+				<Input
+					{...attrs}
+					autocomplete="current-password"
+					bind:value={$formData.password}
+					type="password"
+				/>
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>

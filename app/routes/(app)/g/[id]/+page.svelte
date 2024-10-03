@@ -27,14 +27,13 @@
 	import { toast } from 'svelte-sonner';
 
 	import ArchiveEditForm from '~/lib/components/archive-edit-form.svelte';
+	import ArchiveTaxonomyEditForm from '~/lib/components/archive-taxonomy-edit-form.svelte';
 	import { Separator } from '~/lib/components/ui/separator';
 
 	export let data;
 
 	let editOpen = false;
-
-	const archive = data.archive;
-	const extra = data.extra!;
+	let editTaxonomyOpen = false;
 
 	const startDownload = async (archive: ArchiveDetail) => {
 		const streamSaver = await import('streamsaver');
@@ -147,7 +146,7 @@
 </script>
 
 <svelte:head>
-	<title>{archive.title} • {data.site.name}</title>
+	<title>{data.archive.title} • {data.site.name}</title>
 </svelte:head>
 
 <main class="container flex flex-col gap-2 md:flex-row">
@@ -300,7 +299,7 @@
 
 					<Button
 						class="col-span-2 flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
-						disabled
+						on:click={() => (editTaxonomyOpen = true)}
 					>
 						<Tag class="size-5 shrink-0" />
 						<span class="flex-auto"> Edit taxonomy </span>
@@ -480,18 +479,39 @@
 	onOpenChange={(open) => (editOpen = open)}
 	open={editOpen}
 >
-	<Dialog.Content class="md:w-[85dvw] md:max-w-5xl">
+	<Dialog.Content class="max-h-[80dvh] overflow-auto md:w-[85dvw] md:max-w-5xl">
 		{#if data.editForm}
 			<ArchiveEditForm
-				{archive}
+				archive={data.archive}
 				data={data.editForm}
-				{extra}
 				on:close={() => (editOpen = false)}
 				on:result={({ detail }) => {
 					if (detail.type === 'success') {
 						editOpen = false;
 					}
 				}}
+			/>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root
+	closeOnEscape={false}
+	closeOnOutsideClick={false}
+	onOpenChange={(open) => (editTaxonomyOpen = open)}
+	open={editTaxonomyOpen}
+>
+	<Dialog.Content class="max-h-[80dvh] overflow-auto md:w-[85dvw] md:max-w-5xl">
+		{#if data.editTaxonomyForm}
+			<ArchiveTaxonomyEditForm
+				data={data.editTaxonomyForm}
+				on:close={() => (editTaxonomyOpen = false)}
+				on:result={({ detail }) => {
+					if (detail.type === 'success') {
+						editTaxonomyOpen = false;
+					}
+				}}
+				taxonomies={data.taxonomies}
 			/>
 		{/if}
 	</Dialog.Content>

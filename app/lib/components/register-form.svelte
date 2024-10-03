@@ -41,7 +41,7 @@
 		<Form.Field {form} name="username">
 			<Form.Control let:attrs>
 				<Form.Label>Username</Form.Label>
-				<Input {...attrs} bind:value={$formData.username} />
+				<Input {...attrs} autocomplete="username" bind:value={$formData.username} />
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
@@ -77,7 +77,7 @@
 				<Form.Label>
 					Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
 				</Form.Label>
-				<Input {...attrs} bind:value={$formData.email} type="email" />
+				<Input {...attrs} autocomplete="email" bind:value={$formData.email} type="email" />
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
