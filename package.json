@@ -12,7 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"kysely": "bunx --bun kysely"
+		"kysely": "bunx --bun kysely",
+		"cli": "bun ./cli/index.ts"
 	},
 	"devDependencies": {
 		"@iconify/json": "^2.2.254",
@@ -74,7 +75,7 @@
 		"dotenv": "^16.4.5",
 		"fflate": "^0.8.2",
 		"formsnap": "^1.0.1",
-		"image-encoder": "git+https://git.letrix.xyz/fermin/image-encoder.git#fce9fd8c3b",
+		"image-encoder": "https://github.com/LetrixZ/image-encoder#0.0.3",
 		"kysely": "^0.27.4",
 		"kysely-bun-sqlite": "^0.3.2",
 		"lucia": "^3.2.0",
