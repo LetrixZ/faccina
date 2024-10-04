@@ -24,6 +24,8 @@
 	import cookie from 'cookie';
 	import dayjs from 'dayjs';
 	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
+	import ChevronFirst from 'lucide-svelte/icons/chevron-first';
+	import ChevronLast from 'lucide-svelte/icons/chevron-last';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { onMount } from 'svelte';
@@ -36,6 +38,9 @@
 
 	$: prevPageUrl = $prevPage ? `${$prevPage}${$page.url.search}` : undefined;
 	$: nextPageUrl = $nextPage ? `${$nextPage}${$page.url.search}` : undefined;
+
+	$: firstPageUrl = `1${$page.url.search}`;
+	$: lastPageUrl = `${total}${$page.url.search}`;
 
 	let pageSelect: HTMLSelectElement;
 
@@ -131,7 +136,20 @@
 			<div class="absolute inset-0 mx-auto flex w-fit items-center">
 				<a
 					class={cn(
-						'inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline',
+						'inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline xs:px-8',
+						currentPage === 1 && 'pointer-events-none opacity-40'
+					)}
+					draggable="false"
+					href={firstPageUrl}
+					on:click|preventDefault={() => ($readerPage = 1)}
+				>
+					<ChevronFirst class="ms-2" />
+					<span class="sr-only">First page</span>
+				</a>
+
+				<a
+					class={cn(
+						'inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline xs:px-8',
 						!$prevPage && 'pointer-events-none opacity-40'
 					)}
 					draggable="false"
@@ -172,7 +190,7 @@
 
 				<a
 					class={cn(
-						'inline-flex h-full items-center justify-center px-8 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline ',
+						'inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline xs:px-8 ',
 						!$nextPage && 'pointer-events-none opacity-40'
 					)}
 					draggable="false"
@@ -181,6 +199,19 @@
 				>
 					<ChevronRight class="ms-2" />
 					<span class="sr-only">Next page</span>
+				</a>
+
+				<a
+					class={cn(
+						'inline-flex h-full items-center justify-center px-2 py-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline xs:px-8',
+						currentPage >= total && 'pointer-events-none opacity-40'
+					)}
+					draggable="false"
+					href={lastPageUrl}
+					on:click|preventDefault={() => ($readerPage = total)}
+				>
+					<ChevronLast class="ms-2" />
+					<span class="sr-only">Last page</span>
 				</a>
 			</div>
 

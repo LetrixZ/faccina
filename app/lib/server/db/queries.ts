@@ -1,4 +1,4 @@
-import type { Archive, ArchiveListItem } from '$lib/models';
+import type { Archive, ArchiveListItem, TaxonomyItem } from '$lib/models';
 import type { DB } from '~shared/types';
 
 import { shuffle } from '$lib/utils';
@@ -145,12 +145,29 @@ export const parseQuery = (query: string) => {
 
 	const titleMatch = query
 		.replaceAll(
-			/-?(artist|circle|magazine|event|publisher|parody|tag|\w+):(".*?"|'.*?'|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g,
+			/-?(artist|circle|magazine|event|publisher|parody|tag|url|source|\w+):(".*?"|'.*?'|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g,
 			''
 		)
 		.trim();
 
 	const pagesMatch = Array.from(query.matchAll(/\bpages(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
+	const urlMatch = Array.from(query.matchAll(/-?(url):(".*?"|'.*?'|[^\s]+)/g))
+		.map((match) => match[2])
+		.filter((match) => match !== undefined)
+		.filter((match) => {
+			try {
+				new URL(`http://${match}`);
+
+				return true;
+			} catch {
+				return false;
+			}
+		});
+
+	const sourceMatch = Array.from(query.matchAll(/-?(source):(".*?"|'.*?'|[^\s]+)/g))
+		.map((match) => match[2])
+		.filter((match) => match !== undefined);
 
 	let pagesNumber: number | undefined = undefined;
 	let pagesExpression: string | undefined = undefined;
@@ -160,18 +177,21 @@ export const parseQuery = (query: string) => {
 		pagesExpression = pagesMatch[1];
 	}
 
+	const matches = {
+		titleMatch,
+		pagesMatch: {
+			number: pagesNumber,
+			expression: pagesExpression,
+		},
+		urlMatch,
+		sourceMatch,
+	};
+
 	if (!queryMatch) {
-		return {
-			tagMatches: [],
-			titleMatch,
-			pagesMatch: {
-				number: pagesNumber,
-				expression: pagesExpression,
-			},
-		};
+		return { ...matches, tagMatches: [] };
 	}
 
-	const matches: {
+	const tagMatches: {
 		table: ReferenceTable;
 		relationId: RelationshipId;
 		relationTable: RelationshipTable;
@@ -188,9 +208,13 @@ export const parseQuery = (query: string) => {
 		type = negate ? type.slice(1) : type;
 		value = value.replaceAll(/"/g, '').replaceAll(/'/g, '');
 
+		if (['source', 'url'].includes(type)) {
+			continue;
+		}
+
 		switch (type) {
 			case 'artist':
-				matches.push({
+				tagMatches.push({
 					table: 'artists',
 					relationId: 'artist_id',
 					relationTable: 'archive_artists',
@@ -199,7 +223,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			case 'circle':
-				matches.push({
+				tagMatches.push({
 					table: 'circles',
 					relationId: 'circle_id',
 					relationTable: 'archive_circles',
@@ -208,7 +232,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			case 'magazine':
-				matches.push({
+				tagMatches.push({
 					table: 'magazines',
 					relationId: 'magazine_id',
 					relationTable: 'archive_magazines',
@@ -217,7 +241,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			case 'event':
-				matches.push({
+				tagMatches.push({
 					table: 'events',
 					relationId: 'event_id',
 					relationTable: 'archive_events',
@@ -226,7 +250,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			case 'publisher':
-				matches.push({
+				tagMatches.push({
 					table: 'publishers',
 					relationId: 'publisher_id',
 					relationTable: 'archive_publishers',
@@ -235,7 +259,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			case 'parody':
-				matches.push({
+				tagMatches.push({
 					table: 'parodies',
 					relationId: 'parody_id',
 					relationTable: 'archive_parodies',
@@ -244,7 +268,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			case 'tag':
-				matches.push({
+				tagMatches.push({
 					table: 'tags',
 					relationId: 'tag_id',
 					relationTable: 'archive_tags',
@@ -254,7 +278,7 @@ export const parseQuery = (query: string) => {
 				});
 				break;
 			default:
-				matches.push({
+				tagMatches.push({
 					table: 'tags',
 					relationId: 'tag_id',
 					relationTable: 'archive_tags',
@@ -267,14 +291,7 @@ export const parseQuery = (query: string) => {
 		}
 	}
 
-	return {
-		tagMatches: matches,
-		titleMatch,
-		pagesMatch: {
-			number: pagesNumber,
-			expression: pagesExpression,
-		},
-	};
+	return { ...matches, tagMatches };
 };
 
 export const search = async (
@@ -282,7 +299,9 @@ export const search = async (
 	hidden: boolean,
 	ids?: number[]
 ): Promise<{ ids: number[]; total: number }> => {
-	const { tagMatches, titleMatch, pagesMatch } = parseQuery(searchParams.get('q') ?? '');
+	const { tagMatches, titleMatch, pagesMatch, urlMatch, sourceMatch } = parseQuery(
+		searchParams.get('q') ?? ''
+	);
 
 	const sort = sortSchema
 		.nullish()
@@ -431,6 +450,36 @@ export const search = async (
 		if (data) {
 			query = query.where('pages', data, pagesMatch.number);
 		}
+	}
+
+	if (urlMatch.length) {
+		query = query.where(({ exists, or, selectFrom }) =>
+			or(
+				urlMatch.map((match) =>
+					exists(
+						selectFrom('archive_sources')
+							.select('id')
+							.whereRef('archive_id', '=', 'archives.id')
+							.where('url', like(), `%${match}`)
+					)
+				)
+			)
+		);
+	}
+
+	if (sourceMatch.length) {
+		query = query.where(({ exists, or, selectFrom }) =>
+			or(
+				sourceMatch.map((match) =>
+					exists(
+						selectFrom('archive_sources')
+							.select('id')
+							.whereRef('archive_id', '=', 'archives.id')
+							.where('name', like(), match)
+					)
+				)
+			)
+		);
 	}
 
 	if (ids) {
@@ -595,11 +644,7 @@ export const libraryItems = async (
 };
 
 export const taxonomies = async () => {
-	const taxonomies: {
-		slug: string;
-		name: string;
-		type: 'artist' | 'circle' | 'magazine' | 'event' | 'publisher' | 'parody' | 'tag';
-	}[] = [];
+	const taxonomies: TaxonomyItem[] = [];
 
 	const artists = await db
 		.selectFrom('artists')

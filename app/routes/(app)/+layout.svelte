@@ -255,7 +255,7 @@
 							selectPosition = inputEl.selectionStart ?? -1;
 						}, 1);
 					}}
-					placeholder="tag:petite creampie"
+					placeholder="tag:comedy vanilla"
 					type="search"
 				/>
 
@@ -303,9 +303,10 @@
 				method="POST"
 				use:enhance={() => {
 					return ({ result }) => {
+						invalidateAll();
+
 						if (result.type === 'redirect' || result.type === 'success') {
-							invalidateAll();
-							toast.success('Logged out successfully');
+							toast('Logged out successfully');
 						}
 					};
 				}}

@@ -68,7 +68,7 @@ export interface TaxonomyId extends Taxonomy {
 export interface Tag {
 	slug: string;
 	name: string;
-	namespace: string | null;
+	namespace: string;
 }
 
 export interface Source {
@@ -130,3 +130,9 @@ export interface TaxonomyTypes {
 }
 
 export type UserFormState = 'login' | 'register' | 'recover' | 'reset';
+
+export type TaxonomyItem = {
+	slug: string;
+	name: string;
+	type: 'artist' | 'circle' | 'magazine' | 'event' | 'publisher' | 'parody' | 'tag';
+};
