@@ -50,7 +50,13 @@ program
 		'--batch-size <size>',
 		'Indicate how much pages a batch can contain. A large size will increase the memory usage with marginal impovements to speed. Defaults to 4 times the core count.'
 	)
-	.action((options) => import('./archive').then(({ generateImages }) => generateImages(options)));
+	.option(
+		'--sharp',
+		'Use the Sharp library for image encoding instead of the Rust module. Only use this if the Rust module causes issues.'
+	)
+	.action((options) =>
+		import('./images').then(({ generate: generateImages }) => generateImages(options))
+	);
 
 program
 	.command('uli')
