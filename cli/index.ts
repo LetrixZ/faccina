@@ -1,26 +1,21 @@
 import chalk from 'chalk';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 
 const program = new Command();
 
 program
 	.command('index')
-	.option(
-		'-p --paths <paths...>',
-		`indicate which paths to index (defaults to path defined in CONTENT_DIR)`
-	)
-	.option('--from-path <path>', `resume indexing from path (not compatible with -p --paths)`)
-	.option(
-		'-r --recursive',
-		'navigate through directories recursively (defaults to true if no path given)'
-	)
-	.option('-f --force', 'update already indexed archives')
-	.option('--reindex', 'only update already indexed archives')
-	.option('-v --verbose', 'print more logs')
-	.description('index archives to the database')
+	.addOption(new Option('-p --paths <paths...>', 'Index given paths.'))
+	.addOption(new Option('--ids <ID ranges>', 'Re-index given archive IDs.').conflicts('paths'))
+	.option('-r --recursive', 'Navigate given paths recursively.')
+	.option('-f --force', 'Do not check if the archive is alredy indexed.')
+	.option('--reindex', 'Check if the archive is already indexed.')
+	.option('-v --verbose', 'Print more logs.')
+	.description('Index archives to the database.')
 	.action(
 		(options: {
 			paths?: string[];
+			ids?: string;
 			fromPath?: string;
 			recursive?: boolean;
 			force?: boolean;
@@ -38,18 +33,17 @@ program
 
 program
 	.command('prune')
-	.description('Removes archives from the database if they point to a non existing path')
+	.description('Remove archives that do not exists in the filesystem.')
 	.action(() => import('./archive').then(({ prune }) => prune()));
 
 program
 	.command('generate-images')
-	.description('Generates all resampled images.')
-	.option('--ids <IDs...>', 'Only generate images for the given IDs.')
-	.option('-f --force', 'Regenerate already generated images.')
+	.description('Generate cover and thumbnail images.')
 	.option(
-		'--batch-size <size>',
-		'Indicate how much pages a batch can contain. A large size will increase the memory usage with marginal impovements to speed. Defaults to 4 times the core count.'
+		'--ids <ID ranges>',
+		'Only generate images for the given ID ranges. Ex: 1,2,3,100-200,600-'
 	)
+	.option('-f --force', 'Do not check if the image already exists.')
 	.action((options) =>
 		import('./images').then(({ generate: generateImages }) => generateImages(options))
 	);
@@ -57,14 +51,14 @@ program
 program
 	.command('uli')
 	.argument('<username>')
-	.description('Generate a one time login link for the specified user')
+	.description('Generate a one time login link for the specified user.')
 	.action((username) => import('./users').then(({ loginLink }) => loginLink(username)));
 
 program
 	.command('recovery')
 	.argument('<username>')
-	.option('-c --code', 'Return recovery code without sending an email')
-	.description('Send access recovery code to the specified user if they have an email')
+	.option('-c --code', 'Return recovery code without sending an email.')
+	.description('Send access recovery code to the specified user if they have an email.')
 	.action((username, { code }: { code: boolean }) =>
 		import('./users').then(({ accessRecovery }) => accessRecovery(username, code))
 	);
@@ -72,20 +66,20 @@ program
 program
 	.command('migrate:images')
 	.description(
-		`Migrate resampled images from v1 data directory to v2 new structure (${chalk.bold('Must be run before migrate:db')})`
+		`Migrate resampled images from v1 data directory to v2 new structure (${chalk.bold('Must be run before migrate:db')}).`
 	)
-	.requiredOption('--data-dir <dir>', 'Data directory location from v1')
+	.requiredOption('--data-dir <dir>', 'Data directory location from v1.')
 	.requiredOption(
 		'--format <format>',
-		'Indicate which image format to move for the old resampled images [webp, jpeg, png, jxl, avif]'
+		'Indicate which image format to move for the old resampled images [webp, jpeg, png, jxl, avif].'
 	)
-	.requiredOption('--db-url <url>', 'Connection string for the v1 database')
+	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
 	.action((opts) => import('./migrate').then(({ migrateImages }) => migrateImages(opts)));
 
 program
 	.command('migrate:db')
-	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite')
-	.requiredOption('--db-url <url>', 'Connection string for the v1 database')
+	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite.')
+	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
 	.action((opts) => import('./migrate').then(({ migrateDatabase }) => migrateDatabase(opts.dbUrl)));
 
 program.parse();

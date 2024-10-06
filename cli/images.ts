@@ -1,5 +1,7 @@
 import { sleep } from 'bun';
 import chalk from 'chalk';
+import { MultiBar, Presets } from 'cli-progress';
+import { ExpressionWrapper, SqlBool } from 'kysely';
 import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
 import pMap from 'p-map';
@@ -9,283 +11,192 @@ import { match } from 'ts-pattern';
 import config, { Preset } from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
+import { DB } from '../shared/types';
 import { leadingZeros, readStream } from '../shared/utils';
+import { parseIdRanges } from './utilts';
 
 type GenerateImagesOptions = {
-	ids?: string[];
+	ids?: string;
 	force: boolean;
-	batchSize: number;
-	sharp: boolean;
 };
 
-type ArchiveGenerate = {
-	id: number;
-	path: string;
-	hash: string;
-	thumbnail: number;
-	pages: number;
-	images: { filename: string; page_number: number }[];
-};
+type ImageEncode = { filename: string; pageNumber: number; savePath: string; preset: Preset };
 
-type ImageGenerate = {
-	filename: string;
-	savePath: string;
-	options: Preset;
-	page: number;
-	archive_id: number;
-};
+type ArchiveEncode = { id: number; path: string; images: ImageEncode[] };
 
-type GenerateImageResult = {
-	path: string;
-	contents: Uint8Array;
-	width: number;
-	height: number;
-	page: number;
-	archive_id: number;
-};
+export const generate = async (options: GenerateImagesOptions) => {
+	const parsed = parseIdRanges(options.ids);
 
-type ArchiveImagesBatch = {
-	path: string;
-	images: ImageGenerate[];
-};
+	console.log(parsed);
 
-const generateSharp = async (batches: ArchiveImagesBatch[][]) => {
-	return (
-		await pMap(
-			batches,
-			async (batch) => {
-				const results: GenerateImageResult[] = [];
+	const start = performance.now();
 
-				for (const archive of batch) {
-					const zip = new StreamZip.async({ file: archive.path });
+	let query = db
+		.selectFrom('archives')
+		.select((eb) => [
+			'id',
+			'path',
+			'hash',
+			'pages',
+			'thumbnail',
+			jsonArrayFrom(
+				eb
+					.selectFrom('archive_images')
+					.select(['filename', 'page_number'])
+					.whereRef('archive_id', '=', 'id')
+			).as('images'),
+		]);
 
-					for (const image of archive.images) {
-						const preset = image.options;
-						const stream = await zip.stream(image.filename);
-						const buffer = await readStream(stream);
+	if (parsed) {
+		const { ids, ranges } = parsed;
 
-						let pipeline = sharp(buffer);
+		if (ids.length || ranges.length) {
+			query = query.where(({ eb, and, or }) => {
+				const conditions: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
 
-						const { width, height } = await pipeline.metadata();
+				if (ids.length) {
+					conditions.push(eb('id', 'in', ids));
+				}
 
-						pipeline = pipeline.resize({ width: preset.width });
-
-						pipeline = match(preset)
-							.with({ format: 'webp' }, (data) => pipeline.webp(data))
-							.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
-							.with({ format: 'png' }, () => pipeline.png())
-							.with({ format: 'jxl' }, (data) => pipeline.jxl(data))
-							.with({ format: 'avif' }, (data) => pipeline.avif(data))
-							.exhaustive();
-
-						const newImage = await pipeline.toBuffer();
-
-						results.push({
-							path: image.savePath,
-							contents: newImage,
-							width: width!,
-							height: height!,
-							page: image.page,
-							archive_id: image.archive_id,
-						});
+				for (const [start, end] of ranges) {
+					if (end !== undefined) {
+						conditions.push(and([eb('id', '>=', start), eb('id', '<=', end)]));
+					} else {
+						conditions.push(and([eb('id', '>=', start)]));
 					}
 				}
 
-				return results;
-			},
-			{ concurrency: navigator.hardwareConcurrency * 2 }
-		)
-	).flat();
-};
-
-export const generate = async (options: GenerateImagesOptions) => {
-	const start = performance.now();
-
-	const ids = options.ids?.map((id) => parseInt(id)).filter((id) => !isNaN(id)) ?? [];
-
-	let archives: ArchiveGenerate[] = await (() => {
-		if (ids.length) {
-			return db
-				.selectFrom('archives')
-				.select((eb) => [
-					'id',
-					'path',
-					'hash',
-					'thumbnail',
-					'pages',
-					jsonArrayFrom(
-						eb
-							.selectFrom('archive_images')
-							.select(['filename', 'page_number'])
-							.whereRef('archive_id', '=', 'archives.id')
-					).as('images'),
-				])
-				.where('id', 'in', ids)
-				.orderBy('pages asc')
-				.execute();
-		} else {
-			return db
-				.selectFrom('archives')
-				.select((eb) => [
-					'id',
-					'path',
-					'hash',
-					'thumbnail',
-					'pages',
-					jsonArrayFrom(
-						eb
-							.selectFrom('archive_images')
-							.select(['filename', 'page_number'])
-							.whereRef('archive_id', '=', 'archives.id')
-					).as('images'),
-				])
-				.orderBy('pages asc')
-				.execute();
-		}
-	})();
-
-	let skipped = 0;
-
-	for (const [index, archive] of archives.entries()) {
-		const missingImages: { filename: string; page_number: number }[] = [];
-
-		for (const image of archive.images) {
-			if (image.page_number === archive.thumbnail) {
-				const preset = config.image.coverPreset;
-
-				const imagePath = join(
-					config.directories.images,
-					archive.hash,
-					preset.name,
-					`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-				);
-
-				const exists = await Bun.file(imagePath).exists();
-
-				if (!exists || options.force) {
-					missingImages.push(image);
-				} else {
-					skipped++;
-				}
-			}
-
-			const preset = config.image.thumbnailPreset;
-
-			const imagePath = join(
-				config.directories.images,
-				archive.hash,
-				preset.name,
-				`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-			);
-
-			const exists = await Bun.file(imagePath).exists();
-
-			if (!exists || options.force) {
-				missingImages.push(image);
-			} else {
-				skipped++;
-			}
-		}
-
-		archives[index].images = missingImages;
-	}
-
-	archives = archives.filter((archive) => archive.images.length);
-
-	const batches: ArchiveGenerate[][] = [];
-
-	for (const archive of archives) {
-		const lastBatchIndex = batches.findLastIndex(
-			(batch) =>
-				batch.reduce((acc, archive) => acc + archive.images.length, 0) <=
-				(options.batchSize ?? navigator.hardwareConcurrency * 4)
-		);
-
-		if (lastBatchIndex >= 0) {
-			const lastBatch = batches[lastBatchIndex]!;
-
-			if (
-				lastBatch.reduce((acc, archive) => acc + archive.images.length, 0) +
-					archive.images.length <=
-				(options.batchSize ?? navigator.hardwareConcurrency * 4)
-			) {
-				batches[lastBatchIndex].push(archive);
-
-				continue;
-			}
-		}
-
-		batches.push([archive]);
-	}
-
-	const imageBatches: ArchiveImagesBatch[][] = [];
-
-	for (const batch of batches) {
-		const missingImagesBatch: ArchiveImagesBatch[] = [];
-
-		for (const archive of batch) {
-			const missingImages: ImageGenerate[] = [];
-
-			const images = await db
-				.selectFrom('archive_images')
-				.select(['filename', 'page_number'])
-				.where('archive_id', '=', archive.id)
-				.execute();
-
-			for (const image of images) {
-				if (image.page_number === archive.thumbnail) {
-					const preset = config.image.coverPreset;
-
-					const imagePath = join(
-						config.directories.images,
-						archive.hash,
-						preset.name,
-						`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-					);
-
-					missingImages.push({
-						filename: image.filename,
-						savePath: imagePath,
-						options: preset,
-						page: image.page_number,
-						archive_id: archive.id,
-					});
-				}
-
-				const preset = config.image.thumbnailPreset;
-
-				const imagePath = join(
-					config.directories.images,
-					archive.hash,
-					preset.name,
-					`${leadingZeros(image.page_number, archive.pages ?? 1)}.${preset.format}`
-				);
-
-				missingImages.push({
-					filename: image.filename,
-					savePath: imagePath,
-					options: preset,
-					page: image.page_number,
-					archive_id: archive.id,
-				});
-			}
-
-			missingImagesBatch.push({
-				path: archive.path,
-				images: missingImages,
+				return or(conditions);
 			});
 		}
-
-		imageBatches.push(missingImagesBatch);
 	}
 
-	const imageCount = archives.flatMap((archive) => archive.images).length;
+	const archives = await query.execute();
+
+	let skipped = 0;
+	let imageCount = 0;
+
+	const coverPreset = config.image.coverPreset;
+	const thumbnailPreset = config.image.thumbnailPreset;
+
+	const archivesEncode: ArchiveEncode[] = [];
+
+	for (const archive of archives) {
+		const images: ImageEncode[] = [];
+
+		for (const image of archive.images) {
+			const getPath = (preset: Preset) =>
+				join(
+					config.directories.images,
+					archive.hash,
+					preset.name,
+					`${leadingZeros(image.page_number, archive.pages)}.${preset.format}`
+				);
+
+			if (image.page_number === archive.thumbnail) {
+				const savePath = getPath(coverPreset);
+
+				if (!options.force && (await Bun.file(savePath).exists())) {
+					skipped++;
+				} else {
+					images.push({
+						filename: image.filename,
+						pageNumber: image.page_number,
+						savePath,
+						preset: coverPreset,
+					});
+					imageCount++;
+				}
+			}
+
+			const savePath = getPath(thumbnailPreset);
+
+			if (!options.force && (await Bun.file(savePath).exists())) {
+				skipped++;
+			} else {
+				images.push({
+					filename: image.filename,
+					pageNumber: image.page_number,
+					savePath,
+					preset: thumbnailPreset,
+				});
+				imageCount++;
+			}
+		}
+
+		archivesEncode.push({
+			id: archive.id,
+			path: archive.path,
+			images,
+		});
+	}
 
 	console.info(
-		`Generating ${chalk.bold(imageCount)} images for ${chalk.bold(archives.length)} archives in ${chalk.bold(imageBatches.length)} batches\n`
+		`Generating ${chalk.bold(imageCount)} images for ${chalk.bold(archives.length)} archives\n`
 	);
 
-	const generatedImages: GenerateImageResult[] = await generateSharp(imageBatches);
+	const multibar = new MultiBar(
+		{
+			clearOnComplete: true,
+			format: ` {bar} | ETA: {eta}s | {value}/{total}`,
+		},
+		Presets.shades_grey
+	);
+	const progress = multibar.create(imageCount, 0);
+
+	let generatedCount = 0;
+
+	await pMap(
+		archivesEncode,
+		async (archive) => {
+			const zip = new StreamZip.async({ file: archive.path });
+
+			for (const image of archive.images) {
+				const stream = await zip.stream(image.filename);
+				const buffer = await readStream(stream);
+
+				let pipeline = sharp(buffer);
+
+				const { width, height } = await pipeline.metadata();
+
+				await db
+					.updateTable('archive_images')
+					.set({ width, height })
+					.where('archive_images.page_number', '=', image.pageNumber)
+					.where('archive_id', '=', archive.id)
+					.execute()
+					.catch((error) =>
+						multibar.log(chalk.red(`Failed to save image dimensions: ${error.message}\n`))
+					);
+
+				pipeline = pipeline.resize({ width: image.preset.width });
+				pipeline = match(image.preset)
+					.with({ format: 'webp' }, (data) => pipeline.webp(data))
+					.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
+					.with({ format: 'png' }, () => pipeline.png())
+					.with({ format: 'jxl' }, (data) => pipeline.jxl(data))
+					.with({ format: 'avif' }, (data) => pipeline.avif(data))
+					.exhaustive();
+
+				try {
+					const newImage = await pipeline.toBuffer();
+					await Bun.write(image.savePath, newImage);
+				} catch (error) {
+					multibar.log(
+						chalk.red(
+							`Failed to generate and save image to path ${image.savePath}: ${error.message}\n`
+						)
+					);
+				}
+
+				generatedCount++;
+				progress.increment();
+			}
+		},
+		{ concurrency: navigator.hardwareConcurrency }
+	);
+
+	multibar.stop();
 
 	const end = performance.now();
 
@@ -294,6 +205,6 @@ export const generate = async (options: GenerateImagesOptions) => {
 
 	console.info(chalk.bold(`~~~ Finished in ${((end - start) / 1000).toFixed(2)} seconds ~~~`));
 	console.info(
-		`Generated ${chalk.bold(generatedImages.length)} images and skipped ${chalk.bold(skipped)} images\n`
+		`Generated ${chalk.bold(generatedCount)} images and skipped ${chalk.bold(skipped)} images\n`
 	);
 };

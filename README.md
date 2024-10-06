@@ -6,10 +6,48 @@ To run the server you need to have [Bun](https://bun.sh/) installed.
 
 - Clone the project and enter the directory.
 - Install the dependencies by running `bun install`.
-- Check the configuration.
+- Check the [configuration](#configuration).
 - Run `bun run build` to build the website.
 
-You can then start the server with `bun ./build` or you can use `bun cluster.ts` to start multiple servers as a [cluster](https://bun.sh/guides/http/cluster).
+You can then start the server with `bun start` or you can use `bun cluster` to start multiple servers as a [cluster](https://bun.sh/guides/http/cluster).
+
+## CLI
+
+To operate with the site you need to use the CLI. You can run `bun cli --help` to see the available commands and a quick summary.
+
+### Index
+
+To index archives located in the content directory, run `bun cli index`.
+
+You can pass the `-f` or `--force` option to update indexed archives. Use this if you want to update the metadata or contents of your archives.
+
+Use the `--reindex` option to only update alredy indexed archives and skip new ones.
+
+To only index certain paths, you can use `-p  <paths...>` or `--paths <paths...>` and indicate a space separated list of paths to index. This is useful if you want to index something that isn't in the content directory or to update a specific archive.
+
+If you want to resume indexing, you can use the `--from-path <path>` option to indicate which path (in the content directory) should start indexing from.
+
+**Note**: some paths are incompatible with NPM scripts so if you use `--from-path <path>`, `-p  <paths...>` or `--paths <paths...>` and any of these fails, try running the CLI directly with `bun ./cli/index.ts`.
+
+### Prune
+
+Run the `prune` command to delete archives that don't exist anymore in the file system.
+
+### Generate Images
+
+You can generate all covers and page thumbnails using the `generate-images` command. Useful if you don't want or can't generate the images on-demand.
+
+Use the `--ids <IDs...>` option to indicate which archives it should generate images for.
+
+`-f` or `--force` can be used to re-generate images.
+
+### User login
+
+You can generate a one-time login link for any user using the `uli <username>` command.
+
+### Recovery
+
+Send an access recovery email to a user with the `recovery <username>` command. If you only want to get the code without sending an email, use the `-c` or `--code` option.
 
 ## Configuration
 
@@ -98,35 +136,25 @@ parse_filename_as_title = true # default
 
 #### Encoding options
 
-The server uses [Sharp](https://sharp.pixelplumbing.com) for encoding the images.\
 Below are the default encoding options for every supported format that can be overriden.
 
 ```toml
 # WEBP default configuration
 quality = 80          # 1-100
 lossless = false
-near_lossless = false
-effort = 4            # 0-6
+speed = 4            # 0-6
 
 # JPEG default configuration
-quality = 80        # 1-100
-progressive = false
-
-# PNG default configuration
-progressive = false
-effort = 7          # 1-10
-compression = 6     # 0-9
+quality = 75        # 1-100
 
 # JXL default configuration
-quality = 80     # 1-100
-distance = 1.0   # 1-15
+quality = 1     # 0.0-15.0
 lossless = false
-effort = 7       # 3-9
+speed = 7       # 1-10
 
 # AVIF default configuration
-quality = 50     # 1-100
-lossless = false
-effort = 4       # 0-9
+quality = 80     # 1-100
+speed = 4       # 1-10
 ```
 
 You can use these as a reference to override encoding options in a specific preset or globally for all presets.
@@ -142,7 +170,7 @@ Example:
 format = 'jxl'      # webp, jpeg, png, jxl, avif
 width = 480
 quality = 70
-effort = 8
+speed = 8
 ```
 
 To use this preset for covers:

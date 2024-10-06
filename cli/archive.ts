@@ -126,9 +126,7 @@ export const index = async (opts: IndexOptions) => {
 		// If using --reindex, then skip non indexed archives
 		if (opts.reindex && !existing) {
 			if (opts.verbose) {
-				multibar.log(
-					chalk.yellow(`${chalk.bold(path)} doesn't exists in the database, skipping\n`)
-				);
+				multibar.log(chalk.yellow(`${chalk.bold(path)} is not indexed, skipping\n`));
 			}
 
 			progress.increment();
@@ -141,9 +139,7 @@ export const index = async (opts: IndexOptions) => {
 		// If --force wasn't used, skip already indexed archives
 		if (!opts.force && existing) {
 			if (opts.verbose) {
-				multibar.log(
-					chalk.yellow(`${chalk.bold(path)} already exists in the database, skipping\n`)
-				);
+				multibar.log(chalk.yellow(`${chalk.bold(path)} is already indexed, skipping\n`));
 			}
 
 			progress.increment();
