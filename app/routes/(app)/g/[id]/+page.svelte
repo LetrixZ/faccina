@@ -147,6 +147,8 @@
 
 <svelte:head>
 	<title>{data.archive.title} • {data.site.name}</title>
+	<meta name="description" content={`Read or download ${data.archive.title} in high quality for free on ${data.site.name}`}>
+        <meta property="og:image" content={`/image/${data.archive.hash}/${data.archive.thumbnail}?type=cover`}><meta property="og:image:width" content="1024"><meta property="og:image:height" content="1446"><meta name="twitter:card" content="summary_large_image"/>
 </svelte:head>
 
 <main class="container flex flex-col gap-2 md:flex-row">
