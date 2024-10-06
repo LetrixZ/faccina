@@ -347,3 +347,7 @@ export const cleanNested = <T>(obj: T) => {
 export const slugify = (str: string) => {
 	return _slugify(str, { lower: true, strict: true });
 };
+
+export const truncate = (str: string, max: number) => {
+	return str.substring(0, max - 1) + (str.length > max ? '&hellip;' : '');
+};

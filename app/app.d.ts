@@ -1,3 +1,4 @@
+import 'svelte/elements';
 import 'unplugin-icons/types/svelte';
 
 declare global {
@@ -15,9 +16,21 @@ declare global {
 			user: import('lucia').User | null;
 			session: import('lucia').Session | null;
 		}
+	}
 
-		// interface PageData {}
-		// interface Platform {}
+	declare module '*?raw-hex' {
+		const src: string;
+		export default src;
+	}
+
+	interface Uint8ArrayConstructor {
+		fromHex: (hex: string) => Uint8Array;
+	}
+}
+
+declare module 'svelte/elements' {
+	interface HTMLAttributes<T extends EventTarget> extends AriaAttributes, DOMAttributes<T> {
+		tw?: string;
 	}
 }
 
