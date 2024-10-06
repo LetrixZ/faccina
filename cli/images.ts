@@ -27,8 +27,6 @@ type ArchiveEncode = { id: number; path: string; images: ImageEncode[] };
 export const generate = async (options: GenerateImagesOptions) => {
 	const parsed = parseIdRanges(options.ids);
 
-	console.log(parsed);
-
 	const start = performance.now();
 
 	let query = db
