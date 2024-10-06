@@ -104,19 +104,17 @@
 	};
 </script>
 
-<div tw="bg-[#0A0A0A] flex flex-col w-full h-full text-white p-2 relative">
+<div tw="bg-[#0A0A0A] flex flex-col w-full h-full text-white">
 	<!-- svelte-ignore a11y-missing-attribute -->
 	<img
-		height={imageHeight}
 		src={dataURL}
 		style="filter: blur(40px) brightness(0.2)"
-		tw="rounded-md absolute"
-		width={imageWidth}
+		tw="rounded-md absolute h-full w-full inset-0 m-auto"
 	/>
-	<div tw="flex flex-auto">
+	<div tw="flex flex-auto p-4">
 		<!-- svelte-ignore a11y-missing-attribute -->
 		<img height={imageHeight} src={dataURL} tw="rounded-md" width={imageWidth} />
-		<div tw="flex ml-2 flex-auto flex-col">
+		<div tw="flex ml-4 flex-auto flex-col">
 			<span style="font-size: 32px" tw="font-bold flex-shrink-0 mb-1">
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				{@html truncatedTitle()}

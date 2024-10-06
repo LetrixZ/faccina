@@ -41,7 +41,7 @@ export const GET = async ({ fetch, params }) => {
 	const data = await response.arrayBuffer();
 
 	const containerHeight = 300;
-	const imageHeight = Math.round(containerHeight - 8 * 2);
+	const imageHeight = Math.round(containerHeight - 16 * 2);
 	const imageWidth = Math.round((imageHeight * 540) / 768);
 
 	const pipeline = sharp(data).resize({
