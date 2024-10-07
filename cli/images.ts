@@ -186,7 +186,7 @@ export const generate = async (options: GenerateImagesOptions) => {
 				} catch (error) {
 					multibar.log(
 						chalk.red(
-							`Failed to generate image ${basename(image.savePath)} for ${archive.path}: ${error.message}`
+							`Failed to generate image ${basename(image.savePath)} for ${archive.path}: ${error.message}\n`
 						)
 					);
 				} finally {
