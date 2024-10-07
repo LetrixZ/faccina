@@ -2,7 +2,7 @@ import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import { ExpressionWrapper, SqlBool } from 'kysely';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import StreamZip from 'node-stream-zip';
 import pMap from 'p-map';
 import sharp from 'sharp';
@@ -152,45 +152,46 @@ export const generate = async (options: GenerateImagesOptions) => {
 			const zip = new StreamZip.async({ file: archive.path });
 
 			for (const image of archive.images) {
-				const stream = await zip.stream(image.filename);
-				const buffer = await readStream(stream);
-
-				let pipeline = sharp(buffer);
-
-				const { width, height } = await pipeline.metadata();
-
-				await db
-					.updateTable('archive_images')
-					.set({ width, height })
-					.where('archive_images.page_number', '=', image.pageNumber)
-					.where('archive_id', '=', archive.id)
-					.execute()
-					.catch((error) =>
-						multibar.log(chalk.red(`Failed to save image dimensions: ${error.message}\n`))
-					);
-
-				pipeline = pipeline.resize({ width: image.preset.width });
-				pipeline = match(image.preset)
-					.with({ format: 'webp' }, (data) => pipeline.webp(data))
-					.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
-					.with({ format: 'png' }, () => pipeline.png())
-					.with({ format: 'jxl' }, (data) => pipeline.jxl(data))
-					.with({ format: 'avif' }, (data) => pipeline.avif(data))
-					.exhaustive();
-
 				try {
+					const stream = await zip.stream(image.filename);
+					const buffer = await readStream(stream);
+
+					let pipeline = sharp(buffer);
+
+					const { width, height } = await pipeline.metadata();
+
+					await db
+						.updateTable('archive_images')
+						.set({ width, height })
+						.where('archive_images.page_number', '=', image.pageNumber)
+						.where('archive_id', '=', archive.id)
+						.execute()
+						.catch((error) =>
+							multibar.log(chalk.red(`Failed to save image dimensions: ${error.message}\n`))
+						);
+
+					pipeline = pipeline.resize({ width: image.preset.width });
+					pipeline = match(image.preset)
+						.with({ format: 'webp' }, (data) => pipeline.webp(data))
+						.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
+						.with({ format: 'png' }, () => pipeline.png())
+						.with({ format: 'jxl' }, (data) => pipeline.jxl(data))
+						.with({ format: 'avif' }, (data) => pipeline.avif(data))
+						.exhaustive();
+
 					const newImage = await pipeline.toBuffer();
 					await Bun.write(image.savePath, newImage);
+
+					generatedCount++;
 				} catch (error) {
 					multibar.log(
 						chalk.red(
-							`Failed to generate and save image to path ${image.savePath}: ${error.message}\n`
+							`Failed to generate image ${basename(image.savePath)} for ${archive.path}: ${error.message}`
 						)
 					);
+				} finally {
+					progress.increment();
 				}
-
-				generatedCount++;
-				progress.increment();
 			}
 		},
 		{ concurrency: navigator.hardwareConcurrency }
