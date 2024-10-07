@@ -103,6 +103,7 @@ export const index = async (opts: IndexOptions) => {
 		{
 			clearOnComplete: true,
 			format: ` {bar} - {path} - {value}/{total}`,
+			linewrap: true,
 		},
 		cliProgress.Presets.shades_grey
 	);

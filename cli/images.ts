@@ -139,6 +139,7 @@ export const generate = async (options: GenerateImagesOptions) => {
 		{
 			clearOnComplete: true,
 			format: ` {bar} | ETA: {eta}s | {value}/{total}`,
+			linewrap: true,
 		},
 		Presets.shades_grey
 	);
