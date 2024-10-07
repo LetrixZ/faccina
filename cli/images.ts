@@ -197,12 +197,12 @@ export const generate = async (options: GenerateImagesOptions) => {
 		{ concurrency: navigator.hardwareConcurrency }
 	);
 
-	multibar.stop();
-
 	const end = performance.now();
 
 	await db.destroy();
+
 	await sleep(250);
+	multibar.stop();
 
 	console.info(chalk.bold(`~~~ Finished in ${((end - start) / 1000).toFixed(2)} seconds ~~~`));
 	console.info(
