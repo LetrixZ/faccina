@@ -8,7 +8,7 @@
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { type ArchiveDetail, TagType, type Task } from '$lib/models';
 	import {
 		cn,
@@ -22,7 +22,7 @@
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
 	import BiSolidDownload from '~icons/bxs/download';
 	import { AsyncZipDeflate, strToU8, Zip, ZipPassThrough } from 'fflate';
-	import { Eye, EyeOff, Heart, Pencil, Tag } from 'lucide-svelte';
+	import { Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
 	import pMap from 'p-map';
 	import { writable } from 'svelte/store';
 	import { MetaTags } from 'svelte-meta-tags';
@@ -38,6 +38,7 @@
 	let editTaxonomyOpen = false;
 
 	$: canDownload = data.site.guestDownloads || data.user;
+	$: archive = data.archive;
 
 	const startDownload = async (archive: ArchiveDetail) => {
 		const streamSaver = await import('streamsaver');
@@ -174,337 +175,245 @@
 />
 
 <main class="container flex flex-col gap-2 md:flex-row">
-	{#await data.archive}
-		<div class="w-full space-y-2 @container md:w-80">
-			<div class="aspect-[90/127] w-full">
-				<Skeleton class="h-full w-full" />
-			</div>
+	<div class="w-full space-y-2 @container md:w-80">
+		<div class="w-full">
+			<a href={`./${archive.id}/read/1/${$page.url.search}`}>
+				<img
+					alt={`'${archive.title}' cover`}
+					class="h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
+					height={archive.cover?.width && archive.cover?.height
+						? Math.round((640 / archive.cover.width) * archive.cover.height)
+						: undefined}
+					loading="eager"
+					src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
+					width={archive.cover?.width ? 640 : undefined}
+				/>
+			</a>
+		</div>
+
+		{#if data.user?.admin}
+			<Separator />
 
 			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
-					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
-					disabled
-					variant="secondary"
+					class="flex w-full bg-sky-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-sky-700/80"
+					on:click={() => (editOpen = true)}
 				>
-					<AiOutlineRead class="size-5 shrink-0" />
-					<span class="flex-auto"> Read </span>
+					<Pencil class="size-5 shrink-0" />
+					<span class="flex-auto"> Edit info </span>
 				</Button>
 
-				{#if canDownload}
-					<Button
-						class={cn(
-							'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80',
-							!canDownload && 'col-span-2'
-						)}
-						disabled
-						variant="secondary"
-					>
-						<BiSolidDownload class="size-5 shrink-0" />
-						<span class="flex-auto"> Download </span>
-					</Button>
+				{#if archive.deleted_at}
+					<form action="?/show" method="POST" use:enhance>
+						<Button
+							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
+							type="submit"
+						>
+							<Eye class="size-5 shrink-0" />
+							<span class="flex-auto"> Show </span>
+						</Button>
+					</form>
+				{:else}
+					<form action="?/hide" method="POST" use:enhance>
+						<Button
+							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
+							type="submit"
+						>
+							<EyeOff class="size-5 shrink-0" />
+							<span class="flex-auto"> Hide </span>
+						</Button>
+					</form>
 				{/if}
 
-				{#if data.user}
-					{#if data.isFavorite}
+				<Button
+					class="col-span-2 flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
+					on:click={() => (editTaxonomyOpen = true)}
+				>
+					<Tag class="size-5 shrink-0" />
+					<span class="flex-auto"> Edit taxonomy </span>
+				</Button>
+			</div>
+
+			<Separator />
+		{/if}
+
+		<div class="grid gap-2 @xs:grid-cols-2">
+			<Button
+				class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+				href={`./${archive.id}/read/1${$page.url.search}`}
+				variant="secondary"
+			>
+				<AiOutlineRead class="size-5 shrink-0" />
+				<span class="flex-auto"> Read </span>
+			</Button>
+
+			<div class="relative">
+				<Button
+					class={cn(
+						'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80 ',
+						!canDownload && 'pointer-events-none cursor-not-allowed bg-neutral-700 pe-9'
+					)}
+					on:click={() => canDownload && startDownload(archive)}
+					variant="secondary"
+				>
+					<BiSolidDownload class="size-5 shrink-0" />
+					<span class="flex-auto"> Download </span>
+				</Button>
+
+				<div class="absolute inset-y-0 right-4 my-auto h-fit">
+					{#if !canDownload}
+						<HoverCard.Root closeDelay={0} openDelay={0}>
+							<HoverCard.Trigger><Info class="size-[1.125rem]" /></HoverCard.Trigger>
+							<HoverCard.Content class="w-fit">
+								An account is required to download this gallery
+							</HoverCard.Content>
+						</HoverCard.Root>
+					{/if}
+				</div>
+			</div>
+
+			{#if data.user}
+				{#if data.isFavorite}
+					<form action="?/removeFavorite" class="col-span-2" method="POST" use:enhance>
 						<Button
-							class="col-span-2 flex w-full bg-transparent text-center font-semibold text-white "
-							disabled
+							class="flex w-full bg-transparent text-center font-semibold text-white "
+							type="submit"
 							variant="ghost"
 						>
 							<Heart class="size-5 shrink-0 fill-red-500 text-red-500" />
 							<span class="flex-auto"> Remove from Favorites </span>
 						</Button>
-					{:else}
+					</form>
+				{:else}
+					<form action="?/addFavorite" class="col-span-2" method="POST" use:enhance>
 						<Button
-							class="col-span-2 flex w-full bg-transparent text-center font-semibold text-white  "
-							disabled
+							class="flex w-full bg-transparent text-center font-semibold text-white  "
+							type="submit"
 							variant="ghost"
 						>
 							<Heart class="size-5 shrink-0" />
 							<span class="flex-auto"> Add to Favorites </span>
 						</Button>
-					{/if}
+					</form>
 				{/if}
-			</div>
-
-			<div class="w-full overflow-clip rounded shadow-md shadow-shadow md:w-auto">
-				<InfoSection class="space-y-1">
-					<div class="flex flex-col gap-2">
-						<Skeleton class="h-6 w-full" />
-						<Skeleton class="h-10 w-full" />
-					</div>
-				</InfoSection>
-
-				<InfoSection name="Description">
-					<div class="space-y-1">
-						<Skeleton class="h-4 w-[90%]" />
-						<Skeleton class="h-4 w-[80%]" />
-						<Skeleton class="h-4 w-[60%]" />
-					</div>
-				</InfoSection>
-
-				<InfoSection name="Artists">
-					<Skeleton class="h-6 w-[60%]" />
-				</InfoSection>
-
-				<InfoSection name="Magazines">
-					<Skeleton class="h-6 w-[80%]" />
-				</InfoSection>
-
-				<InfoSection name="Tags">
-					<div class="flex flex-col gap-2">
-						<Skeleton class="h-6 w-[90%]" />
-						<Skeleton class="h-6 w-[80%]" />
-					</div>
-				</InfoSection>
-
-				<InfoSection name="Length">
-					<Skeleton class="h-5 w-20" />
-				</InfoSection>
-
-				<InfoSection name="Size">
-					<Skeleton class="h-5 w-24" />
-				</InfoSection>
-
-				<InfoSection name="Released">
-					<Skeleton class="h-5 w-32" />
-				</InfoSection>
-
-				<InfoSection name="Added">
-					<Skeleton class="h-5 w-32" />
-				</InfoSection>
-			</div>
+			{/if}
 		</div>
-	{:then archive}
-		<div class="w-full space-y-2 @container md:w-80">
-			<div class="w-full">
-				<a href={`./${archive.id}/read/1/${$page.url.search}`}>
-					<img
-						alt={`'${archive.title}' cover`}
-						class="h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
-						height={archive.cover?.width && archive.cover?.height
-							? Math.round((640 / archive.cover.width) * archive.cover.height)
-							: undefined}
-						loading="eager"
-						src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
-						width={archive.cover?.width ? 640 : undefined}
-					/>
-				</a>
-			</div>
 
-			{#if data.user?.admin}
-				<Separator />
+		<div class="overflow-clip rounded shadow-md shadow-shadow">
+			<InfoSection class="space-y-1">
+				<p class="text-lg font-semibold leading-6">{archive.title}</p>
+				<p class="text-sm text-muted-foreground-light">
+					{generateFilename(archive)}
+				</p>
+			</InfoSection>
 
-				<div class="grid gap-2 @xs:grid-cols-2">
-					<Button
-						class="flex w-full bg-sky-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-sky-700/80"
-						on:click={() => (editOpen = true)}
-					>
-						<Pencil class="size-5 shrink-0" />
-						<span class="flex-auto"> Edit info </span>
-					</Button>
-
-					{#if archive.deleted_at}
-						<form action="?/show" method="POST" use:enhance>
-							<Button
-								class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
-								type="submit"
-							>
-								<Eye class="size-5 shrink-0" />
-								<span class="flex-auto"> Show </span>
-							</Button>
-						</form>
-					{:else}
-						<form action="?/hide" method="POST" use:enhance>
-							<Button
-								class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
-								type="submit"
-							>
-								<EyeOff class="size-5 shrink-0" />
-								<span class="flex-auto"> Hide </span>
-							</Button>
-						</form>
-					{/if}
-
-					<Button
-						class="col-span-2 flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
-						on:click={() => (editTaxonomyOpen = true)}
-					>
-						<Tag class="size-5 shrink-0" />
-						<span class="flex-auto"> Edit taxonomy </span>
-					</Button>
-				</div>
-
-				<Separator />
+			{#if archive.description?.length}
+				<InfoSection name="Description">
+					<p class="text-sm">{archive.description}</p>
+				</InfoSection>
 			{/if}
 
-			<div class="grid gap-2 @xs:grid-cols-2">
-				<Button
-					class={cn(
-						'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80',
-						!canDownload && 'col-span-2'
-					)}
-					href={`./${archive.id}/read/1${$page.url.search}`}
-					variant="secondary"
-				>
-					<AiOutlineRead class="size-5 shrink-0" />
-					<span class="flex-auto"> Read </span>
-				</Button>
+			{#if archive.artists?.length || archive.circles?.length}
+				<InfoSection name="Artists">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.artists ?? [] as artist}
+							<Chip item={artist} type={TagType.ARTIST} />
+						{/each}
 
-				{#if canDownload}
-					<Button
-						class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
-						on:click={() => startDownload(archive)}
-						variant="secondary"
-					>
-						<BiSolidDownload class="size-5 shrink-0" />
-						<span class="flex-auto"> Download </span>
-					</Button>
-				{/if}
-
-				{#if data.user}
-					{#if data.isFavorite}
-						<form action="?/removeFavorite" class="col-span-2" method="POST" use:enhance>
-							<Button
-								class="flex w-full bg-transparent text-center font-semibold text-white "
-								type="submit"
-								variant="ghost"
-							>
-								<Heart class="size-5 shrink-0 fill-red-500 text-red-500" />
-								<span class="flex-auto"> Remove from Favorites </span>
-							</Button>
-						</form>
-					{:else}
-						<form action="?/addFavorite" class="col-span-2" method="POST" use:enhance>
-							<Button
-								class="flex w-full bg-transparent text-center font-semibold text-white  "
-								type="submit"
-								variant="ghost"
-							>
-								<Heart class="size-5 shrink-0" />
-								<span class="flex-auto"> Add to Favorites </span>
-							</Button>
-						</form>
-					{/if}
-				{/if}
-			</div>
-
-			<div class="overflow-clip rounded shadow-md shadow-shadow">
-				<InfoSection class="space-y-1">
-					<p class="text-lg font-semibold leading-6">{archive.title}</p>
-					<p class="text-sm text-muted-foreground-light">
-						{generateFilename(archive)}
-					</p>
+						{#each archive.circles ?? [] as circle}
+							<Chip item={circle} type={TagType.CIRCLE} />
+						{/each}
+					</div>
 				</InfoSection>
+			{/if}
 
-				{#if archive.description?.length}
-					<InfoSection name="Description">
-						<p class="text-sm">{archive.description}</p>
-					</InfoSection>
-				{/if}
-
-				{#if archive.artists?.length || archive.circles?.length}
-					<InfoSection name="Artists">
-						<div class="flex flex-wrap gap-2">
-							{#each archive.artists ?? [] as artist}
-								<Chip item={artist} type={TagType.ARTIST} />
-							{/each}
-
-							{#each archive.circles ?? [] as circle}
-								<Chip item={circle} type={TagType.CIRCLE} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				{#if archive.magazines?.length}
-					<InfoSection name="Magazines">
-						<div class="flex flex-wrap gap-2">
-							{#each archive.magazines as magazine}
-								<Chip item={magazine} type={TagType.MAGAZINE} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				{#if archive.events?.length}
-					<InfoSection name="Events">
-						<div class="flex flex-wrap gap-2">
-							{#each archive.events as event}
-								<Chip item={event} type={TagType.EVENT} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				{#if archive.publishers?.length}
-					<InfoSection name="Publishers">
-						<div class="flex flex-wrap gap-2">
-							{#each archive.publishers as publisher}
-								<Chip item={publisher} type={TagType.PUBLISHER} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				{#if archive.parodies?.length}
-					<InfoSection name="Parodies">
-						<div class="flex flex-wrap gap-2">
-							{#each archive.parodies as parody}
-								<Chip item={parody} type={TagType.PARODY} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				{#if archive.tags?.length}
-					<InfoSection name="Tags">
-						<div class="flex flex-wrap gap-2">
-							{#each processTags(archive.tags) as tag}
-								<Chip item={tag} type={TagType.TAG} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				{#if archive.sources?.length}
-					<InfoSection name="Sources">
-						<div class="flex flex-wrap gap-2">
-							{#each archive.sources as source}
-								<GallerySource {source} />
-							{/each}
-						</div>
-					</InfoSection>
-				{/if}
-
-				<InfoSection name="Length">
-					<p class="text-sm">{archive.pages} pages</p>
+			{#if archive.magazines?.length}
+				<InfoSection name="Magazines">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.magazines as magazine}
+							<Chip item={magazine} type={TagType.MAGAZINE} />
+						{/each}
+					</div>
 				</InfoSection>
+			{/if}
 
-				{#if archive.size}
-					<InfoSection name="Size">
-						<p class="text-sm">{humanFileSize(archive.size)}</p>
-					</InfoSection>
-				{/if}
+			{#if archive.events?.length}
+				<InfoSection name="Events">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.events as event}
+							<Chip item={event} type={TagType.EVENT} />
+						{/each}
+					</div>
+				</InfoSection>
+			{/if}
 
-				{#if archive.released_at}
-					<InfoSection name="Released">
-						<p class="text-sm">
-							{dateTimeFormat(archive.released_at)}
-						</p>
-					</InfoSection>
-				{/if}
+			{#if archive.publishers?.length}
+				<InfoSection name="Publishers">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.publishers as publisher}
+							<Chip item={publisher} type={TagType.PUBLISHER} />
+						{/each}
+					</div>
+				</InfoSection>
+			{/if}
 
-				<InfoSection name="Added">
+			{#if archive.parodies?.length}
+				<InfoSection name="Parodies">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.parodies as parody}
+							<Chip item={parody} type={TagType.PARODY} />
+						{/each}
+					</div>
+				</InfoSection>
+			{/if}
+
+			{#if archive.tags?.length}
+				<InfoSection name="Tags">
+					<div class="flex flex-wrap gap-2">
+						{#each processTags(archive.tags) as tag}
+							<Chip item={tag} type={TagType.TAG} />
+						{/each}
+					</div>
+				</InfoSection>
+			{/if}
+
+			{#if archive.sources?.length}
+				<InfoSection name="Sources">
+					<div class="flex flex-wrap gap-2">
+						{#each archive.sources as source}
+							<GallerySource {source} />
+						{/each}
+					</div>
+				</InfoSection>
+			{/if}
+
+			<InfoSection name="Length">
+				<p class="text-sm">{archive.pages} pages</p>
+			</InfoSection>
+
+			{#if archive.size}
+				<InfoSection name="Size">
+					<p class="text-sm">{humanFileSize(archive.size)}</p>
+				</InfoSection>
+			{/if}
+
+			{#if archive.released_at}
+				<InfoSection name="Released">
 					<p class="text-sm">
-						{dateTimeFormat(archive.created_at)}
+						{dateTimeFormat(archive.released_at)}
 					</p>
 				</InfoSection>
-			</div>
-		</div>
+			{/if}
 
-		<GalleryThumbnails {archive} />
-	{/await}
+			<InfoSection name="Added">
+				<p class="text-sm">
+					{dateTimeFormat(archive.created_at)}
+				</p>
+			</InfoSection>
+		</div>
+	</div>
+
+	<GalleryThumbnails {archive} />
 </main>
 
 <Dialog.Root
