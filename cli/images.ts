@@ -122,11 +122,13 @@ export const generate = async (options: GenerateImagesOptions) => {
 			}
 		}
 
-		archivesEncode.push({
-			id: archive.id,
-			path: archive.path,
-			images,
-		});
+		if (images.length) {
+			archivesEncode.push({
+				id: archive.id,
+				path: archive.path,
+				images,
+			});
+		}
 	}
 
 	console.info(
