@@ -64,6 +64,7 @@ enable_users = true
 admin_users = ['superuser']
 default_sort = 'released_at'
 default_order = 'desc'
+guest_downloads = true
 ```
 
 - `site_name`: Specifies the title showed in pages and emails.
@@ -72,6 +73,7 @@ default_order = 'desc'
 - `admin_users`: List of usernames that will be given admin privileges. If you use the `uli` command to login as an admin user and this user does not exists, a new one will be created.
 - `default_sort`: Default sorting when nothing was specified by the user.
 - `default_order`: Default ordering when nothing was specified by the user.
+- `guest_downloads`: Show download button for guests users.
 
 ### Directories
 

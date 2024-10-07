@@ -11,6 +11,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { type ArchiveDetail, TagType, type Task } from '$lib/models';
 	import {
+		cn,
 		dateTimeFormat,
 		generateFilename,
 		getMetadata,
@@ -35,6 +36,8 @@
 
 	let editOpen = false;
 	let editTaxonomyOpen = false;
+
+	$: canDownload = data.site.guestDownloads || data.user;
 
 	const startDownload = async (archive: ArchiveDetail) => {
 		const streamSaver = await import('streamsaver');
@@ -187,14 +190,19 @@
 					<span class="flex-auto"> Read </span>
 				</Button>
 
-				<Button
-					class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
-					disabled
-					variant="secondary"
-				>
-					<BiSolidDownload class="size-5 shrink-0" />
-					<span class="flex-auto"> Download </span>
-				</Button>
+				{#if canDownload}
+					<Button
+						class={cn(
+							'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80',
+							!canDownload && 'col-span-2'
+						)}
+						disabled
+						variant="secondary"
+					>
+						<BiSolidDownload class="size-5 shrink-0" />
+						<span class="flex-auto"> Download </span>
+					</Button>
+				{/if}
 
 				{#if data.user}
 					{#if data.isFavorite}
@@ -332,7 +340,10 @@
 
 			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
-					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
+					class={cn(
+						'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80',
+						!canDownload && 'col-span-2'
+					)}
 					href={`./${archive.id}/read/1${$page.url.search}`}
 					variant="secondary"
 				>
@@ -340,14 +351,16 @@
 					<span class="flex-auto"> Read </span>
 				</Button>
 
-				<Button
-					class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
-					on:click={() => startDownload(archive)}
-					variant="secondary"
-				>
-					<BiSolidDownload class="size-5 shrink-0" />
-					<span class="flex-auto"> Download </span>
-				</Button>
+				{#if canDownload}
+					<Button
+						class="flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80"
+						on:click={() => startDownload(archive)}
+						variant="secondary"
+					>
+						<BiSolidDownload class="size-5 shrink-0" />
+						<span class="flex-auto"> Download </span>
+					</Button>
+				{/if}
 
 				{#if data.user}
 					{#if data.isFavorite}

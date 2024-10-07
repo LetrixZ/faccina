@@ -12,6 +12,7 @@ export const load: LayoutServerLoad = ({ locals }) => {
 			hasMailer: !!config.mailer,
 			defaultSort: config.site.defaultSort,
 			defaultOrder: config.site.defaultOrder,
+			guestDownloads: config.site.guestDownloads,
 		},
 	};
 };

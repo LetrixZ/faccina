@@ -14,6 +14,7 @@ const siteSchema = z
 		admin_users: z.array(z.string()).default([]),
 		default_sort: z.enum(['released_at', 'created_at', 'title', 'pages']).default('released_at'),
 		default_order: z.enum(['asc', 'desc']).default('desc'),
+		guest_downloads: z.boolean().default(true),
 	})
 	.transform(camelize);
 
