@@ -8,10 +8,8 @@
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { type ArchiveDetail, TagType, type Task } from '$lib/models';
 	import {
-		cn,
 		dateTimeFormat,
 		generateFilename,
 		getMetadata,
@@ -249,28 +247,22 @@
 
 			<div class="relative">
 				<Button
-					class={cn(
-						'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80 ',
-						!canDownload && 'pointer-events-none cursor-not-allowed bg-neutral-700 pe-9'
-					)}
-					on:click={() => canDownload && startDownload(archive)}
+					class={'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80'}
+					disabled={!canDownload}
+					on:click={() => startDownload(archive)}
 					variant="secondary"
 				>
 					<BiSolidDownload class="size-5 shrink-0" />
 					<span class="flex-auto"> Download </span>
 				</Button>
-
-				<div class="absolute inset-y-0 right-4 my-auto h-fit">
-					{#if !canDownload}
-						<HoverCard.Root closeDelay={0} openDelay={0}>
-							<HoverCard.Trigger><Info class="size-[1.125rem]" /></HoverCard.Trigger>
-							<HoverCard.Content class="w-fit">
-								An account is required to download this gallery
-							</HoverCard.Content>
-						</HoverCard.Root>
-					{/if}
-				</div>
 			</div>
+
+			{#if !canDownload}
+				<div class="col-span-2 flex items-center gap-2 px-2 py-0.5 text-sm text-neutral-300">
+					<Info class="size-4" />
+					<span class="w-full flex-auto text-center">Guest downloads are disabled</span>
+				</div>
+			{/if}
 
 			{#if data.user}
 				{#if data.isFavorite}
