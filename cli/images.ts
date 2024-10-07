@@ -2,7 +2,7 @@ import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import { ExpressionWrapper, SqlBool } from 'kysely';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
 import pMap from 'p-map';
 import sharp from 'sharp';
@@ -186,7 +186,7 @@ export const generate = async (options: GenerateImagesOptions) => {
 				} catch (error) {
 					multibar.log(
 						chalk.red(
-							`Failed to generate image ${basename(image.savePath)} for ${archive.path}: ${error.message}\n`
+							`Failed to generate image ${chalk.bold(image.savePath.split('/').slice(-2).join('/'))} for ${chalk.bold(archive.path)}: ${chalk.bold(error.message)}\n`
 						)
 					);
 				} finally {
