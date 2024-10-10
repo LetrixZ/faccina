@@ -8,13 +8,12 @@
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { type ArchiveDetail, TagType, type Task } from '$lib/models';
+	import { type ArchiveDetail, type Task } from '$lib/models';
 	import {
 		dateTimeFormat,
 		generateFilename,
 		getMetadata,
 		humanFileSize,
-		processTags,
 		randomString,
 	} from '$lib/utils';
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
@@ -178,7 +177,7 @@
 			<a href={`./${archive.id}/read/1/${$page.url.search}`}>
 				<img
 					alt={`'${archive.title}' cover`}
-					class="h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
+					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
 					height={archive.cover?.width && archive.cover?.height
 						? Math.round((640 / archive.cover.width) * archive.cover.height)
 						: undefined}
@@ -228,7 +227,7 @@
 					on:click={() => (editTaxonomyOpen = true)}
 				>
 					<Tag class="size-5 shrink-0" />
-					<span class="flex-auto"> Edit taxonomy </span>
+					<span class="flex-auto"> Edit tags </span>
 				</Button>
 			</div>
 
@@ -305,15 +304,21 @@
 				</InfoSection>
 			{/if}
 
-			{#if archive.artists?.length || archive.circles?.length}
+			{#if archive.artists?.length}
 				<InfoSection name="Artists">
 					<div class="flex flex-wrap gap-2">
 						{#each archive.artists ?? [] as artist}
-							<Chip item={artist} type={TagType.ARTIST} />
+							<Chip tag={artist} type="artist" />
 						{/each}
+					</div>
+				</InfoSection>
+			{/if}
 
+			{#if archive.circles?.length}
+				<InfoSection name="Circles">
+					<div class="flex flex-wrap gap-2">
 						{#each archive.circles ?? [] as circle}
-							<Chip item={circle} type={TagType.CIRCLE} />
+							<Chip tag={circle} type="circle" />
 						{/each}
 					</div>
 				</InfoSection>
@@ -323,7 +328,7 @@
 				<InfoSection name="Magazines">
 					<div class="flex flex-wrap gap-2">
 						{#each archive.magazines as magazine}
-							<Chip item={magazine} type={TagType.MAGAZINE} />
+							<Chip tag={magazine} type="magazine" />
 						{/each}
 					</div>
 				</InfoSection>
@@ -333,7 +338,7 @@
 				<InfoSection name="Events">
 					<div class="flex flex-wrap gap-2">
 						{#each archive.events as event}
-							<Chip item={event} type={TagType.EVENT} />
+							<Chip tag={event} type="event" />
 						{/each}
 					</div>
 				</InfoSection>
@@ -343,7 +348,7 @@
 				<InfoSection name="Publishers">
 					<div class="flex flex-wrap gap-2">
 						{#each archive.publishers as publisher}
-							<Chip item={publisher} type={TagType.PUBLISHER} />
+							<Chip tag={publisher} type="publisher" />
 						{/each}
 					</div>
 				</InfoSection>
@@ -353,7 +358,7 @@
 				<InfoSection name="Parodies">
 					<div class="flex flex-wrap gap-2">
 						{#each archive.parodies as parody}
-							<Chip item={parody} type={TagType.PARODY} />
+							<Chip tag={parody} type="parody" />
 						{/each}
 					</div>
 				</InfoSection>
@@ -362,8 +367,8 @@
 			{#if archive.tags?.length}
 				<InfoSection name="Tags">
 					<div class="flex flex-wrap gap-2">
-						{#each processTags(archive.tags) as tag}
-							<Chip item={tag} type={TagType.TAG} />
+						{#each archive.tags as tag}
+							<Chip {tag} type="tag" />
 						{/each}
 					</div>
 				</InfoSection>

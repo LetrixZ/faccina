@@ -88,8 +88,10 @@
 						return (
 							`${type}:${name}`.toLowerCase().includes(value) ||
 							`${type}:${slug}`.toLowerCase().includes(value) ||
-							`${type}:'${name}'`.toLowerCase().includes(value) ||
-							`${type}:'${slug}'`.toLowerCase().includes(value)
+							`${type}:${slug.replaceAll('-', '_')}`.toLowerCase().includes(value) ||
+							`${type}:"${name}"`.toLowerCase().includes(value) ||
+							`${type}:"${slug}"`.toLowerCase().includes(value) ||
+							`${type}:"${slug.replaceAll('-', '_')}"`.toLowerCase().includes(value)
 						);
 					})
 					.slice(0, 5);
@@ -132,7 +134,7 @@
 			return;
 		}
 
-		let tagValue = `${tag.type}:'${tag.name}' `.toLowerCase();
+		let tagValue = `${tag.type}:"${tag.name}" `.toLowerCase();
 
 		if (negate) {
 			tagValue = '-' + tagValue;
@@ -277,9 +279,9 @@
 				</Button>
 			</form>
 
-			<Popover.Content align="start" class="grid p-0">
+			<Popover.Content align="start" class="grid w-fit p-0">
 				{#each filteredTags as tag, i}
-					{@const value = `${tag.type}:'${tag.name}'`.toLowerCase()}
+					{@const value = `${tag.type}:"${tag.name}"`.toLowerCase()}
 
 					<Button
 						class={cn('justify-start', i === highligtedIndex && 'underline')}

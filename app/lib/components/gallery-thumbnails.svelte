@@ -29,7 +29,7 @@
 					<img
 						alt={`Page ${image.page_number}`}
 						class={cn(
-							'h-full w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600',
+							'aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow',
 							isSpread(image) && 'object-contain'
 						)}
 						height={image.width && image.height && Math.round((320 / image.width) * image.height)}

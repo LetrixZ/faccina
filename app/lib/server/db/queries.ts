@@ -14,7 +14,13 @@ import {
 	relationTable,
 	taxonomyTables,
 } from '~shared/taxonomy';
-import { type ExpressionWrapper, type OrderByExpression, sql, type SqlBool } from 'kysely';
+import {
+	type ExpressionBuilder,
+	type ExpressionWrapper,
+	type OrderByExpression,
+	sql,
+	type SqlBool,
+} from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
 
@@ -138,21 +144,31 @@ export const get = (id: number, hidden: boolean): Promise<Archive | undefined> =
 	return query.executeTakeFirst();
 };
 
+export type TagMatch = {
+	table: ReferenceTable;
+	relationId: RelationshipId;
+	relationTable: RelationshipTable;
+	value: string;
+	negate: boolean;
+	or: boolean;
+	namespace?: string;
+};
+
 export const parseQuery = (query: string) => {
 	const queryMatch = query.match(
-		/-?(artist|circle|magazine|event|publisher|parody|tag|\w+):(".*?"|'.*?'|[^\s]+)/g
+		/[-|~]?(artist|circle|magazine|event|publisher|parody|tag|\w+):(".*?"|[^\s]+)/g
 	);
 
 	const titleMatch = query
 		.replaceAll(
-			/-?(artist|circle|magazine|event|publisher|parody|tag|url|source|\w+):(".*?"|'.*?'|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g,
+			/[-|~]?(artist|circle|magazine|event|publisher|parody|tag|url|source|\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g,
 			''
 		)
 		.trim();
 
 	const pagesMatch = Array.from(query.matchAll(/\bpages(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
 
-	const urlMatch = Array.from(query.matchAll(/-?(url):(".*?"|'.*?'|[^\s]+)/g))
+	const urlMatch = Array.from(query.matchAll(/-?(url):(".*?"|[^\s]+)/g))
 		.map((match) => match[2])
 		.filter((match) => match !== undefined)
 		.filter((match) => {
@@ -165,7 +181,7 @@ export const parseQuery = (query: string) => {
 			}
 		});
 
-	const sourceMatch = Array.from(query.matchAll(/-?(source):(".*?"|'.*?'|[^\s]+)/g))
+	const sourceMatch = Array.from(query.matchAll(/-?(source):(".*?"|[^\s]+)/g))
 		.map((match) => match[2])
 		.filter((match) => match !== undefined);
 
@@ -191,102 +207,100 @@ export const parseQuery = (query: string) => {
 		return { ...matches, tagMatches: [] };
 	}
 
-	const tagMatches: {
-		table: ReferenceTable;
-		relationId: RelationshipId;
-		relationTable: RelationshipTable;
-		value: string;
-		negate: boolean;
-		namespace?: string;
-	}[] = [];
+	const tagMatches: TagMatch[] = [];
 
 	for (const match of queryMatch) {
-		let [type, value] = match.split(':');
+		const split = match.split(':');
+
+		const value = split[1].replaceAll('"', '');
+
+		if (/^%+$/.test(value)) {
+			continue;
+		}
+
+		let type = split[0];
 
 		const negate = type.startsWith('-');
+		const or = type.startsWith('~');
 
-		type = negate ? type.slice(1) : type;
-		value = value.replaceAll(/"/g, '').replaceAll(/'/g, '');
+		type = negate || or ? type.slice(1) : type;
 
 		if (['source', 'url'].includes(type)) {
 			continue;
 		}
 
+		const obj = {
+			value,
+			negate,
+			or,
+		};
+
 		switch (type) {
 			case 'artist':
 				tagMatches.push({
+					...obj,
 					table: 'artists',
 					relationId: 'artist_id',
 					relationTable: 'archive_artists',
-					value,
-					negate,
 				});
 				break;
 			case 'circle':
 				tagMatches.push({
+					...obj,
 					table: 'circles',
 					relationId: 'circle_id',
 					relationTable: 'archive_circles',
-					value,
-					negate,
 				});
 				break;
 			case 'magazine':
 				tagMatches.push({
+					...obj,
 					table: 'magazines',
 					relationId: 'magazine_id',
 					relationTable: 'archive_magazines',
-					value,
-					negate,
 				});
 				break;
 			case 'event':
 				tagMatches.push({
+					...obj,
 					table: 'events',
 					relationId: 'event_id',
 					relationTable: 'archive_events',
-					value,
-					negate,
 				});
 				break;
 			case 'publisher':
 				tagMatches.push({
+					...obj,
 					table: 'publishers',
 					relationId: 'publisher_id',
 					relationTable: 'archive_publishers',
-					value,
-					negate,
 				});
 				break;
 			case 'parody':
 				tagMatches.push({
+					...obj,
 					table: 'parodies',
 					relationId: 'parody_id',
 					relationTable: 'archive_parodies',
-					value,
-					negate,
 				});
 				break;
 			case 'tag':
 				tagMatches.push({
+					...obj,
 					table: 'tags',
 					relationId: 'tag_id',
 					relationTable: 'archive_tags',
-					value,
 					namespace: '',
-					negate,
 				});
 				break;
 			default:
 				tagMatches.push({
+					...obj,
 					table: 'tags',
 					relationId: 'tag_id',
 					relationTable: 'archive_tags',
-					value,
 					namespace: type,
-					negate,
 				});
-
 				break;
 		}
 	}
@@ -364,29 +378,51 @@ export const search = async (
 		}
 	}
 
+	const buildTagQuery = (
+		tag: TagMatch,
+		{
+			not,
+			exists,
+			selectFrom,
+		}: Pick<ExpressionBuilder<DB, 'archives'>, 'not' | 'exists' | 'selectFrom'>
+	) => {
+		const expression = exists(
+			selectFrom(tag.relationTable)
+				.select('id')
+				.whereRef('archive_id', '=', 'archives.id')
+				.innerJoin(tag.table, tag.relationId, 'id')
+				// @ts-expect-error works
+				.where('name', like(), tag.value)
+		);
+
+		return tag.negate ? not(expression) : expression;
+	};
+
 	if (tagMatches.length) {
-		for (const match of tagMatches) {
+		const andTags = tagMatches.filter((tag) => !tag.or);
+		const orTags = tagMatches.filter((tag) => tag.or);
+
+		if (orTags.length) {
+			query = query.where(({ or, not, exists, selectFrom }) => {
+				const queries: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
+
+				for (const tag of orTags) {
+					queries.push(buildTagQuery(tag, { not, exists, selectFrom }));
+				}
+
+				return or(queries);
+			});
+		}
+
+		if (andTags.length) {
 			query = query.where(({ and, not, exists, selectFrom }) => {
-				const buildTagQuery = () => {
-					return exists(
-						selectFrom(match.relationTable)
-							.select('id')
-							.whereRef('archive_id', '=', 'archives.id')
-							.innerJoin(match.table, match.relationId, 'id')
-							// @ts-expect-error works
-							.where((eb) => {
-								const expression = eb('name', like(), `%${match.value}%`);
+				const queries: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
 
-								if (match.table === 'tags' && match.namespace?.length) {
-									return expression.and('archive_tags.namespace', '=', match.namespace);
-								}
+				for (const tag of andTags) {
+					queries.push(buildTagQuery(tag, { not, exists, selectFrom }));
+				}
 
-								return expression;
-							})
-					);
-				};
-
-				return and([match.negate ? not(buildTagQuery()) : buildTagQuery()]);
+				return and(queries);
 			});
 		}
 	}
@@ -428,11 +464,7 @@ export const search = async (
 								.whereRef('archive_id', '=', 'archives.id')
 								.innerJoin(referenceTable, relationId, 'id')
 								// @ts-expect-error works
-								.where(
-									'name',
-									config.database.vendor === 'postgresql' ? 'ilike' : 'like',
-									`%${split}%`
-								)
+								.where('name', like(), `%${split}%`)
 						);
 					};
 
@@ -494,6 +526,9 @@ export const search = async (
 		.orderBy([orderBy])
 		.orderBy(order === Ordering.ASC ? 'archives.created_at asc' : 'archives.created_at desc')
 		.orderBy(order === Ordering.ASC ? 'archives.id asc' : 'archives.id desc');
+
+	console.log(query.compile().parameters);
+	console.log(query.compile().sql);
 
 	let filteredResults = await query.execute();
 

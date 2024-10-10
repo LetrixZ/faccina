@@ -1,7 +1,7 @@
 <script lang="ts">
 	import pixelWidth from 'string-pixel-width';
 
-	import { type ArchiveDetail, TagType, type Taxonomy } from '~/lib/models';
+	import { type ArchiveDetail, type Tag, type TagType } from '~/lib/models';
 	import { cn, tagsExcludeCount, tagsExcludeDisplay, tagWeights } from '~/lib/utils';
 
 	export let archive: ArchiveDetail;
@@ -34,16 +34,20 @@
 		const maxWidth = 376 * 2;
 
 		const tags = [
-			...(archive.artists ? archive.artists.map((tag) => ({ ...tag, type: TagType.ARTIST })) : []),
-			...(archive.circles ? archive.circles.map((tag) => ({ ...tag, type: TagType.CIRCLE })) : []),
+			...(archive.artists
+				? archive.artists.map((tag) => ({ ...tag, type: 'artist' as TagType }))
+				: []),
+			...(archive.circles
+				? archive.circles.map((tag) => ({ ...tag, type: 'circle' as TagType }))
+				: []),
 			...(archive.parodies
 				? archive.parodies
-						.map((tag) => ({ ...tag, type: TagType.PARODY }))
+						.map((tag) => ({ ...tag, type: 'parody' as TagType }))
 						.filter((tag) => !['original-work', 'original'].includes(tag.slug))
 				: []),
 			...(archive.tags
 				? archive.tags
-						.map((tag) => ({ ...tag, type: TagType.TAG }))
+						.map((tag) => ({ ...tag, type: 'tag' as TagType }))
 						.filter((tag) => !tagsExcludeCount.includes(tag.name.toLowerCase()))
 						.sort((a, b) => {
 							const aWeight = tagWeights.find(([tag]) => tag === a.name.toLowerCase())?.[1] ?? 0;
@@ -61,21 +65,21 @@
 		let tagCount = tags.length;
 		let width = 0;
 
-		const reduced: (Taxonomy & { type: TagType })[] = [];
+		const reduced: (Tag & { type: TagType })[] = [];
 
 		for (const tag of tags) {
 			if (reduced.find((t) => t.name === tag.name)) {
 				continue;
 			}
 
-			if (tag.type === TagType.CIRCLE && tag.name.length > 20) {
+			if (tag.type === 'circle' && tag.name.length > 20) {
 				continue;
 			}
 
 			if (width < maxWidth) {
 				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
 
-				if (tag.type === TagType.TAG && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {
+				if (tag.type === 'tag' && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {
 					continue;
 				}
 
@@ -90,16 +94,20 @@
 
 	const getBackground = (type: TagType) => {
 		switch (type) {
-			case TagType.ARTIST:
-				return 'bg-red-700';
-			case TagType.CIRCLE:
-				return 'bg-orange-700';
-			case TagType.MAGAZINE:
-				return 'bg-blue-700';
-			case TagType.PARODY:
-				return 'bg-indigo-700';
-			case TagType.TAG:
-				return 'bg-neutral-700';
+			case 'artist':
+				return 'bg-red-700 hover:bg-red-700/80';
+			case 'circle':
+				return 'bg-orange-700 hover:bg-orange-700/80';
+			case 'magazine':
+				return 'bg-blue-700 hover:bg-blue-700/80';
+			case 'event':
+				return 'bg-rose-700 hover:bg-blue-700/80';
+			case 'publisher':
+				return 'bg-sky-700 hover:bg-sky-700/80';
+			case 'parody':
+				return 'bg-indigo-700 hover:bg-indigo-700/80';
+			case 'tag':
+				return 'bg-neutral-700 hover:bg-neutral-700/80';
 		}
 	};
 </script>

@@ -70,7 +70,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 						publishers: archive.publishers.map((tag) => tag.name),
 						parodies: archive.parodies.map((tag) => tag.name),
 						tags: archive.tags.map((tag) =>
-							tag.namespace.length ? `${tag.namespace}:${tag.name}` : tag.name
+							tag.namespace?.length ? `${tag.namespace}:${tag.name}` : tag.name
 						),
 					},
 					zod(editTaxonomySchema)
@@ -159,7 +159,7 @@ export const actions = {
 			});
 		}
 
-		const { title, slug, description, pages, thumbnail, releasedAt, sources } = form.data;
+		const { title, slug, description, thumbnail, releasedAt, sources } = form.data;
 
 		await db
 			.updateTable('archives')
@@ -167,7 +167,6 @@ export const actions = {
 				title,
 				slug,
 				description,
-				pages,
 				thumbnail,
 				released_at: dayjs(releasedAt).toISOString(),
 			})

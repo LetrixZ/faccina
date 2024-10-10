@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { type ArchiveListItem, TagType, type Taxonomy } from '$lib/models';
+	import { type ArchiveListItem, type Tag, type TagType } from '$lib/models';
 	import { tagsExcludeCount, tagsExcludeDisplay, tagWeights } from '$lib/utils';
 	import pixelWidth from 'string-pixel-width';
 
-	import ChipList from './chip-list.svelte';
+	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
 
 	export let archive: ArchiveListItem;
@@ -19,16 +19,20 @@
 		const maxWidth = 290;
 
 		const tags = [
-			...(archive.artists ? archive.artists.map((tag) => ({ ...tag, type: TagType.ARTIST })) : []),
-			...(archive.circles ? archive.circles.map((tag) => ({ ...tag, type: TagType.CIRCLE })) : []),
+			...(archive.artists
+				? archive.artists.map((tag) => ({ ...tag, type: 'artist' as TagType }))
+				: []),
+			...(archive.circles
+				? archive.circles.map((tag) => ({ ...tag, type: 'circle' as TagType }))
+				: []),
 			...(archive.parodies
 				? archive.parodies
-						.map((tag) => ({ ...tag, type: TagType.PARODY }))
+						.map((tag) => ({ ...tag, type: 'parody' as TagType }))
 						.filter((tag) => !['original-work', 'original'].includes(tag.slug))
 				: []),
 			...(archive.tags
 				? archive.tags
-						.map((tag) => ({ ...tag, type: TagType.TAG }))
+						.map((tag) => ({ ...tag, type: 'tag' as TagType }))
 						.filter((tag) => !tagsExcludeCount.includes(tag.name.toLowerCase()))
 						.sort((a, b) => {
 							const aWeight = tagWeights.find(([tag]) => tag === a.name.toLowerCase())?.[1] ?? 0;
@@ -46,21 +50,21 @@
 		let tagCount = tags.length;
 		let width = 0;
 
-		const reduced: (Taxonomy & { type: TagType })[] = [];
+		const reduced: (Tag & { type: TagType })[] = [];
 
 		for (const tag of tags) {
 			if (reduced.find((t) => t.name === tag.name)) {
 				continue;
 			}
 
-			if (tag.type === TagType.CIRCLE && tag.name.length > 20) {
+			if (tag.type === 'tag' && tag.name.length > 20) {
 				continue;
 			}
 
 			if (width < maxWidth) {
 				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
 
-				if (tag.type === TagType.TAG && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {
+				if (tag.type === 'tag' && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {
 					continue;
 				}
 
@@ -73,10 +77,10 @@
 		return [reduced, tagCount];
 	})();
 
-	$: artists = reducedTags.filter((tag) => tag.type === TagType.ARTIST);
-	$: circles = reducedTags.filter((tag) => tag.type === TagType.CIRCLE);
-	$: parodies = reducedTags.filter((tag) => tag.type === TagType.PARODY);
-	$: tags = reducedTags.filter((tag) => tag.type === TagType.TAG);
+	$: artists = reducedTags.filter((tag) => tag.type === 'artist');
+	$: circles = reducedTags.filter((tag) => tag.type === 'circle');
+	$: parodies = reducedTags.filter((tag) => tag.type === 'parody');
+	$: tags = reducedTags.filter((tag) => tag.type === 'tag');
 </script>
 
 <div class="group h-auto w-auto space-y-2">
@@ -84,7 +88,7 @@
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
 				alt={`'${archive.title}' cover`}
-				class="bg-neutral-300 dark:bg-neutral-600"
+				class="aspect-[45/64] bg-neutral-800 object-contain"
 				{height}
 				loading="eager"
 				src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
@@ -109,19 +113,19 @@
 
 		<div class="flex flex-wrap gap-1.5">
 			{#each artists as artist}
-				<ChipList item={artist} type={TagType.ARTIST} />
+				<Chip tag={artist} type="artist" />
 			{/each}
 
 			{#each circles as circle}
-				<ChipList item={circle} type={TagType.CIRCLE} />
+				<Chip tag={circle} type="circle" />
 			{/each}
 
 			{#each parodies as parody}
-				<ChipList item={parody} type={TagType.PARODY} />
+				<Chip tag={parody} type="parody" />
 			{/each}
 
 			{#each tags as tag}
-				<ChipList item={tag} type={TagType.TAG} />
+				<Chip {tag} type="tag" />
 			{/each}
 
 			{#if moreCount}

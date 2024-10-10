@@ -17,12 +17,12 @@ export interface Archive {
 	released_at: string | null;
 	deleted_at: string | null;
 	has_metadata: boolean | null;
-	artists: Taxonomy[];
-	circles: Taxonomy[];
-	magazines: Taxonomy[];
-	events: Taxonomy[];
-	publishers: Taxonomy[];
-	parodies: Taxonomy[];
+	artists: Tag[];
+	circles: Tag[];
+	magazines: Tag[];
+	events: Tag[];
+	publishers: Tag[];
+	parodies: Tag[];
 	tags: Tag[];
 	sources: Source[];
 }
@@ -38,37 +38,24 @@ export interface ArchiveListItem {
 	pages: number | null;
 	thumbnail: number;
 	cover: ImageDimensions | null;
-	artists: Taxonomy[];
-	circles: Taxonomy[];
-	magazines: Taxonomy[];
-	events: Taxonomy[];
-	parodies: Taxonomy[];
+	artists: Tag[];
+	circles: Tag[];
+	magazines: Tag[];
+	events: Tag[];
+	parodies: Tag[];
 	tags: Tag[];
 }
 
-export enum TagType {
-	ARTIST = 'artist',
-	CIRCLE = 'circle',
-	MAGAZINE = 'magazine',
-	EVENT = 'event',
-	PUBLISHER = 'publisher',
-	PARODY = 'parody',
-	TAG = 'tag',
-}
+export type TagType = 'artist' | 'circle' | 'magazine' | 'event' | 'publisher' | 'parody' | 'tag';
 
-export interface Taxonomy {
-	slug: string;
-	name: string;
-}
-
-export interface TaxonomyId extends Taxonomy {
+export interface TagId extends Tag {
 	id: number;
 }
 
 export interface Tag {
 	slug: string;
 	name: string;
-	namespace: string;
+	namespace?: string;
 }
 
 export interface Source {
@@ -120,13 +107,13 @@ export enum TouchLayout {
 }
 
 export interface TaxonomyTypes {
-	artists: TaxonomyId[];
-	circles: TaxonomyId[];
-	magazines: TaxonomyId[];
-	events: TaxonomyId[];
-	publishers: TaxonomyId[];
-	parodies: TaxonomyId[];
-	tags: TaxonomyId[];
+	artists: TagId[];
+	circles: TagId[];
+	magazines: TagId[];
+	events: TagId[];
+	publishers: TagId[];
+	parodies: TagId[];
+	tags: TagId[];
 }
 
 export type UserFormState = 'login' | 'register' | 'recover' | 'reset';

@@ -40,7 +40,6 @@
 
 	const { form: formData, enhance, errors } = form;
 
-	const pagesProxy = intProxy(form, 'pages');
 	const thumbnailProxy = intProxy(form, 'thumbnail');
 
 	$: thumbnail = parseInt($thumbnailProxy);
@@ -62,7 +61,7 @@
 		<div class="flex max-w-52 flex-col items-center">
 			<img
 				alt={`'${archive.title}' cover`}
-				class=" w-full rounded-md bg-neutral-300 shadow-md shadow-shadow dark:bg-neutral-600"
+				class="aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
 				height={thumbnailImage?.width && thumbnailImage?.height
 					? Math.round((640 / thumbnailImage.width) * thumbnailImage.height)
 					: undefined}
@@ -98,18 +97,10 @@
 				<Form.FieldErrors />
 			</Form.Field>
 
-			<div class="grid grid-cols-3 gap-4">
-				<Form.Field {form} name="pages">
-					<Form.Control let:attrs>
-						<Form.Label>Pages</Form.Label>
-						<Input {...attrs} bind:value={$pagesProxy} min={1} type="number" />
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-
+			<div class="grid grid-cols-2 gap-4">
 				<Form.Field {form} name="thumbnail">
 					<Form.Control let:attrs>
-						<Form.Label>Thumbnail</Form.Label>
+						<Form.Label>Thumbnail page</Form.Label>
 						<Input
 							{...attrs}
 							bind:value={$thumbnailProxy}
@@ -135,10 +126,15 @@
 	<Separator />
 
 	<div class="space-y-2">
-		<div class="grid grid-cols-2">
+		<div class="grid grid-cols-3">
 			<div>
 				<p class="text-sm font-medium">Hash</p>
 				<p class="font-mono text-sm">{archive.hash}</p>
+			</div>
+
+			<div>
+				<p class="text-sm font-medium">Page count</p>
+				<p class="font-mono text-sm">{archive.pages}</p>
 			</div>
 
 			<div>

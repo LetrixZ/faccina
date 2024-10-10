@@ -9,14 +9,7 @@ import { cubicOut } from 'svelte/easing';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
 
-import {
-	type ArchiveDetail,
-	type Image,
-	ImageSize,
-	type Tag,
-	type Taxonomy,
-	TouchLayout,
-} from './models';
+import { type ArchiveDetail, type Image, ImageSize, type Tag, TouchLayout } from './models';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -271,7 +264,7 @@ export const handleFetchError = async <T>(res: Response) => {
 	}
 };
 
-export const isTag = (tag: Taxonomy | Tag): tag is Tag => {
+export const isTag = (tag: Tag): tag is Tag => {
 	return (tag as Tag).namespace !== undefined;
 };
 

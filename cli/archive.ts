@@ -237,10 +237,12 @@ export const index = async (opts: IndexOptions) => {
 					if (config.metadata?.parseFilenameAsTitle) {
 						const [title, artists, circles] = parseFilename(filename);
 
-						archive.title = title ?? filename;
-						archive.slug = slugify(archive.title, { lower: true, strict: true });
-						archive.artists = artists;
-						archive.circles = circles;
+						if (title) {
+							archive.title = title ?? filename;
+							archive.slug = slugify(archive.title, { lower: true, strict: true });
+							archive.artists = artists;
+							archive.circles = circles;
+						}
 					} else {
 						archive.title = filename;
 						archive.slug = slugify(archive.title, { lower: true, strict: true });
