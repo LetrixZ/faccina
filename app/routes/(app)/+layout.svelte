@@ -134,7 +134,8 @@
 			return;
 		}
 
-		let tagValue = `${tag.type}:"${tag.name}" `.toLowerCase();
+		let tagValue =
+			`${tag.type}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name} `.toLowerCase();
 
 		if (negate) {
 			tagValue = '-' + tagValue;
@@ -281,7 +282,8 @@
 
 			<Popover.Content align="start" class="grid w-fit p-0">
 				{#each filteredTags as tag, i}
-					{@const value = `${tag.type}:"${tag.name}"`.toLowerCase()}
+					{@const value =
+						`${tag.type}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
 
 					<Button
 						class={cn('justify-start', i === highligtedIndex && 'underline')}

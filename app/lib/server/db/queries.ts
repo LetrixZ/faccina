@@ -210,7 +210,7 @@ export const parseQuery = (query: string) => {
 	const tagMatches: TagMatch[] = [];
 
 	for (const match of queryMatch) {
-		const split = match.split(':');
+		const split = [match.slice(0, match.indexOf(':')), match.slice(match.indexOf(':') + 1)];
 
 		const value = split[1].replaceAll('"', '');
 
