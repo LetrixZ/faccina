@@ -129,12 +129,34 @@ Metadata parsing options.
 ```toml
 [metadata]
 parse_filename_as_title = true # default
+capitalize_tags = false # default
 ```
 
 - `parse_filename_as_title`: If the available metadata didn't offer a title, indicate if it should try to get a title from the filename or use the filename as the gallery title.\
   Example: "[Artist] My Gallery Title" will become "My Gallery Title".
 
 ### Image
+
+Default configuration
+
+```toml
+[image]
+cover_preset = 'cover'
+thumbnail_preset = 'cover'
+remove_on_update = true
+
+[image.preset.cover]
+format = 'webp'
+width = 540
+
+[image.preset.thumbnail]
+format = 'webp'
+width = 360
+```
+
+- `cover_preset`: Indicates which preset to use for covers.
+- `thumbnail_preset`: Indicates which preset to use for thumbnails.
+- `remove_on_update`: If enabled during indexing, any image change will remove the resampled image. Useful when changing filename:page number pairs.
 
 #### Encoding options
 
@@ -185,22 +207,6 @@ cover_preset = 'jxl480'
 On a cover request, the server will look for a file named `images/{hash}/jxl480/{page_number}.jxl`. If it doesn't exists, it will be added to a queue to be generated.
 
 Use `thumbnail_preset` for page thumbnails.
-
-If no presets for cover nor thumbnails are specified, the configuration will default to:
-
-```toml
-[image]
-cover_preset = 'cover'
-thumbnail_preset = 'cover'
-
-[image.preset.cover]
-format = 'webp'
-width = 540
-
-[image.preset.thumbnail]
-format = 'webp'
-width = 360
-```
 
 ### Mail
 

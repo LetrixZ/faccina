@@ -59,22 +59,43 @@ export default async (content: string, archive: Archive) => {
 	const tags: [string, string][] = [];
 
 	metadata.data.general
-		?.map((tag) => [capitalize.words(tag), ''] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, ''] as [string, string]
+		)
 		.forEach((tag) => tags.push(tag));
 	metadata.data.female
-		?.map((tag) => [capitalize.words(tag), 'female'] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'female'] as [string, string]
+		)
 		.forEach((tag) => tags.push(tag));
 	metadata.data.male
-		?.map((tag) => [capitalize.words(tag), 'male'] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'male'] as [string, string]
+		)
 		.forEach((tag) => tags.push(tag));
 	metadata.data.character
-		?.map((tag) => [capitalize.words(tag), 'character'] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'character'] as [
+					string,
+					string,
+				]
+		)
 		.forEach((tag) => tags.push(tag));
 	metadata.data.mixed
-		?.map((tag) => [capitalize.words(tag), 'mixed'] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'mixed'] as [string, string]
+		)
 		.forEach((tag) => tags.push(tag));
 	metadata.data.other
-		?.map((tag) => [capitalize.words(tag), 'other'] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'other'] as [string, string]
+		)
 		.forEach((tag) => tags.push(tag));
 
 	if (tags.length > 0) {

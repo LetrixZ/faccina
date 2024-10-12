@@ -10,7 +10,7 @@ import StreamZip from 'node-stream-zip';
 import { parse } from 'path';
 import slugify from 'slugify';
 
-import type { Archive } from '../shared/metadata';
+import type { Archive, Image } from '../shared/metadata';
 
 import { upsertImages, upsertSources, upsertTags, upsertTaxonomy } from '../shared/archive';
 import config from '../shared/config';
@@ -250,31 +250,35 @@ export const index = async (opts: IndexOptions) => {
 				}
 			}
 
-			if (!archive.images) {
-				const filenames = Object.keys(await zip.entries())
-					.filter((key) => key.match(/.(jpeg|jpg|png|webp|avif|jxl|bmp)$/i))
-					.sort(naturalCompare);
+			let images: Image[] = Object.keys(await zip.entries())
+				.filter((key) => key.match(/.(jpeg|jpg|png|webp|avif|jxl|bmp)$/i))
+				.sort(naturalCompare)
+				.map((filename, i) => ({
+					filename,
+					page_number: i + 1,
+				}));
 
-				if (filenames.length) {
-					archive.images = filenames.map((filename, i) => ({
-						filename,
-						page_number: i + 1,
-					}));
-				}
-			}
-
-			if (!archive.title || !archive.slug) {
-				archive.title = filename;
-				archive.slug = slugify(archive.title, { lower: true, strict: true });
-			}
-
-			if (!archive.images || !archive.images.length) {
-				multibar.log(chalk.yellow(`No images found for ${chalk.bold(path)}, skipping\n`));
+			if (images.length === 0) {
+				multibar.log(chalk.yellow(`No images found for ${chalk.bold(path)}, skpping\n`));
 				progress.increment();
 				count++;
 				skipped++;
 
 				continue;
+			}
+
+			images = images
+				.toSorted((a, b) => {
+					const indexA = archive.images?.findIndex((image) => image.filename === a.filename) ?? -1;
+					const indexB = archive.images?.findIndex((image) => image.filename === b.filename) ?? -1;
+
+					return indexA - indexB;
+				})
+				.map((image, i) => ({ filename: image.filename, page_number: i + 1 }));
+
+			if (!archive.title || !archive.slug) {
+				archive.title = filename;
+				archive.slug = slugify(archive.title, { lower: true, strict: true });
 			}
 
 			const info = await stat(path);
@@ -298,7 +302,7 @@ export const index = async (opts: IndexOptions) => {
 						language: archive.language,
 						released_at: archive.released_at?.toISOString(),
 						thumbnail: archive.thumbnail,
-						pages: archive.images.length,
+						pages: images.length,
 						size: info.size,
 						has_metadata: archive.has_metadata,
 					})
@@ -356,7 +360,7 @@ export const index = async (opts: IndexOptions) => {
 						language: archive.language,
 						released_at: archive.released_at?.toISOString(),
 						thumbnail: archive.thumbnail,
-						pages: archive.images.length,
+						pages: images.length,
 						size: info.size,
 						has_metadata: archive.has_metadata,
 					})
@@ -388,12 +392,10 @@ export const index = async (opts: IndexOptions) => {
 				}
 			}
 
+			await upsertImages(id, images, hash);
+
 			if (archive.sources) {
 				await upsertSources(id, archive.sources);
-			}
-
-			if (archive.images) {
-				await upsertImages(id, archive.images);
 			}
 
 			indexed++;

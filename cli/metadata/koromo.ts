@@ -99,10 +99,19 @@ export default async (content: string, archive: Archive) => {
 	const tags: [string, string][] = [];
 
 	mapMultiField(metadata.data.Tags)
-		?.map((tag) => [capitalize.words(tag), ''] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, ''] as [string, string]
+		)
 		.forEach((tag) => tags.push(tag));
 	mapMultiField(metadata.data.Characters)
-		?.map((tag) => [capitalize.words(tag), 'character'] as [string, string])
+		?.map(
+			(tag) =>
+				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'character'] as [
+					string,
+					string,
+				]
+		)
 		.forEach((tag) => tags.push(tag));
 
 	if (tags.length > 0) {

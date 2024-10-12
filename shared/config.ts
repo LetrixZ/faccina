@@ -60,6 +60,7 @@ const databaseSchema = z
 const metadataSchema = z
 	.object({
 		parse_filename_as_title: z.boolean().default(true),
+		capitalize_tags: z.boolean().default(false),
 	})
 	.transform(camelize);
 
@@ -107,6 +108,7 @@ const imageSchema = z
 	.object({
 		cover_preset: z.string().default('cover'),
 		thumbnail_preset: z.string().default('thumbnail'),
+		remove_on_update: z.boolean().default(true),
 		preset: z.record(z.string(), presetSchema).default({}),
 	})
 	.transform(camelize)
@@ -159,6 +161,7 @@ const imageSchema = z
 		),
 	}))
 	.transform((val) => ({
+		...val,
 		coverPreset: val.preset[val.coverPreset],
 		thumbnailPreset: val.preset[val.thumbnailPreset],
 		preset: val.preset,

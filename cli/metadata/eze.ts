@@ -51,16 +51,30 @@ export default async (content: string, archive: Archive) => {
 	}
 
 	if (metadata.data.tags) {
-		archive.artists = metadata.data.tags['artist']?.map((value) => capitalize.words(value));
-		archive.circles = metadata.data.tags['group']?.map((value) => capitalize.words(value));
-		archive.parodies = metadata.data.tags['parody']?.map((value) => capitalize.words(value));
+		archive.artists = metadata.data.tags['artist']?.map((value) =>
+			config.metadata.capitalizeTags
+				? config.metadata.capitalizeTags
+					? capitalize.words(value)
+					: value
+				: value
+		);
+		archive.circles = metadata.data.tags['group']?.map((value) =>
+			config.metadata.capitalizeTags ? capitalize.words(value) : value
+		);
+		archive.parodies = metadata.data.tags['parody']?.map((value) =>
+			config.metadata.capitalizeTags ? capitalize.words(value) : value
+		);
 
 		const tags: [string, string][] = [];
 
 		if (metadata.data.tags['male']) {
 			tags.push(
 				...metadata.data.tags['male'].map(
-					(tag) => [capitalize.words(tag), 'male'] as [string, string]
+					(tag) =>
+						[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'male'] as [
+							string,
+							string,
+						]
 				)
 			);
 		}
@@ -68,7 +82,11 @@ export default async (content: string, archive: Archive) => {
 		if (metadata.data.tags['female']) {
 			tags.push(
 				...metadata.data.tags['female'].map(
-					(tag) => [capitalize.words(tag), 'female'] as [string, string]
+					(tag) =>
+						[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'female'] as [
+							string,
+							string,
+						]
 				)
 			);
 		}
@@ -76,7 +94,11 @@ export default async (content: string, archive: Archive) => {
 		if (metadata.data.tags['misc']) {
 			tags.push(
 				...metadata.data.tags['misc'].map(
-					(tag) => [capitalize.words(tag), 'misc'] as [string, string]
+					(tag) =>
+						[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'misc'] as [
+							string,
+							string,
+						]
 				)
 			);
 		}

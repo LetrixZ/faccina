@@ -1,4 +1,6 @@
+import { Glob } from 'bun';
 import { sql } from 'kysely';
+import { rm } from 'node:fs/promises';
 import slugify from 'slugify';
 
 import type { Image, Source } from './metadata';
@@ -9,6 +11,8 @@ import {
 	type RelationshipId,
 	type RelationshipTable,
 } from '../shared/taxonomy';
+import config from './config';
+import { leadingZeros } from './utils';
 
 const tagAliases = [
 	['fff-threesome', 'FFF Threesome'],
@@ -87,12 +91,44 @@ export const upsertSources = async (id: number, sources: Source[]) => {
  * @param id Archive ID
  * @param archive new archive data
  */
-export const upsertImages = async (id: number, images: Image[]) => {
+export const upsertImages = async (id: number, images: Image[], hash: string) => {
 	const dbImages = await db
 		.selectFrom('archive_images')
 		.select(['filename', 'page_number', 'width', 'height'])
 		.where('archive_id', '=', id)
 		.execute();
+
+	const diff: Image[] = [];
+
+	for (const image of dbImages) {
+		const newImage = images.find((im) => im.page_number === image.page_number);
+
+		if (newImage && newImage.filename !== image.filename) {
+			diff.push({
+				filename: image.filename,
+				page_number: image.page_number,
+			});
+		}
+	}
+
+	if (config.image.removeOnUpdate) {
+		const filenames = diff.reduce(
+			(acc, image) => [
+				...acc,
+				...Array.from(
+					new Glob(`${hash}/**/${leadingZeros(image.page_number, dbImages.length)}.*`).scanSync({
+						cwd: config.directories.images,
+						absolute: true,
+					})
+				),
+			],
+			[] as string[]
+		);
+
+		for (const filename of filenames) {
+			await rm(filename).catch(() => {});
+		}
+	}
 
 	if (images?.length) {
 		const upsertedImages = await db

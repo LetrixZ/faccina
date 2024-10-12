@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import type { Archive } from '../../shared/metadata';
 
+import config from '../../shared/config';
+
 const metadataSchema = z.string().transform((val) =>
 	val
 		.split(',')
@@ -22,7 +24,10 @@ export default async (content: string, archive: Archive) => {
 	}
 
 	if (metadata.data.length) {
-		archive.tags = metadata.data.map((value) => [capitalize.words(value), '']);
+		archive.tags = metadata.data.map((value) => [
+			config.metadata.capitalizeTags ? capitalize.words(value) : value,
+			'',
+		]);
 	}
 
 	return archive;

@@ -4,6 +4,7 @@ import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
+import config from '../../shared/config';
 import { type Archive, type Source } from '../../shared/metadata';
 import { mapMultiField, multiTextField } from './schemas';
 import { parseSourceName } from './utils';
@@ -53,7 +54,10 @@ export default async (content: string, archive: Archive) => {
 	archive.parodies = mapMultiField(metadata.data.Parody);
 
 	if (metadata.data.Tags) {
-		archive.tags = metadata.data.Tags.map((tag) => [capitalize.words(tag), '']);
+		archive.tags = metadata.data.Tags.map((tag) => [
+			config.metadata.capitalizeTags ? capitalize.words(tag) : tag,
+			'',
+		]);
 	}
 
 	archive.sources = (() => {
