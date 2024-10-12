@@ -527,9 +527,6 @@ export const search = async (
 		.orderBy(order === Ordering.ASC ? 'archives.created_at asc' : 'archives.created_at desc')
 		.orderBy(order === Ordering.ASC ? 'archives.id asc' : 'archives.id desc');
 
-	console.log(query.compile().parameters);
-	console.log(query.compile().sql);
-
 	let filteredResults = await query.execute();
 
 	if (sort === Sorting.TITLE) {
