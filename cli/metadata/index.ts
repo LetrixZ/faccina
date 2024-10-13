@@ -2,6 +2,7 @@ import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
 import { extname } from 'path';
 import { match } from 'ts-pattern';
+import XML2JS from 'xml2js';
 import YAML from 'yaml';
 
 import type { Archive } from '../../shared/metadata';
@@ -10,6 +11,7 @@ import { readStream } from '../../shared/utils';
 import anchira from './anchira';
 import booru from './booru';
 import ccdc06 from './ccdc06';
+import comicinfo from './comicinfo';
 import eze from './eze';
 import ezesad from './ezesad';
 import gallerydl from './gallerydl';
@@ -22,6 +24,7 @@ export enum MetadataFormat {
 	JSON = 'JSON',
 	YAML = 'YAML',
 	TXT = 'TXT',
+	XML = 'XML',
 }
 
 export enum MetadataSchema {
@@ -35,6 +38,7 @@ export enum MetadataSchema {
 	Koromo = 'Koromo',
 	GalleryDL = 'Gallery-DL',
 	Booru = 'Booru',
+	ComicInfo = 'ComicInfo',
 }
 
 export const getYamlSchema = (content: string) => {
@@ -98,7 +102,7 @@ export const getYamlSchema = (content: string) => {
 		}
 	}
 
-	throw new Error('Failed to determine metadata schema');
+	throw new Error('Failed to determine YAML metadata schema');
 };
 
 export const getJsonSchema = (content: string) => {
@@ -116,7 +120,17 @@ export const getJsonSchema = (content: string) => {
 		return MetadataSchema.Koromo;
 	}
 
-	throw new Error('Failed to determine metadata schema');
+	throw new Error('Failed to determine JSON metadata schema');
+};
+
+export const getXmlSchema = (content: string) => {
+	const parsed = XML2JS.parseStringSync(content);
+
+	if ('ComicInfo' in parsed) {
+		return MetadataSchema.ComicInfo;
+	}
+
+	throw new Error('Failed to determine XML metadata schema');
 };
 
 const handleMetadataFormat = async (
@@ -179,6 +193,20 @@ const handleMetadataFormat = async (
 
 				return [archive, [MetadataSchema.Booru, MetadataFormat.TXT]];
 			}
+
+			break;
+		}
+
+		case MetadataFormat.XML: {
+			const schemaType = getXmlSchema(content);
+
+			switch (schemaType) {
+				case MetadataSchema.ComicInfo:
+					archive = await comicinfo(content, archive);
+					break;
+			}
+
+			return [archive, [schemaType, MetadataFormat.XML]];
 		}
 	}
 
@@ -192,8 +220,9 @@ const metadataFormat = (filename: string) => {
 		.with('.yaml', '.yml', () => MetadataFormat.YAML)
 		.with('.json', () => MetadataFormat.JSON)
 		.with('.txt', () => MetadataFormat.TXT)
+		.with('.xml', () => MetadataFormat.XML)
 		.otherwise(() => {
-			throw new Error(`Can handle the format for ${filename}`);
+			throw new Error(`Can't handle the format for ${filename}`);
 		});
 };
 
@@ -205,6 +234,7 @@ export const addExternalMetadata = async (path: string, archive: Archive) => {
 		Bun.file(path.replace(/\.(cbz|zip)/, '.yml')),
 		Bun.file(path.replace(/\.(cbz|zip)/, '.json')),
 		Bun.file(path.replace(/\.(cbz|zip)/, '.booru.txt')),
+		Bun.file(path.replace(/\.(cbz|zip)/, '.xml')),
 	];
 
 	for (const file of files) {
@@ -227,6 +257,7 @@ export const addEmbeddedMetadata = async (zip: StreamZipAsync, archive: Archive)
 		await zip.entry('info.yaml'),
 		await zip.entry('info.yml'),
 		await zip.entry('info.json'),
+		await zip.entry('ComicInfo.xml'),
 	];
 
 	for (const entry of entries) {

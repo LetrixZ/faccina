@@ -1,5 +1,4 @@
 import capitalize from 'capitalize';
-import dayjs from 'dayjs';
 import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
@@ -18,8 +17,8 @@ const metadataSchema = z.object({
 	femaleTags: z.array(z.string()).optional(),
 	otherTags: z.array(z.string()).optional(),
 	language: z.string().optional(),
-	createdAt: z.string().optional(),
-	publishedOn: z.string().optional(),
+	createdAt: z.number().optional(),
+	publishedOn: z.number().optional(),
 	locations: z.array(z.string()).optional(),
 });
 
@@ -45,11 +44,11 @@ export default async (content: string, archive: Archive) => {
 	archive.language = metadata.data.language;
 	archive.released_at = (() => {
 		if (metadata.data.publishedOn) {
-			return dayjs(metadata.data.publishedOn).toDate();
+			return new Date(metadata.data.publishedOn);
 		}
 
 		if (metadata.data.createdAt) {
-			return dayjs(metadata.data.createdAt).toDate();
+			return new Date(metadata.data.createdAt);
 		}
 
 		return undefined;

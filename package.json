@@ -32,6 +32,7 @@
 		"@types/ramda": "^0.30.2",
 		"@types/streamsaver": "^2.0.5",
 		"@types/string-pixel-width": "^1.10.3",
+		"@types/xml2js": "^0.4.14",
 		"autoprefixer": "^10.4.20",
 		"eslint": "^9.11.1",
 		"eslint-config-prettier": "^9.1.0",
@@ -103,6 +104,7 @@
 		"tailwind-variants": "^0.2.1",
 		"toml": "^3.0.0",
 		"ts-pattern": "^5.4.0",
+		"xml2js": "^0.6.2",
 		"yaml": "^2.5.1",
 		"zod": "^3.23.8",
 		"zod-urlsearchparams": "^0.0.14"
@@ -112,7 +114,9 @@
 		"@types/string-pixel-width@1.10.3": "patches/@types%2Fstring-pixel-width@1.10.3.patch",
 		"svelte-adapter-bun@0.5.2": "patches/svelte-adapter-bun@0.5.2.patch",
 		"kysely-ctl@0.9.0": "patches/kysely-ctl@0.9.0.patch",
-		"@ethercorps/sveltekit-og@3.0.0": "patches/@ethercorps%2Fsveltekit-og@3.0.0.patch"
+		"@ethercorps/sveltekit-og@3.0.0": "patches/@ethercorps%2Fsveltekit-og@3.0.0.patch",
+		"xml2js@0.6.2": "patches/xml2js@0.6.2.patch",
+		"@types/xml2js@0.4.14": "patches/@types%2Fxml2js@0.4.14.patch"
 	},
 	"trustedDependencies": [
 		"@sveltejs/kit",

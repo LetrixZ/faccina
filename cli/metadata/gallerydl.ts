@@ -53,21 +53,33 @@ export default async (content: string, archive: Archive) => {
 
 			switch (namespace) {
 				case 'artist':
-					artists.push(capitalize.words(name));
+					artists.push(
+						config.metadata.capitalizeTags
+							? config.metadata.capitalizeTags
+								? capitalize.words(name)
+								: name
+							: name
+					);
 					break;
 				case 'group':
-					circles.push(capitalize.words(name));
+					circles.push(config.metadata.capitalizeTags ? capitalize.words(name) : name);
 					break;
 				case 'parody':
-					parodies.push(capitalize.words(name));
+					parodies.push(config.metadata.capitalizeTags ? capitalize.words(name) : name);
 					break;
 				case 'other':
-					tags.push([capitalize.words(name), 'misc'] as [string, string]);
+					tags.push([config.metadata.capitalizeTags ? capitalize.words(name) : name, 'misc'] as [
+						string,
+						string,
+					]);
 					break;
 				case 'male':
 				case 'female':
 				default:
-					tags.push([capitalize.words(name), namespace] as [string, string]);
+					tags.push([
+						config.metadata.capitalizeTags ? capitalize.words(name) : name,
+						namespace ?? 'other',
+					] as [string, string]);
 					break;
 			}
 		}

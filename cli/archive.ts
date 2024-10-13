@@ -205,7 +205,7 @@ export const index = async (opts: IndexOptions) => {
 
 				if (opts.verbose) {
 					multibar.log(
-						`Found embedded ${metadataFormat} metadata with schema ${chalk.bold(metadataSchema)}\n`
+						`Found external ${metadataFormat} metadata with schema ${chalk.bold(metadataSchema)}\n`
 					);
 				}
 			} catch (error) {
@@ -222,7 +222,7 @@ export const index = async (opts: IndexOptions) => {
 
 					if (opts.verbose) {
 						multibar.log(
-							`Found external ${chalk.bold(metadataFormat)} metadata with schema ${chalk.bold(metadataSchema)}\n`
+							`Found embedded ${chalk.bold(metadataFormat)} metadata with schema ${chalk.bold(metadataSchema)}\n`
 						);
 					}
 				} catch (error) {

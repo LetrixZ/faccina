@@ -48,13 +48,25 @@ export default async (content: string, archive: Archive) => {
 	archive.slug = slugify(archive.title, { lower: true, strict: true });
 	archive.description = metadata.data.description;
 
-	archive.artists = metadata.data.artist?.map((artist) => capitalize.words(artist));
-	archive.circles = metadata.data.circle?.map((circle) => capitalize.words(circle));
-	archive.magazines = metadata.data.magazine?.map((magazine) => capitalize.words(magazine));
-	archive.events = metadata.data.event?.map((event) => capitalize.words(event));
-	archive.parodies = metadata.data.parody?.map((parody) => capitalize.words(parody));
+	archive.artists = metadata.data.artist?.map((artist) =>
+		config.metadata.capitalizeTags ? capitalize.words(artist) : artist
+	);
+	archive.circles = metadata.data.circle?.map((circle) =>
+		config.metadata.capitalizeTags ? capitalize.words(circle) : circle
+	);
+	archive.magazines = metadata.data.magazine?.map((magazine) =>
+		config.metadata.capitalizeTags ? capitalize.words(magazine) : magazine
+	);
+	archive.events = metadata.data.event?.map((event) =>
+		config.metadata.capitalizeTags ? capitalize.words(event) : event
+	);
+	archive.parodies = metadata.data.parody?.map((parody) =>
+		config.metadata.capitalizeTags ? capitalize.words(parody) : parody
+	);
 
-	archive.language = metadata.data.language?.map((language) => capitalize.words(language))[0];
+	archive.language = metadata.data.language?.map((language) =>
+		config.metadata.capitalizeTags ? capitalize.words(language) : language
+	)[0];
 
 	const tags: [string, string][] = [];
 
