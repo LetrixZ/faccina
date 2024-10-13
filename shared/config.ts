@@ -108,6 +108,7 @@ const imageSchema = z
 	.object({
 		cover_preset: z.string().default('cover'),
 		thumbnail_preset: z.string().default('thumbnail'),
+		aspect_ratio_similar: z.boolean().default(true),
 		remove_on_update: z.boolean().default(true),
 		preset: z.record(z.string(), presetSchema).default({}),
 	})

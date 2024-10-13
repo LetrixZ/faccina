@@ -178,12 +178,10 @@
 				<img
 					alt={`'${archive.title}' cover`}
 					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
-					height={archive.cover?.width && archive.cover?.height
-						? Math.round((640 / archive.cover.width) * archive.cover.height)
-						: undefined}
+					height={910}
 					loading="eager"
 					src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
-					width={archive.cover?.width ? 640 : undefined}
+					width={640}
 				/>
 			</a>
 		</div>
@@ -200,8 +198,16 @@
 					<span class="flex-auto"> Edit info </span>
 				</Button>
 
+				<Button
+					class="flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
+					on:click={() => (editTaxonomyOpen = true)}
+				>
+					<Tag class="size-5 shrink-0" />
+					<span class="flex-auto"> Edit tags </span>
+				</Button>
+
 				{#if archive.deleted_at}
-					<form action="?/show" method="POST" use:enhance>
+					<form action="?/show" class="col-span-2" method="POST" use:enhance>
 						<Button
 							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
 							type="submit"
@@ -211,7 +217,7 @@
 						</Button>
 					</form>
 				{:else}
-					<form action="?/hide" method="POST" use:enhance>
+					<form action="?/hide" class="col-span-2" method="POST" use:enhance>
 						<Button
 							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
 							type="submit"
@@ -221,14 +227,6 @@
 						</Button>
 					</form>
 				{/if}
-
-				<Button
-					class="col-span-2 flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
-					on:click={() => (editTaxonomyOpen = true)}
-				>
-					<Tag class="size-5 shrink-0" />
-					<span class="flex-auto"> Edit tags </span>
-				</Button>
 			</div>
 
 			<Separator />

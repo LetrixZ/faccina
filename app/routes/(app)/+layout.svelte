@@ -159,6 +159,15 @@
 	};
 </script>
 
+<svelte:window
+	on:keydown={(ev) => {
+		if (ev.key === '/' && !isFocused) {
+			inputEl.focus();
+			ev.preventDefault();
+		}
+	}}
+/>
+
 <div class="fixed z-20 flex h-fit w-full border-b bg-background shadow dark:border-border">
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
@@ -203,6 +212,7 @@
 					bind:value={$query}
 					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
 					name="q"
+					on:blur={() => (isFocused = false)}
 					on:focus={() => {
 						isFocused = true;
 						popoverOpen = true;

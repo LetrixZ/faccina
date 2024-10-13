@@ -5,6 +5,7 @@ import { get } from '$lib/server/db/queries';
 import { error, fail } from '@sveltejs/kit';
 import { upsertSources, upsertTags, upsertTaxonomy } from '~shared/archive';
 import db from '~shared/db';
+import { now } from '~shared/db/helpers';
 import { taxonomyTables } from '~shared/taxonomy';
 import dayjs from 'dayjs';
 import * as R from 'ramda';
@@ -56,6 +57,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 							: undefined,
 						hasMetadata: archive.has_metadata!,
 						sources: archive.sources.map(({ name, url }) => ({ name, url: url ?? undefined })),
+						protected: !!archive.protected,
 					},
 					zod(editArchiveSchema)
 				)
@@ -159,7 +161,17 @@ export const actions = {
 			});
 		}
 
-		const { title, slug, description, thumbnail, releasedAt, sources } = form.data;
+		const {
+			title,
+			slug,
+			description,
+			thumbnail,
+			releasedAt,
+			sources,
+			protected: isProtected,
+		} = form.data;
+
+		console.log('x', isProtected);
 
 		await db
 			.updateTable('archives')
@@ -169,6 +181,8 @@ export const actions = {
 				description,
 				thumbnail,
 				released_at: dayjs(releasedAt).toISOString(),
+				protected: isProtected,
+				updated_at: now(),
 			})
 			.where('id', '=', parseInt(id))
 			.execute();

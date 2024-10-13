@@ -2,18 +2,13 @@
 	import { page } from '$app/stores';
 	import { type ArchiveListItem, type Tag, type TagType } from '$lib/models';
 	import { tagsExcludeCount, tagsExcludeDisplay, tagWeights } from '$lib/utils';
+	import { EyeOff } from 'lucide-svelte';
 	import pixelWidth from 'string-pixel-width';
 
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
 
 	export let archive: ArchiveListItem;
-
-	$: width = archive.cover?.width && 640;
-	$: height =
-		archive.cover?.width &&
-		archive.cover?.height &&
-		Math.round((640 / archive.cover.width) * archive.cover.height);
 
 	$: [reducedTags, moreCount] = (() => {
 		const maxWidth = 290;
@@ -89,15 +84,22 @@
 			<img
 				alt={`'${archive.title}' cover`}
 				class="aspect-[45/64] bg-neutral-800 object-contain"
-				{height}
+				height={910}
 				loading="eager"
 				src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
-				{width}
+				width={640}
 			/>
-			<div
-				class="absolute bottom-1 end-1 w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70"
-			>
-				{archive.pages}P
+			<div class="absolute bottom-1 end-1 flex gap-1">
+				{#if archive.deleted_at}
+					<div
+						class="flex aspect-square size-6 items-center justify-center rounded-md bg-slate-700 p-1 text-xs font-bold text-white opacity-85"
+					>
+						<EyeOff class="size-3.5" />
+					</div>
+				{/if}
+				<div class="w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70">
+					{archive.pages}P
+				</div>
 			</div>
 		</div>
 	</a>
@@ -130,7 +132,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-fit w-fit px-1.5 py-0.5 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
 					variant="secondary"
 				>
 					+ {moreCount}

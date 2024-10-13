@@ -42,9 +42,9 @@ export const id = <TB extends string>(schema: SchemaModule, name: TB) => {
 export const now = () => {
 	switch (config.database.vendor) {
 		case 'sqlite':
-			return sql`current_timestamp`;
+			return sql<string>`current_timestamp`;
 		case 'postgresql':
-			return sql`now()`;
+			return sql<string>`now()`;
 	}
 };
 

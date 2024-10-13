@@ -143,6 +143,7 @@ Default configuration
 [image]
 cover_preset = 'cover'
 thumbnail_preset = 'cover'
+aspect_ratio_similar = true
 remove_on_update = true
 
 [image.preset.cover]
@@ -156,6 +157,7 @@ width = 360
 
 - `cover_preset`: Indicates which preset to use for covers.
 - `thumbnail_preset`: Indicates which preset to use for thumbnails.
+- `aspect_ratio_similar`: If enabled, images that are similar to 45:64 (0.703125) aspect ratio will be adapted to it. This will trigger if the aspect ratio is between 0.65 and 0.75. Example, 2:3 (0.66) aspect ratio will be transformed to 45:64.
 - `remove_on_update`: If enabled during indexing, any image change will remove the resampled image. Useful when changing filename:page number pairs.
 
 #### Encoding options

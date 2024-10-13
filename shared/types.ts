@@ -86,6 +86,7 @@ export interface Archives {
 	thumbnail: Generated<number>;
 	title: string;
 	updated_at: Generated<Timestamp>;
+	protected: Generated<boolean>;
 }
 
 export interface ArchiveSources {

@@ -25,9 +25,10 @@ export interface Archive {
 	parodies: Tag[];
 	tags: Tag[];
 	sources: Source[];
+	protected: boolean;
 }
 
-export type ArchiveDetail = Omit<Archive, 'path' | 'has_metadata'>;
+export type ArchiveDetail = Omit<Archive, 'path' | 'has_metadata' | 'protected'>;
 
 export type ArchiveId = Pick<ArchiveDetail, 'id' | 'slug'>;
 
@@ -44,6 +45,7 @@ export interface ArchiveListItem {
 	events: Tag[];
 	parodies: Tag[];
 	tags: Tag[];
+	deleted_at: string | null;
 }
 
 export type TagType = 'artist' | 'circle' | 'magazine' | 'event' | 'publisher' | 'parody' | 'tag';

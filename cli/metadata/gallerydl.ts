@@ -49,7 +49,20 @@ export default async (content: string, archive: Archive) => {
 		const tags: [string, string][] = [];
 
 		for (const tag of metadata.data.tags) {
-			const [name, namespace] = tag.split(':');
+			const [namespace, name] = tag.split(':');
+
+			if (namespace === 'language') {
+				continue;
+			}
+
+			if (!name) {
+				tags.push([
+					config.metadata.capitalizeTags ? capitalize.words(namespace) : namespace,
+					'misc',
+				] as [string, string]);
+
+				continue;
+			}
 
 			switch (namespace) {
 				case 'artist':
@@ -67,19 +80,19 @@ export default async (content: string, archive: Archive) => {
 				case 'parody':
 					parodies.push(config.metadata.capitalizeTags ? capitalize.words(name) : name);
 					break;
-				case 'other':
-					tags.push([config.metadata.capitalizeTags ? capitalize.words(name) : name, 'misc'] as [
+				case 'male':
+				case 'female':
+					tags.push([config.metadata.capitalizeTags ? capitalize.words(name) : name, namespace] as [
 						string,
 						string,
 					]);
 					break;
-				case 'male':
-				case 'female':
+				case 'other':
 				default:
-					tags.push([
-						config.metadata.capitalizeTags ? capitalize.words(name) : name,
-						namespace ?? 'other',
-					] as [string, string]);
+					tags.push([config.metadata.capitalizeTags ? capitalize.words(name) : name, 'misc'] as [
+						string,
+						string,
+					]);
 					break;
 			}
 		}

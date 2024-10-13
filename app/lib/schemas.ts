@@ -76,6 +76,7 @@ export const editArchiveSchema = z
 				url: z.string().url('The given URL is not valid').optional().or(z.literal('')),
 			})
 		),
+		protected: z.boolean(),
 	})
 	.superRefine(({ pages, thumbnail }, ctx) => {
 		if (thumbnail > pages) {

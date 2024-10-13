@@ -58,6 +58,7 @@ export const get = (id: number, hidden: boolean): Promise<Archive | undefined> =
 			'released_at',
 			'deleted_at',
 			'has_metadata',
+			'protected',
 			jsonObjectFrom(
 				eb
 					.selectFrom('archive_images')
@@ -606,6 +607,7 @@ export const libraryItems = async (
 			'archives.title',
 			'archives.pages',
 			'archives.thumbnail',
+			'archives.deleted_at',
 			jsonObjectFrom(
 				eb
 					.selectFrom('archive_images')

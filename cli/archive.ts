@@ -285,32 +285,44 @@ export const index = async (opts: IndexOptions) => {
 
 			const existingPath = await db
 				.selectFrom('archives')
-				.select(['id', 'hash'])
+				.select(['id', 'hash', 'protected'])
 				.where('path', '=', path)
 				.executeTakeFirst();
 
 			let id: number;
+			const isProtected = existingPath?.protected;
 
 			if (existingPath) {
-				const update = await db
-					.updateTable('archives')
-					.set({
-						title: archive.title,
-						slug: archive.slug,
-						hash,
-						description: archive.description,
-						language: archive.language,
-						released_at: archive.released_at?.toISOString(),
-						thumbnail: archive.thumbnail,
-						pages: images.length,
-						size: info.size,
-						has_metadata: archive.has_metadata,
-					})
-					.where('id', '=', existingPath.id)
-					.returning('id')
-					.executeTakeFirstOrThrow();
+				if (isProtected) {
+					const update = await db
+						.updateTable('archives')
+						.set({ hash, pages: images.length, size: info.size })
+						.where('id', '=', existingPath.id)
+						.returning(['id', 'protected'])
+						.executeTakeFirstOrThrow();
 
-				id = update.id;
+					id = update.id;
+				} else {
+					const update = await db
+						.updateTable('archives')
+						.set({
+							title: archive.title,
+							slug: archive.slug,
+							hash,
+							description: archive.description,
+							language: archive.language,
+							released_at: archive.released_at?.toISOString(),
+							thumbnail: archive.thumbnail,
+							pages: images.length,
+							size: info.size,
+							has_metadata: archive.has_metadata,
+						})
+						.where('id', '=', existingPath.id)
+						.returning(['id', 'protected'])
+						.executeTakeFirstOrThrow();
+
+					id = update.id;
+				}
 
 				const moveImages = async () => {
 					const sourcePath = join(config.directories.images, existingPath.hash);
@@ -370,31 +382,33 @@ export const index = async (opts: IndexOptions) => {
 				id = insert.id;
 			}
 
-			for (const { relationId, relationTable, referenceTable } of taxonomyTables) {
-				if (
-					referenceTable === 'tags' ||
-					relationTable === 'archive_tags' ||
-					relationId === 'tag_id'
-				) {
-					if (archive.tags) {
-						await upsertTags(id, archive.tags);
-					}
-				} else {
-					if (archive[referenceTable]) {
-						await upsertTaxonomy(
-							id,
-							archive[referenceTable],
-							referenceTable,
-							relationTable,
-							relationId
-						);
+			if (!isProtected) {
+				for (const { relationId, relationTable, referenceTable } of taxonomyTables) {
+					if (
+						referenceTable === 'tags' ||
+						relationTable === 'archive_tags' ||
+						relationId === 'tag_id'
+					) {
+						if (archive.tags) {
+							await upsertTags(id, archive.tags);
+						}
+					} else {
+						if (archive[referenceTable]) {
+							await upsertTaxonomy(
+								id,
+								archive[referenceTable],
+								referenceTable,
+								relationTable,
+								relationId
+							);
+						}
 					}
 				}
 			}
 
 			await upsertImages(id, images, hash);
 
-			if (archive.sources) {
+			if (!isProtected && archive.sources) {
 				await upsertSources(id, archive.sources);
 			}
 

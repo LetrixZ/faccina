@@ -1,4 +1,4 @@
-import { type Preset } from '~shared/config';
+import config, { type Preset } from '~shared/config';
 import db from '~shared/db';
 import { readStream } from '~shared/utils';
 import chalk from 'chalk';
@@ -90,23 +90,29 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 	let pipeline = sharp(buffer);
 
-	if (!image.width || !image.height) {
-		const { width, height } = await pipeline.metadata();
+	const { width, height } = await pipeline.metadata();
 
-		if (width && height) {
-			calculateDimensions({
-				archive: args.archive,
-				page: args.page,
-				dimensions: { width, height },
-				buffer,
-			});
-		}
-	}
+	await db
+		.updateTable('archive_images')
+		.set({ width, height })
+		.where('archive_images.page_number', '=', args.page)
+		.where('archive_id', '=', args.archive.id)
+		.execute()
+		.catch((error) => console.error(`Failed to save image dimensions: ${error.message}`));
 
 	const preset = args.preset;
 
-	pipeline = pipeline.resize({ width: preset.width });
+	let newHeight: number | undefined = undefined;
 
+	if (config.image.aspectRatioSimilar) {
+		const aspectRatio = width! / height!;
+
+		if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {
+			newHeight = preset.width * (64 / 45);
+		}
+	}
+
+	pipeline = pipeline.resize({ width: preset.width, height: newHeight });
 	pipeline = match(preset)
 		.with({ format: 'webp' }, (data) => pipeline.webp(data))
 		.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))

@@ -16,6 +16,7 @@
 	import { cn } from '../utils';
 	import GallerySource from './gallery-source.svelte';
 	import { Button } from './ui/button';
+	import { Checkbox } from './ui/checkbox';
 	import { Separator } from './ui/separator';
 	import { Textarea } from './ui/textarea';
 
@@ -43,7 +44,6 @@
 	const thumbnailProxy = intProxy(form, 'thumbnail');
 
 	$: thumbnail = parseInt($thumbnailProxy);
-	$: thumbnailImage = archive.images[thumbnail - 1];
 
 	$: sourcesValid = $formData.sources.every((source) => source.name);
 </script>
@@ -62,12 +62,10 @@
 			<img
 				alt={`'${archive.title}' cover`}
 				class="aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
-				height={thumbnailImage?.width && thumbnailImage?.height
-					? Math.round((640 / thumbnailImage.width) * thumbnailImage.height)
-					: undefined}
+				height={910}
 				loading="eager"
 				src={`/image/${archive.hash}/${thumbnail}?type=thumb`}
-				width={thumbnailImage?.width ? 640 : undefined}
+				width={640}
 			/>
 
 			<Button
@@ -120,6 +118,25 @@
 					<Form.FieldErrors />
 				</Form.Field>
 			</div>
+
+			<Form.Field
+				class="flex flex-row items-start space-x-3 space-y-0 py-2"
+				{form}
+				name="protected"
+			>
+				<Form.Control let:attrs>
+					<Checkbox {...attrs} bind:checked={$formData.protected} />
+					<div class="space-y-1 leading-none">
+						<Form.Label>Protected</Form.Label>
+						<Form.Description>
+							Indicate if this gallery should be protected against metadata changes that impact
+							during indexing. If enabled, only path, hash, size and images will be updated.
+						</Form.Description>
+					</div>
+					<input hidden name={attrs.name} value={$formData.protected} />
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
 		</div>
 	</div>
 

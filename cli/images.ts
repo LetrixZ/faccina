@@ -171,7 +171,20 @@ export const generate = async (options: GenerateImagesOptions) => {
 							multibar.log(chalk.red(`Failed to save image dimensions: ${error.message}\n`))
 						);
 
-					pipeline = pipeline.resize({ width: image.preset.width });
+					let newHeight: number | undefined = undefined;
+
+					if (config.image.aspectRatioSimilar) {
+						const aspectRatio = width! / height!;
+
+						if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {
+							newHeight = image.preset.width * (64 / 45);
+						}
+					}
+
+					pipeline = pipeline.resize({
+						width: image.preset.width,
+						height: newHeight,
+					});
 					pipeline = match(image.preset)
 						.with({ format: 'webp' }, (data) => pipeline.webp(data))
 						.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
