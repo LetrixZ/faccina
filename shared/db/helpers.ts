@@ -28,7 +28,7 @@ export const id = <TB extends string>(schema: SchemaModule, name: TB) => {
 		case 'sqlite':
 			return schema
 				.createTable(name)
-				.addColumn('id', 'integer', (col) => col.autoIncrement().primaryKey());
+				.addColumn('id', 'integer', (col) => col.autoIncrement().notNull().primaryKey());
 		case 'postgresql':
 			return schema.createTable(name).addColumn('id', 'serial', (col) => col.primaryKey());
 	}

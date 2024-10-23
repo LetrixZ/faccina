@@ -17,6 +17,6 @@ export const actions = {
 			...sessionCookie.attributes,
 		});
 
-		redirect(302, event.url.searchParams.get('to')?.toString() ?? '/');
+		redirect(302, event.url.searchParams.get('to') ?? '/');
 	},
 } satisfies Actions;

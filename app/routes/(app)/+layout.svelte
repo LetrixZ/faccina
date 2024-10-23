@@ -168,6 +168,10 @@
 	}}
 />
 
+<svelte:head>
+	<title>{data.site.name}</title>
+</svelte:head>
+
 <div class="fixed z-20 flex h-fit w-full border-b bg-background shadow dark:border-border">
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"

@@ -6,7 +6,6 @@ import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, jsonObjectFrom, like } from '~shared/db/helpers';
 import {
-	referenceTable,
 	type ReferenceTable,
 	relationId,
 	type RelationshipId,
@@ -354,7 +353,7 @@ export const search = async (
 
 	if (blacklist?.length) {
 		for (const tag of blacklist) {
-			const [type, id, namespace] = tag.split(':');
+			const [type, id] = tag.split(':');
 
 			query = query.where(({ and, not, exists, selectFrom }) =>
 				and([
@@ -363,15 +362,7 @@ export const search = async (
 							selectFrom(relationTable(type))
 								.select('id')
 								.whereRef('archive_id', '=', 'archives.id')
-								.where((eb) => {
-									const expression = eb(relationId(type), '=', parseInt(id));
-
-									if (referenceTable(type) === 'tags') {
-										return expression.and('archive_tags.namespace', '=', namespace ?? '');
-									}
-
-									return expression;
-								})
+								.where(relationId(type), '=', parseInt(id))
 						)
 					),
 				])

@@ -10,8 +10,6 @@ export type Generated<T> =
 		? ColumnType<S, I | undefined, U>
 		: ColumnType<T, T | undefined, T>;
 
-export type Timestamp = ColumnType<string>;
-
 export interface ArchiveArtists {
 	archive_id: number;
 	artist_id: number;
@@ -25,26 +23,6 @@ export interface ArchiveCircles {
 export interface ArchiveEvents {
 	archive_id: number;
 	event_id: number;
-}
-
-export interface ArchiveFts {
-	archive_id: number;
-	artists: string;
-	artists_tsv: Generated<string | null>;
-	circles: string;
-	circles_tsv: Generated<string | null>;
-	events: string;
-	events_tsv: Generated<string | null>;
-	magazines: string;
-	magazines_tsv: Generated<string | null>;
-	parodies: string;
-	parodies_tsv: Generated<string | null>;
-	publishers: string;
-	publishers_tsv: Generated<string | null>;
-	tags: string;
-	tags_tsv: Generated<string | null>;
-	title: string;
-	title_tsv: Generated<string | null>;
 }
 
 export interface ArchiveImages {
@@ -71,8 +49,8 @@ export interface ArchivePublishers {
 }
 
 export interface Archives {
-	created_at: Generated<Timestamp>;
-	deleted_at: Timestamp | null;
+	created_at: Generated<string>;
+	deleted_at: string | null;
 	description: string | null;
 	has_metadata: Generated<boolean | null>;
 	hash: string;
@@ -80,13 +58,13 @@ export interface Archives {
 	language: string | null;
 	pages: number;
 	path: string;
-	released_at: Timestamp | null;
+	protected: Generated<boolean>;
+	released_at: string | null;
 	size: number;
 	slug: string;
 	thumbnail: Generated<number>;
 	title: string;
-	updated_at: Generated<Timestamp>;
-	protected: Generated<boolean>;
+	updated_at: Generated<string>;
 }
 
 export interface ArchiveSources {
@@ -145,30 +123,30 @@ export interface Tags {
 
 export interface UserCodes {
 	code: string;
-	consumed_at: Timestamp | null;
-	created_at: Generated<Timestamp>;
-	type: 'login' | 'recovery';
+	consumed_at: string | null;
+	created_at: Generated<string>;
+	type: string;
 	user_id: string;
 }
 
 export interface UserFavorites {
 	archive_id: number;
-	created_at: Generated<Timestamp>;
+	created_at: Generated<string>;
 	user_id: string;
 }
 
 export interface Users {
-	created_at: Generated<Timestamp>;
+	created_at: Generated<string>;
 	email: string | null;
-	id: string;
+	id: string | null;
 	password_hash: string;
-	updated_at: Generated<Timestamp>;
+	updated_at: Generated<string>;
 	username: string;
 }
 
 export interface UserSessions {
-	expires_at: Timestamp;
-	id: string;
+	expires_at: string;
+	id: string | null;
 	user_id: string;
 }
 
@@ -176,7 +154,6 @@ export interface DB {
 	archive_artists: ArchiveArtists;
 	archive_circles: ArchiveCircles;
 	archive_events: ArchiveEvents;
-	archive_fts: ArchiveFts;
 	archive_images: ArchiveImages;
 	archive_magazines: ArchiveMagazines;
 	archive_parodies: ArchiveParodies;
