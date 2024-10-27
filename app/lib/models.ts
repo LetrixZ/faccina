@@ -1,4 +1,5 @@
 import type { Order, Sort } from './schemas';
+import type { Gallery } from './types';
 
 export interface Archive {
 	id: number;
@@ -91,7 +92,7 @@ export interface SearchParams {
 }
 
 export interface Task {
-	archive: ArchiveDetail;
+	gallery: Gallery;
 	progress: number;
 	total: number;
 	complete: boolean;

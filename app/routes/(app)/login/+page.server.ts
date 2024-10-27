@@ -44,7 +44,7 @@ export const actions: Actions = {
 
 		const user = await db
 			.selectFrom('users')
-			.select(['id', 'password_hash'])
+			.select(['id', 'passwordHash'])
 			.where('username', '=', username)
 			.executeTakeFirst();
 
@@ -55,7 +55,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const validPassword = await Bun.password.verify(password, user.password_hash, 'argon2id');
+		const validPassword = await Bun.password.verify(password, user.passwordHash, 'argon2id');
 
 		if (!validPassword) {
 			return fail(400, {

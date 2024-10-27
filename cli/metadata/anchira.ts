@@ -1,80 +1,81 @@
 import dayjs from 'dayjs';
-import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive, type Source } from '../../shared/metadata';
+import { ArchiveMetadata } from '../../shared/metadata';
 import { stringOrNumberArray } from './schemas';
-import { parseSourceName } from './utils';
 
 const metadataSchema = z.object({
 	Title: z.string(),
 	Description: z.string().optional(),
 	Source: z.string().optional(),
 	URL: z.string().optional(),
-	Artist: stringOrNumberArray.optional(),
-	Circle: stringOrNumberArray.optional(),
-	Magazine: stringOrNumberArray.optional(),
-	Event: stringOrNumberArray.optional(),
-	Publisher: stringOrNumberArray.optional(),
-	Parody: stringOrNumberArray.optional(),
-	Tags: stringOrNumberArray.optional(),
+	Artist: stringOrNumberArray,
+	Circle: stringOrNumberArray,
+	Magazine: stringOrNumberArray,
+	Event: stringOrNumberArray,
+	Publisher: stringOrNumberArray,
+	Parody: stringOrNumberArray,
+	Tags: stringOrNumberArray,
 	Thumbnail: z.number().optional(),
 	Released: z.number().optional(),
 });
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = YAML.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse Anchira metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
+	archive.title = data.Title;
+	archive.title = data.Title;
+	archive.description = data.Description;
+	archive.thumbnail = data.Thumbnail;
+	archive.releasedAt = data.Released ? dayjs.unix(data.Released).toDate() : undefined;
 
-	if (!metadata.success) {
-		console.error(metadata.error);
+	archive.tags = [];
 
-		throw new Error('Failed to parse Anchira metadata');
+	for (const tag of data.Artist) {
+		archive.tags.push({ namespace: 'artist', name: tag });
 	}
 
-	archive.title = metadata.data.Title;
-	archive.slug = slugify(metadata.data.Title, { lower: true, strict: true });
-	archive.description = metadata.data.Description;
-	archive.thumbnail = metadata.data.Thumbnail;
-	archive.released_at = metadata.data.Released
-		? dayjs.unix(metadata.data.Released).toDate()
-		: undefined;
-
-	archive.artists = metadata.data.Artist;
-	archive.circles = metadata.data.Circle;
-	archive.magazines = metadata.data.Magazine;
-	archive.events = metadata.data.Event;
-	archive.publishers = metadata.data.Publisher;
-	archive.parodies = metadata.data.Parody;
-
-	if (metadata.data.Tags) {
-		archive.tags = metadata.data.Tags.map((tag) => [tag, '']);
+	for (const tag of data.Circle) {
+		archive.tags.push({ namespace: 'circle', name: tag });
 	}
 
-	archive.sources = (() => {
-		const sources: Source[] = [];
+	for (const tag of data.Magazine) {
+		archive.tags.push({ namespace: 'magazine', name: tag });
+	}
 
-		if (metadata.data.URL) {
-			sources.push({
-				name: parseSourceName(metadata.data.URL),
-				url: metadata.data.URL,
-			});
-		}
+	for (const tag of data.Event) {
+		archive.tags.push({ namespace: 'event', name: tag });
+	}
 
-		if (metadata.data.Source) {
-			sources.push({
-				name: parseSourceName(metadata.data.Source),
-				url: metadata.data.Source,
-			});
-		}
+	for (const tag of data.Publisher) {
+		archive.tags.push({ namespace: 'publisher', name: tag });
+	}
 
-		return sources.length > 0 ? sources : undefined;
-	})();
+	for (const tag of data.Parody) {
+		archive.tags.push({ namespace: 'parody', name: tag });
+	}
 
-	archive.has_metadata = true;
+	for (const tag of data.Tags) {
+		archive.tags.push({ namespace: 'tag', name: tag });
+	}
+
+	archive.sources = [];
+
+	if (data.URL) {
+		archive.sources.push({ url: data.URL });
+	}
+
+	if (data.Source) {
+		archive.sources.push({ url: data.Source });
+	}
 
 	return archive;
 };

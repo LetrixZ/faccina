@@ -8,11 +8,11 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	const code = params.code;
 
 	const user = await db
-		.selectFrom('user_codes')
-		.select('user_id')
+		.selectFrom('userCodes')
+		.select('userId')
 		.where('code', '=', code)
 		.where('type', '=', 'login')
-		.where('consumed_at', 'is', null)
+		.where('consumedAt', 'is', null)
 		.executeTakeFirst();
 
 	if (!user) {
@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		});
 	}
 
-	const session = await lucia().createSession(user.user_id, {});
+	const session = await lucia().createSession(user.userId, {});
 	const sessionCookie = lucia().createSessionCookie(session.id);
 
 	cookies.set(sessionCookie.name, sessionCookie.value, {
@@ -30,8 +30,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	});
 
 	await db
-		.updateTable('user_codes')
-		.set({ consumed_at: new Date().toISOString() })
+		.updateTable('userCodes')
+		.set({ consumedAt: new Date().toISOString() })
 		.where('code', '=', code)
 		.execute();
 

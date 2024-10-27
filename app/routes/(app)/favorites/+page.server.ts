@@ -38,18 +38,18 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	}
 
 	const orderBy = match(order)
-		.with('asc', () => 'created_at asc' as OrderByExpression<DB, 'user_favorites', undefined>)
-		.with('desc', () => 'created_at desc' as OrderByExpression<DB, 'user_favorites', undefined>)
+		.with('asc', () => 'createdAt asc' as OrderByExpression<DB, 'userFavorites', undefined>)
+		.with('desc', () => 'createdAt desc' as OrderByExpression<DB, 'userFavorites', undefined>)
 		.exhaustive();
 
 	const favorites = (
 		await db
-			.selectFrom('user_favorites')
-			.select('archive_id')
-			.where('user_id', '=', locals.user.id)
+			.selectFrom('userFavorites')
+			.select('archiveId')
+			.where('userId', '=', locals.user.id)
 			.orderBy([orderBy])
 			.execute()
-	).map(({ archive_id }) => archive_id);
+	).map(({ archiveId }) => archiveId);
 
 	if (!favorites.length) {
 		return {
@@ -62,11 +62,16 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 		};
 	}
 
-	const { ids, total } = await search(searchParams, !!locals.user?.admin, favorites);
+	const { ids, total } = await search(searchParams, {
+		showHidden: !!locals.user?.admin,
+		matchIds: favorites,
+	});
 
 	return {
 		libraryPage: {
-			archives: await libraryItems(ids, sort === 'saved_at' ? favorites : undefined),
+			archives: await libraryItems(ids, {
+				sortingIds: sort === 'saved_at' ? favorites : undefined,
+			}),
 			page: 1,
 			limit: 24,
 			total,

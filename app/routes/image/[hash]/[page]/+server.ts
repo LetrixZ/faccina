@@ -18,8 +18,8 @@ type ImageArchive = {
 	hash: string;
 	path: string;
 	pages: number;
-	page_number: number;
 	filename: string;
+	pageNumber: number;
 	width: number | null;
 	height: number | null;
 };
@@ -28,7 +28,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer, string]> =
 	if (!(await Bun.file(archive.path).exists())) {
 		console.error(
 			chalk.red(
-				`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.page_number)} - ZIP archive not found in path ${chalk.bold(archive.path)}\n`
+				`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - ZIP archive not found in path ${chalk.bold(archive.path)}\n`
 			)
 		);
 
@@ -48,7 +48,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer, string]> =
 		if (width && height) {
 			calculateDimensions({
 				archive,
-				page: archive.page_number,
+				page: archive.pageNumber,
 				dimensions: { width, height },
 			});
 		}
@@ -79,7 +79,7 @@ const resampledImage = async (
 		config.directories.images,
 		archive.hash,
 		preset.name,
-		`${leadingZeros(archive.page_number, archive.pages ?? 1)}.${preset.format}`
+		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);
 
 	const file = Bun.file(imagePath);
@@ -91,7 +91,7 @@ const resampledImage = async (
 	try {
 		const encodedImage = await encodeImage({
 			archive,
-			page: archive.page_number,
+			page: archive.pageNumber,
 			savePath: imagePath,
 			preset,
 		});
@@ -100,7 +100,7 @@ const resampledImage = async (
 	} catch (err) {
 		console.error(
 			chalk.red(
-				`[${new Date().toISOString()}] ${chalk.blue`resampledImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.page_number)} - Failed to encode image\n`
+				`[${new Date().toISOString()}] ${chalk.blue`resampledImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - Failed to encode image\n`
 			),
 			err
 		);
@@ -125,10 +125,10 @@ export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
 
 	const archive = await db
 		.selectFrom('archives')
-		.innerJoin('archive_images', (join) =>
-			join.onRef('archive_id', '=', 'id').on('page_number', '=', page)
+		.innerJoin('archiveImages', (join) =>
+			join.onRef('archiveId', '=', 'id').on('pageNumber', '=', page)
 		)
-		.select(['id', 'hash', 'path', 'pages', 'page_number', 'filename', 'width', 'height'])
+		.select(['id', 'hash', 'path', 'pages', 'filename', 'pageNumber', 'width', 'height'])
 		.where('hash', '=', hash)
 		.executeTakeFirst();
 

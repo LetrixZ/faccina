@@ -65,6 +65,7 @@ admin_users = ['superuser']
 default_sort = 'released_at'
 default_order = 'desc'
 guest_downloads = true
+search_placeholder = ''
 ```
 
 - `site_name`: Specifies the title showed in pages and emails.
@@ -74,6 +75,39 @@ guest_downloads = true
 - `default_sort`: Default sorting when nothing was specified by the user.
 - `default_order`: Default ordering when nothing was specified by the user.
 - `guest_downloads`: Show download button for guests users.
+- `search_placeholder`: Placeholder text for the search bar.
+
+#### Gallery listing
+
+##### Tag weight mapping
+
+You can create a tag weight map to assign weights to `namespace:tag` combinations. These are used for gallery listings. Useful to showcase important tags before opening a gallery.
+
+```toml
+[[site.gallery_listing.tag_weight]]
+name = ['illustration', 'cg-set', 'cg set']
+weight = 20
+ignore_case = true
+
+[[site.gallery_listing.tag_weight]]
+name = 'color'
+weight = 15
+ignore_case = true
+```
+
+By default, all tags have 0 weight, so these tags will be displayed first in listings.
+
+##### Tag exclude
+
+You can exclude tags from displaying in the gallery card on listings.
+
+```toml
+[[site.gallery_listing.tag_exclude]]
+name = ['original', 'original work']
+ignore_case = true
+```
+
+This will exclude `original` and `original work` tags in all namespaces from displaying in the gallery card.
 
 ### Directories
 
@@ -129,11 +163,53 @@ Metadata parsing options.
 ```toml
 [metadata]
 parse_filename_as_title = true # default
-capitalize_tags = false # default
 ```
 
 - `parse_filename_as_title`: If the available metadata didn't offer a title, indicate if it should try to get a title from the filename or use the filename as the gallery title.\
   Example: "[Artist] My Gallery Title" will become "My Gallery Title".
+
+#### Tag mapping
+
+You can create a tag map to assign a `namespace:tag` combination to another `new_namespace:new_tag` combo.
+
+```toml
+[[metadata.tag_mapping]]
+match = 'original'
+match_namespace = 'parody'
+name = 'original work'
+ignore_case = true
+```
+
+For this example, any archive containing the `parody:original` tag will be mapped to `parody:original work`
+
+The `match_namespace` key is an optional used to only restrict tags on the `parody` namespace. With this example, `tag:original` will not get mapped.
+
+To indicate if casing should be ignored for the match specify the `ignore_case` key: `ignore_case = true`. Using the example config, `parody:Original` will be mapped to `parody:original work`.
+
+You can also choose to which namespace map the tag by specifing the `namespace` key.
+
+```toml
+[[metadata.tag_mapping]]
+match = ['fate grand order', 'Fate/Grand Order']
+namespace = 'parody'
+```
+
+This will make the tag `tag:fate grand order` and `tag:Fate/Grand Order` to `parody:fate grand order` and `parody:Fate/Grand Order` respectively.
+
+#### Source mapping
+
+Similar to tag mapping, you can map source names so they can be asigned to URLs when no name is given by the archive metadata.
+
+```toml
+[[metadata.source_mapping]]
+match = 'pixiv'
+name = 'Pixiv'
+ignore_case = true
+```
+
+For this example, if the archive metadata only provides a URL like this: `https://www.pixiv.net/en/artworks/12345678/` then the name `Pixiv` will be added to it. By default, if no source name was providad by the archive metadata and mappins, then it will default to the hostname in the URL given that the URL is valid, if not, the source will not be added during indexing.
+
+If the given source already has a name paired to it, the name will be replace if a match is found.
 
 ### Image
 

@@ -10,7 +10,9 @@ export const load: PageServerLoad = async ({ url, cookies, locals }) => {
 		searchParams.set('blacklist', blacklist);
 	}
 
-	const { ids, total } = await search(searchParams, !!locals.user?.admin);
+	const { ids, total } = await search(searchParams, {
+		showHidden: !!locals.user?.admin,
+	});
 
 	return {
 		library: {

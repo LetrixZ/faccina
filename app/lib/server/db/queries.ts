@@ -1,18 +1,9 @@
-import type { Archive, ArchiveListItem, TaxonomyItem } from '$lib/models';
 import type { DB } from '~shared/types';
 
-import { shuffle } from '$lib/utils';
+import { decompressBlacklist, shuffle } from '$lib/utils';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, jsonObjectFrom, like } from '~shared/db/helpers';
-import {
-	type ReferenceTable,
-	relationId,
-	type RelationshipId,
-	type RelationshipTable,
-	relationTable,
-	taxonomyTables,
-} from '~shared/taxonomy';
 import {
 	type ExpressionBuilder,
 	type ExpressionWrapper,
@@ -22,6 +13,8 @@ import {
 } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
+
+import type { Archive, Gallery, GalleryListItem, Tag } from '~/lib/types';
 
 import { type Order, orderSchema, type Sort, sortSchema } from '~/lib/schemas';
 
@@ -39,131 +32,116 @@ export enum Ordering {
 	DESC = 'desc',
 }
 
-export const get = (id: number, hidden: boolean): Promise<Archive | undefined> => {
+export type QueryOptions = {
+	showHidden?: boolean;
+	matchIds?: number[];
+	sortingIds?: number[];
+};
+
+export const getGallery = (id: number, options: QueryOptions): Promise<Gallery | undefined> => {
 	let query = db
 		.selectFrom('archives')
 		.select((eb) => [
 			'id',
-			'slug',
 			'hash',
 			'title',
 			'description',
-			'path',
 			'pages',
 			'thumbnail',
 			'language',
 			'size',
-			'created_at',
-			'released_at',
-			'deleted_at',
-			'has_metadata',
-			'protected',
-			jsonObjectFrom(
-				eb
-					.selectFrom('archive_images')
-					.select('archive_images.width')
-					.select('archive_images.height')
-					.whereRef('archives.id', '=', 'archive_images.archive_id')
-					.whereRef('archives.thumbnail', '=', 'archive_images.page_number')
-					.limit(1)
-			).as('cover'),
+			'createdAt',
+			'releasedAt',
+			'deletedAt',
 			jsonArrayFrom(
 				eb
-					.selectFrom('archive_artists')
-					.innerJoin('artists', 'artists.id', 'archive_artists.artist_id')
-					.select(['artists.slug', 'artists.name'])
-					.whereRef('archives.id', '=', 'archive_artists.archive_id')
-			).as('artists'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_circles')
-					.innerJoin('circles', 'circles.id', 'archive_circles.circle_id')
-					.select(['circles.slug', 'circles.name'])
-					.whereRef('archives.id', '=', 'archive_circles.archive_id')
-			).as('circles'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_magazines')
-					.innerJoin('magazines', 'magazines.id', 'archive_magazines.magazine_id')
-					.select(['magazines.slug', 'magazines.name'])
-					.whereRef('archives.id', '=', 'archive_magazines.archive_id')
-			).as('magazines'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_publishers')
-					.innerJoin('publishers', 'publishers.id', 'archive_publishers.publisher_id')
-					.select(['publishers.slug', 'publishers.name'])
-					.whereRef('archives.id', '=', 'archive_publishers.archive_id')
-			).as('publishers'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_events')
-					.innerJoin('events', 'events.id', 'archive_events.event_id')
-					.select(['events.slug', 'events.name'])
-					.whereRef('archives.id', '=', 'archive_events.archive_id')
-			).as('events'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_parodies')
-					.innerJoin('parodies', 'parodies.id', 'archive_parodies.parody_id')
-					.select(['parodies.slug', 'parodies.name'])
-					.whereRef('archives.id', '=', 'archive_parodies.archive_id')
-			).as('parodies'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_tags')
-					.innerJoin('tags', 'tags.id', 'archive_tags.tag_id')
-					.select(['tags.slug', 'tags.name', 'archive_tags.namespace'])
-					.whereRef('archives.id', '=', 'archive_tags.archive_id')
+					.selectFrom('archiveTags')
+					.innerJoin('tags', 'id', 'tagId')
+					.select(['id', 'namespace', 'name', 'displayName'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),
 			jsonArrayFrom(
 				eb
-					.selectFrom('archive_images')
-					.select([
-						'archive_images.filename',
-						'archive_images.page_number',
-						'archive_images.width',
-						'archive_images.height',
-					])
-					.whereRef('archives.id', '=', 'archive_images.archive_id')
+
+					.selectFrom('archiveImages')
+					.select(['filename', 'pageNumber', 'width', 'height'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('pageNumber asc')
 			).as('images'),
 			jsonArrayFrom(
 				eb
-					.selectFrom('archive_sources')
+					.selectFrom('archiveSources')
 					.select(['name', 'url'])
-					.whereRef('archives.id', '=', 'archive_sources.archive_id')
-					.orderBy('name asc')
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('archiveSources.createdAt asc')
 			).as('sources'),
 		])
 		.where('id', '=', id);
 
-	if (!hidden) {
-		query = query.where('deleted_at', 'is', null);
+	if (!options.showHidden) {
+		query = query.where('deletedAt', 'is', null);
 	}
 
 	return query.executeTakeFirst();
 };
 
-export type TagMatch = {
-	table: ReferenceTable;
-	relationId: RelationshipId;
-	relationTable: RelationshipTable;
-	value: string;
-	negate: boolean;
-	or: boolean;
-	namespace?: string;
+export const getArchive = (id: number): Promise<Archive | undefined> => {
+	return db
+		.selectFrom('archives')
+		.select((eb) => [
+			'id',
+			'hash',
+			'path',
+			'title',
+			'description',
+			'pages',
+			'thumbnail',
+			'language',
+			'size',
+			'createdAt',
+			'releasedAt',
+			'deletedAt',
+			'protected',
+			jsonArrayFrom(
+				eb
+					.selectFrom('archiveTags')
+					.innerJoin('tags', 'id', 'tagId')
+					.select(['id', 'namespace', 'name', 'displayName'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('archiveTags.createdAt asc')
+			).as('tags'),
+			jsonArrayFrom(
+				eb
+					.selectFrom('archiveImages')
+					.select(['filename', 'pageNumber', 'width', 'height'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('pageNumber asc')
+			).as('images'),
+			jsonArrayFrom(
+				eb
+					.selectFrom('archiveSources')
+					.select(['name', 'url'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('archiveSources.createdAt asc')
+			).as('sources'),
+		])
+		.where('id', '=', id)
+		.executeTakeFirst();
 };
 
-export const parseQuery = (query: string) => {
-	const queryMatch = query.match(
-		/[-|~]?(artist|circle|magazine|event|publisher|parody|tag|\w+):(".*?"|[^\s]+)/g
-	);
+type TagMatch = {
+	namespace: string;
+	name: string;
+	negate: boolean;
+	or: boolean;
+};
+
+const parseQuery = (query: string) => {
+	const tagQueryMatches = query.match(/[-|~]?(\w+):(".*?"|[^\s]+)/g);
 
 	const titleMatch = query
-		.replaceAll(
-			/[-|~]?(artist|circle|magazine|event|publisher|parody|tag|url|source|\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g,
-			''
-		)
+		.replaceAll(/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g, '')
 		.trim();
 
 	const pagesMatch = Array.from(query.matchAll(/\bpages(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
@@ -203,106 +181,38 @@ export const parseQuery = (query: string) => {
 		sourceMatch,
 	};
 
-	if (!queryMatch) {
-		return { ...matches, tagMatches: [] };
-	}
-
 	const tagMatches: TagMatch[] = [];
 
-	for (const match of queryMatch) {
+	if (!tagQueryMatches) {
+		return { ...matches, tagMatches };
+	}
+
+	for (const match of tagQueryMatches) {
 		const split = [match.slice(0, match.indexOf(':')), match.slice(match.indexOf(':') + 1)];
 
-		const value = split[1].replaceAll('"', '');
+		const name = split[1].replaceAll('"', '');
 
-		if (/^%+$/.test(value)) {
+		if (/^%+$/.test(name)) {
 			continue;
 		}
 
-		let type = split[0];
+		let namespace = split[0];
 
-		const negate = type.startsWith('-');
-		const or = type.startsWith('~');
+		const negate = namespace.startsWith('-');
+		const or = namespace.startsWith('~');
 
-		type = negate || or ? type.slice(1) : type;
+		namespace = negate || or ? namespace.slice(1) : namespace;
 
-		if (['source', 'url'].includes(type)) {
+		if (['source', 'url'].includes(namespace)) {
 			continue;
 		}
 
-		const obj = {
-			value,
+		tagMatches.push({
+			namespace,
+			name,
 			negate,
 			or,
-		};
-
-		switch (type) {
-			case 'artist':
-				tagMatches.push({
-					...obj,
-					table: 'artists',
-					relationId: 'artist_id',
-					relationTable: 'archive_artists',
-				});
-				break;
-			case 'circle':
-				tagMatches.push({
-					...obj,
-					table: 'circles',
-					relationId: 'circle_id',
-					relationTable: 'archive_circles',
-				});
-				break;
-			case 'magazine':
-				tagMatches.push({
-					...obj,
-					table: 'magazines',
-					relationId: 'magazine_id',
-					relationTable: 'archive_magazines',
-				});
-				break;
-			case 'event':
-				tagMatches.push({
-					...obj,
-					table: 'events',
-					relationId: 'event_id',
-					relationTable: 'archive_events',
-				});
-				break;
-			case 'publisher':
-				tagMatches.push({
-					...obj,
-					table: 'publishers',
-					relationId: 'publisher_id',
-					relationTable: 'archive_publishers',
-				});
-				break;
-			case 'parody':
-				tagMatches.push({
-					...obj,
-					table: 'parodies',
-					relationId: 'parody_id',
-					relationTable: 'archive_parodies',
-				});
-				break;
-			case 'tag':
-				tagMatches.push({
-					...obj,
-					table: 'tags',
-					relationId: 'tag_id',
-					relationTable: 'archive_tags',
-					namespace: '',
-				});
-				break;
-			default:
-				tagMatches.push({
-					...obj,
-					table: 'tags',
-					relationId: 'tag_id',
-					relationTable: 'archive_tags',
-					namespace: type,
-				});
-				break;
-		}
+		});
 	}
 
 	return { ...matches, tagMatches };
@@ -310,8 +220,7 @@ export const parseQuery = (query: string) => {
 
 export const search = async (
 	searchParams: URLSearchParams,
-	hidden: boolean,
-	ids?: number[]
+	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
 	const { tagMatches, titleMatch, pagesMatch, urlMatch, sourceMatch } = parseQuery(
 		searchParams.get('q') ?? ''
@@ -347,28 +256,7 @@ export const search = async (
 
 	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'archives', undefined>;
 
-	const blacklist = searchParams.get('blacklist')?.split(',');
-
 	let query = db.selectFrom('archives').select(['archives.id', 'archives.title']);
-
-	if (blacklist?.length) {
-		for (const tag of blacklist) {
-			const [type, id] = tag.split(':');
-
-			query = query.where(({ and, not, exists, selectFrom }) =>
-				and([
-					not(
-						exists(
-							selectFrom(relationTable(type))
-								.select('id')
-								.whereRef('archive_id', '=', 'archives.id')
-								.where(relationId(type), '=', parseInt(id))
-						)
-					),
-				])
-			);
-		}
-	}
 
 	const buildTagQuery = (
 		tag: TagMatch,
@@ -379,16 +267,60 @@ export const search = async (
 		}: Pick<ExpressionBuilder<DB, 'archives'>, 'not' | 'exists' | 'selectFrom'>
 	) => {
 		const expression = exists(
-			selectFrom(tag.relationTable)
+			selectFrom('archiveTags')
 				.select('id')
-				.whereRef('archive_id', '=', 'archives.id')
-				.innerJoin(tag.table, tag.relationId, 'id')
-				// @ts-expect-error works
-				.where('name', like(), tag.value)
+				.whereRef('archiveId', '=', 'archives.id')
+				.innerJoin('tags', 'id', 'tagId')
+				.where(
+					(eb) =>
+						tag.namespace === 'tag'
+							? eb.ref('name')
+							: sql`${eb.ref('namespace')} || ':' || ${eb.ref('name')}`,
+					like(),
+					tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`
+				)
 		);
 
 		return tag.negate ? not(expression) : expression;
 	};
+
+	const blacklist = (() => {
+		const data = searchParams.get('blacklist');
+
+		if (!data) {
+			return [];
+		}
+
+		try {
+			return decompressBlacklist(data);
+		} catch {
+			return [];
+		}
+	})();
+
+	for (const tagId of blacklist) {
+		query = query.where(({ and, not, exists, selectFrom }) =>
+			and([
+				not(
+					exists(
+						selectFrom('archiveTags')
+							.select('id')
+							.where('tagId', '=', parseInt(tagId))
+							.whereRef('archiveId', '=', 'archives.id')
+					)
+				),
+			])
+		);
+	}
+
+	tagMatches.push(
+		...blacklist.map((tag) => ({
+			namespace: tag.split(':')[0],
+			name: tag.split(':').slice(1).join(':'),
+			negate: true,
+			or: false,
+		}))
+	);
 
 	if (tagMatches.length) {
 		const andTags = tagMatches.filter((tag) => !tag.or);
@@ -448,20 +380,17 @@ export const search = async (
 					);
 				}
 
-				for (const { relationTable, relationId, referenceTable } of taxonomyTables) {
-					const buildTagQuery = () => {
-						return exists(
-							selectFrom(relationTable)
-								.select('id')
-								.whereRef('archive_id', '=', 'archives.id')
-								.innerJoin(referenceTable, relationId, 'id')
-								// @ts-expect-error works
-								.where('name', like(), `%${split}%`)
-						);
-					};
+				const buildTagQuery = () => {
+					return exists(
+						selectFrom('archiveTags')
+							.innerJoin('tags', 'id', 'tagId')
+							.select('id')
+							.whereRef('archiveId', '=', 'archives.id')
+							.where('name', like(), `%${split}%`)
+					);
+				};
 
-					conditions.push(negate ? not(buildTagQuery()) : buildTagQuery());
-				}
+				conditions.push(negate ? not(buildTagQuery()) : buildTagQuery());
 
 				return negate ? and(conditions) : or(conditions);
 			});
@@ -481,9 +410,9 @@ export const search = async (
 			or(
 				urlMatch.map((match) =>
 					exists(
-						selectFrom('archive_sources')
+						selectFrom('archiveSources')
 							.select('id')
-							.whereRef('archive_id', '=', 'archives.id')
+							.whereRef('archiveId', '=', 'archives.id')
 							.where('url', like(), `%${match}`)
 					)
 				)
@@ -496,9 +425,9 @@ export const search = async (
 			or(
 				sourceMatch.map((match) =>
 					exists(
-						selectFrom('archive_sources')
+						selectFrom('archiveSources')
 							.select('id')
-							.whereRef('archive_id', '=', 'archives.id')
+							.whereRef('archiveId', '=', 'archives.id')
 							.where('name', like(), match)
 					)
 				)
@@ -506,17 +435,17 @@ export const search = async (
 		);
 	}
 
-	if (ids) {
-		query = query.where('archives.id', 'in', ids);
+	if (options.matchIds) {
+		query = query.where('archives.id', 'in', options.matchIds);
 	}
 
-	if (!hidden) {
-		query = query.where('deleted_at', 'is', null);
+	if (!options.showHidden) {
+		query = query.where('deletedAt', 'is', null);
 	}
 
 	query = query
 		.orderBy([orderBy])
-		.orderBy(order === Ordering.ASC ? 'archives.created_at asc' : 'archives.created_at desc')
+		.orderBy(order === Ordering.ASC ? 'archives.createdAt asc' : 'archives.createdAt desc')
 		.orderBy(order === Ordering.ASC ? 'archives.id asc' : 'archives.id desc');
 
 	let filteredResults = await query.execute();
@@ -587,139 +516,89 @@ export const search = async (
 
 export const libraryItems = async (
 	ids: number[],
-	sortingIds?: number[]
-): Promise<ArchiveListItem[]> => {
-	const archives = await db
+	options?: QueryOptions
+): Promise<GalleryListItem[]> => {
+	let archives = await db
 		.selectFrom('archives')
 		.select((eb) => [
-			'archives.id',
-			'archives.slug',
-			'archives.hash',
-			'archives.title',
-			'archives.pages',
-			'archives.thumbnail',
-			'archives.deleted_at',
+			'id',
+			'hash',
+			'title',
+			'pages',
+			'thumbnail',
+			'deletedAt',
+			jsonArrayFrom(
+				eb
+					.selectFrom('archiveTags')
+					.innerJoin('tags', 'id', 'tagId')
+					.select(['id', 'namespace', 'name', 'displayName'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.orderBy('archiveTags.createdAt asc')
+			).as('tags'),
 			jsonObjectFrom(
 				eb
-					.selectFrom('archive_images')
-					.select('archive_images.width')
-					.select('archive_images.height')
-					.whereRef('archives.id', '=', 'archive_images.archive_id')
-					.whereRef('archives.thumbnail', '=', 'archive_images.page_number')
+					.selectFrom('archiveImages')
+					.select(['filename', 'pageNumber', 'width', 'height'])
+					.whereRef('archives.id', '=', 'archiveId')
+					.whereRef('archives.thumbnail', '=', 'archiveImages.pageNumber')
 					.limit(1)
 			).as('cover'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_artists')
-					.innerJoin('artists', 'artists.id', 'archive_artists.artist_id')
-					.select(['artists.slug', 'artists.name'])
-					.whereRef('archives.id', '=', 'archive_artists.archive_id')
-			).as('artists'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_circles')
-					.innerJoin('circles', 'circles.id', 'archive_circles.circle_id')
-					.select(['circles.slug', 'circles.name'])
-					.whereRef('archives.id', '=', 'archive_circles.archive_id')
-			).as('circles'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_magazines')
-					.innerJoin('magazines', 'magazines.id', 'archive_magazines.magazine_id')
-					.select(['magazines.slug', 'magazines.name'])
-					.whereRef('archives.id', '=', 'archive_magazines.archive_id')
-			).as('magazines'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_publishers')
-					.innerJoin('publishers', 'publishers.id', 'archive_publishers.publisher_id')
-					.select(['publishers.slug', 'publishers.name'])
-					.whereRef('archives.id', '=', 'archive_publishers.archive_id')
-			).as('publishers'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_events')
-					.innerJoin('events', 'events.id', 'archive_events.event_id')
-					.select(['events.slug', 'events.name'])
-					.whereRef('archives.id', '=', 'archive_events.archive_id')
-			).as('events'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_parodies')
-					.innerJoin('parodies', 'parodies.id', 'archive_parodies.parody_id')
-					.select(['parodies.slug', 'parodies.name'])
-					.whereRef('archives.id', '=', 'archive_parodies.archive_id')
-			).as('parodies'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archive_tags')
-					.innerJoin('tags', 'tags.id', 'archive_tags.tag_id')
-					.select(['tags.slug', 'tags.name', 'archive_tags.namespace'])
-					.whereRef('archives.id', '=', 'archive_tags.archive_id')
-			).as('tags'),
 		])
 		.where('archives.id', 'in', ids)
 		.execute();
 
-	if (sortingIds) {
-		return archives.toSorted((a, b) => sortingIds.indexOf(a.id) - sortingIds.indexOf(b.id));
+	archives = archives.map((archive) => {
+		const { tagExclude, tagWeight } = config.site.galleryListing;
+
+		const filteredTags = archive.tags.filter((tag) => {
+			return !tagExclude.some(({ ignoreCase, name, namespace }) => {
+				const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
+				const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
+
+				if (namespace) {
+					return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
+				} else {
+					return normalizedNames.includes(normalizedTagName);
+				}
+			});
+		});
+
+		const sortedTags = filteredTags.sort((a, b) => {
+			const getWeight = (tag: Tag) => {
+				const matchTag = tagWeight.find(({ ignoreCase, name, namespace }) => {
+					const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
+					const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
+
+					if (namespace) {
+						return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
+					} else {
+						return normalizedNames.includes(normalizedTagName);
+					}
+				});
+
+				return matchTag?.weight ?? 0;
+			};
+
+			const aWeight = getWeight(a);
+			const bWeight = getWeight(b);
+
+			return aWeight === bWeight ? a.name.localeCompare(b.name) : bWeight - aWeight;
+		});
+
+		return {
+			...archive,
+			tags: sortedTags,
+		};
+	});
+
+	if (options?.sortingIds) {
+		const ids = options.sortingIds;
+
+		return archives.toSorted((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 	} else {
 		return archives.toSorted((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 	}
 };
 
-export const taxonomies = async () => {
-	const taxonomies: TaxonomyItem[] = [];
-
-	const artists = await db
-		.selectFrom('artists')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
-
-	const circles = await db
-		.selectFrom('circles')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
-
-	const magazines = await db
-		.selectFrom('magazines')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
-
-	const events = await db
-		.selectFrom('events')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
-
-	const publishers = await db
-		.selectFrom('publishers')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
-
-	const parodies = await db
-		.selectFrom('parodies')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
-
-	const tags = await db.selectFrom('tags').select(['id', 'slug', 'name']).orderBy('name').execute();
-
-	taxonomies.push(...artists.map(({ slug, name }) => ({ slug, name, type: 'artist' as const })));
-	taxonomies.push(...circles.map(({ slug, name }) => ({ slug, name, type: 'circle' as const })));
-	taxonomies.push(
-		...magazines.map(({ slug, name }) => ({ slug, name, type: 'magazine' as const }))
-	);
-	taxonomies.push(...events.map(({ slug, name }) => ({ slug, name, type: 'event' as const })));
-	taxonomies.push(
-		...publishers.map(({ slug, name }) => ({ slug, name, type: 'publisher' as const }))
-	);
-	taxonomies.push(...parodies.map(({ slug, name }) => ({ slug, name, type: 'parody' as const })));
-	taxonomies.push(...tags.map(({ slug, name }) => ({ slug, name, type: 'tag' as const })));
-
-	return taxonomies;
-};
+export const tagList = () =>
+	db.selectFrom('tags').select(['id', 'namespace', 'name', 'displayName']).execute();

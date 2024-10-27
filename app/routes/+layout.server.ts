@@ -13,6 +13,7 @@ export const load: LayoutServerLoad = ({ locals }) => {
 			defaultSort: config.site.defaultSort,
 			defaultOrder: config.site.defaultOrder,
 			guestDownloads: config.site.guestDownloads,
+			searchPlaceholder: config.site.searchPlaceholder,
 		},
 	};
 };

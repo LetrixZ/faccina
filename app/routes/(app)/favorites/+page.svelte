@@ -67,7 +67,7 @@
 		{#if libraryPage.archives.length}
 			<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
 				{#each libraryPage.archives as archive (archive.id)}
-					<ListItem {archive} />
+					<ListItem gallery={archive} />
 				{/each}
 			</div>
 		{:else}

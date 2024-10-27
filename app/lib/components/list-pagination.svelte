@@ -64,7 +64,7 @@
 	perPage={limit}
 >
 	<Pagination.Content>
-		<Pagination.Item>
+		<Pagination.Item class="me-auto md:me-0">
 			<Button
 				class={cn('gap-1 pl-2.5', !prevPageUrl && 'pointer-events-none opacity-50')}
 				href={prevPageUrl}
@@ -92,9 +92,9 @@
 				</Pagination.Item>
 			{/if}
 		{/each}
-		<Pagination.Item>
+		<Pagination.Item class="ms-auto md:ms-0">
 			<Button
-				class={cn('gap-1 pl-2.5', !nextPageUrl && 'pointer-events-none opacity-50')}
+				class={cn('gap-1 pl-2.5', !nextPageUrl && 'pointer-events-none  opacity-50 ')}
 				href={nextPageUrl}
 				size="sm"
 				variant="ghost"

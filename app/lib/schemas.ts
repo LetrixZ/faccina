@@ -90,17 +90,11 @@ export const editArchiveSchema = z
 
 export type EditArchiveSchema = typeof editArchiveSchema;
 
-export const editTaxonomySchema = z.object({
-	artists: z.array(z.string()),
-	circles: z.array(z.string()),
-	magazines: z.array(z.string()),
-	events: z.array(z.string()),
-	publishers: z.array(z.string()),
-	parodies: z.array(z.string()),
-	tags: z.array(z.string()),
+export const editTagsSchema = z.object({
+	tags: z.array(z.object({ namespace: z.string(), name: z.string() })),
 });
 
-export type EditTaxonomySchema = typeof editTaxonomySchema;
+export type EditTagsSchema = typeof editTagsSchema;
 
 export const sortSchema = z.enum([
 	'released_at',

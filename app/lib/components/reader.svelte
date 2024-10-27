@@ -1,9 +1,7 @@
 <script lang="ts">
-	import type { ArchiveDetail } from '$lib/models';
-
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { type Image, ImageSize, TouchLayout } from '$lib/models';
+	import { ImageSize, TouchLayout } from '$lib/models';
 	import {
 		currentArchive,
 		nextPage,
@@ -16,10 +14,12 @@
 	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
 
+	import type { Gallery, Image } from '../types';
+
 	import LeftToRight from './touch-layouts/left-to-right.svelte';
 	import RightToLeft from './touch-layouts/right-to-left.svelte';
 
-	export let archive: ArchiveDetail;
+	export let gallery: Gallery;
 
 	type ImageState = 'idle' | 'preloading' | 'preloaded';
 
@@ -29,34 +29,34 @@
 	let imageStyle = '';
 	let containerStyle = '';
 
-	let pageState: (Image & { state: ImageState })[] = archive.images.map((image) => ({
+	let pageState: (Image & { state: ImageState })[] = gallery.images.map((image) => ({
 		...image,
 		state: 'idle',
 	}));
 
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
-	$: image = archive.images.find((image) => image?.page_number === currentPage)!;
+	$: image = gallery.images.find((image) => image?.pageNumber === currentPage)!;
 
 	$: {
 		$prevPage = currentPage > 1 ? currentPage - 1 : undefined;
-		$nextPage = archive.pages && currentPage < archive.pages ? currentPage + 1 : undefined;
+		$nextPage = gallery.pages && currentPage < gallery.pages ? currentPage + 1 : undefined;
 	}
 
-	$: $currentArchive = archive;
+	$: $currentArchive = gallery;
 
 	const changePage = (page?: number) => {
 		if (!page || !container) {
 			return;
 		}
 
-		const imageInfo = archive.images.find((image) => image.page_number === page);
+		const imageInfo = gallery.images.find((image) => image.pageNumber === page);
 
 		if (!imageInfo) {
 			return;
 		}
 
 		const newImage = new Image(imageInfo.width ?? undefined, imageInfo.height ?? undefined);
-		newImage.src = `/image/${archive.hash}/${imageInfo.page_number}`;
+		newImage.src = `/image/${gallery.hash}/${imageInfo.pageNumber}`;
 		newImage.alt = `Page ${currentPage}`;
 		newImage.onerror = () => toast.error('Failed to load the page');
 
@@ -70,7 +70,7 @@
 
 	const changePageState = (page: number, newState: ImageState) => {
 		pageState = pageState.map((state) => {
-			if (state.page_number === page) {
+			if (state.pageNumber === page) {
 				state.state = newState;
 			}
 
@@ -81,26 +81,26 @@
 	const preloadImages = async (currentPage: number) => {
 		await pMap(
 			[currentPage + 1, currentPage + 2, currentPage - 1, currentPage + 3, currentPage - 2]
-				.filter((page) => archive.images.some(({ page_number }) => page_number === page))
-				.filter((page) => pageState.find((state) => state.page_number === page)!.state === 'idle')
-				.map((page) => archive.images.find(({ page_number }) => page_number === page)!),
+				.filter((page) => gallery.images.some(({ pageNumber }) => pageNumber === page))
+				.filter((page) => pageState.find((state) => state.pageNumber === page)!.state === 'idle')
+				.map((page) => gallery.images.find(({ pageNumber }) => pageNumber === page)!),
 			async (imageInfo) => {
-				const { filename, page_number } = imageInfo;
+				const { filename, pageNumber } = imageInfo;
 
-				if (pageState.find((state) => state.page_number === page_number)!.state !== 'idle') {
+				if (pageState.find((state) => state.pageNumber === pageNumber)!.state !== 'idle') {
 					return;
 				}
 
-				changePageState(page_number, 'preloading');
+				changePageState(pageNumber, 'preloading');
 
 				const newImage = new Image(imageInfo.width ?? undefined, imageInfo.height ?? undefined);
-				newImage.src = `/image/${archive.hash}/${filename}`;
+				newImage.src = `/image/${gallery.hash}/${filename}`;
 
 				if (newImage.complete) {
-					newImage.addEventListener('error', () => changePageState(page_number, 'preloaded'));
+					newImage.addEventListener('error', () => changePageState(pageNumber, 'preloaded'));
 				} else {
-					newImage.addEventListener('load', () => changePageState(page_number, 'preloaded'));
-					newImage.addEventListener('error', () => changePageState(page_number, 'idle'));
+					newImage.addEventListener('load', () => changePageState(pageNumber, 'preloaded'));
+					newImage.addEventListener('error', () => changePageState(pageNumber, 'idle'));
 				}
 			},
 			{ concurrency: 2 }
@@ -174,7 +174,7 @@
 				}
 				break;
 			case 'Backspace':
-				goto(`/g/${archive.id}${$page.url.search}`);
+				goto(`/g/${gallery.id}${$page.url.search}`);
 		}
 	}}
 	on:resize={() => updateStyles($prefs, image)}
@@ -197,7 +197,7 @@
 			height={image?.height}
 			loading="eager"
 			on:error={() => toast.error('Failed to load the page')}
-			src={`/image/${archive.hash}/${image?.page_number}`}
+			src={`/image/${gallery.hash}/${image?.pageNumber}`}
 			style={imageStyle}
 			width={image?.width}
 		/>

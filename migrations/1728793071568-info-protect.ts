@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely';
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema
 		.alterTable('archives')
-		.addColumn('protected', 'boolean', (col) => col.defaultTo(false))
+		.addColumn('protected', 'boolean', (col) => col.notNull().defaultTo(false))
 		.execute();
 }
 

@@ -15,7 +15,7 @@
 <div class="flex w-full flex-col space-y-1">
 	<div class="flex items-center justify-between gap-2">
 		<div>
-			<p class="text-sm font-semibold">{$task.archive.title}</p>
+			<p class="text-sm font-semibold">{$task.gallery.title}</p>
 			<p class="text-xs">Progress: {$task.progress}/{$task.total}</p>
 		</div>
 

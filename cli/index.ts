@@ -1,6 +1,11 @@
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
 
+import { indexArchives, pruneArchives } from './archive';
+import { generateImages } from './images';
+import { migrateDatabase, migrateImages } from './migrate';
+import { generateLoginLink, recoverAccess } from './users';
+
 const program = new Command();
 
 program
@@ -22,19 +27,17 @@ program
 			reindex?: boolean;
 			verbose?: boolean;
 		}) => {
-			import('./archive').then(({ index }) =>
-				index({
-					...options,
-					force: options.reindex === true ? true : options.force,
-				})
-			);
+			indexArchives({
+				...options,
+				force: options.reindex === true ? true : options.force,
+			});
 		}
 	);
 
 program
 	.command('prune')
 	.description('Remove archives that do not exists in the filesystem.')
-	.action(() => import('./archive').then(({ prune }) => prune()));
+	.action(() => pruneArchives());
 
 program
 	.command('generate-images')
@@ -44,24 +47,20 @@ program
 		'Only generate images for the given ID ranges. Ex: 1,2,3,100-200,600-'
 	)
 	.option('-f --force', 'Do not check if the image already exists.')
-	.action((options) =>
-		import('./images').then(({ generate: generateImages }) => generateImages(options))
-	);
+	.action((options) => generateImages(options));
 
 program
 	.command('uli')
 	.argument('<username>')
 	.description('Generate a one time login link for the specified user.')
-	.action((username) => import('./users').then(({ loginLink }) => loginLink(username)));
+	.action((username) => generateLoginLink(username));
 
 program
 	.command('recovery')
 	.argument('<username>')
 	.option('-c --code', 'Return recovery code without sending an email.')
 	.description('Send access recovery code to the specified user if they have an email.')
-	.action((username, { code }: { code: boolean }) =>
-		import('./users').then(({ accessRecovery }) => accessRecovery(username, code))
-	);
+	.action((username, { code }: { code: boolean }) => recoverAccess(username, code));
 
 program
 	.command('migrate:images')
@@ -74,12 +73,12 @@ program
 		'Indicate which image format to move for the old resampled images [webp, jpeg, png, jxl, avif].'
 	)
 	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
-	.action((opts) => import('./migrate').then(({ migrateImages }) => migrateImages(opts)));
+	.action((opts) => migrateImages(opts));
 
 program
 	.command('migrate:db')
 	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite.')
 	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
-	.action((opts) => import('./migrate').then(({ migrateDatabase }) => migrateDatabase(opts.dbUrl)));
+	.action((opts) => migrateDatabase(opts.dbUrl));
 
 program.parse();

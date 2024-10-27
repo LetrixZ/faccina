@@ -2,6 +2,7 @@ import { resetSchema } from '$lib/schemas';
 import { error, fail } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
+import { now } from '~shared/db/helpers';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 
@@ -41,10 +42,10 @@ export const actions: Actions = {
 		const { code, password } = form.data;
 
 		const user = await db
-			.selectFrom('user_codes')
-			.select('user_id')
+			.selectFrom('userCodes')
+			.select('userId')
 			.where('code', '=', code)
-			.where('consumed_at', 'is', null)
+			.where('consumedAt', 'is', null)
 			.where('type', '=', 'recovery')
 			.executeTakeFirst();
 
@@ -55,13 +56,7 @@ export const actions: Actions = {
 			});
 		}
 
-		await db
-			.updateTable('user_codes')
-			.set({
-				consumed_at: new Date().toISOString(),
-			})
-			.where('code', '=', code)
-			.execute();
+		await db.updateTable('userCodes').set({ consumedAt: now() }).where('code', '=', code).execute();
 
 		const hash = await Bun.password.hash(password, {
 			algorithm: 'argon2id',
@@ -72,9 +67,9 @@ export const actions: Actions = {
 		await db
 			.updateTable('users')
 			.set({
-				password_hash: hash,
+				passwordHash: hash,
 			})
-			.where('id', '=', user.user_id)
+			.where('id', '=', user.userId)
 			.execute();
 
 		return {

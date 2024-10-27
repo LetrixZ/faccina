@@ -4,6 +4,7 @@ import mjml2html from 'mjml';
 
 import config from './config';
 import db from './db';
+import { now } from './db/helpers';
 import { transporter } from './mailer';
 
 /**
@@ -16,17 +17,17 @@ export const recoveryCode = async (id: string) => {
 	const code = randomBytes(16).toString('hex');
 
 	await db
-		.updateTable('user_codes')
-		.set({ consumed_at: new Date().toISOString() })
-		.where('user_id', '=', id)
-		.where('consumed_at', 'is', null)
+		.updateTable('userCodes')
+		.set({ consumedAt: now() })
+		.where('userId', '=', id)
+		.where('consumedAt', 'is', null)
 		.where('type', '=', 'recovery')
 		.execute();
 
 	await db
-		.insertInto('user_codes')
+		.insertInto('userCodes')
 		.values({
-			user_id: id,
+			userId: id,
 			code,
 			type: 'recovery',
 		})

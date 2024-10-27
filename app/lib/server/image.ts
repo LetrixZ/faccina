@@ -6,8 +6,6 @@ import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 
-import { ProcessingQueue } from '../server/queue';
-
 export type ImageEncodingArgs = {
 	archive: { id: number; path: string };
 	page: number;
@@ -25,10 +23,10 @@ export type ImageDimensionsArgs = {
 export const calculateDimensions = async (args: ImageDimensionsArgs) => {
 	if (!args.dimensions) {
 		const image = await db
-			.selectFrom('archive_images')
+			.selectFrom('archiveImages')
 			.select('filename')
-			.where('archive_id', '=', args.archive.id)
-			.where('page_number', '=', args.page)
+			.where('archiveId', '=', args.archive.id)
+			.where('pageNumber', '=', args.page)
 			.executeTakeFirst();
 
 		if (!image) {
@@ -54,24 +52,22 @@ export const calculateDimensions = async (args: ImageDimensionsArgs) => {
 	}
 
 	await db
-		.updateTable('archive_images')
+		.updateTable('archiveImages')
 		.set({
 			width: args.dimensions.width,
 			height: args.dimensions.height,
 		})
-		.where('archive_id', '=', args.archive.id)
-		.where('page_number', '=', args.page)
+		.where('archiveId', '=', args.archive.id)
+		.where('pageNumber', '=', args.page)
 		.execute();
 };
 
-export const dimensionsQueue = new ProcessingQueue<ImageDimensionsArgs, void>(calculateDimensions);
-
 export const encodeImage = async (args: ImageEncodingArgs) => {
 	const image = await db
-		.selectFrom('archive_images')
+		.selectFrom('archiveImages')
 		.select(['filename', 'width', 'height'])
-		.where('archive_id', '=', args.archive.id)
-		.where('page_number', '=', args.page)
+		.where('archiveId', '=', args.archive.id)
+		.where('pageNumber', '=', args.page)
 		.executeTakeFirst();
 
 	if (!image) {
@@ -93,10 +89,10 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	const { width, height } = await pipeline.metadata();
 
 	await db
-		.updateTable('archive_images')
+		.updateTable('archiveImages')
 		.set({ width, height })
-		.where('archive_images.page_number', '=', args.page)
-		.where('archive_id', '=', args.archive.id)
+		.where('pageNumber', '=', args.page)
+		.where('archiveId', '=', args.archive.id)
 		.execute()
 		.catch((error) => console.error(`Failed to save image dimensions: ${error.message}`));
 
@@ -139,5 +135,3 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 	return newImage;
 };
-
-export const encodeQueue = new ProcessingQueue<ImageEncodingArgs, Promise<Buffer>>(encodeImage);

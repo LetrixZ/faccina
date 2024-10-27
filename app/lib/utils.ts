@@ -4,12 +4,15 @@ import { error } from '@sveltejs/kit';
 import { type ClassValue, clsx } from 'clsx';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+import { gunzipSync, strFromU8 } from 'fflate';
 import _slugify from 'slugify';
 import { cubicOut } from 'svelte/easing';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
 
-import { type ArchiveDetail, type Image, ImageSize, type Tag, TouchLayout } from './models';
+import type { Gallery, Image, Tag } from './types';
+
+import { ImageSize, TouchLayout } from './models';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -86,8 +89,11 @@ export const encodeURL = (url: string) => {
 	return encodeURI(url).replace(/#/g, '%23').replaceAll(/\+/g, '%2B');
 };
 
-export const generateFilename = (archive: ArchiveDetail) => {
-	const { artists, circles, magazines } = archive;
+export const generateFilename = (archive: Gallery) => {
+	const artists = archive.tags.filter((tag) => tag.namespace === 'artist');
+	const circles = archive.tags.filter((tag) => tag.namespace === 'circle');
+	const magazines = archive.tags.filter((tag) => tag.namespace === 'magazine');
+
 	const splits: string[] = [];
 
 	if (!circles?.length) {
@@ -192,33 +198,28 @@ export const randomString = () => {
 	return result;
 };
 
-export const getMetadata = (archive: ArchiveDetail) => {
+export const getMetadata = (gallery: Gallery) => {
+	const artists = gallery.tags.filter((tag) => tag.namespace === 'artist');
+	const circles = gallery.tags.filter((tag) => tag.namespace === 'circle');
+	const magazines = gallery.tags.filter((tag) => tag.namespace === 'magazine');
+	const events = gallery.tags.filter((tag) => tag.namespace === 'event');
+	const parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
+	const publishers = gallery.tags.filter((tag) => tag.namespace === 'publisher');
+
 	return {
-		Title: archive.title,
-		Description: archive.description ?? undefined,
-		Artist: archive.artists?.length
-			? archive.artists.map((artist) => artist.name)?.join(', ')
-			: undefined,
-		Groups: archive.circles?.length
-			? archive.circles.map((circle) => circle.name)?.join(', ')
-			: undefined,
-		Magazine: archive.magazines?.length
-			? archive.magazines.map((magazine) => magazine.name)?.join(', ')
-			: undefined,
-		Event: archive.events?.length
-			? archive.events.map((event) => event.name)?.join(', ')
-			: undefined,
-		Parody: archive.parodies?.length
-			? archive.parodies.map((parody) => parody.name)?.join(', ')
-			: undefined,
-		Publisher: archive.publishers?.length
-			? archive.publishers.map((publisher) => publisher.name).join(', ')
-			: undefined,
-		Pages: archive.pages,
-		Tags: archive.tags?.length ? archive.tags.map((tag) => tag.name) : undefined,
-		Source: `https://${location.hostname}/g/${archive.id}`,
-		Released: archive.released_at && new Date(archive.released_at).getTime() / 1000,
-		Thumbnail: archive.thumbnail - 1,
+		Title: gallery.title,
+		Description: gallery.description ?? undefined,
+		Artist: artists.length ? artists : undefined,
+		Groups: circles.length ? circles : undefined,
+		Magazine: magazines.length ? magazines : undefined,
+		Event: events.length ? events : undefined,
+		Parody: parodies.length ? parodies : undefined,
+		Publisher: publishers.length ? publishers : undefined,
+		Pages: gallery.pages,
+		Tags: gallery.tags?.length ? gallery.tags.map((tag) => tag.name) : undefined,
+		Source: `https://${location.hostname}/g/${gallery.id}`,
+		Released: gallery.releasedAt && new Date(gallery.releasedAt).getTime() / 1000,
+		Thumbnail: gallery.thumbnail - 1,
 	};
 };
 
@@ -262,10 +263,6 @@ export const handleFetchError = async <T>(res: Response) => {
 	} else {
 		return res.json() as T;
 	}
-};
-
-export const isTag = (tag: Tag): tag is Tag => {
-	return (tag as Tag).namespace !== undefined;
 };
 
 export const processTags = (tags: Tag[]) => {
@@ -343,4 +340,21 @@ export const slugify = (str: string) => {
 
 export const truncate = (str: string, max: number) => {
 	return str.substring(0, max - 1) + (str.length > max ? '&hellip;' : '');
+};
+
+export const isTag = (tag: Pick<Tag, 'namespace'>) =>
+	!['artist', 'circle', 'magazine', 'event', 'publisher', 'parody'].includes(tag.namespace);
+
+export const debounce = (callback: () => void, wait = 300) => {
+	let timeout: ReturnType<typeof setTimeout>;
+
+	return () => {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => callback(), wait);
+	};
+};
+
+export const decompressBlacklist = (compressed: string) => {
+	const data = JSON.parse(strFromU8(gunzipSync(new Uint8Array(Buffer.from(compressed, 'base64')))));
+	return z.array(z.string()).parse(data);
 };

@@ -1,12 +1,12 @@
 import { writable } from 'svelte/store';
 
-import type { ArchiveDetail } from './models';
+import type { Gallery } from './types';
 
 import { preferencesSchema, type ReaderPreferences } from './utils';
 
 export const showBar = writable(true);
 
-export const currentArchive = writable<ArchiveDetail | undefined>();
+export const currentArchive = writable<Gallery | undefined>();
 
 export const preferencesOpen = writable(false);
 export const previewLayout = writable(false);

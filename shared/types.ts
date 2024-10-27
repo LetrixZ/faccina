@@ -10,166 +10,91 @@ export type Generated<T> =
 		? ColumnType<S, I | undefined, U>
 		: ColumnType<T, T | undefined, T>;
 
-export interface ArchiveArtists {
-	archive_id: number;
-	artist_id: number;
-}
-
-export interface ArchiveCircles {
-	archive_id: number;
-	circle_id: number;
-}
-
-export interface ArchiveEvents {
-	archive_id: number;
-	event_id: number;
-}
-
 export interface ArchiveImages {
-	archive_id: number;
+	archiveId: number;
 	filename: string;
 	height: number | null;
-	page_number: number;
+	pageNumber: number;
 	width: number | null;
 }
 
-export interface ArchiveMagazines {
-	archive_id: number;
-	magazine_id: number;
-}
-
-export interface ArchiveParodies {
-	archive_id: number;
-	parody_id: number;
-}
-
-export interface ArchivePublishers {
-	archive_id: number;
-	publisher_id: number;
-}
-
 export interface Archives {
-	created_at: Generated<string>;
-	deleted_at: string | null;
+	createdAt: Generated<string>;
+	deletedAt: string | null;
 	description: string | null;
-	has_metadata: Generated<boolean | null>;
 	hash: string;
 	id: Generated<number>;
 	language: string | null;
 	pages: number;
 	path: string;
 	protected: Generated<boolean>;
-	released_at: string | null;
+	releasedAt: string | null;
 	size: number;
-	slug: string;
 	thumbnail: Generated<number>;
 	title: string;
-	updated_at: Generated<string>;
+	updatedAt: Generated<string>;
 }
 
 export interface ArchiveSources {
-	archive_id: number;
+	archiveId: number;
+	createdAt: Generated<string>;
 	name: string;
 	url: string | null;
 }
 
 export interface ArchiveTags {
-	archive_id: number;
-	namespace: string;
-	tag_id: number;
-}
-
-export interface Artists {
-	id: Generated<number>;
-	name: string;
-	slug: string;
-}
-
-export interface Circles {
-	id: Generated<number>;
-	name: string;
-	slug: string;
-}
-
-export interface Events {
-	id: Generated<number>;
-	name: string;
-	slug: string;
-}
-
-export interface Magazines {
-	id: Generated<number>;
-	name: string;
-	slug: string;
-}
-
-export interface Parodies {
-	id: Generated<number>;
-	name: string;
-	slug: string;
-}
-
-export interface Publishers {
-	id: Generated<number>;
-	name: string;
-	slug: string;
+	archiveId: number;
+	createdAt: Generated<string>;
+	tagId: number;
 }
 
 export interface Tags {
+	createdAt: Generated<string>;
+	displayName: string | null;
+	hidden: Generated<boolean>;
 	id: Generated<number>;
 	name: string;
-	slug: string;
+	namespace: string;
+	updatedAt: Generated<string>;
 }
 
 export interface UserCodes {
 	code: string;
-	consumed_at: string | null;
-	created_at: Generated<string>;
+	consumedAt: string | null;
+	createdAt: Generated<string>;
 	type: string;
-	user_id: string;
+	userId: string;
 }
 
 export interface UserFavorites {
-	archive_id: number;
-	created_at: Generated<string>;
-	user_id: string;
+	archiveId: number;
+	createdAt: Generated<string>;
+	userId: string;
 }
 
 export interface Users {
-	created_at: Generated<string>;
+	createdAt: Generated<string>;
 	email: string | null;
-	id: string | null;
-	password_hash: string;
-	updated_at: Generated<string>;
+	id: string;
+	passwordHash: string;
+	updatedAt: Generated<string>;
 	username: string;
 }
 
 export interface UserSessions {
-	expires_at: string;
+	expiresAt: string;
 	id: string | null;
-	user_id: string;
+	userId: string;
 }
 
 export interface DB {
-	archive_artists: ArchiveArtists;
-	archive_circles: ArchiveCircles;
-	archive_events: ArchiveEvents;
-	archive_images: ArchiveImages;
-	archive_magazines: ArchiveMagazines;
-	archive_parodies: ArchiveParodies;
-	archive_publishers: ArchivePublishers;
-	archive_sources: ArchiveSources;
-	archive_tags: ArchiveTags;
+	archiveImages: ArchiveImages;
 	archives: Archives;
-	artists: Artists;
-	circles: Circles;
-	events: Events;
-	magazines: Magazines;
-	parodies: Parodies;
-	publishers: Publishers;
+	archiveSources: ArchiveSources;
+	archiveTags: ArchiveTags;
 	tags: Tags;
-	user_codes: UserCodes;
-	user_favorites: UserFavorites;
-	user_sessions: UserSessions;
+	userCodes: UserCodes;
+	userFavorites: UserFavorites;
 	users: Users;
+	userSessions: UserSessions;
 }

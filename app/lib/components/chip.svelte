@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { type Tag, type TagType } from '$lib/models';
 	import { cn, encodeURL } from '$lib/utils';
+
+	import type { Tag, TagNamespace } from '../types';
 
 	import { Button } from './ui/button';
 
 	export let tag: Tag;
-	export let type: TagType;
+	export let type: TagNamespace;
 
 	const classes = (() => {
 		switch (type) {
@@ -26,20 +27,22 @@
 		}
 	})();
 
+	$: namespace = ['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(
+		tag.namespace
+	)
+		? null
+		: tag.namespace;
+
 	$: label = (() => {
-		if (type === 'tag' && 'namespace' in tag && tag.namespace?.length) {
-			return `${tag.namespace}:${tag.name}`;
+		if (namespace) {
+			return `${namespace}:${tag.displayName ?? tag.name}`;
 		} else {
-			return tag.name;
+			return tag.displayName ?? tag.name;
 		}
 	})();
 
 	$: url = (() => {
-		if (type === 'tag' && 'namespace' in tag && tag.namespace?.length) {
-			return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
-		} else {
-			return `/?q=${type}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
-		}
+		return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
 	})();
 </script>
 

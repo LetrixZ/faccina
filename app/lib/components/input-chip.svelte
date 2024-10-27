@@ -9,6 +9,7 @@
 	export let chips: string[] = [];
 	export let id: string | undefined = undefined;
 	export let tags: string[] = [];
+	export let placeholder: string | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{ update: string[] }>();
 
@@ -24,13 +25,23 @@
 	};
 
 	const submit = () => {
-		const exists = chips.find((chip) => slugify(chip) === slugify(input));
+		if (!input.length) {
+			return;
+		}
+
+		const exists = chips.find((chip) => chip === input);
 
 		if (exists) {
 			return;
 		}
 
-		chips = [...chips, input];
+		let aux = input;
+
+		if (aux.split(':').length === 1) {
+			aux = `tag:${aux}`;
+		}
+
+		chips = [...chips, aux];
 		popoverOpen = false;
 		dispatch('update', chips);
 		input = '';
@@ -82,6 +93,7 @@
 		}
 
 		chips = [...chips, tag];
+		highligtedIndex = -1;
 		popoverOpen = false;
 		dispatch('update', chips);
 		input = '';
@@ -204,10 +216,11 @@
 						selectPosition = inputEl.selectionStart ?? -1;
 					}, 1);
 				}}
+				{placeholder}
 			/>
 		</div>
 
-		<Popover.Content align="start" class="grid p-0">
+		<Popover.Content align="start" class="grid w-fit p-0">
 			{#each filteredTags as tag, i}
 				<Button
 					class={cn('justify-start', i === highligtedIndex && 'underline')}

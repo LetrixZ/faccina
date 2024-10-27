@@ -1,5 +1,11 @@
 import { Database } from 'bun:sqlite';
-import { type Dialect, Kysely, ParseJSONResultsPlugin, PostgresDialect } from 'kysely';
+import {
+	CamelCasePlugin,
+	type Dialect,
+	Kysely,
+	ParseJSONResultsPlugin,
+	PostgresDialect,
+} from 'kysely';
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
 import { Pool } from 'pg';
 
@@ -25,7 +31,7 @@ if (!dialect) {
 
 const db = new Kysely<DB>({
 	dialect,
-	plugins: [new ParseJSONResultsPlugin()],
+	plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()],
 });
 
 await migrations(db);

@@ -24,7 +24,7 @@ type ImageEncode = { filename: string; pageNumber: number; savePath: string; pre
 
 type ArchiveEncode = { id: number; path: string; images: ImageEncode[] };
 
-export const generate = async (options: GenerateImagesOptions) => {
+export const generateImages = async (options: GenerateImagesOptions) => {
 	const parsed = parseIdRanges(options.ids);
 
 	const start = performance.now();

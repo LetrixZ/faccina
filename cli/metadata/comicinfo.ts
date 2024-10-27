@@ -1,13 +1,11 @@
-import capitalize from 'capitalize';
 import dayjs from 'dayjs';
 import arraySupport from 'dayjs/plugin/arraySupport';
-import slugify from 'slugify';
 import { parseStringSync } from 'xml2js';
 import { z } from 'zod';
 
 import config from '../../shared/config';
-import { type Archive } from '../../shared/metadata';
-import { parseFilename, parseSourceName } from './utils';
+import { ArchiveMetadata } from '../../shared/metadata';
+import { parseFilename } from './utils';
 
 dayjs.extend(arraySupport);
 
@@ -49,60 +47,47 @@ const metadataSchema = z
 		})(),
 	}));
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = parseStringSync(content, { explicitArray: false });
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse ComicInfo metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = parseStringSync(content, { explicitArray: false });
-	const metadata = metadataSchema.safeParse(parsed);
-
-	if (!metadata.success) {
-		console.error(metadata.error);
-
-		throw new Error('Failed to parse ComicInfo metadata');
-	}
-
 	if (config.metadata?.parseFilenameAsTitle) {
-		archive.title = parseFilename(metadata.data.Title)[0] ?? metadata.data.Title;
+		archive.title = parseFilename(data.Title)[0] ?? data.Title;
 	} else {
-		archive.title = metadata.data.Title;
+		archive.title = data.Title;
 	}
 
-	archive.slug = slugify(archive.title, { lower: true, strict: true });
-	archive.language = isoTable.find((lang) => lang.code === metadata.data.LanguageISO)?.language;
-	archive.released_at = metadata.data.Released;
+	archive.language = isoTable.find((lang) => lang.code === data.LanguageISO)?.language;
+	archive.releasedAt = data.Released;
 
-	if (metadata.data.Writer?.length) {
-		const circles = metadata.data.Writer.filter((val) => val.includes(' (Circle)'));
-		const artists = metadata.data.Writer.filter((val) => !circles.includes(val));
+	archive.tags = [];
 
-		archive.artists = artists.map((tag) =>
-			config.metadata.capitalizeTags ? capitalize.words(tag) : tag
+	if (data.Writer) {
+		const circles = data.Writer.filter((val) => val.includes(' (Circle)'));
+		const artists = data.Writer.filter((val) => !circles.includes(val));
+
+		archive.tags.push(...artists.map((tag) => ({ namespace: 'artist', name: tag })));
+		archive.tags.push(
+			...circles.map((tag) => ({ namespace: 'circle', name: tag.replace(' (Circle)', '') }))
 		);
-		archive.circles = circles
-			.map((tag) => tag.replace(' (Circle)', ''))
-			.map((tag) => (config.metadata.capitalizeTags ? capitalize.words(tag) : tag));
 	}
 
-	if (metadata.data.Tags?.length) {
-		archive.tags = metadata.data.Tags.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, ''] as [string, string]
-		);
+	if (data.Tags) {
+		archive.tags.push(...data.Tags.map((tag) => ({ namespace: 'tag', name: tag })));
 	}
 
 	const sources = new Set<string>();
 
-	metadata.data.Notes?.forEach((source) => sources.add(source));
-	metadata.data.Web?.forEach((url) => sources.add(url));
+	data.Notes?.forEach((source) => sources.add(source));
+	data.Web?.forEach((url) => sources.add(url));
 
-	if (sources.size) {
-		archive.sources = Array.from(sources.values()).map((url) => ({
-			name: parseSourceName(url),
-			url,
-		}));
-	}
-
-	archive.has_metadata = true;
+	archive.sources = Array.from(sources.values()).map((url) => ({ url }));
 
 	return archive;
 };

@@ -3,10 +3,12 @@ import { randomBytes } from 'crypto';
 import { generateIdFromEntropySize } from 'lucia';
 
 import config from '../shared/config';
-import db from '../shared/db';
+import { now } from '../shared/db/helpers';
 import { recoveryCode, sendRecoveryEmail } from '../shared/users';
 
-export const loginLink = async (username: string) => {
+export const generateLoginLink = async (username: string) => {
+	const db = (await import('../shared/db')).default;
+
 	let user = await db
 		.selectFrom('users')
 		.select('id')
@@ -22,7 +24,7 @@ export const loginLink = async (username: string) => {
 				.values({
 					id: generateIdFromEntropySize(10),
 					username,
-					password_hash: Bun.password.hashSync(randomBytes(24).toString('hex')),
+					passwordHash: Bun.password.hashSync(randomBytes(24).toString('hex')),
 				})
 				.returning('id')
 				.executeTakeFirstOrThrow();
@@ -34,17 +36,17 @@ export const loginLink = async (username: string) => {
 	const code = randomBytes(16).toString('hex');
 
 	await db
-		.updateTable('user_codes')
-		.set({ consumed_at: new Date().toISOString() })
-		.where('user_id', '=', user.id)
-		.where('consumed_at', 'is', null)
+		.updateTable('userCodes')
+		.set({ consumedAt: now() })
+		.where('userId', '=', user.id)
+		.where('consumedAt', 'is', null)
 		.where('type', '=', 'login')
 		.execute();
 
 	await db
-		.insertInto('user_codes')
+		.insertInto('userCodes')
 		.values({
-			user_id: user.id,
+			userId: user.id,
 			code,
 			type: 'login',
 		})
@@ -57,10 +59,12 @@ export const loginLink = async (username: string) => {
 	);
 };
 
-export const accessRecovery = async (username: string, codeOnly: boolean) => {
+export const recoverAccess = async (username: string, codeOnly: boolean) => {
 	if (!config.site.enableUsers) {
 		throw new Error('Users are disabled');
 	}
+
+	const db = (await import('../shared/db')).default;
 
 	const user = await db
 		.selectFrom('users')

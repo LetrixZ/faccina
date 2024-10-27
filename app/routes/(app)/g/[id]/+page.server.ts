@@ -1,16 +1,14 @@
-import type { ArchiveDetail } from '$lib/models';
-
-import { editArchiveSchema, editTaxonomySchema } from '$lib/schemas';
-import { get } from '$lib/server/db/queries';
+import { editArchiveSchema, editTagsSchema } from '$lib/schemas';
+import { getArchive, getGallery } from '$lib/server/db/queries';
 import { error, fail } from '@sveltejs/kit';
-import { upsertSources, upsertTags, upsertTaxonomy } from '~shared/archive';
+import { upsertSources, upsertTags } from '~shared/archive';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
-import { taxonomyTables } from '~shared/taxonomy';
 import dayjs from 'dayjs';
-import * as R from 'ramda';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
+
+import type { Archive } from '~/lib/types';
 
 import type { Actions, PageServerLoad } from './$types';
 
@@ -21,9 +19,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(400, { message: 'Invalid ID', status: 400 });
 	}
 
-	const archive = await get(id, !!locals.user?.admin);
+	const gallery = await getGallery(id, { showHidden: !!locals.user?.admin });
 
-	if (!archive) {
+	if (!gallery) {
 		throw error(404, { message: 'Not found', status: 404 });
 	}
 
@@ -31,52 +29,42 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	if (locals.user) {
 		isFavorite = !!(await db
-			.selectFrom('user_favorites')
-			.select('user_id')
-			.where('archive_id', '=', archive.id)
-			.where('user_id', '=', locals.user.id)
+			.selectFrom('userFavorites')
+			.select('userId')
+			.where('archiveId', '=', gallery.id)
+			.where('userId', '=', locals.user.id)
 			.executeTakeFirst());
 	}
 
+	let archive: Archive | undefined = undefined;
+
+	if (locals.user?.admin) {
+		archive = await getArchive(id);
+	}
+
 	return {
-		archive: locals.user?.admin
-			? archive
-			: (R.omit(['path', 'has_metadata'], archive) satisfies ArchiveDetail),
+		gallery,
+		archive,
 		isFavorite,
-		editForm: locals.user?.admin
+		editForm: archive
 			? await superValidate(
 					{
 						title: archive.title,
-						slug: archive.slug,
 						description: archive.description ?? undefined,
 						pages: archive.pages,
 						thumbnail: archive.thumbnail,
 						language: archive.language ?? undefined,
-						releasedAt: archive.released_at
-							? dayjs(archive.released_at).format('YYYY-MM-DD[T]HH:mm')
+						releasedAt: archive.releasedAt
+							? dayjs(archive.releasedAt).format('YYYY-MM-DD[T]HH:mm')
 							: undefined,
-						hasMetadata: archive.has_metadata!,
 						sources: archive.sources.map(({ name, url }) => ({ name, url: url ?? undefined })),
 						protected: !!archive.protected,
 					},
 					zod(editArchiveSchema)
 				)
 			: undefined,
-		editTaxonomyForm: locals.user?.admin
-			? await superValidate(
-					{
-						artists: archive.artists.map((tag) => tag.name),
-						circles: archive.circles.map((tag) => tag.name),
-						magazines: archive.magazines.map((tag) => tag.name),
-						events: archive.events.map((tag) => tag.name),
-						publishers: archive.publishers.map((tag) => tag.name),
-						parodies: archive.parodies.map((tag) => tag.name),
-						tags: archive.tags.map((tag) =>
-							tag.namespace?.length ? `${tag.namespace}:${tag.name}` : tag.name
-						),
-					},
-					zod(editTaxonomySchema)
-				)
+		editTagsForm: archive
+			? await superValidate({ tags: archive.tags }, zod(editTagsSchema))
 			: undefined,
 	};
 };
@@ -90,10 +78,10 @@ export const actions = {
 		}
 
 		await db
-			.insertInto('user_favorites')
+			.insertInto('userFavorites')
 			.values({
-				user_id: event.locals.user.id,
-				archive_id: parseInt(event.params.id),
+				userId: event.locals.user.id,
+				archiveId: parseInt(event.params.id),
 			})
 			.execute();
 	},
@@ -105,9 +93,9 @@ export const actions = {
 		}
 
 		await db
-			.deleteFrom('user_favorites')
-			.where('user_id', '=', event.locals.user.id)
-			.where('archive_id', '=', parseInt(event.params.id))
+			.deleteFrom('userFavorites')
+			.where('userId', '=', event.locals.user.id)
+			.where('archiveId', '=', parseInt(event.params.id))
 			.execute();
 	},
 	hide: async (event) => {
@@ -121,9 +109,7 @@ export const actions = {
 
 		await db
 			.updateTable('archives')
-			.set({
-				deleted_at: new Date().toISOString(),
-			})
+			.set({ deletedAt: now() })
 			.where('id', '=', parseInt(id))
 			.execute();
 	},
@@ -139,7 +125,7 @@ export const actions = {
 		await db
 			.updateTable('archives')
 			.set({
-				deleted_at: null,
+				deletedAt: null,
 			})
 			.where('id', '=', parseInt(id))
 			.execute();
@@ -153,6 +139,16 @@ export const actions = {
 
 		const { id } = event.params;
 
+		const archive = await db
+			.selectFrom('archives')
+			.select('id')
+			.where('id', '=', parseInt(id))
+			.executeTakeFirst();
+
+		if (!archive) {
+			return fail(404);
+		}
+
 		const form = await superValidate(event, zod(editArchiveSchema));
 
 		if (!form.valid) {
@@ -163,7 +159,6 @@ export const actions = {
 
 		const {
 			title,
-			slug,
 			description,
 			thumbnail,
 			releasedAt,
@@ -171,20 +166,17 @@ export const actions = {
 			protected: isProtected,
 		} = form.data;
 
-		console.log('x', isProtected);
-
 		await db
 			.updateTable('archives')
 			.set({
 				title,
-				slug,
 				description,
 				thumbnail,
-				released_at: dayjs(releasedAt).toISOString(),
+				releasedAt: dayjs(releasedAt).toISOString(),
 				protected: isProtected,
-				updated_at: now(),
+				updatedAt: now(),
 			})
-			.where('id', '=', parseInt(id))
+			.where('id', '=', archive.id)
 			.execute();
 
 		await upsertSources(
@@ -196,7 +188,7 @@ export const actions = {
 			form,
 		};
 	},
-	editTaxonomy: async (event) => {
+	editTags: async (event) => {
 		const admin = event.locals.user?.admin;
 
 		if (!admin) {
@@ -205,7 +197,17 @@ export const actions = {
 
 		const { id } = event.params;
 
-		const form = await superValidate(event, zod(editTaxonomySchema));
+		const archive = await db
+			.selectFrom('archives')
+			.select('id')
+			.where('id', '=', parseInt(id))
+			.executeTakeFirst();
+
+		if (!archive) {
+			return fail(404);
+		}
+
+		const form = await superValidate(event, zod(editTagsSchema));
 
 		if (!form.valid) {
 			return fail(400, {
@@ -215,34 +217,7 @@ export const actions = {
 
 		const { tags } = form.data;
 
-		for (const { relationId, relationTable, referenceTable } of taxonomyTables) {
-			if (
-				referenceTable === 'tags' ||
-				relationTable === 'archive_tags' ||
-				relationId === 'tag_id'
-			) {
-				await upsertTags(
-					parseInt(id),
-					tags.map((tag) => {
-						const [namespace, name] = tag.split(':');
-
-						if (!name || name.startsWith(' ')) {
-							return [namespace, ''];
-						} else {
-							return [name, namespace];
-						}
-					})
-				);
-			} else {
-				await upsertTaxonomy(
-					parseInt(id),
-					form.data[referenceTable],
-					referenceTable,
-					relationTable,
-					relationId
-				);
-			}
-		}
+		await upsertTags(archive.id, tags);
 
 		return {
 			form,

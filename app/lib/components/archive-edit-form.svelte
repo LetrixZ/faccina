@@ -10,7 +10,7 @@
 	import { type Infer, intProxy, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 
-	import type { ArchiveDetail } from '../models';
+	import type { Archive } from '../types';
 
 	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
 	import { cn } from '../utils';
@@ -21,7 +21,7 @@
 	import { Textarea } from './ui/textarea';
 
 	export let data: SuperValidated<Infer<EditArchiveSchema>>;
-	export let archive: ArchiveDetail;
+	export let archive: Archive;
 
 	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
 

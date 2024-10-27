@@ -47,6 +47,7 @@
 	let isFocused = false;
 	let popoverOpen = false;
 	let negate = false;
+	let or = false;
 
 	$: filteredTags = $query.trim().length
 		? (() => {
@@ -73,25 +74,23 @@
 					value = '';
 				}
 
-				if (!value.trim().length || value === '-') {
+				if (!value.trim().length || value === '-' || value === '~') {
 					return [];
 				}
 
 				negate = value[0] === '-';
+				or = value[0] === '~';
 
-				if (negate) {
+				if (negate || or) {
 					value = value.substring(1);
 				}
 
-				return data.taxonomies
-					.filter(({ name, slug, type }) => {
+				return data.tags
+					.filter(({ namespace, name, displayName }) => {
 						return (
-							`${type}:${name}`.toLowerCase().includes(value) ||
-							`${type}:${slug}`.toLowerCase().includes(value) ||
-							`${type}:${slug.replaceAll('-', '_')}`.toLowerCase().includes(value) ||
-							`${type}:"${name}"`.toLowerCase().includes(value) ||
-							`${type}:"${slug}"`.toLowerCase().includes(value) ||
-							`${type}:"${slug.replaceAll('-', '_')}"`.toLowerCase().includes(value)
+							`${namespace}:${name}`.toLowerCase().includes(value) ||
+							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
+							displayName?.toLowerCase().includes(value)
 						);
 					})
 					.slice(0, 5);
@@ -135,10 +134,12 @@
 		}
 
 		let tagValue =
-			`${tag.type}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name} `.toLowerCase();
+			`${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name} `.toLowerCase();
 
 		if (negate) {
 			tagValue = '-' + tagValue;
+		} else if (or) {
+			tagValue = '~' + tagValue;
 		}
 
 		value = $query.substring(0, wordStart) + tagValue + $query.substring(wordEnd).trimStart();
@@ -158,15 +159,6 @@
 		}
 	};
 </script>
-
-<svelte:window
-	on:keydown={(ev) => {
-		if (ev.key === '/' && !isFocused) {
-			inputEl.focus();
-			ev.preventDefault();
-		}
-	}}
-/>
 
 <svelte:head>
 	<title>{data.site.name}</title>
@@ -272,7 +264,7 @@
 							selectPosition = inputEl.selectionStart ?? -1;
 						}, 1);
 					}}
-					placeholder="tag:comedy vanilla"
+					placeholder={data.site.searchPlaceholder}
 					type="search"
 				/>
 
@@ -297,7 +289,7 @@
 			<Popover.Content align="start" class="grid w-fit p-0">
 				{#each filteredTags as tag, i}
 					{@const value =
-						`${tag.type}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
+						`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
 
 					<Button
 						class={cn('justify-start', i === highligtedIndex && 'underline')}

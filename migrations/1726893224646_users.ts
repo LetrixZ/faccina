@@ -5,7 +5,7 @@ import { now } from '../shared/db/helpers';
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema
 		.createTable('users')
-		.addColumn('id', 'text', (col) => col.primaryKey())
+		.addColumn('id', 'text', (col) => col.notNull().primaryKey())
 		.addColumn('username', 'varchar', (col) => col.unique().notNull())
 		.addColumn('password_hash', 'text', (col) => col.notNull())
 		.addColumn('email', 'text')

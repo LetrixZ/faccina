@@ -1,10 +1,38 @@
 import camelcaseKeys from 'camelcase-keys';
-import TOML from 'toml';
+import { parseTOML } from 'confbox';
 import { z } from 'zod';
 
 const camelize = <T extends Record<string, unknown> | ReadonlyArray<Record<string, unknown>>>(
 	val: T
 ) => camelcaseKeys(val);
+
+const stringOrStringArray = z
+	.union([z.string(), z.array(z.string())])
+	.transform((val) => (typeof val === 'string' ? [val] : val));
+
+const tagWeightSchema = z
+	.object({
+		name: stringOrStringArray,
+		namespace: z.string().optional(),
+		weight: z.number(),
+		ignore_case: z.boolean().default(false).optional(),
+	})
+	.transform(camelize);
+
+const tagExcludeSchema = z
+	.object({
+		name: stringOrStringArray,
+		namespace: z.string().optional(),
+		ignore_case: z.boolean().default(false).optional(),
+	})
+	.transform(camelize);
+
+const listingSchema = z
+	.object({
+		tag_weight: z.array(tagWeightSchema).default([]),
+		tag_exclude: z.array(tagExcludeSchema).default([]),
+	})
+	.transform(camelize);
 
 const siteSchema = z
 	.object({
@@ -15,6 +43,8 @@ const siteSchema = z
 		default_sort: z.enum(['released_at', 'created_at', 'title', 'pages']).default('released_at'),
 		default_order: z.enum(['asc', 'desc']).default('desc'),
 		guest_downloads: z.boolean().default(true),
+		gallery_listing: listingSchema.default({}),
+		search_placeholder: z.string().default(''),
 	})
 	.transform(camelize);
 
@@ -22,22 +52,6 @@ const directoriesSchema = z.object({
 	content: z.string(),
 	images: z.string(),
 });
-
-z.discriminatedUnion('vendor', [
-	z.object({
-		vendor: z.literal('sqlite'),
-		path: z.string(),
-		apply_optimizations: z.boolean().default(true),
-	}),
-	z.object({
-		vendor: z.literal('postgresql'),
-		host: z.string(),
-		port: z.number(),
-		database: z.string(),
-		username: z.string(),
-		password: z.string(),
-	}),
-]).transform(camelize);
 
 const databaseSchema = z
 	.discriminatedUnion('vendor', [
@@ -57,10 +71,61 @@ const databaseSchema = z
 	])
 	.transform(camelize);
 
+const tagMappingSchema = z
+	.object({
+		match: stringOrStringArray,
+		match_namespace: z.string().optional(),
+		namespace: z.string().optional(),
+		name: z.string().optional(),
+		ignore_case: z.boolean().default(false).optional(),
+	})
+	.transform(camelize);
+
+const sourceMappingSchema = z
+	.object({
+		match: z.string(),
+		name: z.string(),
+		ignore_case: z.boolean().default(false).optional(),
+	})
+	.transform(camelize);
+
+type SourceMapping = z.infer<typeof sourceMappingSchema>;
+
+const defaultSourceMappings: SourceMapping[] = [
+	{ match: 'anchira', name: 'Anchira', ignoreCase: true },
+	{ match: 'e-hentai', name: 'E-Hentai', ignoreCase: true },
+	{ match: 'exhentai', name: 'ExHentai', ignoreCase: true },
+	{ match: 'fakku', name: 'FAKKU', ignoreCase: true },
+	{ match: 'irodori', name: 'Irodori Comics', ignoreCase: true },
+	{ match: 'koharu', name: 'Koharu', ignoreCase: true },
+	{ match: 'hentainexus', name: 'HentaiNexus', ignoreCase: true },
+	{ match: 'hentai-nexus', name: 'HentaiNexus', ignoreCase: true },
+	{ match: 'hentag', name: 'HenTag', ignoreCase: true },
+	{ match: 'patreon', name: 'Patreon', ignoreCase: true },
+	{ match: 'pixiv', name: 'Pixiv', ignoreCase: true },
+	{ match: 'projecth', name: 'Project Hentai', ignoreCase: true },
+	{ match: 'projectxxx', name: 'Project Hentai', ignoreCase: true },
+	{ match: 'project-xxx', name: 'Project Hentai', ignoreCase: true },
+	{ match: 'schale', name: 'Koharu', ignoreCase: true },
+];
+
 const metadataSchema = z
 	.object({
 		parse_filename_as_title: z.boolean().default(true),
-		capitalize_tags: z.boolean().default(false),
+		tag_mapping: z.array(tagMappingSchema).default([]),
+		source_mapping: z
+			.array(sourceMappingSchema)
+			.default([])
+			.transform((val) =>
+				val.concat(defaultSourceMappings).reduce((sources, source) => {
+					const existingSource = sources.find((s) => s.match === source.match);
+
+					if (existingSource) {
+						return sources;
+					}
+					return [...sources, source];
+				}, [] as SourceMapping[])
+			),
 	})
 	.transform(camelize);
 
@@ -100,9 +165,6 @@ const presetSchema = z
 	])
 	.transform(camelize)
 	.and(z.object({ width: z.number() }));
-
-export type _Preset = z.infer<typeof presetSchema>;
-export type Preset = _Preset & { name: string };
 
 const imageSchema = z
 	.object({
@@ -215,7 +277,9 @@ export default await (async () => {
 
 	const content = await file.text();
 
-	return configSchema.parse(TOML.parse(content));
+	return configSchema.parse(parseTOML(content));
 })();
 
+export type _Preset = z.infer<typeof imageSchema>;
+export type Preset = _Preset & { name: string };
 export type DatabaseVendor = z.infer<typeof databaseSchema>['vendor'];

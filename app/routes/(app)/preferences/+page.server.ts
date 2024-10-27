@@ -1,53 +1,49 @@
-import db from '~shared/db';
+import chalk from 'chalk';
+import { gzipSync, strToU8 } from 'fflate';
+import { z } from 'zod';
 
-export const load = async () => {
-	const artists = await db
-		.selectFrom('artists')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
+import { tagList } from '~/lib/server/db/queries';
+import { decompressBlacklist } from '~/lib/utils';
 
-	const circles = await db
-		.selectFrom('circles')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
+export const load = async ({ cookies }) => {
+	const blacklist = (() => {
+		const compressed = cookies.get('blacklist')?.toString();
 
-	const magazines = await db
-		.selectFrom('magazines')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
+		if (!compressed) {
+			return [];
+		}
 
-	const events = await db
-		.selectFrom('events')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
+		try {
+			return decompressBlacklist(compressed);
+		} catch (err) {
+			console.error(
+				chalk.red(
+					`[${new Date().toISOString()}] ${chalk.blue``} ${chalk.blue`preferences`} - Failed to get blacklist from cookie\n`
+				),
+				err
+			);
 
-	const publishers = await db
-		.selectFrom('publishers')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
+			return [];
+		}
+	})();
 
-	const parodies = await db
-		.selectFrom('parodies')
-		.select(['id', 'slug', 'name'])
-		.orderBy('name')
-		.execute();
+	return { tags: await tagList(), blacklist };
+};
 
-	const tags = await db.selectFrom('tags').select(['id', 'slug', 'name']).orderBy('name').execute();
+export const actions = {
+	saveBlacklist: async ({ request, cookies }) => {
+		const data = await request.formData();
+		const blacklist = JSON.parse(data.get('blacklist')?.toString() ?? '[]');
 
-	return {
-		taxonomies: {
-			artists,
-			circles,
-			magazines,
-			events,
-			publishers,
-			parodies,
-			tags,
-		},
-	};
+		const parsed = z.array(z.string()).parse(blacklist);
+
+		cookies.set(
+			'blacklist',
+			Buffer.from(gzipSync(strToU8(JSON.stringify(parsed)))).toString('base64'),
+			{
+				path: '/',
+				maxAge: 31556952,
+			}
+		);
+	},
 };

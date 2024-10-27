@@ -71,7 +71,7 @@ export const actions: Actions = {
 			.values({
 				id: userId,
 				username: username,
-				password_hash: passwordHash,
+				passwordHash: passwordHash,
 				email,
 			})
 			.execute();

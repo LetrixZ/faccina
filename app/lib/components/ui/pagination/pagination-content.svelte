@@ -8,6 +8,6 @@
 	export { className as class };
 </script>
 
-<ul class={cn('flex flex-row items-center gap-1', className)} {...$$restProps}>
+<ul class={cn('flex w-full flex-row items-center gap-1', className)} {...$$restProps}>
 	<slot />
 </ul>

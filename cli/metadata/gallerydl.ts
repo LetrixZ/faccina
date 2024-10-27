@@ -1,12 +1,9 @@
-import capitalize from 'capitalize';
 import dayjs from 'dayjs';
-import slugify from 'slugify';
-import YAML from 'yaml';
 import { z } from 'zod';
 
 import config from '../../shared/config';
-import { type Archive } from '../../shared/metadata';
-import { parseFilename, parseSourceName } from './utils';
+import { ArchiveMetadata } from '../../shared/metadata';
+import { parseFilename } from './utils';
 
 const metadataSchema = z.object({
 	title: z.string(),
@@ -18,116 +15,52 @@ const metadataSchema = z.object({
 	gallery_token: z.string().optional(),
 });
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = JSON.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse Gallery-DL metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
-
-	if (!metadata.success) {
-		console.error(metadata.error);
-
-		throw new Error('Failed to parse Gallery-DL metadata');
-	}
-
 	if (config.metadata?.parseFilenameAsTitle) {
-		archive.title = parseFilename(metadata.data.title)[0] ?? metadata.data.title;
+		archive.title = parseFilename(data.title)[0] ?? data.title;
 	} else {
-		archive.title = metadata.data.title;
+		archive.title = data.title;
 	}
 
-	archive.slug = slugify(archive.title, { lower: true, strict: true });
-	archive.language = metadata.data.language;
-	archive.released_at = metadata.data.date
-		? dayjs(metadata.data.date, 'YYYY-M-D HH:mm:ss').toDate()
-		: undefined;
+	archive.language = data.language;
+	archive.releasedAt = data.date ? dayjs(data.date, 'YYYY-M-D HH:mm:ss').toDate() : undefined;
 
-	if (metadata.data.tags) {
-		const artists: string[] = [];
-		const circles: string[] = [];
-		const parodies: string[] = [];
-		const tags: [string, string][] = [];
+	if (data.tags) {
+		archive.tags = [];
 
-		for (const tag of metadata.data.tags) {
+		for (const tag of data.tags) {
 			const [namespace, name] = tag.split(':');
 
 			if (namespace === 'language') {
 				continue;
 			}
 
-			if (!name) {
-				tags.push([
-					config.metadata.capitalizeTags ? capitalize.words(namespace) : namespace,
-					'misc',
-				] as [string, string]);
-
-				continue;
-			}
-
-			switch (namespace) {
-				case 'artist':
-					artists.push(
-						config.metadata.capitalizeTags
-							? config.metadata.capitalizeTags
-								? capitalize.words(name)
-								: name
-							: name
-					);
-					break;
-				case 'group':
-					circles.push(config.metadata.capitalizeTags ? capitalize.words(name) : name);
-					break;
-				case 'parody':
-					parodies.push(config.metadata.capitalizeTags ? capitalize.words(name) : name);
-					break;
-				case 'male':
-				case 'female':
-					tags.push([config.metadata.capitalizeTags ? capitalize.words(name) : name, namespace] as [
-						string,
-						string,
-					]);
-					break;
-				case 'other':
-				default:
-					tags.push([config.metadata.capitalizeTags ? capitalize.words(name) : name, 'misc'] as [
-						string,
-						string,
-					]);
-					break;
-			}
-		}
-
-		if (artists.length) {
-			archive.artists = artists;
-		}
-
-		if (circles.length) {
-			archive.circles = circles;
-		}
-
-		if (parodies.length) {
-			archive.parodies = parodies;
-		}
-
-		if (tags.length > 0) {
-			archive.tags = tags;
+			archive.tags.push({
+				namespace: name ? (namespace === 'other' ? 'misc' : namespace) : 'misc',
+				name,
+			});
 		}
 	}
 
-	if (metadata.data.category) {
-		if (metadata.data.category === 'e-hentai' || metadata.data.category === 'exhentai') {
-			const url = `https://${metadata.data.category}/g/${metadata.data.gallery_id}/${metadata.data.gallery_token}`;
+	if (data.category && (data.category === 'e-hentai' || data.category === 'exhentai')) {
+		const url = `https://${data.category}/g/${data.gallery_id}/${data.gallery_token}`;
 
-			archive.sources = [
-				{
-					name: parseSourceName(url),
-					url,
-				},
-			];
-		}
+		archive.sources = [
+			{
+				name: data.category,
+				url,
+			},
+		];
 	}
-
-	archive.has_metadata = true;
 
 	return archive;
 };

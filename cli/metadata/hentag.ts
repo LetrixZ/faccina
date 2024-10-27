@@ -1,11 +1,8 @@
-import capitalize from 'capitalize';
-import slugify from 'slugify';
-import YAML from 'yaml';
 import { z } from 'zod';
 
 import config from '../../shared/config';
-import { type Archive, type Source } from '../../shared/metadata';
-import { parseFilename, parseSourceName } from './utils';
+import { ArchiveMetadata } from '../../shared/metadata';
+import { parseFilename } from './utils';
 
 const metadataSchema = z.object({
 	title: z.string(),
@@ -22,90 +19,75 @@ const metadataSchema = z.object({
 	locations: z.array(z.string()).optional(),
 });
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = JSON.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse HenTag metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
-
-	if (!metadata.success) {
-		console.error(metadata.error);
-
-		throw new Error('Failed to parse HenTag metadata');
-	}
-
 	if (config.metadata?.parseFilenameAsTitle) {
-		archive.title = parseFilename(metadata.data.title)[0] ?? metadata.data.title;
+		archive.title = parseFilename(data.title)[0] ?? data.title;
 	} else {
-		archive.title = metadata.data.title;
+		archive.title = data.title;
 	}
 
-	archive.slug = slugify(archive.title, { lower: true, strict: true });
-	archive.language = metadata.data.language;
-	archive.released_at = (() => {
-		if (metadata.data.publishedOn) {
-			return new Date(metadata.data.publishedOn);
+	archive.language = data.language;
+	archive.releasedAt = (() => {
+		if (data.publishedOn) {
+			return new Date(data.publishedOn);
 		}
 
-		if (metadata.data.createdAt) {
-			return new Date(metadata.data.createdAt);
+		if (data.createdAt) {
+			return new Date(data.createdAt);
 		}
 
 		return undefined;
 	})();
 
-	archive.artists = metadata.data.artists?.map((artist) => capitalize.words(artist));
-	archive.circles = metadata.data.circles?.map((circle) => capitalize.words(circle));
-	archive.parodies = metadata.data.parodies?.map((parody) => capitalize.words(parody));
+	archive.tags = [];
 
-	const tags: [string, string][] = [];
-
-	metadata.data.maleTags
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'male'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.femaleTags
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'female'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.otherTags
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'misc'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.characters
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'character'] as [
-					string,
-					string,
-				]
-		)
-		.forEach((tag) => tags.push(tag));
-
-	if (tags.length > 0) {
-		archive.tags = tags;
+	if (data.artists) {
+		archive.tags.push(...data.artists.map((tag) => ({ namespace: 'artist', name: tag })));
 	}
 
-	if (metadata.data.locations) {
-		const sources: Source[] = [];
+	if (data.circles) {
+		archive.tags.push(...data.circles.map((tag) => ({ namespace: 'circle', name: tag })));
+	}
 
-		for (const location of metadata.data.locations) {
-			sources.push({
-				name: parseSourceName(location),
+	if (data.parodies) {
+		archive.tags.push(...data.parodies.map((tag) => ({ namespace: 'parody', name: tag })));
+	}
+
+	if (data.maleTags) {
+		archive.tags.push(...data.maleTags.map((tag) => ({ namespace: 'male', name: tag })));
+	}
+
+	if (data.femaleTags) {
+		archive.tags.push(...data.femaleTags.map((tag) => ({ namespace: 'female', name: tag })));
+	}
+
+	if (data.characters) {
+		archive.tags.push(...data.characters.map((tag) => ({ namespace: 'character', name: tag })));
+	}
+
+	if (data.otherTags) {
+		archive.tags.push(...data.otherTags.map((tag) => ({ namespace: 'misc', name: tag })));
+	}
+
+	if (data.locations) {
+		archive.sources = [];
+
+		for (const location of data.locations) {
+			archive.sources.push({
+				name: location,
 				url: location,
 			});
 		}
-
-		archive.sources = sources.length > 0 ? sources : undefined;
 	}
-
-	archive.has_metadata = true;
 
 	return archive;
 };

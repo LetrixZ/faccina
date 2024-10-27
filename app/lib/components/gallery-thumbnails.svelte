@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { ArchiveDetail } from '$lib/models';
-
 	import { page } from '$app/stores';
 	import { cn, isSpread } from '$lib/utils';
 
+	import type { Gallery } from '../types';
+
 	import { Button } from './ui/button';
 
-	export let archive: ArchiveDetail;
+	export let archive: Gallery;
 
 	let maxCount = 12;
 
@@ -24,17 +24,17 @@
 <div class="flex-grow space-y-2">
 	<div class="@container">
 		<div class="grid grid-cols-2 gap-2 @2xl:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6">
-			{#each filteredImages as image (image.page_number)}
-				<a class="relative" href={`./${archive.id}/read/${image.page_number}${$page.url.search}`}>
+			{#each filteredImages as image (image.pageNumber)}
+				<a class="relative" href={`./${archive.id}/read/${image.pageNumber}${$page.url.search}`}>
 					<img
-						alt={`Page ${image.page_number}`}
+						alt={`Page ${image.pageNumber}`}
 						class={cn(
 							'aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow',
 							isSpread(image) && 'object-contain'
 						)}
 						height={455}
 						loading="eager"
-						src={`/image/${archive.hash}/${image.page_number}?type=thumb`}
+						src={`/image/${archive.hash}/${image.pageNumber}?type=thumb`}
 						width={320}
 					/>
 					{#if !wideImages && isSpread(image)}

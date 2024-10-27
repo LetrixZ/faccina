@@ -5,7 +5,7 @@ import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
 
-import type { Archive } from '../../shared/metadata';
+import type { ArchiveMetadata } from '../../shared/metadata';
 
 import { readStream } from '../../shared/utils';
 import anchira from './anchira';
@@ -137,8 +137,8 @@ const handleMetadataFormat = async (
 	content: string,
 	filename: string,
 	format: MetadataFormat,
-	archive: Archive
-): Promise<[Archive, [MetadataSchema, MetadataFormat]]> => {
+	archive: ArchiveMetadata
+): Promise<[ArchiveMetadata, [MetadataSchema, MetadataFormat]]> => {
 	archive = structuredClone(archive);
 
 	switch (format) {
@@ -226,7 +226,7 @@ const metadataFormat = (filename: string) => {
 		});
 };
 
-export const addExternalMetadata = async (path: string, archive: Archive) => {
+export const addExternalMetadata = async (path: string, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
 	const files = [
@@ -250,7 +250,7 @@ export const addExternalMetadata = async (path: string, archive: Archive) => {
 	throw new Error('No external metadata file found');
 };
 
-export const addEmbeddedMetadata = async (zip: StreamZipAsync, archive: Archive) => {
+export const addEmbeddedMetadata = async (zip: StreamZipAsync, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
 	const entries = [

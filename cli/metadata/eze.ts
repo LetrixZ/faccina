@@ -1,13 +1,10 @@
-import capitalize from 'capitalize';
 import dayjs from 'dayjs';
 import arraySupport from 'dayjs/plugin/arraySupport';
-import slugify from 'slugify';
-import YAML from 'yaml';
 import { z } from 'zod';
 
 import config from '../../shared/config';
-import { type Archive } from '../../shared/metadata';
-import { parseFilename, parseSourceName } from './utils';
+import { ArchiveMetadata } from '../../shared/metadata';
+import { parseFilename } from './utils';
 
 dayjs.extend(arraySupport);
 
@@ -25,105 +22,68 @@ const metadataSchema = z.object({
 		.optional(),
 });
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = JSON.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse Eze metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
-
-	if (!metadata.success) {
-		console.error(metadata.error);
-
-		throw new Error('Failed to parse Eze metadata');
-	}
-
 	if (config.metadata?.parseFilenameAsTitle) {
-		archive.title = parseFilename(metadata.data.title)[0] ?? metadata.data.title;
+		archive.title = parseFilename(data.title)[0] ?? data.title;
 	} else {
-		archive.title = metadata.data.title;
+		archive.title = data.title;
 	}
 
-	archive.slug = slugify(archive.title, { lower: true, strict: true });
-	archive.language = metadata.data.language;
+	archive.language = data.language;
 
-	if (metadata.data.upload_date && metadata.data.upload_date.filter((x) => x).length == 6) {
-		const [year, month, day, hour, min, sec] = metadata.data.upload_date;
+	if (data.upload_date && data.upload_date.filter((x) => x).length == 6) {
+		const [year, month, day, hour, min, sec] = data.upload_date;
 
-		archive.released_at = dayjs([year, month + 1, day, hour, min, sec]).toDate();
+		archive.releasedAt = dayjs([year, month + 1, day, hour, min, sec]).toDate();
 	}
 
-	if (metadata.data.tags) {
-		archive.artists = metadata.data.tags['artist']?.map((value) =>
-			config.metadata.capitalizeTags
-				? config.metadata.capitalizeTags
-					? capitalize.words(value)
-					: value
-				: value
-		);
-		archive.circles = metadata.data.tags['group']?.map((value) =>
-			config.metadata.capitalizeTags ? capitalize.words(value) : value
-		);
-		archive.parodies = metadata.data.tags['parody']?.map((value) =>
-			config.metadata.capitalizeTags ? capitalize.words(value) : value
-		);
+	if (data.tags) {
+		archive.tags = [];
 
-		const tags: [string, string][] = [];
-
-		if (metadata.data.tags['male']) {
-			tags.push(
-				...metadata.data.tags['male'].map(
-					(tag) =>
-						[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'male'] as [
-							string,
-							string,
-						]
-				)
-			);
+		if (data.tags['artist']) {
+			archive.tags.push(...data.tags['artist'].map((tag) => ({ namespace: 'artist', name: tag })));
 		}
 
-		if (metadata.data.tags['female']) {
-			tags.push(
-				...metadata.data.tags['female'].map(
-					(tag) =>
-						[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'female'] as [
-							string,
-							string,
-						]
-				)
-			);
+		if (data.tags['group']) {
+			archive.tags.push(...data.tags['group'].map((tag) => ({ namespace: 'circle', name: tag })));
 		}
 
-		if (metadata.data.tags['misc']) {
-			tags.push(
-				...metadata.data.tags['misc'].map(
-					(tag) =>
-						[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'misc'] as [
-							string,
-							string,
-						]
-				)
-			);
+		if (data.tags['parody']) {
+			archive.tags.push(...data.tags['parody'].map((tag) => ({ namespace: 'parody', name: tag })));
 		}
 
-		if (tags.length > 0) {
-			archive.tags = tags;
+		if (data.tags['male']) {
+			archive.tags.push(...data.tags['male'].map((tag) => ({ namespace: 'male', name: tag })));
+		}
+
+		if (data.tags['female']) {
+			archive.tags.push(...data.tags['female'].map((tag) => ({ namespace: 'female', name: tag })));
+		}
+
+		if (data.tags['misc']) {
+			archive.tags.push(...data.tags['misc'].map((tag) => ({ namespace: 'misc', name: tag })));
 		}
 	}
 
-	if (metadata.data.source) {
-		if (metadata.data.source.site === 'e-hentai' || metadata.data.source.site === 'exhentai') {
-			const url = `https://${metadata.data.source.site}/g/${metadata.data.source.gid}/${metadata.data.source.token}`;
+	if (data.source && (data.source.site === 'e-hentai' || data.source.site === 'exhentai')) {
+		const url = `https://${data.source.site}/g/${data.source.gid}/${data.source.token}`;
 
-			archive.sources = [
-				{
-					name: parseSourceName(url),
-					url,
-				},
-			];
-		}
+		archive.sources = [
+			{
+				name: data.source.site,
+				url,
+			},
+		];
 	}
-
-	archive.has_metadata = true;
 
 	return archive;
 };

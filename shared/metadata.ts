@@ -1,30 +1,25 @@
-export interface Source {
-	name: string;
+export type Source = {
+	name?: string;
 	url?: string;
-}
+};
 
-export interface Image {
+export type Image = {
 	filename: string;
-	page_number: number;
-	width?: number;
-	height?: number;
-}
+	pageNumber: number;
+};
 
-export interface Archive {
+export type Tag = {
+	namespace: string;
+	name: string;
+};
+
+export type ArchiveMetadata = {
 	title?: string;
-	slug?: string;
 	description?: string;
 	thumbnail?: number;
+	releasedAt?: Date;
 	language?: string;
-	released_at?: Date;
-	artists?: string[];
-	circles?: string[];
-	magazines?: string[];
-	events?: string[];
-	publishers?: string[];
-	parodies?: string[];
-	tags?: [string, string][];
+	tags?: Tag[];
 	sources?: Source[];
-	images?: Image[];
-	has_metadata?: boolean;
-}
+	imageOrder?: Image[];
+};

@@ -8,12 +8,13 @@
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { type ArchiveDetail, type Task } from '$lib/models';
+	import { type Task } from '$lib/models';
 	import {
 		dateTimeFormat,
 		generateFilename,
 		getMetadata,
 		humanFileSize,
+		isTag,
 		randomString,
 	} from '$lib/utils';
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
@@ -25,8 +26,10 @@
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
 
+	import type { Gallery } from '~/lib/types';
+
 	import ArchiveEditForm from '~/lib/components/archive-edit-form.svelte';
-	import ArchiveTaxonomyEditForm from '~/lib/components/archive-taxonomy-edit-form.svelte';
+	import ArchiveTagsEditForm from '~/lib/components/archive-tag-edit-form.svelte';
 	import { Separator } from '~/lib/components/ui/separator';
 
 	export let data;
@@ -35,23 +38,32 @@
 	let editTaxonomyOpen = false;
 
 	$: canDownload = data.site.guestDownloads || data.user;
+	$: gallery = data.gallery;
 	$: archive = data.archive;
 
-	const startDownload = async (archive: ArchiveDetail) => {
+	$: artists = gallery.tags.filter((tag) => tag.namespace === 'artist');
+	$: circles = gallery.tags.filter((tag) => tag.namespace === 'circle');
+	$: magazines = gallery.tags.filter((tag) => tag.namespace === 'magazine');
+	$: events = gallery.tags.filter((tag) => tag.namespace === 'event');
+	$: publishers = gallery.tags.filter((tag) => tag.namespace === 'publisher');
+	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
+	$: tags = gallery.tags.filter(isTag);
+
+	const startDownload = async (gallery: Gallery) => {
 		const streamSaver = await import('streamsaver');
 		streamSaver.default.mitm = '/ss-mitm.html';
 
 		const task = writable<Task>({
-			archive,
+			gallery: gallery,
 			progress: 0,
-			total: archive.images.length,
+			total: gallery.images.length,
 			complete: false,
 		});
 
 		const chunks: Uint8Array[] = [];
 
 		const promise = new Promise<void>((resolve, reject) => {
-			const fileStream = streamSaver.createWriteStream(`${generateFilename(archive)}.cbz`);
+			const fileStream = streamSaver.createWriteStream(`${generateFilename(gallery)}.cbz`);
 			const writer = fileStream.getWriter();
 
 			const zip = new Zip();
@@ -81,12 +93,12 @@
 
 				zip.add(metadataFile);
 
-				metadataFile.push(strToU8(JSON.stringify(getMetadata(archive), null, 2)), true);
+				metadataFile.push(strToU8(JSON.stringify(getMetadata(gallery), null, 2)), true);
 
 				pMap(
-					archive.images,
+					gallery.images,
 					async (image) => {
-						const url = `/image/${archive.hash}/${image.page_number}`;
+						const url = `/image/${gallery.hash}/${image.pageNumber}`;
 						const response = await fetch(url);
 
 						if (!response.ok) {
@@ -124,7 +136,7 @@
 			componentProps: {
 				task,
 				save: async () => {
-					const fileStream = streamSaver.createWriteStream(`${generateFilename(archive)}.cbz`);
+					const fileStream = streamSaver.createWriteStream(`${generateFilename(gallery)}.cbz`);
 					const writer = fileStream.getWriter();
 
 					for (const chunk of chunks) {
@@ -148,39 +160,39 @@
 </script>
 
 <svelte:head>
-	<title>{data.archive.title} • {data.site.name}</title>
+	<title>{gallery.title} • {data.site.name}</title>
 </svelte:head>
 
 <MetaTags
 	canonical={data.site.url}
-	description={data.archive.description ?? undefined}
+	description={gallery.description ?? undefined}
 	openGraph={{
-		url: `${data.site.url}/g/${data.archive.id}`,
-		description: data.archive.description ?? undefined,
+		url: `${data.site.url}/g/${gallery.id}`,
+		description: gallery.description ?? undefined,
 		type: 'article',
-		images: [{ url: `${data.site.url}/api/og/g/${data.archive.id}` }],
+		images: [{ url: `${data.site.url}/api/og/g/${gallery.id}` }],
 		siteName: data.site.name,
 	}}
-	title={data.archive.title}
+	title={gallery.title}
 	titleTemplate={`%s - ${data.site.name}`}
 	twitter={{
 		cardType: 'summary_large_image',
-		description: data.archive.description ?? undefined,
-		image: `${data.site.url}/api/og/g/${data.archive.id}`,
-		title: `${data.archive.title} - ${data.site.name}`,
+		description: gallery.description ?? undefined,
+		image: `${data.site.url}/api/og/g/${gallery.id}`,
+		title: `${gallery.title} - ${data.site.name}`,
 	}}
 />
 
 <main class="container flex flex-col gap-2 md:flex-row">
 	<div class="w-full space-y-2 @container md:w-80">
 		<div class="w-full">
-			<a href={`./${archive.id}/read/1/${$page.url.search}`}>
+			<a href={`./${gallery.id}/read/1/${$page.url.search}`}>
 				<img
-					alt={`'${archive.title}' cover`}
+					alt={`'${gallery.title}' cover`}
 					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
 					height={910}
 					loading="eager"
-					src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
+					src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 					width={640}
 				/>
 			</a>
@@ -206,7 +218,7 @@
 					<span class="flex-auto"> Edit tags </span>
 				</Button>
 
-				{#if archive.deleted_at}
+				{#if archive?.deletedAt}
 					<form action="?/show" class="col-span-2" method="POST" use:enhance>
 						<Button
 							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
@@ -235,7 +247,7 @@
 		<div class="grid gap-2 @xs:grid-cols-2">
 			<Button
 				class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
-				href={`./${archive.id}/read/1${$page.url.search}`}
+				href={`./${gallery.id}/read/1${$page.url.search}`}
 				variant="secondary"
 			>
 				<AiOutlineRead class="size-5 shrink-0" />
@@ -246,7 +258,7 @@
 				<Button
 					class={'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80'}
 					disabled={!canDownload}
-					on:click={() => startDownload(archive)}
+					on:click={() => startDownload(gallery)}
 					variant="secondary"
 				>
 					<BiSolidDownload class="size-5 shrink-0" />
@@ -290,92 +302,92 @@
 
 		<div class="overflow-clip rounded shadow-md shadow-shadow">
 			<InfoSection class="space-y-1">
-				<p class="text-lg font-semibold leading-6">{archive.title}</p>
+				<p class="text-lg font-semibold leading-6">{gallery.title}</p>
 				<p class="text-sm text-muted-foreground-light">
-					{generateFilename(archive)}
+					{generateFilename(gallery)}
 				</p>
 			</InfoSection>
 
-			{#if archive.description?.length}
+			{#if gallery.description?.length}
 				<InfoSection name="Description">
-					<p class="text-sm">{archive.description}</p>
+					<p class="text-sm">{gallery.description}</p>
 				</InfoSection>
 			{/if}
 
-			{#if archive.artists?.length}
+			{#if artists.length}
 				<InfoSection name="Artists">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.artists ?? [] as artist}
+						{#each artists as artist}
 							<Chip tag={artist} type="artist" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.circles?.length}
+			{#if circles.length}
 				<InfoSection name="Circles">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.circles ?? [] as circle}
+						{#each circles as circle}
 							<Chip tag={circle} type="circle" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.magazines?.length}
+			{#if magazines.length}
 				<InfoSection name="Magazines">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.magazines as magazine}
+						{#each magazines as magazine}
 							<Chip tag={magazine} type="magazine" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.events?.length}
+			{#if events.length}
 				<InfoSection name="Events">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.events as event}
+						{#each events as event}
 							<Chip tag={event} type="event" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.publishers?.length}
+			{#if publishers.length}
 				<InfoSection name="Publishers">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.publishers as publisher}
+						{#each publishers as publisher}
 							<Chip tag={publisher} type="publisher" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.parodies?.length}
+			{#if parodies.length}
 				<InfoSection name="Parodies">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.parodies as parody}
+						{#each parodies as parody}
 							<Chip tag={parody} type="parody" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.tags?.length}
+			{#if tags.length}
 				<InfoSection name="Tags">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.tags as tag}
+						{#each tags as tag}
 							<Chip {tag} type="tag" />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if archive.sources?.length}
+			{#if gallery.sources?.length}
 				<InfoSection name="Sources">
 					<div class="flex flex-wrap gap-2">
-						{#each archive.sources as source}
+						{#each gallery.sources as source}
 							<GallerySource {source} />
 						{/each}
 					</div>
@@ -383,32 +395,32 @@
 			{/if}
 
 			<InfoSection name="Length">
-				<p class="text-sm">{archive.pages} pages</p>
+				<p class="text-sm">{gallery.pages} pages</p>
 			</InfoSection>
 
-			{#if archive.size}
+			{#if gallery.size}
 				<InfoSection name="Size">
-					<p class="text-sm">{humanFileSize(archive.size)}</p>
+					<p class="text-sm">{humanFileSize(gallery.size)}</p>
 				</InfoSection>
 			{/if}
 
-			{#if archive.released_at}
+			{#if gallery.releasedAt}
 				<InfoSection name="Released">
 					<p class="text-sm">
-						{dateTimeFormat(archive.released_at)}
+						{dateTimeFormat(gallery.releasedAt)}
 					</p>
 				</InfoSection>
 			{/if}
 
 			<InfoSection name="Added">
 				<p class="text-sm">
-					{dateTimeFormat(archive.created_at)}
+					{dateTimeFormat(gallery.createdAt)}
 				</p>
 			</InfoSection>
 		</div>
 	</div>
 
-	<GalleryThumbnails {archive} />
+	<GalleryThumbnails archive={gallery} />
 </main>
 
 <Dialog.Root
@@ -417,10 +429,10 @@
 	onOpenChange={(open) => (editOpen = open)}
 	open={editOpen}
 >
-	<Dialog.Content class="max-h-[80dvh] overflow-auto md:w-[85dvw] md:max-w-5xl">
-		{#if data.editForm}
+	<Dialog.Content class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl">
+		{#if archive && data.editForm}
 			<ArchiveEditForm
-				archive={data.archive}
+				{archive}
 				data={data.editForm}
 				on:close={() => (editOpen = false)}
 				on:result={({ detail }) => {
@@ -439,17 +451,17 @@
 	onOpenChange={(open) => (editTaxonomyOpen = open)}
 	open={editTaxonomyOpen}
 >
-	<Dialog.Content class="max-h-[80dvh] overflow-auto md:w-[85dvw] md:max-w-5xl">
-		{#if data.editTaxonomyForm}
-			<ArchiveTaxonomyEditForm
-				data={data.editTaxonomyForm}
+	<Dialog.Content class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl">
+		{#if archive && data.editTagsForm}
+			<ArchiveTagsEditForm
+				data={data.editTagsForm}
 				on:close={() => (editTaxonomyOpen = false)}
 				on:result={({ detail }) => {
 					if (detail.type === 'success') {
 						editTaxonomyOpen = false;
 					}
 				}}
-				taxonomies={data.taxonomies}
+				tagsList={data.tags}
 			/>
 		{/if}
 	</Dialog.Content>

@@ -6,7 +6,6 @@ import pg, { Client } from 'pg';
 import { z } from 'zod';
 
 import config from '../shared/config';
-import db from '../shared/db';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -110,7 +109,6 @@ export const migrateDatabase = async (dbUrl: string) => {
 	if (!count) {
 		console.info(`No archives found in the database.`);
 		await client.end();
-		await db.destroy();
 
 		return;
 	}
@@ -148,6 +146,8 @@ export const migrateDatabase = async (dbUrl: string) => {
 
 		count = rows.length;
 	}
+
+	const db = (await import('../shared/db')).default;
 
 	await db
 		.insertInto('archives')

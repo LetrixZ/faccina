@@ -10,12 +10,11 @@ import StreamZip from 'node-stream-zip';
 import { parse } from 'path';
 import slugify from 'slugify';
 
-import type { Archive, Image } from '../shared/metadata';
+import type { ArchiveMetadata, Image } from '../shared/metadata';
 
-import { upsertImages, upsertSources, upsertTags, upsertTaxonomy } from '../shared/archive';
+import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
-import db from '../shared/db';
-import { taxonomyTables } from '../shared/taxonomy';
+import { now } from '../shared/db/helpers';
 import { readStream } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
@@ -40,7 +39,7 @@ interface IndexOptions {
  * Index archives to the database
  * @param opts Indexing options
  */
-export const index = async (opts: IndexOptions) => {
+export const indexArchives = async (opts: IndexOptions) => {
 	const hasPaths = opts.paths ? opts.paths?.length > 0 : false;
 
 	if (!opts.paths || !hasPaths) {
@@ -115,6 +114,8 @@ export const index = async (opts: IndexOptions) => {
 
 	const start = performance.now();
 
+	const db = (await import('../shared/db')).default;
+
 	for (const path of indexPaths) {
 		progress.update(count, { path });
 
@@ -187,11 +188,15 @@ export const index = async (opts: IndexOptions) => {
 
 				continue;
 			} else {
-				await db.updateTable('archives').set({ path }).where('id', '=', existingHash.id).execute();
+				await db
+					.updateTable('archives')
+					.set({ path, updatedAt: now() })
+					.where('id', '=', existingHash.id)
+					.execute();
 			}
 		}
 
-		let archive: Archive = {};
+		let archive: ArchiveMetadata = {};
 		let metadataSchema: MetadataSchema;
 		let metadataFormat: MetadataFormat;
 
@@ -239,13 +244,29 @@ export const index = async (opts: IndexOptions) => {
 
 						if (title) {
 							archive.title = title ?? filename;
-							archive.slug = slugify(archive.title, { lower: true, strict: true });
-							archive.artists = artists;
-							archive.circles = circles;
+
+							archive.tags = [];
+
+							if (artists) {
+								archive.tags.push(
+									...artists.map((tag) => ({
+										namespace: 'artist',
+										name: tag,
+									}))
+								);
+							}
+
+							if (circles) {
+								archive.tags.push(
+									...circles.map((tag) => ({
+										namespace: 'circle',
+										name: tag,
+									}))
+								);
+							}
 						}
 					} else {
 						archive.title = filename;
-						archive.slug = slugify(archive.title, { lower: true, strict: true });
 					}
 				}
 			}
@@ -255,7 +276,7 @@ export const index = async (opts: IndexOptions) => {
 				.sort(naturalCompare)
 				.map((filename, i) => ({
 					filename,
-					page_number: i + 1,
+					pageNumber: i + 1,
 				}));
 
 			if (images.length === 0) {
@@ -267,18 +288,19 @@ export const index = async (opts: IndexOptions) => {
 				continue;
 			}
 
-			images = images
-				.toSorted((a, b) => {
-					const indexA = archive.images?.findIndex((image) => image.filename === a.filename) ?? -1;
-					const indexB = archive.images?.findIndex((image) => image.filename === b.filename) ?? -1;
+			if (archive.imageOrder) {
+				images = images
+					.toSorted((a, b) => {
+						const indexA = archive.imageOrder!.findIndex((image) => image.filename === a.filename);
+						const indexB = archive.imageOrder!.findIndex((image) => image.filename === b.filename);
 
-					return indexA - indexB;
-				})
-				.map((image, i) => ({ filename: image.filename, page_number: i + 1 }));
+						return indexA - indexB;
+					})
+					.map((image, i) => ({ filename: image.filename, pageNumber: i + 1 }));
+			}
 
-			if (!archive.title || !archive.slug) {
+			if (!archive.title) {
 				archive.title = filename;
-				archive.slug = slugify(archive.title, { lower: true, strict: true });
 			}
 
 			const info = await stat(path);
@@ -296,7 +318,7 @@ export const index = async (opts: IndexOptions) => {
 				if (isProtected) {
 					const update = await db
 						.updateTable('archives')
-						.set({ hash, pages: images.length, size: info.size })
+						.set({ hash, pages: images.length, size: info.size, updatedAt: now() })
 						.where('id', '=', existingPath.id)
 						.returning(['id', 'protected'])
 						.executeTakeFirstOrThrow();
@@ -307,15 +329,14 @@ export const index = async (opts: IndexOptions) => {
 						.updateTable('archives')
 						.set({
 							title: archive.title,
-							slug: archive.slug,
 							hash,
 							description: archive.description,
 							language: archive.language,
-							released_at: archive.released_at?.toISOString(),
+							releasedAt: archive.releasedAt?.toISOString(),
 							thumbnail: archive.thumbnail,
 							pages: images.length,
 							size: info.size,
-							has_metadata: archive.has_metadata,
+							updatedAt: now(),
 						})
 						.where('id', '=', existingPath.id)
 						.returning(['id', 'protected'])
@@ -365,16 +386,14 @@ export const index = async (opts: IndexOptions) => {
 					.insertInto('archives')
 					.values({
 						title: archive.title,
-						slug: archive.slug,
 						path,
 						hash,
 						description: archive.description,
 						language: archive.language,
-						released_at: archive.released_at?.toISOString(),
+						releasedAt: archive.releasedAt?.toISOString(),
 						thumbnail: archive.thumbnail,
 						pages: images.length,
 						size: info.size,
-						has_metadata: archive.has_metadata,
 					})
 					.returning('id')
 					.executeTakeFirstOrThrow();
@@ -383,34 +402,16 @@ export const index = async (opts: IndexOptions) => {
 			}
 
 			if (!isProtected) {
-				for (const { relationId, relationTable, referenceTable } of taxonomyTables) {
-					if (
-						referenceTable === 'tags' ||
-						relationTable === 'archive_tags' ||
-						relationId === 'tag_id'
-					) {
-						if (archive.tags) {
-							await upsertTags(id, archive.tags);
-						}
-					} else {
-						if (archive[referenceTable]) {
-							await upsertTaxonomy(
-								id,
-								archive[referenceTable],
-								referenceTable,
-								relationTable,
-								relationId
-							);
-						}
-					}
+				if (archive.tags) {
+					await upsertTags(id, archive.tags);
+				}
+
+				if (archive.sources) {
+					await upsertSources(id, archive.sources, opts.verbose ? multibar.log : undefined);
 				}
 			}
 
 			await upsertImages(id, images, hash);
-
-			if (!isProtected && archive.sources) {
-				await upsertSources(id, archive.sources);
-			}
 
 			indexed++;
 		} catch (error) {
@@ -437,7 +438,9 @@ export const index = async (opts: IndexOptions) => {
 /**
  * Checks if an archive exists and removes if it wasn't found
  */
-export const prune = async () => {
+export const pruneArchives = async () => {
+	const db = (await import('../shared/db')).default;
+
 	const archives = await db.selectFrom('archives').select(['id', 'path']).execute();
 
 	const toDelete: number[] = [];

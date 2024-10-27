@@ -1,7 +1,6 @@
-import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive } from '../../shared/metadata';
+import { ArchiveMetadata } from '../../shared/metadata';
 import eze from './eze';
 
 const metadataSchema = z.object({
@@ -18,15 +17,15 @@ const metadataSchema = z.object({
 	}),
 });
 
-export default (content: string, archive: Archive) => {
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
+export default (content: string, archive: ArchiveMetadata) => {
+	const parsed = JSON.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
 
-	if (!metadata.success) {
-		console.error(metadata.error);
-
-		throw new Error('Failed to parse Eze (ExHentai) metadata');
+	if (!data) {
+		throw new Error(`Failed to parse Eze (E-Hentai) metadata: ${error}`);
 	}
 
-	return eze(YAML.stringify(metadata.data?.gallery_info), archive);
+	archive = structuredClone(archive);
+
+	return eze(JSON.stringify(data?.gallery_info), archive);
 };

@@ -1,11 +1,9 @@
 import dayjs from 'dayjs';
-import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
-import { type Archive, type Source } from '../../shared/metadata';
+import { ArchiveMetadata } from '../../shared/metadata';
 import { mapMultiField, multiTextField } from './schemas';
-import { parseSourceName } from './utils';
 
 const multiIdField = z.union([z.number(), z.string()]);
 
@@ -39,66 +37,63 @@ const metadataSchema = z.object({
 	Files: z.array(z.string()).optional(),
 });
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = YAML.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse CCDC06 metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
+	archive.title = data.Title;
+	archive.description = data.Description;
+	archive.thumbnail = data.ThumbnailIndex !== undefined ? data.ThumbnailIndex + 1 : undefined;
+	archive.releasedAt = data.Released ? dayjs.unix(data.Released).toDate() : undefined;
 
-	if (!metadata.success) {
-		console.error(metadata.error);
+	archive.tags = [];
 
-		throw new Error('Failed to parse CCDC06 metadata');
+	archive.tags.push(
+		...mapMultiField(data.Artist).map((tag) => ({ namespace: 'artist', name: tag }))
+	);
+	archive.tags.push(
+		...mapMultiField(data.Circle).map((tag) => ({ namespace: 'circle', name: tag }))
+	);
+	archive.tags.push(
+		...mapMultiField(data.Magazine).map((tag) => ({ namespace: 'magazine', name: tag }))
+	);
+	archive.tags.push(...mapMultiField(data.Event).map((tag) => ({ namespace: 'event', name: tag })));
+	archive.tags.push(
+		...mapMultiField(data.Publisher).map((tag) => ({ namespace: 'publisher', name: tag }))
+	);
+	archive.tags.push(
+		...mapMultiField(data.Parody).map((tag) => ({ namespace: 'parody', name: tag }))
+	);
+
+	if (data.Tags) {
+		archive.tags.push(...data.Tags.map((tag) => ({ namespace: 'tag', name: tag })));
 	}
 
-	archive.title = metadata.data.Title;
-	archive.slug = slugify(metadata.data.Title, { lower: true, strict: true });
-	archive.description = metadata.data.Description;
-	archive.thumbnail =
-		metadata.data.ThumbnailIndex !== undefined ? metadata.data.ThumbnailIndex + 1 : undefined;
-	archive.released_at = metadata.data.Released
-		? dayjs.unix(metadata.data.Released).toDate()
-		: undefined;
+	archive.sources = [];
 
-	archive.artists = mapMultiField(metadata.data.Artist);
-	archive.circles = mapMultiField(metadata.data.Circle);
-	archive.magazines = mapMultiField(metadata.data.Magazine);
-	archive.events = mapMultiField(metadata.data.Event);
-	archive.publishers = mapMultiField(metadata.data.Publisher);
-	archive.parodies = mapMultiField(metadata.data.Parody);
-
-	if (metadata.data.Tags) {
-		archive.tags = metadata.data.Tags.map((tag) => [tag, '']);
+	for (const url of mapMultiField(data.URL)) {
+		archive.sources.push({ url });
 	}
 
-	archive.sources = (() => {
-		const sources: Source[] = [];
-
-		mapMultiField(metadata.data.URL)
-			?.map((url) => ({
-				name: parseSourceName(url),
-				url,
-			}))
-			.forEach((source) => sources.push(source));
-
-		if (metadata.data.Id) {
-			Object.entries(metadata.data.Id)
-				.map(([name, id]) => ({
-					name: parseSourceName(name),
-					url: parseSourceId(name, id),
-				}))
-				.forEach((source) => sources.push(source));
+	if (data.Id) {
+		for (const [name, id] of Object.entries(data.Id)) {
+			archive.sources.push({
+				name,
+				url: parseSourceId(name, id),
+			});
 		}
+	}
 
-		return sources.length > 0 ? sources : undefined;
-	})();
-
-	archive.images = metadata.data.Files?.map((filename, i) => ({
+	archive.imageOrder = data.Files?.map((filename, i) => ({
 		filename,
-		page_number: i + 1,
+		pageNumber: i + 1,
 	}));
-
-	archive.has_metadata = true;
 
 	return archive;
 };

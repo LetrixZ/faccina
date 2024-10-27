@@ -7,14 +7,14 @@ import { leadingZeros } from '~shared/utils';
 import { join } from 'node:path';
 import sharp from 'sharp';
 
-import { get } from '~/lib/server/db/queries';
+import { getGallery } from '~/lib/server/db/queries';
 
 import GalleryPreview from './gallery-preview.svelte';
 
 export const GET = async ({ fetch, params }) => {
 	const { id } = params;
 
-	const archive = await get(parseInt(id), false);
+	const archive = await getGallery(parseInt(id), { showHidden: false });
 
 	if (!archive) {
 		error(404);

@@ -1,12 +1,11 @@
 import capitalize from 'capitalize';
-import slugify from 'slugify';
 import YAML from 'yaml';
 import { z } from 'zod';
 
 import config from '../../shared/config';
-import { type Archive, type Source } from '../../shared/metadata';
+import { ArchiveMetadata } from '../../shared/metadata';
 import { stringOrNumberArray } from './schemas';
-import { parseFilename, parseSourceName } from './utils';
+import { parseFilename } from './utils';
 
 const metadataSchema = z.object({
 	title: z.string(),
@@ -27,114 +26,80 @@ const metadataSchema = z.object({
 	url: z.string().optional(),
 });
 
-export default async (content: string, archive: Archive) => {
+export default async (content: string, archive: ArchiveMetadata) => {
+	const parsed = YAML.parse(content);
+	const { data, error } = metadataSchema.safeParse(parsed);
+
+	if (!data) {
+		throw new Error(`Failed to parse Koharu metadata: ${error}`);
+	}
+
 	archive = structuredClone(archive);
 
-	const parsed = YAML.parse(content);
-	const metadata = metadataSchema.safeParse(parsed);
-
-	if (!metadata.success) {
-		console.error(metadata.error);
-
-		throw new Error('Failed to parse Koharu metadata');
-	}
-
 	if (config.metadata?.parseFilenameAsTitle) {
-		archive.title = parseFilename(metadata.data.title)[0] ?? metadata.data.title;
+		archive.title = parseFilename(data.title)[0] ?? data.title;
 	} else {
-		archive.title = metadata.data.title;
+		archive.title = data.title;
 	}
 
-	archive.slug = slugify(archive.title, { lower: true, strict: true });
-	archive.description = metadata.data.description;
+	archive.description = data.description;
+	archive.language = data.language?.map((language) => capitalize.words(language))[0];
 
-	archive.artists = metadata.data.artist?.map((artist) =>
-		config.metadata.capitalizeTags ? capitalize.words(artist) : artist
-	);
-	archive.circles = metadata.data.circle?.map((circle) =>
-		config.metadata.capitalizeTags ? capitalize.words(circle) : circle
-	);
-	archive.magazines = metadata.data.magazine?.map((magazine) =>
-		config.metadata.capitalizeTags ? capitalize.words(magazine) : magazine
-	);
-	archive.events = metadata.data.event?.map((event) =>
-		config.metadata.capitalizeTags ? capitalize.words(event) : event
-	);
-	archive.parodies = metadata.data.parody?.map((parody) =>
-		config.metadata.capitalizeTags ? capitalize.words(parody) : parody
-	);
+	archive.tags = [];
 
-	archive.language = metadata.data.language?.map((language) =>
-		config.metadata.capitalizeTags ? capitalize.words(language) : language
-	)[0];
-
-	const tags: [string, string][] = [];
-
-	metadata.data.general
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, ''] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.female
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'female'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.male
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'male'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.character
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'character'] as [
-					string,
-					string,
-				]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.mixed
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'mixed'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-	metadata.data.other
-		?.map(
-			(tag) =>
-				[config.metadata.capitalizeTags ? capitalize.words(tag) : tag, 'other'] as [string, string]
-		)
-		.forEach((tag) => tags.push(tag));
-
-	if (tags.length > 0) {
-		archive.tags = tags;
+	if (data.artist) {
+		archive.tags.push(...data.artist.map((tag) => ({ namespace: 'artist', name: tag })));
 	}
 
-	const sources: Source[] = [];
-
-	if (metadata.data.url) {
-		sources.push({
-			name: parseSourceName(metadata.data.url),
-			url: metadata.data.url,
-		});
+	if (data.circle) {
+		archive.tags.push(...data.circle.map((tag) => ({ namespace: 'circle', name: tag })));
 	}
 
-	if (metadata.data.source) {
-		sources.push({
-			name: parseSourceName(metadata.data.source),
-			url: `https://koharu.to${metadata.data.source.split(':').pop()}`,
-		});
+	if (data.magazine) {
+		archive.tags.push(...data.magazine.map((tag) => ({ namespace: 'magazine', name: tag })));
 	}
 
-	if (sources.length > 0) {
-		archive.sources = sources;
+	if (data.event) {
+		archive.tags.push(...data.event.map((tag) => ({ namespace: 'event', name: tag })));
 	}
 
-	archive.has_metadata = true;
+	if (data.parody) {
+		archive.tags.push(...data.parody.map((tag) => ({ namespace: 'parody', name: tag })));
+	}
+
+	if (data.general) {
+		archive.tags.push(...data.general.map((tag) => ({ namespace: 'general', name: tag })));
+	}
+
+	if (data.male) {
+		archive.tags.push(...data.male.map((tag) => ({ namespace: 'male', name: tag })));
+	}
+
+	if (data.female) {
+		archive.tags.push(...data.female.map((tag) => ({ namespace: 'female', name: tag })));
+	}
+
+	if (data.character) {
+		archive.tags.push(...data.character.map((tag) => ({ namespace: 'character', name: tag })));
+	}
+
+	if (data.mixed) {
+		archive.tags.push(...data.mixed.map((tag) => ({ namespace: 'mixed', name: tag })));
+	}
+
+	if (data.other) {
+		archive.tags.push(...data.other.map((tag) => ({ namespace: 'other', name: tag })));
+	}
+
+	archive.sources = [];
+
+	if (data.url) {
+		archive.sources.push({ url: data.url });
+	}
+
+	if (data.source) {
+		archive.sources.push({ url: `https://koharu.to${data.source.split(':').pop()}` });
+	}
 
 	return archive;
 };
