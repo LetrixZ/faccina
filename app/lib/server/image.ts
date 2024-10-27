@@ -112,7 +112,10 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 		}
 	}
 
-	pipeline = pipeline.resize({ width: preset.width, height: newHeight });
+	pipeline = pipeline.resize({
+		width: Math.floor(preset.width),
+		height: newHeight ? Math.floor(newHeight) : undefined,
+	});
 	pipeline = match(preset)
 		.with({ format: 'webp' }, (data) => pipeline.webp(data))
 		.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))

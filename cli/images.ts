@@ -182,8 +182,8 @@ export const generate = async (options: GenerateImagesOptions) => {
 					}
 
 					pipeline = pipeline.resize({
-						width: image.preset.width,
-						height: newHeight,
+						width: Math.floor(image.preset.width),
+						height: newHeight ? Math.floor(newHeight) : undefined,
 					});
 					pipeline = match(image.preset)
 						.with({ format: 'webp' }, (data) => pipeline.webp(data))
