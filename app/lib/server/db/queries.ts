@@ -256,34 +256,6 @@ export const search = async (
 
 	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'archives', undefined>;
 
-	let query = db.selectFrom('archives').select(['archives.id', 'archives.title']);
-
-	const buildTagQuery = (
-		tag: TagMatch,
-		{
-			not,
-			exists,
-			selectFrom,
-		}: Pick<ExpressionBuilder<DB, 'archives'>, 'not' | 'exists' | 'selectFrom'>
-	) => {
-		const expression = exists(
-			selectFrom('archiveTags')
-				.select('id')
-				.whereRef('archiveId', '=', 'archives.id')
-				.innerJoin('tags', 'id', 'tagId')
-				.where(
-					(eb) =>
-						tag.namespace === 'tag'
-							? eb.ref('name')
-							: sql`${eb.ref('namespace')} || ':' || ${eb.ref('name')}`,
-					like(),
-					tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`
-				)
-		);
-
-		return tag.negate ? not(expression) : expression;
-	};
-
 	const blacklist = (() => {
 		const data = searchParams.get('blacklist');
 
@@ -298,21 +270,6 @@ export const search = async (
 		}
 	})();
 
-	for (const tagId of blacklist) {
-		query = query.where(({ and, not, exists, selectFrom }) =>
-			and([
-				not(
-					exists(
-						selectFrom('archiveTags')
-							.select('id')
-							.where('tagId', '=', parseInt(tagId))
-							.whereRef('archiveId', '=', 'archives.id')
-					)
-				),
-			])
-		);
-	}
-
 	tagMatches.push(
 		...blacklist.map((tag) => ({
 			namespace: tag.split(':')[0],
@@ -322,33 +279,93 @@ export const search = async (
 		}))
 	);
 
-	if (tagMatches.length) {
-		const andTags = tagMatches.filter((tag) => !tag.or);
-		const orTags = tagMatches.filter((tag) => tag.or);
+	const getTagIds = (name: string, namespace = 'tag') => {
+		let query = db.selectFrom('tags').select('id');
 
-		if (orTags.length) {
-			query = query.where(({ or, not, exists, selectFrom }) => {
-				const queries: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
-
-				for (const tag of orTags) {
-					queries.push(buildTagQuery(tag, { not, exists, selectFrom }));
-				}
-
-				return or(queries);
-			});
+		if (namespace !== 'tag') {
+			query = query.where('namespace', '=', namespace);
 		}
 
-		if (andTags.length) {
-			query = query.where(({ and, not, exists, selectFrom }) => {
-				const queries: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
+		return query.where('name', 'like', name).execute();
+	};
 
-				for (const tag of andTags) {
-					queries.push(buildTagQuery(tag, { not, exists, selectFrom }));
+	const includeTags = (
+		await Promise.all(
+			tagMatches
+				.filter((tag) => !tag.or && !tag.negate)
+				.map((tag) => getTagIds(tag.name, tag.namespace))
+		)
+	)
+		.flat()
+		.map((tag) => tag.id);
+
+	const excludeTags = (
+		await Promise.all(
+			tagMatches
+				.filter((tag) => !tag.or && tag.negate)
+				.map((tag) => getTagIds(tag.name, tag.namespace))
+		)
+	)
+		.flat()
+		.map((tag) => tag.id);
+
+	const optionalTags = (
+		await Promise.all(
+			tagMatches.filter((tag) => tag.or).map((tag) => getTagIds(tag.name, tag.namespace))
+		)
+	)
+		.flat()
+		.map((tag) => tag.id);
+
+	let archiveIdsInclude: number[] = [];
+	let archiveIdsExclude: number[] = [];
+	let archiveIdsOptional: number[] = [];
+
+	if (includeTags.length) {
+		archiveIdsInclude = (
+			await db
+				.selectFrom('archiveTags')
+				.select('archiveId')
+				.where('tagId', 'in', includeTags)
+				.groupBy('archiveId')
+				.execute()
+		).map((at) => at.archiveId);
+	}
+
+	if (excludeTags.length) {
+		archiveIdsExclude = (
+			await db
+				.selectFrom('archiveTags')
+				.select('archiveId')
+				.where('tagId', 'in', excludeTags)
+				.groupBy('archiveId')
+				.execute()
+		).map((at) => at.archiveId);
+		}
+
+	if (optionalTags.length) {
+		archiveIdsOptional = (
+			await db
+				.selectFrom('archiveTags')
+				.select('archiveId')
+				.where('tagId', 'in', optionalTags)
+				.groupBy('archiveId')
+				.execute()
+		).map((at) => at.archiveId);
+	}
+
+	let query = db.selectFrom('archives').select(['archives.id', 'archives.title']);
+
+	if (archiveIdsInclude.length) {
+		query = query.where('id', 'in', archiveIdsInclude);
+	}
+
+	if (archiveIdsExclude.length) {
+		query = query.where('id', 'not in', archiveIdsExclude);
 				}
 
-				return and(queries);
-			});
-		}
+	if (archiveIdsOptional.length) {
+		query = query.where('id', 'in', archiveIdsOptional);
 	}
 
 	if (titleMatch.length) {
@@ -386,7 +403,7 @@ export const search = async (
 							.innerJoin('tags', 'id', 'tagId')
 							.select('id')
 							.whereRef('archiveId', '=', 'archives.id')
-							.where('name', like(), `%${split}%`)
+							.where('name', like(), split)
 					);
 				};
 
@@ -475,41 +492,11 @@ export const search = async (
 		allIds = shuffle(allIds, seed);
 	}
 
-	const offset = (parseInt(searchParams.get('page') ?? '1') - 1) * 24;
-
-	const resultsIds = (
-		await (async () => {
-			switch (config.database.vendor) {
-				case 'postgresql': {
-					return db
-						.selectFrom('archives')
-						.select(['id', sql`ARRAY_POSITION(${allIds}, archives.id)`.as('ord')])
-						.where('id', 'in', allIds)
-						.orderBy('ord')
-						.limit(24)
-						.offset(offset)
-						.execute()
-						.then((rows) => rows.map(({ id }) => id));
-				}
-				case 'sqlite': {
-					const values = sql.join(allIds.map((id, i) => sql`(${sql.join([i, id])})`));
-
-					return sql<{ id: number }>`
-						WITH cte(i, id) AS (VALUES ${values})
-						SELECT archives.id FROM archives
-						INNER JOIN cte ON cte.id = archives.id
-						ORDER BY cte.i LIMIT 24
-						OFFSET ${sql.val(offset)}
-					`
-						.execute(db)
-						.then(({ rows }) => rows.map(({ id }) => id));
-				}
-			}
-		})()
-	).toSorted((a, b) => allIds.indexOf(a) - allIds.indexOf(b));
-
 	return {
-		ids: resultsIds,
+		ids: allIds.slice(
+			((parseInt(searchParams.get('page') ?? '1') || 1) - 1) * 24,
+			(parseInt(searchParams.get('page') ?? '1') || 1) * 24
+		),
 		total: allIds.length,
 	};
 };
