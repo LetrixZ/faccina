@@ -3,10 +3,10 @@ import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
+import StreamZip from 'node-stream-zip';
 import { createReadStream } from 'node:fs';
 import { exists, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import StreamZip from 'node-stream-zip';
 import { parse } from 'path';
 import slugify from 'slugify';
 
@@ -23,11 +23,13 @@ import {
 	MetadataSchema,
 } from './metadata';
 import { parseFilename } from './metadata/utils';
+import { queryIdRanges } from './utilts';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
 
 interface IndexOptions {
 	paths?: string[];
+	ids?: string;
 	recursive?: boolean;
 	fromPath?: string;
 	force?: boolean;
@@ -40,60 +42,70 @@ interface IndexOptions {
  * @param opts Indexing options
  */
 export const indexArchives = async (opts: IndexOptions) => {
-	const hasPaths = opts.paths ? opts.paths?.length > 0 : false;
-
-	if (!opts.paths || !hasPaths) {
-		if (opts.recursive === undefined) {
-			opts.recursive = true; // Default to true if no path given
-		}
-
-		const dir = await stat(config.directories.content).catch(() => null);
-
-		if (!dir || !dir.isDirectory()) {
-			throw new Error(
-				`Content directory located at '${config.directories.content}' does not exist or is not a directory.`
-			);
-		}
-
-		opts.paths = [config.directories.content];
-	}
-
 	let indexPaths: string[] = [];
 
-	for (const path of opts.paths) {
-		const info = await stat(path).catch(() => null);
+	const db = (await import('../shared/db')).default;
 
-		if (info?.isDirectory()) {
-			const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
-			indexPaths.push(
-				...(await Array.fromAsync(
-					glob.scan({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
-				))
-			);
-		} else if (info?.isFile()) {
-			indexPaths.push(path);
-		} else {
-			console.error(
-				chalk.bold(`Path ${chalk.bold(path)} does not exist or is not a directory or file.`)
-			);
-		}
-	}
+	if (opts.ids) {
+		const archives = await queryIdRanges(db.selectFrom('archives'), opts.ids)
+			.select('archives.path')
+			.execute();
 
-	if (opts.fromPath && !hasPaths) {
-		let shouldAdd = false;
-		const paths: string[] = [];
+		indexPaths = archives.map((archive) => archive.path);
+	} else {
+		const hasPaths = opts.paths ? opts.paths?.length > 0 : false;
 
-		for (const path of indexPaths) {
-			if (path === opts.fromPath) {
-				shouldAdd = true;
+		if (!opts.paths || !hasPaths) {
+			if (opts.recursive === undefined) {
+				opts.recursive = true; // Default to true if no path given
 			}
 
-			if (shouldAdd) {
-				paths.push(path);
+			const dir = await stat(config.directories.content).catch(() => null);
+
+			if (!dir || !dir.isDirectory()) {
+				throw new Error(
+					`Content directory located at '${config.directories.content}' does not exist or is not a directory.`
+				);
+			}
+
+			opts.paths = [config.directories.content];
+		}
+
+		for (const path of opts.paths) {
+			const info = await stat(path).catch(() => null);
+
+			if (info?.isDirectory()) {
+				const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
+				indexPaths.push(
+					...(await Array.fromAsync(
+						glob.scan({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
+					))
+				);
+			} else if (info?.isFile()) {
+				indexPaths.push(path);
+			} else {
+				console.error(
+					chalk.bold(`Path ${chalk.bold(path)} does not exist or is not a directory or file.`)
+				);
 			}
 		}
 
-		indexPaths = paths;
+		if (opts.fromPath && !hasPaths) {
+			let shouldAdd = false;
+			const paths: string[] = [];
+
+			for (const path of indexPaths) {
+				if (path === opts.fromPath) {
+					shouldAdd = true;
+				}
+
+				if (shouldAdd) {
+					paths.push(path);
+				}
+			}
+
+			indexPaths = paths;
+		}
 	}
 
 	console.info(`Found ${chalk.bold(indexPaths.length)} files to index\n`);
@@ -113,8 +125,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 	let skipped = 0;
 
 	const start = performance.now();
-
-	const db = (await import('../shared/db')).default;
 
 	for (const path of indexPaths) {
 		progress.update(count, { path });

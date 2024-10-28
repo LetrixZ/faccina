@@ -10,8 +10,11 @@ const program = new Command();
 
 program
 	.command('index')
-	.addOption(new Option('-p --paths <paths...>', 'Index given paths.'))
-	.addOption(new Option('--ids <ID ranges>', 'Re-index given archive IDs.').conflicts('paths'))
+	.option('-p --paths <paths...>', 'Index given paths.')
+	.addOption(new Option('--from-path', 'Index starting from the given path.').conflicts('paths'))
+	.addOption(
+		new Option('--ids <ID ranges>', 'Re-index given archive IDs.').conflicts(['paths', 'fromPath'])
+	)
 	.option('-r --recursive', 'Navigate given paths recursively.')
 	.option('-f --force', 'Do not check if the archive is alredy indexed.')
 	.option('--reindex', 'Check if the archive is already indexed.')
@@ -46,6 +49,7 @@ program
 		'--ids <ID ranges>',
 		'Only generate images for the given ID ranges. Ex: 1,2,3,100-200,600-'
 	)
+	.option('--reverse', 'Reverse the archive list to generate.')
 	.option('-f --force', 'Do not check if the image already exists.')
 	.action((options) => generateImages(options));
 

@@ -1,9 +1,8 @@
 import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
-import { ExpressionWrapper, SqlBool } from 'kysely';
-import { join } from 'node:path';
 import StreamZip from 'node-stream-zip';
+import { join } from 'node:path';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
@@ -11,13 +10,13 @@ import { match } from 'ts-pattern';
 import config, { Preset } from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
-import { DB } from '../shared/types';
 import { leadingZeros, readStream } from '../shared/utils';
-import { parseIdRanges } from './utilts';
+import { queryIdRanges } from './utilts';
 
 type GenerateImagesOptions = {
 	ids?: string;
 	force: boolean;
+	reverse?: boolean;
 };
 
 type ImageEncode = { filename: string; pageNumber: number; savePath: string; preset: Preset };
@@ -25,12 +24,9 @@ type ImageEncode = { filename: string; pageNumber: number; savePath: string; pre
 type ArchiveEncode = { id: number; path: string; images: ImageEncode[] };
 
 export const generateImages = async (options: GenerateImagesOptions) => {
-	const parsed = parseIdRanges(options.ids);
-
 	const start = performance.now();
 
-	let query = db
-		.selectFrom('archives')
+	let query = queryIdRanges(db.selectFrom('archives'), options.ids)
 		.select((eb) => [
 			'id',
 			'path',
@@ -39,35 +35,12 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 			'thumbnail',
 			jsonArrayFrom(
 				eb
-					.selectFrom('archive_images')
-					.select(['filename', 'page_number'])
-					.whereRef('archive_id', '=', 'id')
+					.selectFrom('archiveImages')
+					.select(['filename', 'pageNumber'])
+					.whereRef('archiveId', '=', 'id')
 			).as('images'),
-		]);
-
-	if (parsed) {
-		const { ids, ranges } = parsed;
-
-		if (ids.length || ranges.length) {
-			query = query.where(({ eb, and, or }) => {
-				const conditions: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
-
-				if (ids.length) {
-					conditions.push(eb('id', 'in', ids));
-				}
-
-				for (const [start, end] of ranges) {
-					if (end !== undefined) {
-						conditions.push(and([eb('id', '>=', start), eb('id', '<=', end)]));
-					} else {
-						conditions.push(and([eb('id', '>=', start)]));
-					}
-				}
-
-				return or(conditions);
-			});
-		}
-	}
+		])
+		.orderBy(options.reverse ? 'id desc' : 'id asc');
 
 	const archives = await query.execute();
 
@@ -88,10 +61,10 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					config.directories.images,
 					archive.hash,
 					preset.name,
-					`${leadingZeros(image.page_number, archive.pages)}.${preset.format}`
+					`${leadingZeros(image.pageNumber, archive.pages)}.${preset.format}`
 				);
 
-			if (image.page_number === archive.thumbnail) {
+			if (image.pageNumber === archive.thumbnail) {
 				const savePath = getPath(coverPreset);
 
 				if (!options.force && (await Bun.file(savePath).exists())) {
@@ -99,7 +72,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				} else {
 					images.push({
 						filename: image.filename,
-						pageNumber: image.page_number,
+						pageNumber: image.pageNumber,
 						savePath,
 						preset: coverPreset,
 					});
@@ -114,7 +87,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 			} else {
 				images.push({
 					filename: image.filename,
-					pageNumber: image.page_number,
+					pageNumber: image.pageNumber,
 					savePath,
 					preset: thumbnailPreset,
 				});
@@ -162,10 +135,10 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					const { width, height } = await pipeline.metadata();
 
 					await db
-						.updateTable('archive_images')
+						.updateTable('archiveImages')
 						.set({ width, height })
-						.where('archive_images.page_number', '=', image.pageNumber)
-						.where('archive_id', '=', archive.id)
+						.where('pageNumber', '=', image.pageNumber)
+						.where('archiveId', '=', archive.id)
 						.execute()
 						.catch((error) =>
 							multibar.log(chalk.red(`Failed to save image dimensions: ${error.message}\n`))

@@ -1,8 +1,7 @@
-export const parseIdRanges = (str?: string) => {
-	if (!str) {
-		return;
-	}
+import { ExpressionWrapper, SelectQueryBuilder, SqlBool } from 'kysely';
+import { DB } from '../shared/types';
 
+export const parseIdRanges = (str: string) => {
 	const idRanges = str.split(',');
 
 	const ids: number[] = [];
@@ -33,4 +32,34 @@ export const parseIdRanges = (str?: string) => {
 	}
 
 	return { ids, ranges };
+};
+
+export const queryIdRanges = <O>(query: SelectQueryBuilder<DB, 'archives', O>, str?: string) => {
+	if (!str) {
+		return query;
+	}
+
+	const { ids, ranges } = parseIdRanges(str);
+
+	if (ids.length || ranges.length) {
+		query = query.where(({ eb, and, or }) => {
+			const conditions: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
+
+			if (ids.length) {
+				conditions.push(eb('id', 'in', ids));
+			}
+
+			for (const [start, end] of ranges) {
+				if (end !== undefined) {
+					conditions.push(and([eb('id', '>=', start), eb('id', '<=', end)]));
+				} else {
+					conditions.push(and([eb('id', '>=', start)]));
+				}
+			}
+
+			return or(conditions);
+		});
+	}
+
+	return query;
 };
