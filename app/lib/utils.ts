@@ -199,12 +199,19 @@ export const randomString = () => {
 };
 
 export const getMetadata = (gallery: Gallery) => {
-	const artists = gallery.tags.filter((tag) => tag.namespace === 'artist');
-	const circles = gallery.tags.filter((tag) => tag.namespace === 'circle');
-	const magazines = gallery.tags.filter((tag) => tag.namespace === 'magazine');
-	const events = gallery.tags.filter((tag) => tag.namespace === 'event');
-	const parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
-	const publishers = gallery.tags.filter((tag) => tag.namespace === 'publisher');
+	const artists = gallery.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name);
+	const circles = gallery.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name);
+	const magazines = gallery.tags
+		.filter((tag) => tag.namespace === 'magazine')
+		.map((tag) => tag.name);
+	const events = gallery.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name);
+	const parodies = gallery.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name);
+	const publishers = gallery.tags
+		.filter((tag) => tag.namespace === 'publisher')
+		.map((tag) => tag.name);
+	const tags = gallery.tags
+		.filter(isTag)
+		.map((tag) => (tag.namespace !== 'tag' ? `${tag.namespace}:${tag.name}` : tag.name));
 
 	return {
 		Title: gallery.title,
@@ -216,7 +223,7 @@ export const getMetadata = (gallery: Gallery) => {
 		Parody: parodies.length ? parodies : undefined,
 		Publisher: publishers.length ? publishers : undefined,
 		Pages: gallery.pages,
-		Tags: gallery.tags?.length ? gallery.tags.map((tag) => tag.name) : undefined,
+		Tags: tags,
 		Source: `https://${location.hostname}/g/${gallery.id}`,
 		Released: gallery.releasedAt && new Date(gallery.releasedAt).getTime() / 1000,
 		Thumbnail: gallery.thumbnail - 1,
