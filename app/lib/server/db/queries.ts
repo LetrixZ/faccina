@@ -5,6 +5,7 @@ import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, jsonObjectFrom, like } from '~shared/db/helpers';
 import {
+	type Expression,
 	type ExpressionBuilder,
 	type ExpressionWrapper,
 	type OrderByExpression,
@@ -137,7 +138,7 @@ type TagMatch = {
 	or: boolean;
 };
 
-const parseQuery = (query: string) => {
+export const parseQuery = (query: string) => {
 	const tagQueryMatches = query.match(/[-|~]?(\w+):(".*?"|[^\s]+)/g);
 
 	const titleMatch = query
@@ -286,18 +287,8 @@ export const search = async (
 			query = query.where('namespace', '=', namespace);
 		}
 
-		return query.where('name', 'like', name).execute();
+		return query.where('name', like(), name).execute();
 	};
-
-	const includeTags = (
-		await Promise.all(
-			tagMatches
-				.filter((tag) => !tag.or && !tag.negate)
-				.map((tag) => getTagIds(tag.name, tag.namespace))
-		)
-	)
-		.flat()
-		.map((tag) => tag.id);
 
 	const excludeTags = (
 		await Promise.all(
@@ -317,21 +308,8 @@ export const search = async (
 		.flat()
 		.map((tag) => tag.id);
 
-	let archiveIdsInclude: number[] = [];
 	let archiveIdsExclude: number[] = [];
 	let archiveIdsOptional: number[] = [];
-
-	if (includeTags.length) {
-		archiveIdsInclude = (
-			await db
-				.selectFrom('archiveTags')
-				.select('archiveId')
-				.where('tagId', 'in', includeTags)
-				.having((eb) => sql`count(distinct ${eb.ref('tagId')})`, '=', includeTags.length)
-				.groupBy('archiveId')
-				.execute()
-		).map((at) => at.archiveId);
-	}
 
 	if (excludeTags.length) {
 		archiveIdsExclude = (
@@ -357,8 +335,31 @@ export const search = async (
 
 	let query = db.selectFrom('archives').select(['archives.id', 'archives.title']);
 
-	if (archiveIdsInclude.length) {
-		query = query.where('id', 'in', archiveIdsInclude);
+	const inclusiveTags = tagMatches.filter((tag) => !tag.or && !tag.negate);
+
+	if (inclusiveTags.length) {
+		query = query.where((eb) => {
+			const conditions: Expression<SqlBool>[] = [];
+
+			for (const tag of inclusiveTags) {
+				conditions.push(
+					eb.exists(
+						eb
+							.selectFrom('archiveTags')
+							.select('id')
+							.innerJoin('tags', 'id', 'tagId')
+							.whereRef('archives.id', '=', 'archiveId')
+							.where((eb) =>
+								tag.namespace === 'tag'
+									? eb('name', like(), tag.name)
+									: eb('name', like(), tag.name).and('namespace', '=', tag.namespace)
+							)
+					)
+				);
+			}
+
+			return eb.and(conditions);
+		});
 	}
 
 	if (archiveIdsExclude.length) {
