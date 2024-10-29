@@ -327,6 +327,7 @@ export const search = async (
 				.selectFrom('archiveTags')
 				.select('archiveId')
 				.where('tagId', 'in', includeTags)
+				.having((eb) => sql`count(distinct ${eb.ref('tagId')})`, '=', includeTags.length)
 				.groupBy('archiveId')
 				.execute()
 		).map((at) => at.archiveId);
@@ -341,7 +342,7 @@ export const search = async (
 				.groupBy('archiveId')
 				.execute()
 		).map((at) => at.archiveId);
-		}
+	}
 
 	if (optionalTags.length) {
 		archiveIdsOptional = (
@@ -362,7 +363,7 @@ export const search = async (
 
 	if (archiveIdsExclude.length) {
 		query = query.where('id', 'not in', archiveIdsExclude);
-				}
+	}
 
 	if (archiveIdsOptional.length) {
 		query = query.where('id', 'in', archiveIdsOptional);
