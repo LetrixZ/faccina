@@ -417,7 +417,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				}
 
 				if (archive.sources) {
-					await upsertSources(id, archive.sources, opts.verbose ? multibar.log : undefined);
+					await upsertSources(id, archive.sources, opts.verbose);
 				}
 			}
 

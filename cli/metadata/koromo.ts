@@ -63,7 +63,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 
 	archive.tags = [];
 
-	for (const tag of [...mapMultiField(data.Artist), ...mapMultiField(data.Artist)]) {
+	for (const tag of [...mapMultiField(data.Artist), ...mapMultiField(data.Artists)]) {
 		archive.tags.push({ namespace: 'artist', name: tag });
 	}
 
@@ -85,7 +85,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 
 	for (const tag of [
 		...mapMultiField(data.Parody),
-		...mapMultiField(data.Parody),
+		...mapMultiField(data.Parodies),
 		...mapMultiField(data.Series),
 	]) {
 		archive.tags.push({ namespace: 'parody', name: tag });

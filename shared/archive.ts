@@ -65,12 +65,14 @@ export const upsertSources = async (id: number, metadataSources: Source[], verbo
 	);
 
 	for (const source of relationInsert) {
-		if (!source.name && verbose) {
-			console.log(
-				chalk.yellow(
-					`${chalk.bold(`[ID: ${id}]`)} Couldn't get a name for the source with URL ${chalk.bold(source.url)}\n`
-				)
-			);
+		if (!source.name) {
+			if (verbose) {
+				console.info(
+					chalk.yellow(
+						`${chalk.bold(`[ID: ${id}]`)} Couldn't get a name for the source with URL ${chalk.bold(source.url)}\n`
+					)
+				);
+			}
 
 			continue;
 		}
