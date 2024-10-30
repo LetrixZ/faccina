@@ -116,7 +116,7 @@ export const getJsonSchema = (content: string) => {
 		return MetadataSchema.Eze;
 	} else if (minified.match(/("artist:.*"|"group:.*"|"male:.*"|"female:.*")/)) {
 		return MetadataSchema.GalleryDL;
-	} else if (minified.match(/"(("Tags":)\[)|("Artist":")/)) {
+	} else if (minified.match(/(("Tags":)\[)|("Artist":")/)) {
 		return MetadataSchema.Koromo;
 	}
 

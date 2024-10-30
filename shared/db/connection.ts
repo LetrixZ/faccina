@@ -12,6 +12,7 @@ const connection = match(config.database)
 	})
 	.with({ vendor: 'sqlite' }, (data) => {
 		const db = new Database(data.path);
+		db.run('PRAGMA case_sensitive_like = off');
 
 		if (data.applyOptimizations) {
 			db.run('PRAGMA journal_mode = wal');

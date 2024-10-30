@@ -14,11 +14,7 @@ import { leadingZeros } from './utils';
  * @param id Archive ID
  * @param archive new archive data
  */
-export const upsertSources = async (
-	id: number,
-	metadataSources: Source[],
-	logger?: (message: string) => void
-) => {
+export const upsertSources = async (id: number, metadataSources: Source[], verbose = false) => {
 	metadataSources = metadataSources.map((source) => {
 		const mapping = config.metadata.sourceMapping.findLast(({ match, ignoreCase }) => {
 			const normalizedMatch = ignoreCase ? match.toLowerCase() : match;
@@ -69,8 +65,8 @@ export const upsertSources = async (
 	);
 
 	for (const source of relationInsert) {
-		if (!source.name) {
-			logger?.(
+		if (!source.name && verbose) {
+			console.log(
 				chalk.yellow(
 					`${chalk.bold(`[ID: ${id}]`)} Couldn't get a name for the source with URL ${chalk.bold(source.url)}\n`
 				)

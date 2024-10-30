@@ -79,6 +79,14 @@ export const like = () => {
 	}
 };
 
+export const notLike = () => {
+	switch (config.database.vendor) {
+		case 'sqlite':
+			return 'not like';
+		case 'postgresql':
+			return 'not ilike';
+	}
+};
 export const jsonAgg = () => {
 	switch (config.database.vendor) {
 		case 'sqlite':
