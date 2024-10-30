@@ -182,3 +182,5 @@ vite.config.ts.timestamp-*
 
 .env
 config.toml
+
+*.sqlite*
