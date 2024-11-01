@@ -11,48 +11,18 @@ To run the server you need to have [Bun](https://bun.sh/) installed.
 
 You can then start the server with `bun start` or you can use `bun cluster` to start multiple servers as a [cluster](https://bun.sh/guides/http/cluster).
 
-## CLI
+## Docker Compose
 
-To operate with the site you need to use the CLI. You can run `bun cli --help` to see the available commands and a quick summary.
+Make sure to read the [configuration setup](#configuration) first.
 
-### Index
+- Copy `docker-compose.example.yaml` to `docker-compose.yaml` and adjust the port and mount points to your setup.
+- Run `docker compose up` to build and start the server.
 
-To index archives located in the content directory, run `bun cli index`.
-
-You can pass the `-f` or `--force` option to update indexed archives. Use this if you want to update the metadata or contents of your archives.
-
-Use the `--reindex` option to only update alredy indexed archives and skip new ones.
-
-To only index certain paths, you can use `-p  <paths...>` or `--paths <paths...>` and indicate a space separated list of paths to index. This is useful if you want to index something that isn't in the content directory or to update a specific archive.
-
-If you want to resume indexing, you can use the `--from-path <path>` option to indicate which path (in the content directory) should start indexing from.
-
-**Note**: some paths are incompatible with NPM scripts so if you use `--from-path <path>`, `-p  <paths...>` or `--paths <paths...>` and any of these fails, try running the CLI directly with `bun ./cli/index.ts`.
-
-### Prune
-
-Run the `prune` command to delete archives that don't exist anymore in the file system.
-
-### Generate Images
-
-You can generate all covers and page thumbnails using the `generate-images` command. Useful if you don't want or can't generate the images on-demand.
-
-Use the `--ids <IDs...>` option to indicate which archives it should generate images for.
-
-`-f` or `--force` can be used to re-generate images.
-
-### User login
-
-You can generate a one-time login link for any user using the `uli <username>` command.
-
-### Recovery
-
-Send an access recovery email to a user with the `recovery <username>` command. If you only want to get the code without sending an email, use the `-c` or `--code` option.
+Use `docker compose exec app bun cli` to interact with the CLI.
 
 ## Configuration
 
-The configuration will be read from `./config.toml` by default. Use the environment variable `CONFIG_PATH` to specify another location.\
-It will be parsed using Zod schemas.
+The configuration will be read from `./config.toml` by default.
 
 ### Site
 
@@ -299,6 +269,44 @@ user = "smtp_username"
 pass = "smtp_password"
 from = "admin@example.com"
 ```
+
+## CLI
+
+To operate with the site you need to use the CLI. You can run `bun cli --help` to see the available commands and a quick summary.
+
+### Index
+
+To index archives located in the content directory, run `bun cli index`.
+
+You can pass the `-f` or `--force` option to update indexed archives. Use this if you want to update the metadata or contents of your archives.
+
+Use the `--reindex` option to only update alredy indexed archives and skip new ones.
+
+To only index certain paths, you can use `-p  <paths...>` or `--paths <paths...>` and indicate a space separated list of paths to index. This is useful if you want to index something that isn't in the content directory or to update a specific archive.
+
+If you want to resume indexing, you can use the `--from-path <path>` option to indicate which path (in the content directory) should start indexing from.
+
+**Note**: some paths are incompatible with NPM scripts so if you use `--from-path <path>`, `-p  <paths...>` or `--paths <paths...>` and any of these fails, try running the CLI directly with `bun ./cli/index.ts`.
+
+### Prune
+
+Run the `prune` command to delete archives that don't exist anymore in the file system.
+
+### Generate Images
+
+You can generate all covers and page thumbnails using the `generate-images` command. Useful if you don't want or can't generate the images on-demand.
+
+Use the `--ids <IDs...>` option to indicate which archives it should generate images for.
+
+`-f` or `--force` can be used to re-generate images.
+
+### User login
+
+You can generate a one-time login link for any user using the `uli <username>` command.
+
+### Recovery
+
+Send an access recovery email to a user with the `recovery <username>` command. If you only want to get the code without sending an email, use the `-c` or `--code` option.
 
 ## Migrate from v1
 

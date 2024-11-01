@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { z } from 'zod';
 
 import { ArchiveMetadata } from '../../shared/metadata';
@@ -19,7 +20,15 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
 	if (data.length) {
-		archive.tags = data.map((tag) => ({ namespace: 'tag', name: tag }));
+		archive.tags = data
+			.filter((tag) => !/released:\d+/.test(tag))
+			.map((tag) => ({ namespace: 'tag', name: tag }));
+
+		const [releasedAt] = data.filter((tag) => /released:\d+/.test(tag));
+
+		if (releasedAt) {
+			archive.releasedAt = dayjs.unix(parseInt(releasedAt.split(':')[1])).toDate();
+		}
 	}
 
 	return archive;
