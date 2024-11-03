@@ -236,4 +236,5 @@ export type SiteConfig = {
 	guestDownloads: boolean;
 	searchPlaceholder: string;
 	pageLimits: number[];
+	defaultPageLimit: number;
 };

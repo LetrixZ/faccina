@@ -32,8 +32,15 @@ const listingSchema = z
 		tag_weight: z.array(tagWeightSchema).default([]),
 		tag_exclude: z.array(tagExcludeSchema).default([]),
 		page_limits: z.array(z.number().int()).min(1).catch([24]),
+		default_page_limit: z.number().int().optional(),
 	})
-	.transform(camelize);
+	.transform(camelize)
+	.transform((val) => ({
+		...val,
+		defaultPageLimit: val.defaultPageLimit
+			? (val.pageLimits.find((limit) => limit === val.defaultPageLimit) ?? val.pageLimits[0])
+			: val.pageLimits[0],
+	}));
 
 const siteSchema = z
 	.object({
@@ -48,6 +55,7 @@ const siteSchema = z
 		guest_downloads: z.boolean().default(true),
 		gallery_listing: listingSchema.default({}),
 		search_placeholder: z.string().default(''),
+		store_og_images: z.boolean().default(true),
 	})
 	.transform(camelize);
 

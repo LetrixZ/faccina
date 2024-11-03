@@ -16,6 +16,7 @@ export const load: LayoutServerLoad = ({ locals }) => {
 			guestDownloads: config.site.guestDownloads,
 			searchPlaceholder: config.site.searchPlaceholder,
 			pageLimits: config.site.galleryListing.pageLimits,
+			defaultPageLimit: config.site.galleryListing.defaultPageLimit,
 		} satisfies SiteConfig,
 	};
 };

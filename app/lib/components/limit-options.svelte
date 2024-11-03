@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { siteConfig } from '../stores';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Label } from '$lib/components/ui/label';
@@ -23,15 +24,13 @@
 		const param = $page.url.searchParams.get('limit');
 
 		if (!param) {
-			return pageLimits[0] ?? 24;
+			return $siteConfig.defaultPageLimit;
 		}
 
 		return parseInt(param) || pageLimits[0];
 	})();
 
-	$: limitOption = limit
-		? (options.find((option) => option.value === limit) ?? options[0])
-		: undefined;
+	$: limitOption = options.find((option) => option.value === limit) ?? options[0];
 </script>
 
 <div class="flex items-end justify-between gap-2">

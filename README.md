@@ -22,7 +22,7 @@ Use `docker compose exec app bun cli` to interact with the CLI.
 
 ## Configuration
 
-The configuration will be read from `./config.toml` by default.
+The configuration will be read from `./config.toml`.
 
 ### Site
 
@@ -36,18 +36,30 @@ default_sort = 'released_at'
 default_order = 'desc'
 guest_downloads = true
 search_placeholder = ''
+store_og_images = true
 ```
 
 - `site_name`: Specifies the title showed in pages and emails.
 - `url`: Public URL of the site.
 - `enable_users`: Used to enable/disable user features such as user registration, login and favorites. Use the `uli` command to login as admin.
+- `enable_collections`: Enable user collections.
+- `enable_analytics`: Enable site analytics.
 - `admin_users`: List of usernames that will be given admin privileges. If you use the `uli` command to login as an admin user and this user does not exists, a new one will be created.
 - `default_sort`: Default sorting when nothing was specified by the user.
 - `default_order`: Default ordering when nothing was specified by the user.
 - `guest_downloads`: Show download button for guests users.
 - `search_placeholder`: Placeholder text for the search bar.
+- `store_og_images`: Save generated OpenGraph meta images on disk.
 
 #### Gallery listing
+
+```toml
+page_limits = [24]
+default_page_limit = 24
+```
+
+- `page_limits`: Array of numbers containing the options for the "Per page" filter in gallery listings.
+- `default_page_limit`: The default option in the "Per page" filter. If this is not specified, the first page limit will be used.
 
 ##### Tag weight mapping
 

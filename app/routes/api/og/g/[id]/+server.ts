@@ -25,14 +25,16 @@ export const GET = async ({ fetch, params }) => {
 		`${leadingZeros(gallery.thumbnail, gallery.pages)}.png`
 	);
 
-	const file = Bun.file(imagePath);
+	if (config.site.storeOgImages) {
+		const file = Bun.file(imagePath);
 
-	if (await file.exists()) {
-		return new Response(await file.bytes(), {
-			headers: {
-				'content-type': 'image/png',
-			},
-		});
+		if (await file.exists()) {
+			return new Response(await file.bytes(), {
+				headers: {
+					'content-type': 'image/png',
+				},
+			});
+		}
 	}
 
 	const response = await fetch(`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`);
@@ -71,7 +73,9 @@ export const GET = async ({ fetch, params }) => {
 		{ gallery, dataURL, imageHeight, imageWidth }
 	);
 
-	await Bun.write(imagePath, metaImage);
+	if (config.site.storeOgImages) {
+		await Bun.write(imagePath, metaImage);
+	}
 
 	return new Response(metaImage, {
 		headers: {
