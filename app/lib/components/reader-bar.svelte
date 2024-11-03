@@ -1,4 +1,14 @@
 <script lang="ts">
+	import cookie from 'cookie';
+	import dayjs from 'dayjs';
+	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
+	import ChevronFirst from 'lucide-svelte/icons/chevron-first';
+	import ChevronLast from 'lucide-svelte/icons/chevron-last';
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import { ImageSize, TouchLayout } from '../models';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
@@ -21,17 +31,6 @@
 		showBar,
 	} from '$lib/reader-store';
 	import { type BarPlacement, cn, remToPx } from '$lib/utils';
-	import cookie from 'cookie';
-	import dayjs from 'dayjs';
-	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
-	import ChevronFirst from 'lucide-svelte/icons/chevron-first';
-	import ChevronLast from 'lucide-svelte/icons/chevron-last';
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { onMount } from 'svelte';
-	import { fly } from 'svelte/transition';
-
-	import { ImageSize, TouchLayout } from '../models';
 
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
 	$: total = $currentArchive ? $currentArchive.images.length : 0;

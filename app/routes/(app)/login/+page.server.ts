@@ -1,12 +1,11 @@
-import { loginSchema } from '$lib/schemas';
-import { lucia } from '$lib/server/auth';
 import { error, fail, redirect } from '@sveltejs/kit';
-import config from '~shared/config';
-import db from '~shared/db';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-
 import type { Actions, PageServerLoad } from './$types';
+import { loginSchema } from '$lib/schemas';
+import { lucia } from '$lib/server/auth';
+import config from '~shared/config';
+import db from '~shared/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
@@ -70,6 +69,13 @@ export const actions: Actions = {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
+		});
+
+		event.locals.analytics?.postMessage({
+			action: 'user_login',
+			payload: {
+				userId: user.id,
+			},
 		});
 
 		const redirectTo = event.url.searchParams.get('to');

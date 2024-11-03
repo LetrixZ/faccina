@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-
-	import { nextPage, previewLayout, prevPage, showBar } from '~/lib/reader-store';
-	import { cn } from '~/lib/utils';
+	import { nextPage, previewLayout, prevPage, showBar } from '$lib/reader-store';
+	import { cn } from '$lib/utils';
 
 	export let changePage: (page: number | undefined) => void;
 

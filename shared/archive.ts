@@ -1,11 +1,9 @@
+import { rm } from 'node:fs/promises';
 import { Glob } from 'bun';
 import chalk from 'chalk';
 import { sql } from 'kysely';
-import { rm } from 'node:fs/promises';
-
-import type { Image, Source, Tag } from './metadata';
-
 import db from '../shared/db';
+import type { Image, Source, Tag } from './metadata';
 import config from './config';
 import { leadingZeros } from './utils';
 

@@ -1,5 +1,4 @@
 import type { Kysely } from 'kysely';
-
 import { id } from '../shared/db/helpers';
 
 const weights = [

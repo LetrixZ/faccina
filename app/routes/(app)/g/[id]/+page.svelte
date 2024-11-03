@@ -1,6 +1,14 @@
 <script lang="ts">
+	import { AsyncZipDeflate, strToU8, Zip, ZipPassThrough } from 'fflate';
+	import { BookmarkPlus, Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
+	import pMap from 'p-map';
+	import { MetaTags } from 'svelte-meta-tags';
+	import { toast } from 'svelte-sonner';
+	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import ArchiveEditForm from '$lib/components/archive-edit-form.svelte';
+	import ArchiveTagsEditForm from '$lib/components/archive-tag-edit-form.svelte';
 	import Chip from '$lib/components/chip.svelte';
 	import DownloadProgress from '$lib/components/download-progress.svelte';
 	import GallerySource from '$lib/components/gallery-source.svelte';
@@ -8,7 +16,9 @@
 	import InfoSection from '$lib/components/info-section.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { Separator } from '$lib/components/ui/separator';
 	import { type Task } from '$lib/models';
+	import type { Gallery } from '$lib/types';
 	import {
 		dateTimeFormat,
 		generateFilename,
@@ -17,27 +27,17 @@
 		isTag,
 		randomString,
 	} from '$lib/utils';
+	import { siteConfig } from '~/lib/stores';
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
 	import BiSolidDownload from '~icons/bxs/download';
-	import { AsyncZipDeflate, strToU8, Zip, ZipPassThrough } from 'fflate';
-	import { Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
-	import pMap from 'p-map';
-	import { writable } from 'svelte/store';
-	import { MetaTags } from 'svelte-meta-tags';
-	import { toast } from 'svelte-sonner';
-
-	import type { Gallery } from '~/lib/types';
-
-	import ArchiveEditForm from '~/lib/components/archive-edit-form.svelte';
-	import ArchiveTagsEditForm from '~/lib/components/archive-tag-edit-form.svelte';
-	import { Separator } from '~/lib/components/ui/separator';
 
 	export let data;
 
 	let editOpen = false;
 	let editTaxonomyOpen = false;
+	let collectionsOpen = false;
 
-	$: canDownload = data.site.guestDownloads || data.user;
+	$: canDownload = data.site.guestDownloads || !!data.user;
 	$: gallery = data.gallery;
 	$: archive = data.archive;
 
@@ -274,29 +274,102 @@
 			{/if}
 
 			{#if data.user}
-				{#if data.isFavorite}
-					<form action="?/removeFavorite" class="col-span-2" method="POST" use:enhance>
-						<Button
-							class="flex w-full bg-transparent text-center font-semibold text-white "
-							type="submit"
-							variant="ghost"
-						>
-							<Heart class="size-5 shrink-0 fill-red-500 text-red-500" />
-							<span class="flex-auto"> Remove from Favorites </span>
-						</Button>
-					</form>
-				{:else}
-					<form action="?/addFavorite" class="col-span-2" method="POST" use:enhance>
-						<Button
-							class="flex w-full bg-transparent text-center font-semibold text-white  "
-							type="submit"
-							variant="ghost"
-						>
-							<Heart class="size-5 shrink-0" />
-							<span class="flex-auto"> Add to Favorites </span>
-						</Button>
-					</form>
-				{/if}
+				<div class="col-span-2 flex items-center">
+					<div class="flex-auto">
+						{#if data.isFavorite}
+							<form action="?/removeFavorite" method="POST" use:enhance>
+								<Button
+									class="flex w-full bg-transparent text-center font-semibold text-white "
+									type="submit"
+									variant="ghost"
+								>
+									<Heart class="size-5 shrink-0 fill-red-500 text-red-500" />
+									<span class="flex-auto"> Remove from Favorites </span>
+								</Button>
+							</form>
+						{:else}
+							<form action="?/addFavorite" method="POST" use:enhance>
+								<Button
+									class="flex w-full bg-transparent text-center font-semibold text-white  "
+									type="submit"
+									variant="ghost"
+								>
+									<Heart class="size-5 shrink-0" />
+									<span class="flex-auto"> Add to Favorites </span>
+								</Button>
+							</form>
+						{/if}
+					</div>
+
+					{#if $siteConfig.enableCollections}
+						<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
+							<Dialog.Trigger>
+								<Button
+									class="flex w-full bg-transparent text-center font-semibold text-white "
+									variant="ghost"
+								>
+									<BookmarkPlus class="size-6" />
+									<span class="sr-only"> Bookmark </span>
+								</Button>
+							</Dialog.Trigger>
+							<Dialog.Content>
+								{#if data.userCollections.length}
+									<ul class="grid gap-2">
+										{#each data.userCollections as collection}
+											{@const archives = collection.archives}
+											<li class="flex items-center justify-between">
+												<div class="flex gap-2">
+													•
+													<div class="flex flex-col">
+														<a
+															class="text-lg font-medium"
+															href="/collections/{collection.slug}"
+															target="_blank"
+														>
+															{collection.name}
+														</a>
+														<span class="text-sm text-muted-foreground">
+															{#if archives.length === 1}
+																1 gallery
+															{:else if !archives.length}
+																No galleries
+															{:else}
+																{archives.length} galleries
+															{/if}
+														</span>
+													</div>
+												</div>
+
+												{#if archives.some(({ id }) => id === gallery.id)}
+													<form action="?/removeCollection" method="POST" use:enhance>
+														<input class="hidden" name="collection" value={collection.id} />
+														<input class="hidden" name="archive" value={gallery.id} />
+														<Button class="ms-auto" size="sm" type="submit" variant="destructive">
+															Remove
+														</Button>
+													</form>
+												{:else}
+													<form action="?/addCollection" method="POST" use:enhance>
+														<input class="hidden" name="collection" value={collection.id} />
+														<input class="hidden" name="archive" value={gallery.id} />
+														<Button class="ms-auto" size="sm" type="submit" variant="indigo">
+															Add
+														</Button>
+													</form>
+												{/if}
+											</li>
+										{/each}
+									</ul>
+								{:else}
+									<div class="flex flex-auto flex-col items-center justify-center gap-4 py-12">
+										<h3 class="text-2xl font-medium">No collections found</h3>
+										<Button href="/collections/new" variant="outline">Create a collection</Button>
+									</div>
+								{/if}
+							</Dialog.Content>
+						</Dialog.Root>
+					{/if}
+				</div>
 			{/if}
 		</div>
 

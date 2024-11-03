@@ -1,10 +1,9 @@
 <script lang="ts">
 	import pixelWidth from 'string-pixel-width';
+	import type { Gallery, Tag, TagNamespace } from '$lib/types';
+	import { cn, isTag } from '$lib/utils';
 
-	import { type ArchiveDetail, type Tag, type TagType } from '~/lib/models';
-	import { cn, tagsExcludeCount, tagsExcludeDisplay, tagWeights } from '~/lib/utils';
-
-	export let archive: ArchiveDetail;
+	export let gallery: Gallery;
 	export let dataURL: string;
 	export let imageHeight: number;
 	export let imageWidth: number;
@@ -14,7 +13,7 @@
 
 		let addEllipsis = false;
 
-		for (let i = 0; i <= archive.title.length; i++) {
+		for (let i = 0; i <= gallery.title.length; i++) {
 			const stringWidth = pixelWidth(aux.join(''), { font: 'inter', size: 32 });
 			const lines = stringWidth / 376;
 
@@ -24,64 +23,38 @@
 				break;
 			}
 
-			aux.push(archive.title[i]);
+			aux.push(gallery.title[i]);
 		}
 
 		return `${aux.join('')}${addEllipsis ? '&hellip;' : ''}`;
 	};
 
 	$: [reducedTags, moreCount] = (() => {
-		const maxWidth = 376 * 2;
+		const maxWidth = 750;
 
 		const tags = [
-			...(archive.artists
-				? archive.artists.map((tag) => ({ ...tag, type: 'artist' as TagType }))
-				: []),
-			...(archive.circles
-				? archive.circles.map((tag) => ({ ...tag, type: 'circle' as TagType }))
-				: []),
-			...(archive.parodies
-				? archive.parodies
-						.map((tag) => ({ ...tag, type: 'parody' as TagType }))
-						.filter((tag) => !['original-work', 'original'].includes(tag.slug))
-				: []),
-			...(archive.tags
-				? archive.tags
-						.map((tag) => ({ ...tag, type: 'tag' as TagType }))
-						.filter((tag) => !tagsExcludeCount.includes(tag.name.toLowerCase()))
-						.sort((a, b) => {
-							const aWeight = tagWeights.find(([tag]) => tag === a.name.toLowerCase())?.[1] ?? 0;
-							const bWeight = tagWeights.find(([tag]) => tag === b.name.toLowerCase())?.[1] ?? 0;
-
-							if (aWeight === bWeight) {
-								return a.name.length - b.name.length;
-							}
-
-							return bWeight - aWeight;
-						})
-				: []),
+			...gallery.tags.filter((tag) => tag.namespace === 'artist'),
+			...gallery.tags.filter((tag) => tag.namespace === 'circle'),
+			...gallery.tags.filter((tag) => tag.namespace === 'parody'),
+			...gallery.tags.filter((tag) => isTag(tag)),
 		];
 
 		let tagCount = tags.length;
 		let width = 0;
 
-		const reduced: (Tag & { type: TagType })[] = [];
+		const reduced: Tag[] = [];
 
 		for (const tag of tags) {
 			if (reduced.find((t) => t.name === tag.name)) {
 				continue;
 			}
 
-			if (tag.type === 'circle' && tag.name.length > 20) {
+			if (tag.namespace === 'tag' && tag.name.length > 20) {
 				continue;
 			}
 
 			if (width < maxWidth) {
 				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
-
-				if (tag.type === 'tag' && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {
-					continue;
-				}
 
 				width += tagWidth;
 				reduced.push(tag);
@@ -92,8 +65,8 @@
 		return [reduced, tagCount];
 	})();
 
-	const getBackground = (type: TagType) => {
-		switch (type) {
+	const getBackground = (namespace: TagNamespace) => {
+		switch (namespace) {
 			case 'artist':
 				return 'bg-red-700 hover:bg-red-700/80';
 			case 'circle':
@@ -133,7 +106,7 @@
 						style="margin: 0.175rem"
 						tw={cn(
 							'px-1.5 py-0.5 rounded-md text-sm font-semibold text-neutral-200',
-							getBackground(tag.type)
+							getBackground(tag.namespace)
 						)}
 					>
 						{tag.name}

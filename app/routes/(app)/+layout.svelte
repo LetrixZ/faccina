@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-
-	import { enhance } from '$app/forms';
+	import { Bookmark, Heart, UserCircle } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
@@ -14,20 +14,24 @@
 	import MdiLogout from '~icons/mdi/logout';
 	import MdiSettings from '~icons/mdi/settings';
 	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
-	import { Heart } from 'lucide-svelte';
-	import { toast } from 'svelte-sonner';
-
-	import type { UserFormState } from '~/lib/models.js';
-
-	import LoginForm from '~/lib/components/login-form.svelte';
-	import RecoverForm from '~/lib/components/recover-form.svelte';
-	import RegisterForm from '~/lib/components/register-form.svelte';
-	import ResetForm from '~/lib/components/reset-form.svelte';
-	import { query } from '~/lib/stores.js';
+	import type { UserFormState } from '$lib/models';
+	import LoginForm from '$lib/components/login-form.svelte';
+	import RecoverForm from '$lib/components/recover-form.svelte';
+	import RegisterForm from '$lib/components/register-form.svelte';
+	import ResetForm from '$lib/components/reset-form.svelte';
+	import { query, tagList } from '$lib/stores';
 
 	export let data;
 
-	$: favorites = $page.url.pathname === '/favorites';
+	$: formAction = (() => {
+		switch ($page.route.id) {
+			case '/(app)/favorites':
+			case '/(app)/collections/[slug]':
+				return $page.url.pathname;
+			default:
+				return '/';
+		}
+	})();
 
 	let loginOpen = false;
 	let userFormState: UserFormState = 'login';
@@ -158,6 +162,21 @@
 			loginOpen = false;
 		}
 	};
+
+	const logout = () => {
+		fetch(`/logout`, {
+			method: 'POST',
+		}).then(() => invalidateAll());
+	};
+
+	const showLogin = () => {
+		userFormState = 'login';
+		loginOpen = true;
+	};
+
+	$: {
+		$tagList = data.tags;
+	}
 </script>
 
 <svelte:head>
@@ -175,18 +194,6 @@
 		<IonMdHome class="size-6" />
 	</Button>
 
-	{#if data.site.enableUsers && data.user}
-		<Button
-			class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
-			href="/favorites"
-			on:click={() => ($query = '')}
-			title="Favorites"
-			variant="ghost"
-		>
-			<Heart class="size-5 fill-current" />
-		</Button>
-	{/if}
-
 	<div class="h-12 w-full flex-1 p-2">
 		<Popover.Root
 			disableFocusTrap={true}
@@ -196,7 +203,7 @@
 			portal={formEl}
 		>
 			<form
-				action={favorites ? '/favorites' : '/'}
+				action={formAction}
 				bind:this={formEl}
 				class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
 				on:submit={() => (popoverOpen = false)}
@@ -277,7 +284,7 @@
 				{/if}
 
 				<Button
-					class="aspect-square h-full rounded-none p-0 text-muted-foreground !ring-0 !ring-offset-0 focus-within:text-foreground"
+					class="aspect-square h-full rounded p-0 text-muted-foreground !ring-0 !ring-offset-0 focus-within:text-foreground"
 					type="submit"
 					variant="ghost"
 				>
@@ -306,58 +313,74 @@
 		</Popover.Root>
 	</div>
 
-	{#if data.site.enableUsers}
-		{#if data.user}
-			<form
-				action="/logout?to={$page.url.pathname}{$page.url.search}"
-				method="POST"
-				use:enhance={() => {
-					return ({ result }) => {
-						invalidateAll();
-
-						if (result.type === 'redirect' || result.type === 'success') {
-							toast('Logged out successfully');
-						}
-					};
-				}}
-			>
-				<Button
-					class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
-					title="Logout"
-					type="submit"
-					variant="ghost"
-				>
-					<MdiLogout class="size-6" />
-				</Button>
-			</form>
-		{:else}
+	<DropdownMenu.Root preventScroll={false}>
+		<DropdownMenu.Trigger>
 			<Button
 				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
-				href="/login?to={$page.url.pathname}{$page.url.search}"
-				on:click={(ev) => {
-					ev.preventDefault();
-					userFormState = 'login';
-					loginOpen = true;
-				}}
-				title="Login"
 				variant="ghost"
 			>
-				<MdiLogin class="size-6" />
-			</Button>
-		{/if}
-	{/if}
+				<UserCircle class="size-6" /></Button
+			>
+		</DropdownMenu.Trigger>
+		<DropdownMenu.Content class="min-w-40">
+			<DropdownMenu.Group>
+				<DropdownMenu.Item
+					class="flex w-full cursor-pointer items-center text-neutral-200"
+					href="/preferences"
+				>
+					Preferences
+					<MdiSettings class="ms-auto size-4" />
+				</DropdownMenu.Item>
 
-	<Button
-		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
-		href="/preferences"
-		title="Preferences"
-		variant="ghost"
-	>
-		<MdiSettings class="size-6" />
-	</Button>
+				{#if data.user}
+					<DropdownMenu.Separator />
+
+					<DropdownMenu.Item
+						class="flex w-full cursor-pointer items-center text-neutral-200"
+						href="/favorites"
+					>
+						Favorites
+						<Heart class="ms-auto size-4" />
+					</DropdownMenu.Item>
+
+					{#if data.site.enableCollections}
+						<DropdownMenu.Item
+							class="flex w-full cursor-pointer items-center text-neutral-200"
+							href="/collections"
+						>
+							Collections
+							<Bookmark class="ms-auto size-4" />
+						</DropdownMenu.Item>
+					{/if}
+				{/if}
+
+				<DropdownMenu.Separator />
+
+				{#if data.site.enableUsers}
+					{#if data.user}
+						<DropdownMenu.Item
+							class="flex w-full cursor-pointer items-center text-neutral-200"
+							on:click={logout}
+						>
+							Logout
+							<MdiLogout class="ms-auto size-4" />
+						</DropdownMenu.Item>
+					{:else}
+						<DropdownMenu.Item
+							class="flex w-full cursor-pointer items-center text-neutral-200"
+							on:click={showLogin}
+						>
+							Login
+							<MdiLogin class="ms-auto size-4" />
+						</DropdownMenu.Item>
+					{/if}
+				{/if}
+			</DropdownMenu.Group>
+		</DropdownMenu.Content>
+	</DropdownMenu.Root>
 </div>
 
-<div class={cn('pt-12')}>
+<div class="flex w-full flex-auto flex-col pt-12">
 	<slot />
 </div>
 

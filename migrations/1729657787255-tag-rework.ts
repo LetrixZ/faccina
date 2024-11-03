@@ -1,5 +1,4 @@
 import { type Kysely } from 'kysely';
-
 import config from '../shared/config';
 import { id, now } from '../shared/db/helpers';
 import { taxonomyTables } from '../shared/taxonomy';

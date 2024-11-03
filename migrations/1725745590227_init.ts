@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import { type Kysely, sql } from 'kysely';
-
 import config from '../shared/config';
 import { id, now } from '../shared/db/helpers';
 import { taxonomyTables } from '../shared/taxonomy';

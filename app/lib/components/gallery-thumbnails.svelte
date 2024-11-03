@@ -1,10 +1,8 @@
 <script lang="ts">
+	import type { Gallery } from '../types';
+	import { Button } from './ui/button';
 	import { page } from '$app/stores';
 	import { cn, isSpread } from '$lib/utils';
-
-	import type { Gallery } from '../types';
-
-	import { Button } from './ui/button';
 
 	export let archive: Gallery;
 

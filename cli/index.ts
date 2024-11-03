@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
-
 import { indexArchives, pruneArchives } from './archive';
 import { generateImages } from './images';
 import { migrateDatabase, migrateImages } from './migrate';

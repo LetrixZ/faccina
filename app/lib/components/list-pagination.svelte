@@ -1,14 +1,24 @@
 <script lang="ts">
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import { createEventDispatcher } from 'svelte';
+	import Button from './ui/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { cn } from '$lib/utils';
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 
-	import Button from './ui/button/button.svelte';
+	export let total: number;
+	export let limit: number;
+	export let value: number | undefined = undefined;
+
+	let className: string | null | undefined = undefined;
 
 	$: currentPage = (() => {
+		if (value) {
+			return value;
+		}
+
 		const currentPage = $page.url.searchParams.get('page');
 
 		if (currentPage) {
@@ -18,11 +28,7 @@
 		}
 	})();
 
-	let className: string | null | undefined = undefined;
-
-	export let total = 0;
-	export let limit = 24;
-	export { className as class };
+	const dispatch = createEventDispatcher<{ navigate: number }>();
 
 	const getPageUrl = (page: number, url: URL) => {
 		const query = new URLSearchParams(url.searchParams.toString());
@@ -30,6 +36,18 @@
 
 		return `${url.pathname}?${query.toString()}`;
 	};
+
+	$: prevPage = (() => {
+		if (currentPage > 1) {
+			return currentPage - 1;
+		}
+	})();
+
+	$: nextPage = (() => {
+		if (currentPage < Math.ceil(total / limit)) {
+			return currentPage + 1;
+		}
+	})();
 
 	$: prevPageUrl = (() => {
 		if (currentPage > 1) {
@@ -48,11 +66,13 @@
 			return `${$page.url.pathname}?${query.toString()}`;
 		}
 	})();
+
+	export { className as class };
 </script>
 
 <Pagination.Root
 	class={className}
-	count={total}
+	count={total || 1}
 	let:currentPage
 	let:pages
 	onPageChange={(newPage) => {
@@ -61,13 +81,18 @@
 		goto(`?${query.toString()}`);
 	}}
 	page={currentPage}
-	perPage={limit}
+	perPage={limit || 1}
 >
 	<Pagination.Content>
 		<Pagination.Item class="me-auto md:me-0">
 			<Button
 				class={cn('gap-1 pl-2.5', !prevPageUrl && 'pointer-events-none opacity-50')}
 				href={prevPageUrl}
+				on:click={(ev) => {
+					if (!dispatch('navigate', prevPage || 1, { cancelable: true })) {
+						ev.preventDefault();
+					}
+				}}
 				size="sm"
 				variant="ghost"
 			>
@@ -84,6 +109,11 @@
 				<Pagination.Item>
 					<Button
 						href={getPageUrl(_page.value, $page.url)}
+						on:click={(ev) => {
+							if (!dispatch('navigate', _page.value, { cancelable: true })) {
+								ev.preventDefault();
+							}
+						}}
 						size="sm"
 						variant={_page.value === currentPage ? 'outline' : 'ghost'}
 					>
@@ -96,6 +126,11 @@
 			<Button
 				class={cn('gap-1 pl-2.5', !nextPageUrl && 'pointer-events-none  opacity-50 ')}
 				href={nextPageUrl}
+				on:click={(ev) => {
+					if (!dispatch('navigate', nextPage || 1, { cancelable: true })) {
+						ev.preventDefault();
+					}
+				}}
 				size="sm"
 				variant="ghost"
 			>

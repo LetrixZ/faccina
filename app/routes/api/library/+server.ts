@@ -1,17 +1,31 @@
-import { search } from '$lib/server/db/queries';
 import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+import { search } from '$lib/server/db/queries';
+import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom } from '~shared/db/helpers';
-
-import type { RequestHandler } from './$types';
+import { searchSchema } from '$lib/schemas';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
-	const searchParams = new URLSearchParams(url.searchParams);
+	const params = searchSchema
+		.transform((val) => {
+			if (!config.site.galleryListing.pageLimits.includes(val.limit)) {
+				val.limit = config.site.galleryListing.pageLimits[0];
+			}
 
-	const { ids, total } = await search(searchParams, { showHidden: !!locals.user?.admin });
+			return val;
+		})
+		.parse(Object.fromEntries(url.searchParams));
+
+	const { ids, total } = await search(params, { showHidden: !!locals.user?.admin });
 
 	if (!ids.length) {
-		return json({ archives: [], page: 1, limit: 24, total });
+		return json({
+			archives: [],
+			page: params.page,
+			limit: params.limit,
+			total,
+		});
 	}
 
 	const archives = await db
@@ -37,7 +51,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	return json({
 		archives,
 		page: 1,
-		limit: 24,
+		limit: params.limit,
 		total,
 	});
 };

@@ -1,7 +1,6 @@
-import chalk from 'chalk';
 import { randomBytes } from 'crypto';
+import chalk from 'chalk';
 import mjml2html from 'mjml';
-
 import config from './config';
 import db from './db';
 import { now } from './db/helpers';

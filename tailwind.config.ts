@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { Config } from 'tailwindcss';
-
 import { fontFamily } from 'tailwindcss/defaultTheme';
 
 const config: Config = {
@@ -67,7 +66,7 @@ const config: Config = {
 			},
 			screens: {
 				xs: '540px',
-				'3xl': '1680px',
+				'3xl': '1920px',
 			},
 		},
 	},

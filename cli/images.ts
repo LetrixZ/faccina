@@ -1,12 +1,11 @@
+import { join } from 'node:path';
 import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import StreamZip from 'node-stream-zip';
-import { join } from 'node:path';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-
 import config, { Preset } from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
@@ -26,7 +25,7 @@ type ArchiveEncode = { id: number; path: string; images: ImageEncode[] };
 export const generateImages = async (options: GenerateImagesOptions) => {
 	const start = performance.now();
 
-	let query = queryIdRanges(db.selectFrom('archives'), options.ids)
+	const query = queryIdRanges(db.selectFrom('archives'), options.ids)
 		.select((eb) => [
 			'id',
 			'path',

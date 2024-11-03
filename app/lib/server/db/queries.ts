@@ -1,23 +1,20 @@
-import type { DB } from '~shared/types';
-
-import { decompressBlacklist, shuffle } from '$lib/utils';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom, jsonObjectFrom, like } from '~shared/db/helpers';
 import {
 	type Expression,
-	type ExpressionBuilder,
-	type ExpressionWrapper,
+	ExpressionWrapper,
 	type OrderByExpression,
 	sql,
 	type SqlBool,
 } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
-
-import type { Archive, Gallery, GalleryListItem, Tag } from '~/lib/types';
-
-import { type Order, orderSchema, type Sort, sortSchema } from '~/lib/schemas';
+import { handleTags } from '../utils';
+import { type Order, type SearchParams, type Sort } from '$lib/schemas';
+import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
+import { shuffle } from '$lib/utils';
+import config from '~shared/config';
+import db from '~shared/db';
+import { jsonArrayFrom, like } from '~shared/db/helpers';
+import type { DB } from '~shared/types';
 
 export enum Sorting {
 	RELEVANCE = 'relevance',
@@ -37,6 +34,7 @@ export type QueryOptions = {
 	showHidden?: boolean;
 	matchIds?: number[];
 	sortingIds?: number[];
+	tagBlacklist?: string[];
 };
 
 export const getGallery = (id: number, options: QueryOptions): Promise<Gallery | undefined> => {
@@ -220,23 +218,10 @@ export const parseQuery = (query: string) => {
 };
 
 export const search = async (
-	searchParams: URLSearchParams,
+	params: SearchParams,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
-	const { tagMatches, titleMatch, pagesMatch, urlMatch, sourceMatch } = parseQuery(
-		searchParams.get('q') ?? ''
-	);
-
-	const sort = sortSchema
-		.nullish()
-		.transform((val) => val ?? config.site.defaultSort)
-		.catch(config.site.defaultSort)
-		.parse(searchParams.get('sort'));
-	const order = orderSchema
-		.nullish()
-		.transform((val) => val ?? config.site.defaultOrder)
-		.catch(config.site.defaultOrder)
-		.parse(searchParams.get('order'));
+	const { tagMatches, titleMatch, pagesMatch, urlMatch, sourceMatch } = parseQuery(params.query);
 
 	const sortQuery = (sort: Sort, order: Order) => {
 		switch (sort) {
@@ -255,30 +240,21 @@ export const search = async (
 		}
 	};
 
+	const sort = params.sort ?? config.site.defaultSort;
+	const order = params.order ?? config.site.defaultOrder;
+
 	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'archives', undefined>;
 
-	const blacklist = (() => {
-		const data = searchParams.get('blacklist');
-
-		if (!data) {
-			return [];
-		}
-
-		try {
-			return decompressBlacklist(data);
-		} catch {
-			return [];
-		}
-	})();
-
-	tagMatches.push(
-		...blacklist.map((tag) => ({
-			namespace: tag.split(':')[0],
-			name: tag.split(':').slice(1).join(':'),
-			negate: true,
-			or: false,
-		}))
-	);
+	if (options.tagBlacklist) {
+		tagMatches.push(
+			...options.tagBlacklist.map((tag) => ({
+				namespace: tag.split(':')[0],
+				name: tag.split(':').slice(1).join(':'),
+				negate: true,
+				or: false,
+			}))
+		);
+	}
 
 	const getTagIds = (name: string, namespace = 'tag') => {
 		let query = db.selectFrom('tags').select('id');
@@ -488,17 +464,12 @@ export const search = async (
 		};
 	}
 
-	const seed = searchParams.get('seed');
-
-	if (sort === Sorting.RANDOM && seed) {
-		allIds = shuffle(allIds, seed);
+	if (sort === Sorting.RANDOM && params.seed) {
+		allIds = shuffle(allIds, params.seed);
 	}
 
 	return {
-		ids: allIds.slice(
-			((parseInt(searchParams.get('page') ?? '1') || 1) - 1) * 24,
-			(parseInt(searchParams.get('page') ?? '1') || 1) * 24
-		),
+		ids: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
 		total: allIds.length,
 	};
 };
@@ -507,7 +478,7 @@ export const libraryItems = async (
 	ids: number[],
 	options?: QueryOptions
 ): Promise<GalleryListItem[]> => {
-	let archives = await db
+	let archives = (await db
 		.selectFrom('archives')
 		.select((eb) => [
 			'id',
@@ -524,61 +495,11 @@ export const libraryItems = async (
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),
-			jsonObjectFrom(
-				eb
-					.selectFrom('archiveImages')
-					.select(['filename', 'pageNumber', 'width', 'height'])
-					.whereRef('archives.id', '=', 'archiveId')
-					.whereRef('archives.thumbnail', '=', 'archiveImages.pageNumber')
-					.limit(1)
-			).as('cover'),
 		])
 		.where('archives.id', 'in', ids)
-		.execute();
+		.execute()) satisfies GalleryListItem[];
 
-	archives = archives.map((archive) => {
-		const { tagExclude, tagWeight } = config.site.galleryListing;
-
-		const filteredTags = archive.tags.filter((tag) => {
-			return !tagExclude.some(({ ignoreCase, name, namespace }) => {
-				const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
-				const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
-
-				if (namespace) {
-					return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
-				} else {
-					return normalizedNames.includes(normalizedTagName);
-				}
-			});
-		});
-
-		const sortedTags = filteredTags.sort((a, b) => {
-			const getWeight = (tag: Tag) => {
-				const matchTag = tagWeight.find(({ ignoreCase, name, namespace }) => {
-					const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
-					const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
-
-					if (namespace) {
-						return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
-					} else {
-						return normalizedNames.includes(normalizedTagName);
-					}
-				});
-
-				return matchTag?.weight ?? 0;
-			};
-
-			const aWeight = getWeight(a);
-			const bWeight = getWeight(b);
-
-			return aWeight === bWeight ? a.name.localeCompare(b.name) : bWeight - aWeight;
-		});
-
-		return {
-			...archive,
-			tags: sortedTags,
-		};
-	});
+	archives = archives.map((archive) => handleTags(archive));
 
 	if (options?.sortingIds) {
 		const ids = options.sortingIds;
@@ -589,5 +510,45 @@ export const libraryItems = async (
 	}
 };
 
-export const tagList = () =>
+export const tagList = (): Promise<Tag[]> =>
 	db.selectFrom('tags').select(['id', 'namespace', 'name', 'displayName']).execute();
+
+export const getUserBlacklist = async (userId: string) => {
+	const row = await db
+		.selectFrom('userBlacklist')
+		.select('blacklist')
+		.where('userId', '=', userId)
+		.executeTakeFirst();
+
+	if (!row) {
+		return [];
+	}
+
+	try {
+		return z.array(z.string()).parse(row.blacklist);
+	} catch {
+		return [];
+	}
+};
+
+export const userCollections = (userId: string): Promise<Collection[]> =>
+	db
+		.selectFrom('collection')
+		.select((eb) => [
+			'collection.id',
+			'collection.name',
+			'collection.slug',
+			'collection.protected',
+			jsonArrayFrom(
+				eb
+					.selectFrom('collectionArchive')
+					.innerJoin('archives', 'archives.id', 'archiveId')
+					.select(['id', 'title', 'hash', 'thumbnail', 'deletedAt'])
+					.orderBy('collectionArchive.order asc')
+					.whereRef('collection.id', '=', 'collectionId')
+			).as('archives'),
+		])
+		.where('userId', '=', userId)
+		.groupBy('collection.id')
+		.orderBy('createdAt asc')
+		.execute();

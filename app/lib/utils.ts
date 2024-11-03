@@ -1,17 +1,16 @@
 import type { TransitionConfig } from 'svelte/transition';
-
 import { error } from '@sveltejs/kit';
+import chalk from 'chalk';
 import { type ClassValue, clsx } from 'clsx';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { gunzipSync, strFromU8 } from 'fflate';
+import * as R from 'ramda';
 import _slugify from 'slugify';
 import { cubicOut } from 'svelte/easing';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-
 import type { Gallery, Image, Tag } from './types';
-
 import { ImageSize, TouchLayout } from './models';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
@@ -129,51 +128,6 @@ export const generateFilename = (archive: Gallery) => {
 		.replace('\u{2044}', '/')
 		.replace('\u{A792}', ':');
 };
-
-export const tagsExcludeCount: string[] = ['unlimited', 'uncensored', 'hentai'];
-export const tagsExcludeDisplay: string[] = [];
-export const tagWeights: [string, number][] = [
-	['loli', 10],
-	['shota', 10],
-	['petite', 10],
-	['milf', 10],
-	['dilf', 10],
-	['ugly bastard', 10],
-	['netorare', 8],
-	['rape', 8],
-	['forced', 8],
-	['illustration', 15],
-	['non-h', 15],
-	['color', 10],
-	['ecchi', 15],
-	['catgirl', 4],
-	['monster girl', 4],
-	['anal', 6],
-	['kogal', 7],
-	['dark skin', 4],
-	['mating press', 3],
-	['tomboy', 4],
-	['teacher', 8],
-	['western', 5],
-	['osananajimi', 6],
-	['vanilla', 7],
-	['love hotel', 5],
-	['busty', 4],
-	['booty', 1],
-	['pubic hair', 2],
-	['blowjob', 2],
-	['handjob', 2],
-	['footjob', 2],
-	['paizuru', 2],
-	['cheating', 8],
-	['creampie', 3],
-	['futanari', 8],
-	['schoolgirl outfit', 5],
-	['story arc', 2],
-	['group', 6],
-	['cg set', 10],
-	['incest', 8],
-];
 
 export const isSpread = (image: Image) => {
 	if (image.width && image.height) {
@@ -361,7 +315,35 @@ export const debounce = (callback: () => void, wait = 300) => {
 	};
 };
 
-export const decompressBlacklist = (compressed: string) => {
-	const data = JSON.parse(strFromU8(gunzipSync(new Uint8Array(Buffer.from(compressed, 'base64')))));
-	return z.array(z.string()).parse(data);
+export const decompressBlacklist = (compressed?: string) => {
+	if (!compressed) {
+		return [];
+	}
+
+	try {
+		const data = JSON.parse(
+			strFromU8(gunzipSync(new Uint8Array(Buffer.from(compressed, 'base64'))))
+		);
+		return z.array(z.string()).parse(data);
+	} catch (err) {
+		console.error(
+			chalk.red(
+				`[${new Date().toISOString()}] ${chalk.blue``} ${chalk.blue`preferences`} - Failed to get blacklist from cookie\n`
+			),
+			err
+		);
+
+		return [];
+	}
 };
+
+export const swap = R.curry((index1, index2, list) => {
+	if (index1 < 0 || index2 < 0 || index1 > list.length - 1 || index2 > list.length - 1) {
+		return list;
+	}
+
+	const value1 = list[index1];
+	const value2 = list[index2];
+
+	return R.pipe(R.set(R.lensIndex(index1), value2), R.set(R.lensIndex(index2), value1))(list);
+});

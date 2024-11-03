@@ -1,10 +1,9 @@
 <script lang="ts">
-	import * as Popover from '$lib/components/ui/popover';
 	import { createEventDispatcher } from 'svelte';
-
 	import { cn, slugify } from '../utils';
 	import { Button } from './ui/button';
 	import Input from './ui/input/input.svelte';
+	import * as Popover from '$lib/components/ui/popover';
 
 	export let chips: string[] = [];
 	export let id: string | undefined = undefined;
@@ -238,9 +237,9 @@
 
 	{#if chips?.length}
 		<div class="flex flex-wrap gap-2 p-2">
-			{#each chips as chip (chip)}
+			{#each chips as chip}
 				<button
-					class="rounded-md bg-secondary px-2 py-0.5 hover:bg-secondary/80 motion-safe:duration-150"
+					class="rounded-md bg-secondary px-2 py-0.5 text-sm text-neutral-200 hover:bg-secondary/80 hover:text-white motion-safe:duration-150"
 					on:click={() => removeChip(chip)}
 					type="button"
 				>

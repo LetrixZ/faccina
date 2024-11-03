@@ -1,17 +1,15 @@
+import { createReadStream } from 'node:fs';
+import { exists, rename, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { parse } from 'path';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
-import { createReadStream } from 'node:fs';
-import { exists, rename, stat } from 'node:fs/promises';
-import { join } from 'node:path';
-import { parse } from 'path';
 import slugify from 'slugify';
-
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-
 import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';

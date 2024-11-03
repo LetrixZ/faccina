@@ -1,7 +1,6 @@
 import capitalize from 'capitalize';
 import YAML from 'yaml';
 import { z } from 'zod';
-
 import config from '../../shared/config';
 import { ArchiveMetadata } from '../../shared/metadata';
 import { stringOrNumberArray } from './schemas';

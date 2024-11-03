@@ -1,5 +1,5 @@
 <script lang="ts">
-	import RecoverForm from '~/lib/components/recover-form.svelte';
+	import RecoverForm from '$lib/components/recover-form.svelte';
 
 	export let data;
 </script>

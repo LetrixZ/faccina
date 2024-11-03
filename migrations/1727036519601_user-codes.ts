@@ -1,5 +1,4 @@
 import type { Kysely } from 'kysely';
-
 import { now } from '../shared/db/helpers';
 
 export async function up(db: Kysely<any>): Promise<void> {

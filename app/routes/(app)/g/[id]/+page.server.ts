@@ -1,16 +1,16 @@
-import { editArchiveSchema, editTagsSchema } from '$lib/schemas';
-import { getArchive, getGallery } from '$lib/server/db/queries';
 import { error, fail } from '@sveltejs/kit';
-import { upsertSources, upsertTags } from '~shared/archive';
-import db from '~shared/db';
-import { now } from '~shared/db/helpers';
 import dayjs from 'dayjs';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-
-import type { Archive } from '~/lib/types';
-
-import type { Actions, PageServerLoad } from './$types';
+import { z } from 'zod';
+import type { PageServerLoad } from './$types';
+import { editArchiveSchema, editTagsSchema } from '$lib/schemas';
+import { getArchive, getGallery } from '$lib/server/db/queries';
+import type { Archive } from '$lib/types';
+import { upsertSources, upsertTags } from '~shared/archive';
+import config from '~shared/config';
+import db from '~shared/db';
+import { now } from '~shared/db/helpers';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const id = parseInt(params.id);
@@ -42,6 +42,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		archive = await getArchive(id);
 	}
 
+	locals.analytics?.postMessage({
+		action: 'gallery_view',
+		payload: {
+			archiveId: gallery.id,
+			userId: locals.user?.id,
+		},
+	});
+
 	return {
 		gallery,
 		archive,
@@ -70,9 +78,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 };
 
 export const actions = {
-	addFavorite: async (event) => {
-		if (!event.locals.user) {
-			throw fail(400, {
+	addFavorite: async ({ locals, params }) => {
+		if (!locals.user) {
+			return fail(400, {
 				message: 'You are not logged in',
 			});
 		}
@@ -80,32 +88,32 @@ export const actions = {
 		await db
 			.insertInto('userFavorites')
 			.values({
-				userId: event.locals.user.id,
-				archiveId: parseInt(event.params.id),
+				userId: locals.user.id,
+				archiveId: parseInt(params.id),
 			})
 			.execute();
 	},
-	removeFavorite: async (event) => {
-		if (!event.locals.user) {
-			throw fail(400, {
+	removeFavorite: async ({ locals, params }) => {
+		if (!locals.user) {
+			return fail(400, {
 				message: 'You are not logged in',
 			});
 		}
 
 		await db
 			.deleteFrom('userFavorites')
-			.where('userId', '=', event.locals.user.id)
-			.where('archiveId', '=', parseInt(event.params.id))
+			.where('userId', '=', locals.user.id)
+			.where('archiveId', '=', parseInt(params.id))
 			.execute();
 	},
-	hide: async (event) => {
-		const admin = event.locals.user?.admin;
+	hide: async ({ locals, params }) => {
+		const admin = locals.user?.admin;
 
 		if (!admin) {
-			throw fail(401);
+			return fail(401);
 		}
 
-		const { id } = event.params;
+		const { id } = params;
 
 		await db
 			.updateTable('archives')
@@ -113,14 +121,14 @@ export const actions = {
 			.where('id', '=', parseInt(id))
 			.execute();
 	},
-	show: async (event) => {
-		const admin = event.locals.user?.admin;
+	show: async ({ locals, params }) => {
+		const admin = locals.user?.admin;
 
 		if (!admin) {
-			throw fail(401);
+			return fail(401);
 		}
 
-		const { id } = event.params;
+		const { id } = params;
 
 		await db
 			.updateTable('archives')
@@ -130,11 +138,131 @@ export const actions = {
 			.where('id', '=', parseInt(id))
 			.execute();
 	},
-	editInfo: async (event) => {
-		const admin = event.locals.user?.admin;
+	addCollection: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(400, {
+				message: 'You are not logged in',
+			});
+		}
 
-		if (!admin) {
-			throw fail(401);
+		if (!config.site.enableCollections) {
+			return fail(400, {
+				message: 'Collections are not enabled',
+			});
+		}
+
+		const formData = await request.formData();
+
+		const { data } = z
+			.object({
+				collection: z.coerce.number(),
+				archive: z.coerce.number(),
+			})
+			.safeParse({
+				collection: formData.get('collection'),
+				archive: formData.get('archive'),
+			});
+
+		if (!data) {
+			return fail(400);
+		}
+
+		const collection = await db
+			.selectFrom('collection')
+			.select('id')
+			.where('id', '=', data.collection)
+			.where('userId', '=', locals.user.id)
+			.executeTakeFirst();
+
+		if (!collection) {
+			return fail(404, {
+				message: 'This collection does not exists',
+			});
+		}
+
+		const lastArchive = await db
+			.selectFrom('collectionArchive')
+			.select('order')
+			.where('collectionId', '=', collection.id)
+			.orderBy('order desc')
+			.executeTakeFirst();
+
+		await db
+			.insertInto('collectionArchive')
+			.values({
+				collectionId: collection.id,
+				archiveId: data.archive,
+				order: lastArchive ? lastArchive.order + 1 : 0,
+			})
+			.execute();
+
+		return {
+			message: 'Gallery added to the collection',
+			type: 'success',
+		};
+	},
+	removeCollection: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(400, {
+				message: 'You are not logged in',
+			});
+		}
+
+		if (!config.site.enableCollections) {
+			return fail(400, {
+				message: 'Collections are not enabled',
+			});
+		}
+
+		const formData = await request.formData();
+
+		const { data } = z
+			.object({
+				collection: z.coerce.number(),
+				archive: z.coerce.number(),
+			})
+			.safeParse({
+				collection: formData.get('collection'),
+				archive: formData.get('archive'),
+			});
+
+		if (!data) {
+			return fail(400);
+		}
+
+		const collection = await db
+			.selectFrom('collection')
+			.select('id')
+			.where('id', '=', data.collection)
+			.where('userId', '=', locals.user.id)
+			.executeTakeFirst();
+
+		if (!collection) {
+			return fail(404, {
+				message: 'This collection does not exists',
+			});
+		}
+
+		await db
+			.deleteFrom('collectionArchive')
+			.where((eb) =>
+				eb.and({
+					collectionId: collection.id,
+					archiveId: data.archive,
+				})
+			)
+			.execute();
+
+		return {
+			message: 'Gallery removed from the collection',
+			type: 'success',
+		};
+	},
+	editInfo: async (event) => {
+		const user = event.locals.user;
+
+		if (!user || !user.admin) {
+			return fail(401);
 		}
 
 		const { id } = event.params;
@@ -184,15 +312,24 @@ export const actions = {
 			sources.map((source) => ({ name: source.name, url: source.url ?? undefined }))
 		);
 
+		event.locals.analytics?.postMessage({
+			action: 'gallery_update_info',
+			payload: {
+				archiveId: archive.id,
+				data: form.data,
+				userId: user.id,
+			},
+		});
+
 		return {
 			form,
 		};
 	},
 	editTags: async (event) => {
-		const admin = event.locals.user?.admin;
+		const user = event.locals.user;
 
-		if (!admin) {
-			throw fail(401);
+		if (!user || !user.admin) {
+			return fail(401);
 		}
 
 		const { id } = event.params;
@@ -219,8 +356,17 @@ export const actions = {
 
 		await upsertTags(archive.id, tags);
 
+		event.locals.analytics?.postMessage({
+			action: 'gallery_update_tags',
+			payload: {
+				archiveId: archive.id,
+				data: form.data,
+				userId: user.id,
+			},
+		});
+
 		return {
 			form,
 		};
 	},
-} satisfies Actions;
+};

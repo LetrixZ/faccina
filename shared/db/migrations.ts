@@ -1,9 +1,8 @@
+import { readdir } from 'node:fs/promises';
+import { join, parse } from 'node:path';
 import { Glob } from 'bun';
 import chalk from 'chalk';
 import { Kysely, type Migration, type MigrationProvider, Migrator } from 'kysely';
-import { readdir } from 'node:fs/promises';
-import { join, parse } from 'node:path';
-
 import type { DB } from '../types';
 
 class ESMFileMigrationProvider implements MigrationProvider {

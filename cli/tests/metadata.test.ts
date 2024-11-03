@@ -1,9 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import dayjs from 'dayjs';
 import StreamZip from 'node-stream-zip';
-
 import type { Archive } from '../../shared/metadata';
-
 import config from '../../shared/config';
 import {
 	addEmbeddedMetadata,

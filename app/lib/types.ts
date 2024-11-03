@@ -1,3 +1,13 @@
+import { z } from 'zod';
+import {
+	createCollectionSchema,
+	editArchiveSchema,
+	editTagsSchema,
+	type Order,
+	searchSchema,
+	type Sort,
+} from './schemas';
+
 export type TagNamespace =
 	| 'artist'
 	| 'circle'
@@ -69,6 +79,161 @@ export type GalleryListItem = {
 	title: string;
 	pages: number;
 	tags: Tag[];
-	cover: Image | null;
+	thumbnail: number;
 	deletedAt: string | null;
+};
+
+export const messageSchema = z.discriminatedUnion('action', [
+	z.object({
+		action: z.literal('search_main'),
+		payload: z.object({
+			data: searchSchema,
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
+		action: z.literal('search_favorites'),
+		payload: z.object({
+			data: searchSchema,
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
+		action: z.literal('gallery_view'),
+		payload: z.object({
+			archiveId: z.number(),
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
+		action: z.literal('gallery_start_read'),
+		payload: z.object({
+			archiveId: z.number(),
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
+		action: z.literal('gallery_read_page'),
+		payload: z.object({
+			pageNumber: z.number(),
+			archiveId: z.number(),
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
+		action: z.literal('gallery_update_info'),
+		payload: z.object({
+			archiveId: z.number(),
+			data: editArchiveSchema,
+			userId: z.string(),
+		}),
+	}),
+	z.object({
+		action: z.literal('gallery_update_tags'),
+		payload: z.object({
+			archiveId: z.number(),
+			data: editTagsSchema,
+			userId: z.string(),
+		}),
+	}),
+	z.object({
+		action: z.literal('user_login'),
+		payload: z.object({ userId: z.string() }),
+	}),
+	z.object({
+		action: z.literal('user_logout'),
+		payload: z.object({ userId: z.string() }),
+	}),
+	z.object({
+		action: z.literal('user_register'),
+		payload: z.object({ userId: z.string() }),
+	}),
+	z.object({
+		action: z.literal('user_account_recovery_start'),
+		payload: z.object({ username: z.string() }),
+	}),
+	z.object({
+		action: z.literal('user_account_recovery_complete'),
+		payload: z.object({ userId: z.string() }),
+	}),
+	z.object({
+		action: z.literal('user_blacklist_update'),
+		payload: z.object({
+			blacklist: z.array(z.string()),
+			userId: z.string(),
+		}),
+	}),
+	z.object({
+		action: z.literal('collection_create'),
+		payload: z.object({
+			data: createCollectionSchema,
+			userId: z.string(),
+		}),
+	}),
+	z.object({
+		action: z.literal('collection_update'),
+		payload: z.object({
+			data: createCollectionSchema,
+			userId: z.string(),
+		}),
+	}),
+	z.object({
+		action: z.literal('app_navigation'),
+		payload: z
+			.object({
+				from: z
+					.object({
+						params: z.record(z.string(), z.string()).nullable(),
+						route: z.record(z.string().nullable()),
+						url: z.unknown(),
+					})
+					.nullable(),
+				to: z
+					.object({
+						params: z.record(z.string(), z.string()).nullable(),
+						route: z.record(z.string().nullable()),
+						url: z.unknown(),
+					})
+					.nullable(),
+			})
+			.nullable()
+			.catch(null),
+	}),
+]);
+
+export type Message = z.infer<typeof messageSchema>;
+
+export type Collection = {
+	id: number;
+	name: string;
+	slug: string;
+	protected: boolean;
+	archives: Pick<Archive, 'id' | 'title' | 'hash' | 'thumbnail' | 'deletedAt'>[];
+};
+
+export type CollectionItem = {
+	id: number;
+	name: string;
+	slug: string;
+	archives: Pick<Archive, 'id'>[];
+};
+
+export type LibraryResponse = {
+	archives: GalleryListItem[];
+	page: number;
+	limit: number;
+	total: number;
+};
+
+export type SiteConfig = {
+	name: string;
+	url?: string;
+	enableUsers: boolean;
+	enableCollections: boolean;
+	hasMailer: boolean;
+	defaultSort: Sort;
+	defaultOrder: Order;
+	guestDownloads: boolean;
+	searchPlaceholder: string;
+	pageLimits: number[];
 };

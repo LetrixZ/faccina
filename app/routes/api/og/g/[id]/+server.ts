@@ -1,30 +1,28 @@
-import interBold from '$assets/Inter-Bold.ttf?raw-hex';
-import interRegular from '$assets/Inter-Regular.ttf?raw-hex';
+import { join } from 'node:path';
 import { og } from '@ethercorps/sveltekit-og';
 import { error } from '@sveltejs/kit';
-import config from '~shared/config.js';
-import { leadingZeros } from '~shared/utils';
-import { join } from 'node:path';
 import sharp from 'sharp';
-
-import { getGallery } from '~/lib/server/db/queries';
-
 import GalleryPreview from './gallery-preview.svelte';
+import interBold from '$assets/Inter-Bold.ttf?raw-hex';
+import interRegular from '$assets/Inter-Regular.ttf?raw-hex';
+import { getGallery } from '$lib/server/db/queries';
+import config from '~shared/config';
+import { leadingZeros } from '~shared/utils';
 
 export const GET = async ({ fetch, params }) => {
 	const { id } = params;
 
-	const archive = await getGallery(parseInt(id), { showHidden: false });
+	const gallery = await getGallery(parseInt(id), { showHidden: false });
 
-	if (!archive) {
+	if (!gallery) {
 		error(404);
 	}
 
 	const imagePath = join(
 		config.directories.images,
-		archive.hash,
+		gallery.hash,
 		'_meta',
-		`${leadingZeros(archive.thumbnail, archive.pages)}.png`
+		`${leadingZeros(gallery.thumbnail, gallery.pages)}.png`
 	);
 
 	const file = Bun.file(imagePath);
@@ -37,7 +35,7 @@ export const GET = async ({ fetch, params }) => {
 		});
 	}
 
-	const response = await fetch(`/image/${archive.hash}/${archive.thumbnail}?type=cover`);
+	const response = await fetch(`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`);
 	const data = await response.arrayBuffer();
 
 	const containerHeight = 300;
@@ -70,7 +68,7 @@ export const GET = async ({ fetch, params }) => {
 				},
 			],
 		},
-		{ archive, dataURL, imageHeight, imageWidth }
+		{ gallery, dataURL, imageHeight, imageWidth }
 	);
 
 	await Bun.write(imagePath, metaImage);

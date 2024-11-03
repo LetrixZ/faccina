@@ -1,7 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
-import db from '~shared/db';
-
 import type { PageServerLoad } from './$types';
+import db from '~shared/db';
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const id = parseInt(params.id);

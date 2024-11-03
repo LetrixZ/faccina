@@ -1,7 +1,5 @@
 import { writable } from 'svelte/store';
-
 import type { Gallery } from './types';
-
 import { preferencesSchema, type ReaderPreferences } from './utils';
 
 export const showBar = writable(true);

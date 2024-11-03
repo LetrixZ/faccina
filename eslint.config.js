@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import importPlugin from 'eslint-plugin-import';
 import perfectionist from 'eslint-plugin-perfectionist';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
@@ -33,20 +34,6 @@ export default [
 			perfectionist,
 		},
 		rules: {
-			'perfectionist/sort-imports': [
-				'error',
-				{
-					type: 'natural',
-					order: 'asc',
-				},
-			],
-			'perfectionist/sort-named-imports': [
-				'error',
-				{
-					type: 'natural',
-					order: 'asc',
-				},
-			],
 			'perfectionist/sort-svelte-attributes': [
 				'error',
 				{
@@ -54,6 +41,12 @@ export default [
 					order: 'asc',
 				},
 			],
+		},
+	},
+	{
+		plugins: { importPlugin },
+		rules: {
+			'importPlugin/order': ['error', { 'newlines-between': 'never' }],
 		},
 	},
 	{

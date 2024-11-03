@@ -1,15 +1,20 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { tagsExcludeDisplay } from '$lib/utils';
-	import { EyeOff } from 'lucide-svelte';
+	import { Bookmark, EyeOff } from 'lucide-svelte';
 	import pixelWidth from 'string-pixel-width';
-
+	import { createEventDispatcher } from 'svelte';
 	import type { GalleryListItem, Tag } from '../types';
-
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
+	import { cn, isTag } from '$lib/utils';
+	import { page } from '$app/stores';
 
 	export let gallery: GalleryListItem;
+	export let enableBookmark = false;
+	export let bookmarked = false;
+	export let imageBookmark = false;
+	export let newTab = false;
+
+	const dispatch = createEventDispatcher<{ bookmark: boolean }>();
 
 	$: [reducedTags, moreCount] = (() => {
 		const maxWidth = 290;
@@ -18,10 +23,7 @@
 			...gallery.tags.filter((tag) => tag.namespace === 'artist'),
 			...gallery.tags.filter((tag) => tag.namespace === 'circle'),
 			...gallery.tags.filter((tag) => tag.namespace === 'parody'),
-			...gallery.tags.filter(
-				(tag) =>
-					!['artist', 'circle', 'magazine', 'event', 'publisher', 'parody'].includes(tag.namespace)
-			),
+			...gallery.tags.filter((tag) => isTag(tag)),
 		];
 
 		let tagCount = tags.length;
@@ -41,10 +43,6 @@
 			if (width < maxWidth) {
 				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
 
-				if (tag.namespace === 'tag' && tagsExcludeDisplay.includes(tag.name.toLowerCase())) {
-					continue;
-				}
-
 				width += tagWidth;
 				reduced.push(tag);
 				tagCount--;
@@ -57,23 +55,45 @@
 	$: artists = reducedTags.filter((tag) => tag.namespace === 'artist');
 	$: circles = reducedTags.filter((tag) => tag.namespace === 'circle');
 	$: parodies = reducedTags.filter((tag) => tag.namespace === 'parody');
-	$: tags = reducedTags.filter(
-		(tag) =>
-			!['artist', 'circle', 'magazine', 'event', 'publisher', 'parody'].includes(tag.namespace)
-	);
+	$: tags = reducedTags.filter((tag) => isTag(tag));
 </script>
 
 <div class="group h-auto w-auto space-y-2">
-	<a href={`/g/${gallery.id}${$page.url.search}`} tabindex="-1">
+	<a
+		href={`/g/${gallery.id}${$page.url.search}`}
+		tabindex="-1"
+		{...newTab && { target: '_blank' }}
+		on:click={(ev) => {
+			if (enableBookmark && imageBookmark) {
+				ev.preventDefault();
+				dispatch('bookmark', !bookmarked);
+			}
+		}}
+	>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
 				alt={`'${gallery.title}' cover`}
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`/image/${gallery.hash}/${gallery.cover?.pageNumber}?type=cover`}
+				src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
+			{#if enableBookmark}
+				<div class={cn('absolute end-1 top-1 hidden group-hover:block', bookmarked && 'block')}>
+					<button
+						class={cn(
+							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
+							bookmarked && 'opacity-90'
+						)}
+						on:click|preventDefault|stopPropagation={() => {
+							dispatch('bookmark', !bookmarked);
+						}}
+					>
+						<Bookmark class={cn(bookmarked && 'fill-white')} />
+					</button>
+				</div>
+			{/if}
 			<div class="absolute bottom-1 end-1 flex gap-1">
 				{#if gallery.deletedAt}
 					<div
@@ -94,25 +114,26 @@
 			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
 			href={`/g/${gallery.id}${$page.url.search}`}
 			title={gallery.title}
+			{...newTab && { target: '_blank' }}
 		>
 			{gallery.title}
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
 			{#each artists as artist}
-				<Chip tag={artist} type="artist" />
+				<Chip {newTab} tag={artist} type="artist" />
 			{/each}
 
 			{#each circles as circle}
-				<Chip tag={circle} type="circle" />
+				<Chip {newTab} tag={circle} type="circle" />
 			{/each}
 
 			{#each parodies as parody}
-				<Chip tag={parody} type="parody" />
+				<Chip {newTab} tag={parody} type="parody" />
 			{/each}
 
 			{#each tags as tag}
-				<Chip {tag} type="tag" />
+				<Chip {newTab} {tag} type="tag" />
 			{/each}
 
 			{#if moreCount}

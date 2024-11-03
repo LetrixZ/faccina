@@ -1,0 +1,72 @@
+<script lang="ts">
+	import { FileQuestion } from 'lucide-svelte';
+	import type { Collection } from '../types';
+
+	export let collection: Collection;
+
+	$: archives = collection.archives.slice(0, 3).reverse();
+
+	const getStyle = (index: number) => {
+		if (archives.length === 2) {
+			if (index === 0) {
+				return 'transform: translateX(-5px) translateY(-5px) rotate(0);';
+			} else if (index === 1) {
+				return 'transform: translateX(10px) translateY(10px) rotate(0);';
+			}
+		} else if (archives.length === 3) {
+			switch (index) {
+				case 0:
+					return 'transform: translateX(-10px) translateY(-10px); transform-origin: 0;';
+				case 1:
+					return 'transform: translateX(0) translateY(5px); transform-origin: 0;';
+				case 2:
+					return 'transform: translateX(10px) translateY(20px); transform-origin: 0;';
+			}
+		}
+	};
+</script>
+
+<a class="flex w-full flex-col items-center gap-4 rounded" href="/collections/{collection.slug}">
+	<div class="flex aspect-[45/64] w-full">
+		{#if archives.length}
+			<div class="relative m-auto aspect-[45/64] w-[90%]">
+				{#each archives as archive, i}
+					<img
+						alt={`'${archive.title}' cover`}
+						class="absolute mb-2 aspect-[45/64] rounded shadow duration-150"
+						height={910}
+						loading="eager"
+						src={`/image/${archive.hash}/${archive.thumbnail}?type=cover`}
+						style={getStyle(i)}
+						width={640}
+					/>
+				{/each}
+			</div>
+		{:else}
+			<div
+				class="flex aspect-[46/64] h-full items-center justify-center rounded bg-secondary opacity-40 shadow-sm"
+			>
+				<FileQuestion class="size-12 text-white opacity-20" />
+			</div>
+		{/if}
+	</div>
+
+	<div class="text-center">
+		<p class="line-clamp-2 font-semibold">
+			{collection.name}
+		</p>
+
+		<p class="text-sm font-medium text-muted-foreground">
+			{#if collection.archives.length}
+				{@const count = collection.archives.length}
+				{#if count === 1}
+					{count} gallery
+				{:else}
+					{count} galleries
+				{/if}
+			{:else}
+				0 galleries
+			{/if}
+		</p>
+	</div>
+</a>

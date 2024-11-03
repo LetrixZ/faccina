@@ -1,17 +1,16 @@
-import { calculateDimensions, encodeImage } from '$lib/server/image';
-import { error } from '@sveltejs/kit';
-import config from '~shared/config';
-import db from '~shared/db';
-import { leadingZeros, readStream } from '~shared/utils';
+import { extname, join } from 'path';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
-import { extname, join } from 'path';
+import { error } from '@sveltejs/kit';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
-
 import type { RequestHandler } from './$types';
+import { leadingZeros, readStream } from '~shared/utils';
+import db from '~shared/db';
+import config from '~shared/config';
+import { calculateDimensions, encodeImage } from '$lib/server/image';
 
 type ImageArchive = {
 	id: number;

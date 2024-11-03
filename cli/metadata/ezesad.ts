@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 import { ArchiveMetadata } from '../../shared/metadata';
 import eze from './eze';
 

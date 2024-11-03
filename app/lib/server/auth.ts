@@ -1,14 +1,13 @@
 import type { Pool } from 'pg';
-
-import { dev } from '$app/environment';
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
 import { BunSQLiteAdapter } from '@lucia-auth/adapter-sqlite';
-import config from '~shared/config';
-import { databaseType } from '~shared/db';
-import connection from '~shared/db/connection';
 import { Database } from 'bun:sqlite';
 import { Lucia } from 'lucia';
 import { match } from 'ts-pattern';
+import connection from '~shared/db/connection';
+import { databaseType } from '~shared/db';
+import { dev } from '$app/environment';
+import config from '~shared/config';
 
 let _lucia: Lucia<
 	Record<never, never>,

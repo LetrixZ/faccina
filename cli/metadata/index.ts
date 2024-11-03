@@ -1,12 +1,10 @@
+import { extname } from 'path';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
-import { extname } from 'path';
 import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
-
 import type { ArchiveMetadata } from '../../shared/metadata';
-
 import { readStream } from '../../shared/utils';
 import anchira from './anchira';
 import booru from './booru';

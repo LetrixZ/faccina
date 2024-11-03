@@ -3,6 +3,7 @@
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import LimitOptions from '$lib/components/limit-options.svelte';
 
 	export let data;
 
@@ -13,11 +14,19 @@
 	<title>Home • {data.site.name}</title>
 </svelte:head>
 
-<main class="container relative space-y-2">
+<main class="container relative flex flex-auto flex-col gap-y-2">
 	<p class="text-xl font-semibold text-foreground">Browse ({library.total})</p>
 
 	<div class="grid items-end gap-2 md:flex">
-		<SortOptions defaultOrder={data.site.defaultOrder} defaultSort={data.site.defaultSort} />
+		<div class="flex w-full gap-2">
+			<LimitOptions pageLimits={data.site.pageLimits} />
+			<SortOptions
+				class="w-full"
+				defaultOrder={data.site.defaultOrder}
+				defaultSort={data.site.defaultSort}
+				type="main"
+			/>
+		</div>
 		<ListPagination
 			class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
 			limit={library.limit}
@@ -34,13 +43,13 @@
 			{/each}
 		</div>
 	{:else}
-		<p class="mx-auto w-fit py-20 text-4xl font-medium">No results found</p>
+		<p class="mx-auto my-auto w-fit text-2xl font-medium">No results found</p>
 	{/if}
 
 	<Separator />
 
 	<ListPagination
-		class="mx-auto w-full flex-grow sm:w-fit md:mx-0 md:ms-auto md:flex-grow-0"
+		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
 		limit={library.limit}
 		total={library.total}
 	/>

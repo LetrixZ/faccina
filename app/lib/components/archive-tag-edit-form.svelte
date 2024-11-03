@@ -1,14 +1,11 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-
 	import { Save } from 'lucide-svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-
 	import type { Tag, TagNamespace } from '../types';
-
 	import { editTagsSchema, type EditTagsSchema } from '../schemas';
 	import { isTag } from '../utils';
 	import InputChip from './input-chip.svelte';

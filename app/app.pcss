@@ -81,3 +81,45 @@ main {
 		-1px 1px 0 #000,
 		1px 1px 0 #000;
 }
+
+.scroller {
+	--scrollbar-color-track: #0000ff;
+	--scrollbar-color-thumb: #ff69b4;
+}
+
+@supports (scrollbar-width: auto) {
+	.scroller {
+		scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--secondary));
+	}
+
+	.warning {
+		display: none;
+	}
+}
+
+.scroller {
+	border: 1px solid #000;
+	width: 100%;
+	height: 50vh;
+
+	position: relative;
+	container-type: inline-size;
+
+	&:has(.content) {
+		background: white;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	.content {
+		min-height: 75vh;
+		padding: 1rem 1rem;
+
+		*:first-child {
+			margin-top: 0;
+		}
+		*:last-child {
+			margin-bottom: 0;
+		}
+	}
+}

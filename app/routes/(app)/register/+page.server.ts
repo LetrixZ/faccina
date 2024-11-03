@@ -1,13 +1,12 @@
-import { registerSchema } from '$lib/schemas';
-import { lucia } from '$lib/server/auth';
 import { error, fail, redirect } from '@sveltejs/kit';
-import config from '~shared/config';
-import db from '~shared/db';
 import { generateIdFromEntropySize } from 'lucia';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-
 import type { Actions, PageServerLoad } from './$types';
+import db from '~shared/db';
+import config from '~shared/config';
+import { lucia } from '$lib/server/auth';
+import { registerSchema } from '$lib/schemas';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
@@ -81,6 +80,23 @@ export const actions: Actions = {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
+		});
+
+		await db
+			.insertInto('collection')
+			.values({
+				name: 'Bookmarks',
+				slug: `bookmarks-${userId}`,
+				protected: true,
+				userId,
+			})
+			.execute();
+
+		event.locals.analytics?.postMessage({
+			action: 'user_register',
+			payload: {
+				userId,
+			},
 		});
 
 		const redirectTo = event.url.searchParams.get('to');

@@ -31,6 +31,7 @@ const listingSchema = z
 	.object({
 		tag_weight: z.array(tagWeightSchema).default([]),
 		tag_exclude: z.array(tagExcludeSchema).default([]),
+		page_limits: z.array(z.number().int()).min(1).catch([24]),
 	})
 	.transform(camelize);
 
@@ -39,6 +40,8 @@ const siteSchema = z
 		site_name: z.string().default('Faccina'),
 		url: z.string().optional(),
 		enable_users: z.boolean().default(true),
+		enable_collections: z.boolean().default(true),
+		enable_analytics: z.boolean().default(true),
 		admin_users: z.array(z.string()).default([]),
 		default_sort: z.enum(['released_at', 'created_at', 'title', 'pages']).default('released_at'),
 		default_order: z.enum(['asc', 'desc']).default('desc'),
@@ -280,6 +283,5 @@ export default await (async () => {
 	return configSchema.parse(parseTOML(content));
 })();
 
-export type _Preset = z.infer<typeof imageSchema>;
-export type Preset = _Preset & { name: string };
+export type Preset = z.infer<typeof presetSchema> & { name: string };
 export type DatabaseVendor = z.infer<typeof databaseSchema>['vendor'];

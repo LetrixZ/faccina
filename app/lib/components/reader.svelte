@@ -1,4 +1,9 @@
 <script lang="ts">
+	import pMap from 'p-map';
+	import { toast } from 'svelte-sonner';
+	import type { Gallery, Image } from '../types';
+	import LeftToRight from './touch-layouts/left-to-right.svelte';
+	import RightToLeft from './touch-layouts/right-to-left.svelte';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { ImageSize, TouchLayout } from '$lib/models';
@@ -11,13 +16,6 @@
 		readerPage,
 	} from '$lib/reader-store';
 	import { type ReaderPreferences } from '$lib/utils';
-	import pMap from 'p-map';
-	import { toast } from 'svelte-sonner';
-
-	import type { Gallery, Image } from '../types';
-
-	import LeftToRight from './touch-layouts/left-to-right.svelte';
-	import RightToLeft from './touch-layouts/right-to-left.svelte';
 
 	export let gallery: Gallery;
 
@@ -43,6 +41,19 @@
 	}
 
 	$: $currentArchive = gallery;
+
+	const readStat = (page: number) => {
+		fetch('/stats/read-page', {
+			method: 'POST',
+			body: JSON.stringify({
+				archiveId: gallery.id,
+				pageNumber: page,
+			}),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+	};
 
 	const changePage = (page?: number) => {
 		if (!page || !container) {
@@ -152,6 +163,9 @@
 	$: updateStyles($prefs, image);
 	$: preloadImages(currentPage);
 	$: changePage($readerPage);
+	$: {
+		readStat(currentPage);
+	}
 </script>
 
 <svelte:window

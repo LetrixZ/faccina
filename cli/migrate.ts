@@ -1,10 +1,9 @@
-import { Glob } from 'bun';
-import chalk from 'chalk';
 import { cp, exists, mkdir } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { Glob } from 'bun';
+import chalk from 'chalk';
 import pg, { Client } from 'pg';
 import { z } from 'zod';
-
 import config from '../shared/config';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');

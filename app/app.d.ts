@@ -1,6 +1,12 @@
 import 'svelte/elements';
 import 'unplugin-icons/types/svelte';
 
+import type { Message } from '$lib/types';
+
+export interface AnalyticsWorker extends Worker {
+	postMessage(message: Message): void;
+}
+
 declare global {
 	namespace App {
 		interface Error {
@@ -9,12 +15,14 @@ declare global {
 		}
 
 		interface PageState {
-			page: number;
+			page?: number;
+			searchOpen?: boolean;
 		}
 
 		interface Locals {
 			user: import('lucia').User | null;
 			session: import('lucia').Session | null;
+			analytics?: AnalyticsWorker;
 		}
 	}
 
@@ -25,6 +33,12 @@ declare global {
 
 	interface Uint8ArrayConstructor {
 		fromHex: (hex: string) => Uint8Array;
+	}
+
+	namespace svelteHTML {
+		interface HTMLAttributes {
+			'on:dropItem'?: (event: CustomEvent<number>) => void;
+		}
 	}
 }
 

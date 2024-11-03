@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { MetaTags } from 'svelte-meta-tags';
 	import { page } from '$app/stores';
 	import Reader from '$lib/components/reader.svelte';
-	import { MetaTags } from 'svelte-meta-tags';
 
 	export let data;
 

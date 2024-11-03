@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { cn, encodeURL } from '$lib/utils';
-
 	import type { Tag, TagNamespace } from '../types';
-
 	import { Button } from './ui/button';
+	import { cn, encodeURL } from '$lib/utils';
 
 	export let tag: Tag;
 	export let type: TagNamespace;
+	export let newTab = false;
 
 	const classes = (() => {
 		switch (type) {
@@ -53,6 +52,7 @@
 	)}
 	href={url}
 	variant="secondary"
+	{...newTab && { target: '_blank' }}
 >
 	{label}
 </Button>

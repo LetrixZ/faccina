@@ -37,7 +37,7 @@ export interface Archives {
 
 export interface ArchiveSources {
 	archiveId: number;
-	createdAt: Generated<string>;
+	createdAt: string | null;
 	name: string;
 	url: string | null;
 }
@@ -48,6 +48,26 @@ export interface ArchiveTags {
 	tagId: number;
 }
 
+export interface Collection {
+	anonymous: Generated<boolean>;
+	createdAt: Generated<string>;
+	id: Generated<number>;
+	name: string;
+	protected: Generated<boolean>;
+	public: Generated<boolean>;
+	slug: string;
+	updatedAt: Generated<string>;
+	userId: string;
+}
+
+export interface CollectionArchive {
+	archiveId: number;
+	collectionId: number;
+	createdAt: Generated<string>;
+	order: number;
+	updatedAt: Generated<string>;
+}
+
 export interface Tags {
 	createdAt: Generated<string>;
 	displayName: string | null;
@@ -56,6 +76,13 @@ export interface Tags {
 	name: string;
 	namespace: string;
 	updatedAt: Generated<string>;
+}
+
+export interface UserBlacklist {
+	blacklist: string;
+	createdAt: Generated<string>;
+	updatedAt: Generated<string>;
+	userId: string;
 }
 
 export interface UserCodes {
@@ -92,7 +119,10 @@ export interface DB {
 	archives: Archives;
 	archiveSources: ArchiveSources;
 	archiveTags: ArchiveTags;
+	collection: Collection;
+	collectionArchive: CollectionArchive;
 	tags: Tags;
+	userBlacklist: UserBlacklist;
 	userCodes: UserCodes;
 	userFavorites: UserFavorites;
 	users: Users;

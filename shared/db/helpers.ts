@@ -13,7 +13,6 @@ import {
 	jsonArrayFrom as sqliteJsonArrayFrom,
 	jsonObjectFrom as sqliteJsonObjectFrom,
 } from 'kysely/helpers/sqlite';
-
 import config from '../config';
 
 /**

@@ -1,12 +1,11 @@
-import { recoverSchema } from '$lib/schemas';
 import { error, fail } from '@sveltejs/kit';
+import { superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
+import type { Actions } from './$types';
+import { recoverSchema } from '$lib/schemas';
 import config from '~shared/config';
 import db from '~shared/db';
 import { recoveryCode, sendRecoveryEmail } from '~shared/users';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
-
-import type { Actions } from './$types';
 
 export const load = async () => {
 	if (!config.site.enableUsers) {
@@ -59,6 +58,13 @@ export const actions: Actions = {
 		}
 
 		const username = form.data.username;
+
+		event.locals.analytics?.postMessage({
+			action: 'user_account_recovery_start',
+			payload: {
+				username,
+			},
+		});
 
 		recoverAccess(username);
 

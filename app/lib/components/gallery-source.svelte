@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { HTMLAnchorAttributes } from 'svelte/elements';
-
+	import { cn } from '../utils';
 	import Anchira from '$assets/anchira.webp';
 	import ExHentai from '$assets/exhentai.ico';
 	import Fakku from '$assets/fakku.svg';
@@ -11,10 +11,7 @@
 	import Patreon from '$assets/patreon.webp';
 	import ProjectHentai from '$assets/project-hentai.webp';
 	import IcBaselineQuestionMark from '~icons/ic/baseline-question-mark';
-
 	import Pixiv from '~/assets/pixiv.webp';
-
-	import { cn } from '../utils';
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 

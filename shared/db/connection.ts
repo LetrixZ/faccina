@@ -1,7 +1,6 @@
 import { Database } from 'bun:sqlite';
 import pg from 'pg';
 import { match } from 'ts-pattern';
-
 import config from '../config';
 
 const connection = match(config.database)

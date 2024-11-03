@@ -1,25 +1,10 @@
-import { libraryItems, search } from '$lib/server/db/queries';
+import type { LibraryResponse } from '$lib/types';
 
-import type { PageServerLoad } from './$types';
-
-export const load: PageServerLoad = async ({ url, cookies, locals }) => {
-	const searchParams = new URLSearchParams(url.searchParams);
-	const blacklist = cookies.get('blacklist');
-
-	if (blacklist) {
-		searchParams.set('blacklist', blacklist);
-	}
-
-	const { ids, total } = await search(searchParams, {
-		showHidden: !!locals.user?.admin,
-	});
+export const load = async ({ fetch, url }) => {
+	const res = await fetch(`/internal${url.search}`);
+	const data = (await res.json()) as LibraryResponse;
 
 	return {
-		library: {
-			archives: await libraryItems(ids),
-			page: 1,
-			limit: 24,
-			total,
-		},
+		library: data,
 	};
 };

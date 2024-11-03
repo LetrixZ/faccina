@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-alpha.26",
+	"version": "2.0.0-alpha.27",
 	"private": true,
 	"scripts": {
 		"dev": "bunx --bun vite dev",
@@ -36,6 +36,7 @@
 		"autoprefixer": "^10.4.20",
 		"eslint": "^9.13.0",
 		"eslint-config-prettier": "^9.1.0",
+		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-perfectionist": "^3.9.1",
 		"eslint-plugin-svelte": "^2.46.0",
 		"globals": "^15.11.0",
@@ -98,6 +99,7 @@
 		"slugify": "^1.6.6",
 		"streamsaver": "^2.0.6",
 		"string-pixel-width": "^1.11.0",
+		"svelte-dnd-action": "^0.9.52",
 		"svelte-meta-tags": "^3.1.4",
 		"svelte-sonner": "^0.3.28",
 		"sveltekit-superforms": "^2.20.0",

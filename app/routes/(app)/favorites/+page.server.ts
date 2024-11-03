@@ -1,17 +1,11 @@
-import type { DB } from '~shared/types';
-import type { OrderByExpression } from 'kysely';
-
-import { libraryItems, search } from '$lib/server/db/queries';
 import { error, redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+import { libraryItems, search } from '$lib/server/db/queries';
 import config from '~shared/config';
 import db from '~shared/db';
-import { match } from 'ts-pattern';
+import { searchSchema } from '$lib/schemas';
 
-import { orderSchema, sortSchema } from '~/lib/schemas';
-
-import type { PageServerLoad } from './$types';
-
-export const load: PageServerLoad = async ({ locals, url, cookies }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!config.site.enableUsers) {
 		error(404, { message: 'Not Found' });
 	}
@@ -20,34 +14,25 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 		redirect(302, `/login?to=/favorites`);
 	}
 
-	const searchParams = new URLSearchParams(url.searchParams);
-	const sort = sortSchema
-		.nullish()
-		.transform((val) => val ?? config.site.defaultSort)
-		.catch(config.site.defaultSort)
-		.parse(searchParams.get('sort'));
-	const order = orderSchema
-		.nullish()
-		.transform((val) => val ?? config.site.defaultOrder)
-		.catch(config.site.defaultOrder)
-		.parse(searchParams.get('order'));
-	const blacklist = cookies.get('blacklist');
+	const searchParams = searchSchema
+		.transform((val) => {
+			if (!config.site.galleryListing.pageLimits.includes(val.limit)) {
+				val.limit = config.site.galleryListing.pageLimits[0];
+			}
 
-	if (blacklist) {
-		searchParams.set('blacklist', blacklist);
-	}
+			return val;
+		})
+		.parse(Object.fromEntries(url.searchParams));
 
-	const orderBy = match(order)
-		.with('asc', () => 'createdAt asc' as OrderByExpression<DB, 'userFavorites', undefined>)
-		.with('desc', () => 'createdAt desc' as OrderByExpression<DB, 'userFavorites', undefined>)
-		.exhaustive();
+	const sort = searchParams.sort ?? 'saved_at';
+	const order = searchParams.order ?? config.site.defaultOrder;
 
 	const favorites = (
 		await db
 			.selectFrom('userFavorites')
 			.select('archiveId')
 			.where('userId', '=', locals.user.id)
-			.orderBy([orderBy])
+			.orderBy(order === 'asc' ? 'createdAt asc' : 'createdAt desc')
 			.execute()
 	).map(({ archiveId }) => archiveId);
 
@@ -55,8 +40,8 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 		return {
 			libraryPage: {
 				archives: [],
-				page: 1,
-				limit: 24,
+				page: searchParams.page,
+				limit: searchParams.limit,
 				total: 0,
 			},
 		};
@@ -67,13 +52,21 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 		matchIds: favorites,
 	});
 
+	locals.analytics?.postMessage({
+		action: 'search_favorites',
+		payload: {
+			data: searchParams,
+			userId: locals.user?.id,
+		},
+	});
+
 	return {
 		libraryPage: {
 			archives: await libraryItems(ids, {
 				sortingIds: sort === 'saved_at' ? favorites : undefined,
 			}),
-			page: 1,
-			limit: 24,
+			page: searchParams.page,
+			limit: searchParams.limit,
 			total,
 		},
 	};
