@@ -18,6 +18,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Separator } from '$lib/components/ui/separator';
 	import { type Task } from '$lib/models';
+	import { siteConfig } from '$lib/stores';
 	import type { Gallery } from '$lib/types';
 	import {
 		dateTimeFormat,
@@ -27,7 +28,6 @@
 		isTag,
 		randomString,
 	} from '$lib/utils';
-	import { siteConfig } from '~/lib/stores';
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
 	import BiSolidDownload from '~icons/bxs/download';
 

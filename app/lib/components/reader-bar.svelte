@@ -9,6 +9,7 @@
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { ImageSize, TouchLayout } from '../models';
+	import type { Gallery } from '../types';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
@@ -20,7 +21,6 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index';
 	import {
-		currentArchive,
 		nextPage,
 		preferencesOpen,
 		prefs,
@@ -32,8 +32,11 @@
 	} from '$lib/reader-store';
 	import { type BarPlacement, cn, remToPx } from '$lib/utils';
 
-	$: currentPage = $page.state.page || parseInt($page.params.page!);
-	$: total = $currentArchive ? $currentArchive.images.length : 0;
+	export let gallery: Gallery;
+
+	$: currentPage = $page.state.page || parseInt($page.params.page);
+	$: validPage = !isNaN(currentPage) && currentPage > 0 && gallery.images.length >= currentPage;
+	$: total = gallery.images.length;
 
 	$: prevPageUrl = $prevPage ? `${$prevPage}${$page.url.search}` : undefined;
 	$: nextPageUrl = $nextPage ? `${$nextPage}${$page.url.search}` : undefined;
@@ -166,6 +169,9 @@
 						name="page"
 						on:change={(ev) => ($readerPage = parseInt(ev.currentTarget.value))}
 					>
+						{#if !validPage}
+							<option></option>
+						{/if}
 						{#each new Array(total).fill(0).map((_, i) => i + 1) as pageNumber}
 							<option selected={currentPage === pageNumber} value={pageNumber}>
 								{pageNumber}
@@ -181,9 +187,11 @@
 						on:click={() => pageSelect.showPicker()}
 						variant="link"
 					>
-						<span>{currentPage}</span>&ThickSpace;/&ThickSpace;<span>
-							{total}
-						</span>
+						{#if validPage}
+							<span>{currentPage}</span>&ThickSpace;/&ThickSpace;<span>{total}</span>
+						{:else}
+							<span>-</span>&ThickSpace;/&ThickSpace;<span>{total}</span>
+						{/if}
 					</Button>
 				</div>
 

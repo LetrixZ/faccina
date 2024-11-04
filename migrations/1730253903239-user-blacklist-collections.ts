@@ -1,5 +1,6 @@
 import { type Kysely, sql } from 'kysely';
 import { id, now } from '../shared/db/helpers';
+import config from '../shared/config';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema
@@ -26,7 +27,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema
 		.createIndex('collection_name')
 		.on('collection')
-		.expression(sql`name collate nocase`)
+		.expression(config.database.vendor === 'sqlite' ? sql`name collate nocase` : sql`name`)
 		.execute();
 
 	await db.schema.createIndex('collection_slug').on('collection').column('slug').execute();

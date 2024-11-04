@@ -430,7 +430,7 @@ export const search = async (
 		);
 	}
 
-	if (options.matchIds) {
+	if (options.matchIds?.length) {
 		query = query.where('archives.id', 'in', options.matchIds);
 	}
 
@@ -478,6 +478,10 @@ export const libraryItems = async (
 	ids: number[],
 	options?: QueryOptions
 ): Promise<GalleryListItem[]> => {
+	if (!ids.length) {
+		return [];
+	}
+
 	let archives = (await db
 		.selectFrom('archives')
 		.select((eb) => [

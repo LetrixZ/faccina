@@ -93,6 +93,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 				.addColumn('namespace', 'varchar(500)', (col) => col.notNull())
 				.addPrimaryKeyConstraint(`archive_tags_pkey`, ['tag_id', 'archive_id', 'namespace'])
 				.execute();
+
 			await db.schema
 				.createIndex(`archive_tags_tag_id`)
 				.on('archive_tags')

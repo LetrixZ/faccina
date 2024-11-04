@@ -32,8 +32,8 @@
 		state: 'idle',
 	}));
 
-	$: currentPage = $page.state.page || parseInt($page.params.page!);
-	$: image = gallery.images.find((image) => image?.pageNumber === currentPage)!;
+	$: currentPage = $page.state.page ?? parseInt($page.params.page);
+	$: image = gallery.images.find((image) => image?.pageNumber === currentPage);
 
 	$: {
 		$prevPage = currentPage > 1 ? currentPage - 1 : undefined;
@@ -151,7 +151,11 @@
 		}
 	};
 
-	const updateStyles = (prefs: ReaderPreferences, image: Image) => {
+	const updateStyles = (prefs: ReaderPreferences, image?: Image) => {
+		if (!image) {
+			return;
+		}
+
 		imageStyle = getImageStyle(prefs, image);
 		setTimeout(() => (containerStyle = `min-height: ${imageEl?.scrollHeight}px`));
 
@@ -204,16 +208,18 @@
 			{/if}
 		</div>
 
+		{#if image}
 		<img
 			alt={`Page ${currentPage}`}
 			bind:this={imageEl}
 			class="m-auto"
-			height={image?.height}
+				height={image.height}
 			loading="eager"
 			on:error={() => toast.error('Failed to load the page')}
 			src={`/image/${gallery.hash}/${image?.pageNumber}`}
 			style={imageStyle}
-			width={image?.width}
+				width={image.width}
 		/>
+		{/if}
 	</div>
 </div>

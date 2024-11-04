@@ -50,7 +50,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 			.selectFrom(relationTable)
 			.innerJoin(referenceTable, 'id', relationId)
 			// @ts-expect-error works
-			.select(['archiveId', 'name', 'namespace'])
+			.select(['archiveId', 'name'])
 			.execute();
 
 		const namespace = relationId.split('_')[0];
@@ -111,7 +111,11 @@ export async function up(db: Kysely<any>): Promise<void> {
 			.execute();
 	}
 
-	await db.schema.dropTable('tags_old').execute();
+	if (config.database.vendor === 'postgresql') {
+		await db.schema.dropTable('tags_old').cascade().execute();
+	} else {
+		await db.schema.dropTable('tags_old').execute();
+	}
 	await db.schema.dropTable('archive_tags_old').execute();
 }
 

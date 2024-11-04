@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 const usernameSchema = z
 	.string()
+	.trim()
 	.min(4, 'Username cannot contain at least 4 characters')
 	.max(32, 'Username cannot contain more than 32 characters')
 	.regex(/^[a-z0+-9_-]+$/, 'Username must be lowercase and can contain only letters and numbers');

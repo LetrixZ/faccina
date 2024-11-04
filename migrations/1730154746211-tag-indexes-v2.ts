@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely';
+import config from '../shared/config';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.dropIndex('tags_namespace').execute();
@@ -7,12 +8,14 @@ export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema
 		.createIndex('tags_namespace')
 		.on('tags')
-		.expression(sql`namespace collate nocase`)
+		.expression(
+			config.database.vendor === 'sqlite' ? sql`namespace collate nocase` : sql`namespace`
+		)
 		.execute();
 	await db.schema
 		.createIndex('tags_name')
 		.on('tags')
-		.expression(sql`name collate nocase`)
+		.expression(config.database.vendor === 'sqlite' ? sql`name collate nocase` : sql`name`)
 		.execute();
 
 	await db.schema

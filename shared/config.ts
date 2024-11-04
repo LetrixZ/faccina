@@ -76,8 +76,8 @@ const databaseSchema = z
 			user: z.string(),
 			database: z.string(),
 			password: z.string(),
-			host: z.string(),
-			port: z.number(),
+			host: z.string().default('localhost'),
+			port: z.number().default(5432),
 		}),
 	])
 	.transform(camelize);

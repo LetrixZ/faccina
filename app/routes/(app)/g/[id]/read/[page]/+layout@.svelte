@@ -1,10 +1,12 @@
 <script lang="ts">
 	import cookie from 'cookie';
 	import { onMount } from 'svelte';
-	import type { ReaderPreferences } from '$lib/utils';
 	import ReaderBar from '$lib/components/reader-bar.svelte';
 	import { TouchLayout } from '$lib/models';
 	import { prefs } from '$lib/reader-store';
+	import type { ReaderPreferences } from '$lib/utils';
+
+	export let data;
 
 	let isMounted = false;
 
@@ -26,7 +28,7 @@
 </script>
 
 {#if isMounted}
-	<ReaderBar />
+	<ReaderBar gallery={data.gallery} />
 
 	<slot />
 {/if}

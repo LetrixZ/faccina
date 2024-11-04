@@ -1,9 +1,9 @@
 <script lang="ts">
+	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import LimitOptions from '~/lib/components/limit-options.svelte';
 
 	export let data;
 
