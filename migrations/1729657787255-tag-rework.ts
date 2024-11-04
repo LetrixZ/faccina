@@ -4,7 +4,10 @@ import { id, now } from '../shared/db/helpers';
 import { taxonomyTables } from '../shared/taxonomy';
 
 export async function up(db: Kysely<any>): Promise<void> {
-	await db.schema.dropIndex('archive_slug').execute();
+	if (config.database.vendor === 'sqlite') {
+		await db.schema.dropIndex('archive_slug').execute();
+	}
+
 	await db.schema.alterTable('archives').dropColumn('slug').execute();
 	await db.schema.alterTable('archives').dropColumn('has_metadata').execute();
 
