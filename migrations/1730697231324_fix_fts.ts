@@ -3,20 +3,18 @@ import config from '../shared/config';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
-		await db.schema
-			.alterTable('archive_fts')
-			.dropColumn('artists')
-			.dropColumn('circles')
-			.dropColumn('magazines')
-			.dropColumn('events')
-			.dropColumn('publishers')
-			.dropColumn('parodies')
-			.execute();
+		await db.schema.dropTable('archive_fts').execute();
 
 		await sql`
-    ALTER TABLE archive_fts ADD COLUMN description TEXT;
-    ALTER TABLE archive_fts ADD COLUMN description_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', description), 'D')) STORED;
-		`.execute(db);
+		CREATE TABLE archive_fts (
+			archive_id INT PRIMARY KEY REFERENCES archives(id) ON DELETE CASCADE,
+			title TEXT NOT NULL,
+			title_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', title), 'A')) STORED,
+			description TEXT,
+			description_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', description), 'D')) STORED,
+			tags TEXT NOT NULL,
+			tags_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', tags), 'D')) STORED
+		);`.execute(db);
 
 		await sql`
     CREATE OR REPLACE FUNCTION update_archive_fts()
