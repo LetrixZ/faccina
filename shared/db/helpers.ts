@@ -1,4 +1,6 @@
 import {
+	type Expression,
+	ExpressionWrapper,
 	type RawBuilder,
 	type SchemaModule,
 	type SelectQueryBuilderExpression,
@@ -7,13 +9,16 @@ import {
 } from 'kysely';
 import {
 	jsonArrayFrom as postgresJsonArrayFrom,
+	jsonBuildObject as postgresJsonBuildObject,
 	jsonObjectFrom as postgresJsonObjectFrom,
 } from 'kysely/helpers/postgres';
 import {
 	jsonArrayFrom as sqliteJsonArrayFrom,
+	jsonBuildObject as sqliteJsonBuildObject,
 	jsonObjectFrom as sqliteJsonObjectFrom,
 } from 'kysely/helpers/sqlite';
 import config from '../config';
+import type { DB } from '~shared/types';
 
 /**
  * Create a new table with a primary key ID
@@ -47,6 +52,18 @@ export const now = () => {
 	}
 };
 
+export const max = (
+	newValue: number,
+	reference: ExpressionWrapper<DB, 'userReadHistory', number>
+) => {
+	switch (config.database.vendor) {
+		case 'sqlite':
+			return sql<number>`max(${newValue}, ${reference})`;
+		case 'postgresql':
+			return sql<number>`cast(greatest(${newValue}, ${reference}) as integer)`;
+	}
+};
+
 export const jsonObjectFrom = <O>(
 	expr: SelectQueryBuilderExpression<O>
 ): RawBuilder<Simplify<O> | null> => {
@@ -66,6 +83,21 @@ export const jsonArrayFrom = <O>(
 			return sqliteJsonArrayFrom(expr);
 		case 'postgresql':
 			return postgresJsonArrayFrom(expr);
+	}
+};
+
+export const jsonBuildObject = <O extends Record<string, Expression<unknown>>>(
+	obj: O
+): RawBuilder<
+	Simplify<{
+		[K in keyof O]: O[K] extends Expression<infer V> ? V : never;
+	}>
+> => {
+	switch (config.database.vendor) {
+		case 'sqlite':
+			return sqliteJsonBuildObject(obj);
+		case 'postgresql':
+			return postgresJsonBuildObject(obj);
 	}
 };
 

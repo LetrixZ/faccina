@@ -116,6 +116,14 @@ export const messageSchema = z.discriminatedUnion('action', [
 		action: z.literal('gallery_read_page'),
 		payload: z.object({
 			pageNumber: z.number(),
+			isLastPage: z.boolean(),
+			archiveId: z.number(),
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
+		action: z.literal('gallery_finish_read'),
+		payload: z.object({
 			archiveId: z.number(),
 			userId: z.string().optional(),
 		}),
@@ -218,6 +226,15 @@ export type CollectionItem = {
 	archives: Pick<Archive, 'id'>[];
 };
 
+export type HistoryEntry = {
+	lastPage: number;
+	startPage: number;
+	startedAt: string;
+	lastReadAt: string;
+	finishedAt: string | null;
+	archive: Pick<Archive, 'id' | 'title' | 'hash' | 'pages' | 'thumbnail' | 'deletedAt' | 'tags'>;
+};
+
 export type LibraryResponse = {
 	archives: GalleryListItem[];
 	page: number;
@@ -230,6 +247,7 @@ export type SiteConfig = {
 	url?: string;
 	enableUsers: boolean;
 	enableCollections: boolean;
+	enableReadHistory: boolean;
 	hasMailer: boolean;
 	defaultSort: Sort;
 	defaultOrder: Order;
@@ -238,3 +256,11 @@ export type SiteConfig = {
 	pageLimits: number[];
 	defaultPageLimit: number;
 };
+
+export const readStatSchema = z.object({
+	archiveId: z.number(),
+	isLastPage: z.boolean(),
+	pageNumber: z.number(),
+});
+
+export type ReadState = z.infer<typeof readStatSchema>;

@@ -1,21 +1,27 @@
-import type { TransitionConfig } from 'svelte/transition';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { type ClassValue, clsx } from 'clsx';
 import dayjs from 'dayjs';
+import isToday from 'dayjs/plugin/isToday';
+import isYesterday from 'dayjs/plugin/isYesterday';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { gunzipSync, strFromU8 } from 'fflate';
 import * as R from 'ramda';
 import _slugify from 'slugify';
 import { cubicOut } from 'svelte/easing';
+import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-import type { Gallery, Image, Tag } from './types';
 import { ImageSize, TouchLayout } from './models';
+import type { Gallery, Image, Tag } from './types';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
 dayjs.extend(localizedFormat);
+dayjs.extend(relativeTime);
+dayjs.extend(isToday);
+dayjs.extend(isYesterday);
 
 export const cn = (...inputs: ClassValue[]) => {
 	return twMerge(clsx(inputs));
@@ -347,3 +353,17 @@ export const swap = R.curry((index1, index2, list) => {
 
 	return R.pipe(R.set(R.lensIndex(index1), value2), R.set(R.lensIndex(index2), value1))(list);
 });
+
+export const relativeDate = (date: string) => {
+	const normalized = dayjs(dayjs(date).format('L'));
+
+	if (normalized.isToday()) {
+		return 'Today';
+	} else if (normalized.isYesterday()) {
+		return 'Yesterday';
+	} else if (dayjs().diff(normalized, 'day') > 1 && dayjs().diff(normalized, 'day') < 7) {
+		return dayjs().to(normalized);
+	} else {
+		return normalized.format('L');
+	}
+};

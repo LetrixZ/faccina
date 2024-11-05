@@ -245,14 +245,25 @@
 		{/if}
 
 		<div class="grid gap-2 @xs:grid-cols-2">
-			<Button
-				class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
-				href={`./${gallery.id}/read/1${$page.url.search}`}
-				variant="secondary"
-			>
-				<AiOutlineRead class="size-5 shrink-0" />
-				<span class="flex-auto"> Read </span>
-			</Button>
+			{#if !data.readEntry || data.readEntry.finishedAt}
+				<Button
+					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+					href={`./${gallery.id}/read/1${$page.url.search}`}
+					variant="secondary"
+				>
+					<AiOutlineRead class="size-5 shrink-0" />
+					<span class="flex-auto"> Start reading </span>
+				</Button>
+			{:else}
+				<Button
+					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
+					variant="secondary"
+				>
+					<AiOutlineRead class="size-5 shrink-0" />
+					<span class="flex-auto"> Continue </span>
+				</Button>
+			{/if}
 
 			<div class="relative">
 				<Button

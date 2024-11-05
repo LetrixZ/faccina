@@ -10,6 +10,7 @@ export const load: LayoutServerLoad = ({ locals }) => {
 			url: config.site.url,
 			enableUsers: config.site.enableUsers,
 			enableCollections: config.site.enableCollections,
+			enableReadHistory: config.site.enableReadHistory,
 			hasMailer: !!config.mailer,
 			defaultSort: config.site.defaultSort,
 			defaultOrder: config.site.defaultOrder,

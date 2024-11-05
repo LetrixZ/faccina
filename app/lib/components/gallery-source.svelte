@@ -9,9 +9,9 @@
 	import Irodori from '$assets/irodori.webp';
 	import Koharu from '$assets/koharu.png';
 	import Patreon from '$assets/patreon.webp';
+	import Pixiv from '$assets/pixiv.webp';
 	import ProjectHentai from '$assets/project-hentai.webp';
 	import IcBaselineQuestionMark from '~icons/ic/baseline-question-mark';
-	import Pixiv from '~/assets/pixiv.webp';
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 

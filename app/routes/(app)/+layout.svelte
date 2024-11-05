@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-	import { Bookmark, Heart, UserCircle } from 'lucide-svelte';
+	import { Bookmark, Heart, UserCircle, Clock } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
@@ -89,7 +89,9 @@
 					value = value.substring(1);
 				}
 
-				return data.tags
+				const tagMap = new Map();
+
+				data.tags
 					.filter(({ namespace, name, displayName }) => {
 						return (
 							`${namespace}:${name}`.toLowerCase().includes(value) ||
@@ -97,7 +99,9 @@
 							displayName?.toLowerCase().includes(value)
 						);
 					})
-					.slice(0, 5);
+					.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));
+
+				return Array.from(tagMap.values()).slice(0, 5);
 			})()
 		: [];
 
@@ -350,6 +354,16 @@
 						>
 							Collections
 							<Bookmark class="ms-auto size-4" />
+						</DropdownMenu.Item>
+					{/if}
+
+					{#if data.site.enableReadHistory}
+						<DropdownMenu.Item
+							class="flex w-full cursor-pointer items-center text-neutral-200"
+							href="/read-history"
+						>
+							Read history
+							<Clock class="ms-auto size-4" />
 						</DropdownMenu.Item>
 					{/if}
 				{/if}

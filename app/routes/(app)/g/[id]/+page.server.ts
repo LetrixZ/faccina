@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { PageServerLoad } from './$types';
 import { editArchiveSchema, editTagsSchema } from '$lib/schemas';
 import { getArchive, getGallery } from '$lib/server/db/queries';
-import type { Archive } from '$lib/types';
+import type { Archive, HistoryEntry } from '$lib/types';
 import { upsertSources, upsertTags } from '~shared/archive';
 import config from '~shared/config';
 import db from '~shared/db';
@@ -50,10 +50,22 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		},
 	});
 
+	let readEntry: Omit<HistoryEntry, 'archive'> | undefined = undefined;
+
+	if (locals.user) {
+		readEntry = await db
+			.selectFrom('userReadHistory')
+			.select(['lastPage', 'startPage', 'startedAt', 'lastReadAt', 'finishedAt'])
+			.where('archiveId', '=', gallery.id)
+			.where('userId', '=', locals.user.id)
+			.executeTakeFirst();
+	}
+
 	return {
 		gallery,
 		archive,
 		isFavorite,
+		readEntry,
 		editForm: archive
 			? await superValidate(
 					{

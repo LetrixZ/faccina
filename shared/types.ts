@@ -10,6 +10,16 @@ export type Generated<T> =
 		? ColumnType<S, I | undefined, U>
 		: ColumnType<T, T | undefined, T>;
 
+export interface ArchiveFts {
+	archiveId: number;
+	description: string | null;
+	descriptionTsv: Generated<string | null>;
+	tags: string;
+	tagsTsv: Generated<string | null>;
+	title: string;
+	titleTsv: Generated<string | null>;
+}
+
 export interface ArchiveImages {
 	archiveId: number;
 	filename: string;
@@ -99,6 +109,17 @@ export interface UserFavorites {
 	userId: string;
 }
 
+export interface UserReadHistory {
+	archiveId: number;
+	finishedAt: string | null;
+	lastPage: number;
+	lastReadAt: Generated<string>;
+	maxPage: number;
+	startedAt: Generated<string>;
+	startPage: number;
+	userId: string;
+}
+
 export interface Users {
 	createdAt: Generated<string>;
 	email: string | null;
@@ -110,11 +131,12 @@ export interface Users {
 
 export interface UserSessions {
 	expiresAt: string;
-	id: string | null;
+	id: string;
 	userId: string;
 }
 
 export interface DB {
+	archiveFts: ArchiveFts;
 	archiveImages: ArchiveImages;
 	archives: Archives;
 	archiveSources: ArchiveSources;
@@ -125,6 +147,7 @@ export interface DB {
 	userBlacklist: UserBlacklist;
 	userCodes: UserCodes;
 	userFavorites: UserFavorites;
+	userReadHistory: UserReadHistory;
 	users: Users;
 	userSessions: UserSessions;
 }

@@ -18,7 +18,6 @@ const config = {
 			reusePort: true,
 		}),
 		alias: {
-			'~': './app',
 			$assets: './app/assets',
 			'~shared': './shared/',
 		},

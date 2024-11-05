@@ -1,7 +1,7 @@
 <script lang="ts">
 	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
-	import type { Gallery, Image } from '../types';
+	import type { Gallery, Image, ReadState } from '../types';
 	import LeftToRight from './touch-layouts/left-to-right.svelte';
 	import RightToLeft from './touch-layouts/right-to-left.svelte';
 	import { goto, replaceState } from '$app/navigation';
@@ -46,9 +46,10 @@
 		fetch('/stats/read-page', {
 			method: 'POST',
 			body: JSON.stringify({
-				archiveId: gallery.id,
 				pageNumber: page,
-			}),
+				isLastPage: gallery.images.length === page,
+				archiveId: gallery.id,
+			} satisfies ReadState),
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -209,17 +210,17 @@
 		</div>
 
 		{#if image}
-		<img
-			alt={`Page ${currentPage}`}
-			bind:this={imageEl}
-			class="m-auto"
+			<img
+				alt={`Page ${currentPage}`}
+				bind:this={imageEl}
+				class="m-auto"
 				height={image.height}
-			loading="eager"
-			on:error={() => toast.error('Failed to load the page')}
-			src={`/image/${gallery.hash}/${image?.pageNumber}`}
-			style={imageStyle}
+				loading="eager"
+				on:error={() => toast.error('Failed to load the page')}
+				src={`/image/${gallery.hash}/${image?.pageNumber}`}
+				style={imageStyle}
 				width={image.width}
-		/>
+			/>
 		{/if}
 	</div>
 </div>
