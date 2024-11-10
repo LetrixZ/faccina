@@ -147,4 +147,34 @@ export const createCollectionSchema = z.object({
 	archives: z.array(z.number()).default([]),
 });
 
-export type CreateCollection = typeof createCollectionSchema;
+export const userEditSchema = z
+	.object({
+		username: z.string(),
+		email: z.union([z.literal('').optional(), z.string().email()]),
+		currentPassword: passwordSchema.optional(),
+		newPassword: passwordSchema.optional(),
+		confirmNewPassword: passwordSchema.optional(),
+	})
+	.superRefine(({ currentPassword, confirmNewPassword, newPassword }, ctx) => {
+		if (currentPassword?.length && newPassword?.length && currentPassword === newPassword) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'The new password is the same as the current one',
+				path: ['newPassword'],
+			});
+
+			return;
+		}
+
+		if (confirmNewPassword !== newPassword) {
+			ctx.addIssue({
+				code: 'custom',
+				message: "The new passwords don't match",
+				path: ['confirmNewPassword'],
+			});
+		}
+	});
+
+export const userDeleteSchema = z.object({
+	currentPassword: z.string(),
+});

@@ -1,25 +1,26 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-	import { Bookmark, Heart, UserCircle, Clock } from 'lucide-svelte';
+	import { Bookmark, Clock, Heart, UserCircle } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
+	import LoginForm from '$lib/components/login-form.svelte';
+	import RecoverForm from '$lib/components/recover-form.svelte';
+	import RegisterForm from '$lib/components/register-form.svelte';
+	import ResetForm from '$lib/components/reset-form.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
+	import type { UserFormState } from '$lib/models';
+	import { query, tagList } from '$lib/stores';
 	import { cn } from '$lib/utils';
 	import IonMdHome from '~icons/ion/md-home';
+	import MdiAccount from '~icons/mdi/account';
 	import MdiLogin from '~icons/mdi/login';
 	import MdiLogout from '~icons/mdi/logout';
 	import MdiSettings from '~icons/mdi/settings';
 	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
-	import type { UserFormState } from '$lib/models';
-	import LoginForm from '$lib/components/login-form.svelte';
-	import RecoverForm from '$lib/components/recover-form.svelte';
-	import RegisterForm from '$lib/components/register-form.svelte';
-	import ResetForm from '$lib/components/reset-form.svelte';
-	import { query, tagList } from '$lib/stores';
 
 	export let data;
 
@@ -321,10 +322,12 @@
 		<DropdownMenu.Trigger>
 			<Button
 				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+				href="/panel"
+				on:click={(ev) => ev.preventDefault()}
 				variant="ghost"
 			>
-				<UserCircle class="size-6" /></Button
-			>
+				<UserCircle class="size-6" />
+			</Button>
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content class="min-w-40">
 			<DropdownMenu.Group>
@@ -372,6 +375,14 @@
 
 				{#if data.site.enableUsers}
 					{#if data.user}
+						<DropdownMenu.Item
+							class="flex w-full cursor-pointer items-center text-neutral-200"
+							href="/account"
+						>
+							Account
+							<MdiAccount class="ms-auto size-[1.125rem]" />
+						</DropdownMenu.Item>
+
 						<DropdownMenu.Item
 							class="flex w-full cursor-pointer items-center text-neutral-200"
 							on:click={logout}
