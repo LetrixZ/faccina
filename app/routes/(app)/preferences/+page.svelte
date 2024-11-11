@@ -37,7 +37,7 @@
 	};
 </script>
 
-<main class="container relative space-y-4">
+<main class="container relative max-w-screen-md space-y-4">
 	<div class="space-y-1.5">
 		<p class="font-semibold">Blacklist tags</p>
 		<p class="text-sm font-medium">You can use the same tag syntax as the search.</p>

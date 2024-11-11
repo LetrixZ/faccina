@@ -18,6 +18,7 @@
 	let form = superForm(data.userForm, {
 		dataType: 'json',
 		validators: zodClient(userEditSchema),
+		resetForm: false,
 		onResult: ({ result }) => {
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
@@ -43,7 +44,7 @@
 	const { form: deleteFormData, enhance: deleteEnhance } = deleteForm;
 </script>
 
-<main class="container relative">
+<main class="container relative max-w-screen-md">
 	<form class="flex flex-col gap-3" method="POST" use:enhance>
 		<input autocomplete="username" bind:value={$formData.username} class="hidden" />
 
@@ -106,7 +107,7 @@
 
 		<Separator />
 
-		<div class="flex gap-2">
+		<div class="flex w-full justify-between gap-2">
 			<Button class="w-full space-x-2 bg-green-700 hover:bg-green-700/80 sm:w-fit" type="submit">
 				<Save class="size-5" />
 				<span>Save changes</span>

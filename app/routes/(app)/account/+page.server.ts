@@ -43,6 +43,11 @@ export const actions = {
 
 		const { email, currentPassword, newPassword } = form.data;
 
+		const update: { email?: string; passwordHash?: string } = {
+			email: undefined,
+			passwordHash: undefined,
+		};
+
 		if (email?.length) {
 			const existingEmail = await db
 				.selectFrom('users')
@@ -57,9 +62,11 @@ export const actions = {
 					form,
 				});
 			}
+
+			update.email = email;
 		}
 
-		if (currentPassword?.length) {
+		if (currentPassword?.length && newPassword?.length) {
 			const { passwordHash } = await db
 				.selectFrom('users')
 				.select('passwordHash')
@@ -72,30 +79,31 @@ export const actions = {
 				return setError(form, 'currentPassword', 'The current password is invalid.');
 			}
 
-			if (newPassword?.length) {
-				const newPasswordHash = await Bun.password.hash(newPassword, {
-					algorithm: 'argon2id',
-					memoryCost: 19456,
-					timeCost: 2,
-				});
+			const newPasswordHash = await Bun.password.hash(newPassword, {
+				algorithm: 'argon2id',
+				memoryCost: 19456,
+				timeCost: 2,
+			});
 
-				await db
-					.updateTable('users')
-					.set({
-						passwordHash: newPasswordHash,
-					})
-					.where('id', '=', user.id)
-					.execute();
-			}
+			update.passwordHash = newPasswordHash;
 		}
 
 		await db
 			.updateTable('users')
 			.set({
-				email: email?.length ? email : null,
+				...update,
 				updatedAt: now(),
 			})
 			.where('id', '=', user.id)
 			.execute();
+
+		event.locals.analytics?.postMessage({
+			action: 'user_account_update',
+			payload: { userId: user.id },
+		});
+
+		return {
+			form,
+		};
 	},
 };

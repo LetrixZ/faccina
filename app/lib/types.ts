@@ -172,6 +172,14 @@ export const messageSchema = z.discriminatedUnion('action', [
 		}),
 	}),
 	z.object({
+		action: z.literal('user_account_update'),
+		payload: z.object({ userId: z.string() }),
+	}),
+	z.object({
+		action: z.literal('user_account_delete'),
+		payload: z.object({ userId: z.string() }),
+	}),
+	z.object({
 		action: z.literal('collection_create'),
 		payload: z.object({
 			data: createCollectionSchema,
