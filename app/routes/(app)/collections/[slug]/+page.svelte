@@ -9,6 +9,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import PageTitle from '$lib/components/page-title.svelte';
 
 	export let data;
 	export let form;
@@ -30,9 +31,9 @@
 
 <main class="container relative flex h-full flex-col gap-y-2">
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<p class="text-xl font-semibold text-foreground">
+		<PageTitle>
 			{data.collection.name} ({libraryPage.total})
-		</p>
+		</PageTitle>
 
 		<div class="flex gap-2">
 			<Button

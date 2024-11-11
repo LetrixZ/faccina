@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ListItemHistory from '$lib/components/list-item-history.svelte';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 	import type { HistoryEntry } from '$lib/types';
@@ -24,7 +25,7 @@
 </script>
 
 <main class="container flex flex-auto flex-col gap-y-2">
-	<p class="text-xl font-semibold text-foreground">Read history</p>
+	<PageTitle>Read history</PageTitle>
 
 	<Separator />
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CollectionListItem from '$lib/components/collection-list-item.svelte';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 
@@ -8,8 +9,10 @@
 
 <main class="container flex flex-auto flex-col space-y-2">
 	<div class="flex w-full items-center justify-between gap-4">
-		<p class="text-2xl font-semibold">Collections</p>
-		<Button href="collections/new" variant="outline">Create a new collection</Button>
+		<PageTitle>Collections</PageTitle>
+		<Button class="h-fit py-1" href="collections/new" variant="link">
+			Create a new collection
+		</Button>
 	</div>
 
 	<Separator />

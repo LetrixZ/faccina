@@ -1,9 +1,10 @@
 <script lang="ts">
+	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import LimitOptions from '$lib/components/limit-options.svelte';
 
 	export let data;
 
@@ -15,7 +16,7 @@
 </svelte:head>
 
 <main class="container relative flex flex-auto flex-col gap-y-2">
-	<p class="text-xl font-semibold text-foreground">Browse ({library.total})</p>
+	<PageTitle>Browse ({library.total})</PageTitle>
 
 	<div class="grid items-end gap-2 md:flex">
 		<div class="flex w-full gap-2">

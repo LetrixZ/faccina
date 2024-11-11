@@ -44,7 +44,7 @@
 	const { form: deleteFormData, enhance: deleteEnhance } = deleteForm;
 </script>
 
-<main class="container relative max-w-screen-md">
+<main class="container relative flex max-w-screen-md flex-col gap-y-2">
 	<form class="flex flex-col gap-3" method="POST" use:enhance>
 		<input autocomplete="username" bind:value={$formData.username} class="hidden" />
 
@@ -107,21 +107,22 @@
 
 		<Separator />
 
-		<div class="flex w-full justify-between gap-2">
+		<div class="flex w-full justify-between gap-2 max-sm:flex-col">
 			<Button class="w-full space-x-2 bg-green-700 hover:bg-green-700/80 sm:w-fit" type="submit">
 				<Save class="size-5" />
 				<span>Save changes</span>
 			</Button>
 
 			<Button
-				class="w-fit"
 				href="/account/delete"
 				on:click={(ev) => {
 					ev.preventDefault();
 					deleteOpen = true;
 				}}
-				variant="link">Delete your account</Button
+				variant="link"
 			>
+				Delete your account
+			</Button>
 		</div>
 	</form>
 </main>

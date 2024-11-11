@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { FileQuestion } from 'lucide-svelte';
 	import type { Collection } from '../types';
+	import { cn } from '$lib/utils';
 
 	export let collection: Collection;
 
@@ -11,16 +12,16 @@
 			if (index === 0) {
 				return 'transform: translateX(-5px) translateY(-5px) rotate(0);';
 			} else if (index === 1) {
-				return 'transform: translateX(10px) translateY(10px) rotate(0);';
+				return 'transform: translateX(7.5px) translateY(7.5px) rotate(0);';
 			}
 		} else if (archives.length === 3) {
 			switch (index) {
 				case 0:
-					return 'transform: translateX(-10px) translateY(-10px); transform-origin: 0;';
+					return 'transform: translateX(-7.5px) translateY(-7.5px); transform-origin: 0;';
 				case 1:
-					return 'transform: translateX(0) translateY(5px); transform-origin: 0;';
+					return 'transform: translateX(0) translateY(2.5px); transform-origin: 0;';
 				case 2:
-					return 'transform: translateX(10px) translateY(20px); transform-origin: 0;';
+					return 'transform: translateX(7.5px) translateY(15px); transform-origin: 0;';
 			}
 		}
 	};
@@ -29,7 +30,13 @@
 <a class="flex w-full flex-col items-center gap-4 rounded" href="/collections/{collection.slug}">
 	<div class="flex aspect-[45/64] w-full">
 		{#if archives.length}
-			<div class="relative m-auto aspect-[45/64] w-[90%]">
+			<div
+				class={cn(
+					'relative m-auto aspect-[45/64] w-full',
+					archives.length === 2 && 'w-[95%]',
+					archives.length === 3 && 'w-[90%]'
+				)}
+			>
 				{#each archives as archive, i}
 					<img
 						alt={`'${archive.title}' cover`}
