@@ -5,7 +5,7 @@
 	export let data;
 </script>
 
-<div class="mx-auto max-w-sm pt-4 md:pt-8">
+<main class="container mx-auto w-full md:w-96">
 	<ResetForm
 		data={data.resetForm}
 		on:result={({ detail: result }) => {
@@ -14,4 +14,4 @@
 			}
 		}}
 	/>
-</div>
+</main>

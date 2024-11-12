@@ -8,8 +8,8 @@
 	import { recoverSchema, type RecoverSchema } from '../schemas';
 	import { Button } from './ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { page } from '$app/stores';
 	import * as Form from '$lib/components/ui/form';
+	import { page } from '$app/stores';
 
 	export let data: SuperValidated<Infer<RecoverSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
@@ -45,8 +45,8 @@
 			</Form.Field>
 		</div>
 	{:else}
-		<p class="text-center font-medium">
-			The site can't send emails. Make a request to the admin for a recovery code.
+		<p class="rounded border border-primary p-4 text-center text-sm">
+			The site can't send emails.<br />Make a request to the admin for a recovery code.
 		</p>
 	{/if}
 

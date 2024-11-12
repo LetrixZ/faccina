@@ -151,9 +151,9 @@ export const userEditSchema = z
 	.object({
 		username: z.string(),
 		email: z.union([z.literal('').optional(), z.string().email()]),
-		currentPassword: passwordSchema.optional(),
-		newPassword: passwordSchema.optional(),
-		confirmNewPassword: passwordSchema.optional(),
+		currentPassword: z.string().optional(),
+		newPassword: z.union([z.literal('').optional(), passwordSchema]),
+		confirmNewPassword: z.union([z.literal('').optional(), passwordSchema]),
 	})
 	.superRefine(({ currentPassword, confirmNewPassword, newPassword }, ctx) => {
 		if (currentPassword?.length && newPassword?.length && currentPassword === newPassword) {

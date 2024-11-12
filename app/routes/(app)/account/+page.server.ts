@@ -43,8 +43,8 @@ export const actions = {
 
 		const { email, currentPassword, newPassword } = form.data;
 
-		const update: { email?: string; passwordHash?: string } = {
-			email: undefined,
+		const update: { email: string | null; passwordHash?: string } = {
+			email: null,
 			passwordHash: undefined,
 		};
 

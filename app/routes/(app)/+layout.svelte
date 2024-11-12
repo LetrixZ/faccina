@@ -371,9 +371,9 @@
 					{/if}
 				{/if}
 
-				<DropdownMenu.Separator />
-
 				{#if data.site.enableUsers}
+					<DropdownMenu.Separator />
+
 					{#if data.user}
 						<DropdownMenu.Item
 							class="flex w-full cursor-pointer items-center text-neutral-200"

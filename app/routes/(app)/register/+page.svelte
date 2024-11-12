@@ -4,6 +4,6 @@
 	export let data;
 </script>
 
-<div class="mx-auto max-w-sm pt-4 md:pt-8">
+<main class="container mx-auto w-full md:w-96">
 	<RegisterForm data={data.form} hasMailer={data.site.hasMailer} />
-</div>
+</main>

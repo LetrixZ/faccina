@@ -1,7 +1,7 @@
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { lucia } from '$lib/server/auth';
 
-export const POST = async ({ locals, cookies }) => {
+export const POST = async ({ locals, cookies, url }) => {
 	const user = locals.user;
 
 	if (!locals.session || !user) {
@@ -24,5 +24,11 @@ export const POST = async ({ locals, cookies }) => {
 		},
 	});
 
-	return new Response();
+	const to = url.searchParams.get('to');
+
+	if (to) {
+		redirect(301, to);
+	}
+
+	redirect(301, '/');
 };
