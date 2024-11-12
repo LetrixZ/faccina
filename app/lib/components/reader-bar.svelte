@@ -296,6 +296,7 @@
 			<Input
 				class="w-24"
 				id="min-width"
+				min="1"
 				on:change={(event) =>
 					($prefs.minWidth = event.currentTarget.value.length
 						? parseInt(event.currentTarget.value)
@@ -310,6 +311,7 @@
 			<Input
 				class="w-24"
 				id="max-width"
+				min="1"
 				on:change={(event) =>
 					($prefs.maxWidth = event.currentTarget.value.length
 						? parseInt(event.currentTarget.value)

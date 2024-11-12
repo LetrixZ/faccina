@@ -126,12 +126,10 @@
 		switch (fitMode) {
 			case ImageSize.FillWidth:
 				if (image.width) {
-					if (maxWidth && minWidth) {
-						return `width: clamp(${Math.min(maxWidth, Math.max(image.width, minWidth))}px, 100%, ${maxWidth}px); height: auto;`;
+					if (maxWidth) {
+						return `width: clamp(${Math.min(maxWidth, Math.max(image.width, minWidth ?? 1))}px, 100%, ${maxWidth}px); height: auto;`;
 					} else if (minWidth) {
 						return `width: max(${Math.max(image.width, minWidth)}px, 100%); height: auto;`;
-					} else if (maxWidth) {
-						return `width: min(${Math.max(image.width, maxWidth)}px, 100%); height: auto;`;
 					}
 				}
 
@@ -141,8 +139,8 @@
 			case ImageSize.Original:
 			default:
 				if (image.width) {
-					if (maxWidth && minWidth) {
-						return `width: min(${Math.max(image.width, minWidth)}px, min(${maxWidth}px, 100%));`;
+					if (maxWidth) {
+						return `width: min(${Math.max(image.width, minWidth ?? 1)}px, min(${maxWidth}px, 100%));`;
 					} else if (minWidth) {
 						return `width: min(${Math.max(image.width, minWidth)}px, 100%);`;
 					}
