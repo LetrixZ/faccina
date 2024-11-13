@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import type { ActionResult } from '@sveltejs/kit';
 	import { Bookmark, Clock, Heart, UserCircle } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
@@ -26,21 +25,23 @@
 
 	let { data, children } = $props();
 
-	let formAction = $derived((() => {
-		switch ($page.route.id) {
-			case '/(app)/favorites':
-			case '/(app)/collections/[slug]':
-				return $page.url.pathname;
-			default:
-				return '/';
-		}
-	})());
+	let formAction = $derived(
+		(() => {
+			switch ($page.route.id) {
+				case '/(app)/favorites':
+				case '/(app)/collections/[slug]':
+					return $page.url.pathname;
+				default:
+					return '/';
+			}
+		})()
+	);
 
 	let loginOpen = $state(false);
 	let userFormState: UserFormState = $state('login');
 
-	let formEl: HTMLFormElement = $state();
-	let inputEl: HTMLInputElement = $state();
+	let formEl: HTMLFormElement | null = $state(null);
+	let inputEl: HTMLInputElement | null = $state(null);
 
 	let sort = $derived($page.url.searchParams.get('sort'));
 	let order = $derived($page.url.searchParams.get('order'));
@@ -56,57 +57,59 @@
 	let negate = $state(false);
 	let or = $state(false);
 
-	let filteredTags = $derived($query.trim().length
-		? (() => {
-				let value = $query.toLowerCase();
+	let filteredTags = $derived(
+		$query.trim().length
+			? (() => {
+					let value = $query.toLowerCase();
 
-				if (value[selectPosition - 1] !== ' ') {
-					let wordEnd = selectPosition;
-					let wordStart = selectPosition;
+					if (value[selectPosition - 1] !== ' ') {
+						let wordEnd = selectPosition;
+						let wordStart = selectPosition;
 
-					if (wordEnd < value.length) {
-						while (value[wordEnd] && value[wordEnd] !== ' ') {
-							wordEnd++;
+						if (wordEnd < value.length) {
+							while (value[wordEnd] && value[wordEnd] !== ' ') {
+								wordEnd++;
+							}
 						}
+
+						while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
+							wordStart--;
+						}
+
+						if (wordStart >= 0 && wordEnd >= 0) {
+							value = value.substring(wordStart, wordEnd);
+						}
+					} else {
+						value = '';
 					}
 
-					while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-						wordStart--;
+					if (!value.trim().length || value === '-' || value === '~') {
+						return [];
 					}
 
-					if (wordStart >= 0 && wordEnd >= 0) {
-						value = value.substring(wordStart, wordEnd);
+					negate = value[0] === '-';
+					or = value[0] === '~';
+
+					if (negate || or) {
+						value = value.substring(1);
 					}
-				} else {
-					value = '';
-				}
 
-				if (!value.trim().length || value === '-' || value === '~') {
-					return [];
-				}
+					const tagMap = new Map();
 
-				negate = value[0] === '-';
-				or = value[0] === '~';
+					data.tags
+						.filter(({ namespace, name, displayName }) => {
+							return (
+								`${namespace}:${name}`.toLowerCase().includes(value) ||
+								`${namespace}:"${name}"`.toLowerCase().includes(value) ||
+								displayName?.toLowerCase().includes(value)
+							);
+						})
+						.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));
 
-				if (negate || or) {
-					value = value.substring(1);
-				}
-
-				const tagMap = new Map();
-
-				data.tags
-					.filter(({ namespace, name, displayName }) => {
-						return (
-							`${namespace}:${name}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
-							displayName?.toLowerCase().includes(value)
-						);
-					})
-					.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));
-
-				return Array.from(tagMap.values()).slice(0, 5);
-			})()
-		: []);
+					return Array.from(tagMap.values()).slice(0, 5);
+				})()
+			: []
+	);
 
 	run(() => {
 		if (!isFocused) {
@@ -114,7 +117,11 @@
 		}
 	});
 
-	const insertTag = async (input: HTMLInputElement, index?: number) => {
+	const insertTag = async (input?: HTMLInputElement, index?: number) => {
+		if (!input) {
+			return;
+		}
+
 		let value = $query;
 
 		const currentPosition = input.selectionStart;
@@ -160,7 +167,7 @@
 		popoverOpen = false;
 
 		setTimeout(() => {
-			inputEl.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
+			inputEl?.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
 		}, 1);
 	};
 
@@ -194,7 +201,7 @@
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 		href="/"
-		on:click={() => ($query = '')}
+		onclick={() => ($query = '')}
 		title="Go home"
 		variant="ghost"
 	>
@@ -203,11 +210,8 @@
 
 	<div class="h-12 w-full flex-1 p-2">
 		<Popover.Root
-			disableFocusTrap={true}
 			onOpenChange={(open) => (popoverOpen = open)}
 			open={!!filteredTags.length && popoverOpen}
-			openFocus={inputEl}
-			portal={formEl}
 		>
 			<form
 				action={formAction}
@@ -218,22 +222,22 @@
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 				<Input
 					autocomplete="off"
-					bind:htmlInput={inputEl}
+					bind:ref={inputEl}
 					bind:value={$query}
 					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
 					name="q"
-					on:blur={() => (isFocused = false)}
-					on:focus={() => {
+					onblur={() => (isFocused = false)}
+					onfocus={() => {
 						isFocused = true;
 						popoverOpen = true;
 					}}
-					on:input={() => {
+					oninput={() => {
 						popoverOpen = true;
 						setTimeout(() => {
-							selectPosition = inputEl.selectionStart ?? -1;
+							selectPosition = inputEl?.selectionStart ?? -1;
 						}, 1);
 					}}
-					on:keydown={(ev) => {
+					onkeydown={(ev) => {
 						switch (ev.key) {
 							case 'Escape':
 								ev.preventDefault();
@@ -273,9 +277,9 @@
 								break;
 						}
 					}}
-					on:selectionchange={() => {
+					onselectionchange={() => {
 						setTimeout(() => {
-							selectPosition = inputEl.selectionStart ?? -1;
+							selectPosition = inputEl?.selectionStart ?? -1;
 						}, 1);
 					}}
 					placeholder={data.site.searchPlaceholder}
@@ -300,15 +304,21 @@
 				</Button>
 			</form>
 
-			<Popover.Content align="start" class="grid w-fit p-0">
+			<Popover.Content
+				align="start"
+				class="grid w-fit p-0"
+				customAnchor={formEl}
+				onOpenAutoFocus={() => inputEl?.focus()}
+				trapFocus={false}
+			>
 				{#each filteredTags as tag, i}
 					{@const value =
 						`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
 
 					<Button
 						class={cn('justify-start', i === highligtedIndex && 'underline')}
-						on:click={() => {
-							inputEl.focus();
+						onclick={() => {
+							inputEl?.focus();
 							insertTag(inputEl, i);
 						}}
 						variant="link"
@@ -320,56 +330,52 @@
 		</Popover.Root>
 	</div>
 
-	<DropdownMenu.Root preventScroll={false}>
+	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			<Button
 				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 				href="/panel"
-				on:click={(ev) => ev.preventDefault()}
+				onclick={(ev) => ev.preventDefault()}
 				variant="ghost"
 			>
 				<UserCircle class="size-6" />
 			</Button>
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content class="min-w-40">
+		<DropdownMenu.Content class="min-w-40" preventScroll={false}>
 			<DropdownMenu.Group>
-				<DropdownMenu.Item
-					class="flex w-full cursor-pointer items-center text-neutral-200"
-					href="/preferences"
-				>
-					Preferences
-					<MdiSettings class="ms-auto size-4" />
-				</DropdownMenu.Item>
+				<a href="/preferences">
+					<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+						Preferences
+						<MdiSettings class="ms-auto size-4" />
+					</DropdownMenu.Item>
+				</a>
 
 				{#if data.user}
 					<DropdownMenu.Separator />
 
-					<DropdownMenu.Item
-						class="flex w-full cursor-pointer items-center text-neutral-200"
-						href="/favorites"
-					>
-						Favorites
-						<Heart class="ms-auto size-4" />
-					</DropdownMenu.Item>
+					<a href="/favorites">
+						<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+							Favorites
+							<Heart class="ms-auto size-4" />
+						</DropdownMenu.Item>
+					</a>
 
 					{#if data.site.enableCollections}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							href="/collections"
-						>
-							Collections
-							<Bookmark class="ms-auto size-4" />
-						</DropdownMenu.Item>
+						<a href="/collections">
+							<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+								Collections
+								<Bookmark class="ms-auto size-4" />
+							</DropdownMenu.Item>
+						</a>
 					{/if}
 
 					{#if data.site.enableReadHistory}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							href="/read-history"
-						>
-							Read history
-							<Clock class="ms-auto size-4" />
-						</DropdownMenu.Item>
+						<a href="/read-history">
+							<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+								Read history
+								<Clock class="ms-auto size-4" />
+							</DropdownMenu.Item>
+						</a>
 					{/if}
 				{/if}
 
@@ -377,17 +383,16 @@
 					<DropdownMenu.Separator />
 
 					{#if data.user}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							href="/account"
-						>
-							Account
-							<MdiAccount class="ms-auto size-[1.125rem]" />
-						</DropdownMenu.Item>
+						<a href="/account">
+							<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+								Account
+								<MdiAccount class="ms-auto size-[1.125rem]" />
+							</DropdownMenu.Item>
+						</a>
 
 						<DropdownMenu.Item
 							class="flex w-full cursor-pointer items-center text-neutral-200"
-							on:click={logout}
+							onclick={logout}
 						>
 							Logout
 							<MdiLogout class="ms-auto size-4" />
@@ -395,7 +400,7 @@
 					{:else}
 						<DropdownMenu.Item
 							class="flex w-full cursor-pointer items-center text-neutral-200"
-							on:click={showLogin}
+							onclick={showLogin}
 						>
 							Login
 							<MdiLogin class="ms-auto size-4" />

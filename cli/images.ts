@@ -1,8 +1,8 @@
-import { join } from 'node:path';
 import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import StreamZip from 'node-stream-zip';
+import { join } from 'node:path';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';

@@ -15,9 +15,6 @@
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 
-
-
-
 	interface Props {
 		source: { name: string; url?: string | null };
 		class?: $$Props['class'];
@@ -25,55 +22,58 @@
 
 	let { source, class: className = undefined }: Props = $props();
 
-	
-	let image = $derived((() => {
-		switch (source.name.toLowerCase()) {
-			case 'fakku':
-				return Fakku;
-			case 'irodori comics':
-				return Irodori;
-			case 'anchira':
-				return Anchira;
-			case 'hentainexus':
-				return HentaiNexus;
-			case 'e-hentai':
-				return ExHentai;
-			case 'exhentai':
-				return ExHentai;
-			case 'pixiv':
-				return Pixiv;
-			case 'patreon':
-				return Patreon;
-			case 'project hentai':
-				return ProjectHentai;
-			case 'hentag':
-				return HenTag;
-			case 'koharu':
-				return Koharu;
-			default:
-				return;
-		}
-	})());
-	let style = $derived((() => {
-		switch (source.name.toLowerCase()) {
-			case 'fakku':
-				return 'background: #AB2328; padding: 0.25rem';
-			case 'irodori comics':
-				return 'background: #4449FB; padding: 0.3125rem';
-			case 'e-hentai':
-				return 'background: #DFDDD2;';
-			case 'exhentai':
-				return 'background: black; filter: brightness(1.25);';
-			case 'project hentai':
-				return 'background: #35393B; padding: 0.125rem';
-			case 'hentag':
-				return 'background: #101827; padding: 0.125rem';
-			case 'patreon':
-				return 'background: white; padding: 0.125rem';
-			case 'hentainexus':
-				return 'background: black;';
-		}
-	})());
+	let image = $derived(
+		(() => {
+			switch (source.name.toLowerCase()) {
+				case 'fakku':
+					return Fakku;
+				case 'irodori comics':
+					return Irodori;
+				case 'anchira':
+					return Anchira;
+				case 'hentainexus':
+					return HentaiNexus;
+				case 'e-hentai':
+					return ExHentai;
+				case 'exhentai':
+					return ExHentai;
+				case 'pixiv':
+					return Pixiv;
+				case 'patreon':
+					return Patreon;
+				case 'project hentai':
+					return ProjectHentai;
+				case 'hentag':
+					return HenTag;
+				case 'koharu':
+					return Koharu;
+				default:
+					return;
+			}
+		})()
+	);
+	let style = $derived(
+		(() => {
+			switch (source.name.toLowerCase()) {
+				case 'fakku':
+					return 'background: #AB2328; padding: 0.25rem';
+				case 'irodori comics':
+					return 'background: #4449FB; padding: 0.3125rem';
+				case 'e-hentai':
+					return 'background: #DFDDD2;';
+				case 'exhentai':
+					return 'background: black; filter: brightness(1.25);';
+				case 'project hentai':
+					return 'background: #35393B; padding: 0.125rem';
+				case 'hentag':
+					return 'background: #101827; padding: 0.125rem';
+				case 'patreon':
+					return 'background: white; padding: 0.125rem';
+				case 'hentainexus':
+					return 'background: black;';
+			}
+		})()
+	);
 </script>
 
 <a

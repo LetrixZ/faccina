@@ -41,12 +41,12 @@
 	{#if hasMailer}
 		<div class="flex flex-col">
 			<Form.Field {form} name="username">
-				<Form.Control >
-					{#snippet children({ attrs })}
-										<Form.Label>Username</Form.Label>
-						<Input {...attrs} bind:value={$formData.username} />
-														{/snippet}
-								</Form.Control>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Username</Form.Label>
+						<Input {...props} bind:value={$formData.username} />
+					{/snippet}
+				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
@@ -60,7 +60,7 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/login{$page.url.search}"
-			on:click={(ev) => {
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('login');
@@ -74,7 +74,7 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/register{$page.url.search}"
-			on:click={(ev) => {
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
@@ -91,7 +91,7 @@
 	<Button
 		class="mx-auto"
 		href="/reset{$page.url.search}"
-		on:click={(ev) => {
+		onclick={(ev) => {
 			if (changeState && typeof changeState == 'function') {
 				ev.preventDefault();
 				changeState('reset');

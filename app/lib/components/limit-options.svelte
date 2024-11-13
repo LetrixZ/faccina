@@ -15,24 +15,26 @@
 
 	const dispatch = createEventDispatcher<{ change: number }>();
 
-	const options: { label: string; value: number }[] = pageLimits.map((limit) => ({
+	const options = pageLimits.map((limit) => ({
 		label: limit.toString(),
-		value: limit,
+		value: limit.toString(),
 	}));
 
-	let limit = $derived((() => {
-		if (value) {
-			return value;
-		}
+	let limit = $derived(
+		(() => {
+			if (value) {
+				return value.toString();
+			}
 
-		const param = $page.url.searchParams.get('limit');
+			const param = $page.url.searchParams.get('limit');
 
-		if (!param) {
-			return $siteConfig.defaultPageLimit;
-		}
+			if (!param) {
+				return $siteConfig.defaultPageLimit.toString();
+			}
 
-		return parseInt(param) || pageLimits[0];
-	})());
+			return parseInt(param).toString() || pageLimits[0].toString();
+		})()
+	);
 
 	let limitOption = $derived(options.find((option) => option.value === limit) ?? options[0]);
 </script>
@@ -42,23 +44,21 @@
 		<Label class="text-end">Per page</Label>
 		<Select.Root
 			items={options}
-			onSelectedChange={(option) => {
-				if (!dispatch('change', option?.value ?? pageLimits[0], { cancelable: true })) {
+			onValueChange={(value) => {
+				if (!dispatch('change', parseInt(value) ?? pageLimits[0], { cancelable: true })) {
 					return;
 				}
 
 				const query = new URLSearchParams($page.url.searchParams.toString());
-				query.set('limit', option?.value.toString() ?? pageLimits[0].toString());
+				query.set('limit', value ?? pageLimits[0].toString());
 
 				goto(`?${query.toString()}`);
 			}}
-			preventScroll={false}
-			selected={limitOption}
+			type="single"
+			value={limitOption.value}
 		>
-			<Select.Trigger aria-label="Select page limit" class="w-20">
-				<Select.Value class="text-muted-foreground-light" />
-			</Select.Trigger>
-			<Select.Content>
+			<Select.Trigger aria-label="Select page limit" class="w-20" />
+			<Select.Content preventScroll={false}>
 				{#each options as option}
 					<Select.Item value={option.value}>{option.label}</Select.Item>
 				{/each}

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
 	import type { Gallery, Image, ReadState } from '../types';

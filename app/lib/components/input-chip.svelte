@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run, preventDefault } from 'svelte/legacy';
-
 	import { createEventDispatcher } from 'svelte';
 	import { cn, slugify } from '../utils';
 	import { Button } from './ui/button';
@@ -18,7 +17,7 @@
 		chips = $bindable([]),
 		id = undefined,
 		tags = [],
-		placeholder = undefined
+		placeholder = undefined,
 	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{ update: string[] }>();
@@ -109,45 +108,47 @@
 		input = '';
 	};
 
-	let filteredTags = $derived(input.trim().length
-		? (() => {
-				let value = input.toLowerCase();
+	let filteredTags = $derived(
+		input.trim().length
+			? (() => {
+					let value = input.toLowerCase();
 
-				if (value[selectPosition - 1] !== ' ') {
-					let wordEnd = selectPosition;
-					let wordStart = selectPosition;
+					if (value[selectPosition - 1] !== ' ') {
+						let wordEnd = selectPosition;
+						let wordStart = selectPosition;
 
-					if (wordEnd < value.length) {
-						while (value[wordEnd] && value[wordEnd] !== ' ') {
-							wordEnd++;
+						if (wordEnd < value.length) {
+							while (value[wordEnd] && value[wordEnd] !== ' ') {
+								wordEnd++;
+							}
 						}
+
+						while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
+							wordStart--;
+						}
+
+						if (wordStart >= 0 && wordEnd >= 0) {
+							value = value.substring(wordStart, wordEnd);
+						}
+					} else {
+						value = '';
 					}
 
-					while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-						wordStart--;
+					if (!value.trim().length || value === '-') {
+						return [];
 					}
 
-					if (wordStart >= 0 && wordEnd >= 0) {
-						value = value.substring(wordStart, wordEnd);
-					}
-				} else {
-					value = '';
-				}
-
-				if (!value.trim().length || value === '-') {
-					return [];
-				}
-
-				return tags
-					.filter((name) => {
-						return (
-							name.toLowerCase().includes(value) &&
-							!chips.find((chip) => slugify(chip) === slugify(name))
-						);
-					})
-					.slice(0, 5);
-			})()
-		: []);
+					return tags
+						.filter((name) => {
+							return (
+								name.toLowerCase().includes(value) &&
+								!chips.find((chip) => slugify(chip) === slugify(name))
+							);
+						})
+						.slice(0, 5);
+				})()
+			: []
+	);
 </script>
 
 <form
@@ -234,7 +235,7 @@
 			{#each filteredTags as tag, i}
 				<Button
 					class={cn('justify-start', i === highligtedIndex && 'underline')}
-					on:click={() => {
+					onclick={() => {
 						inputEl.focus();
 						insertTag(inputEl, i);
 					}}

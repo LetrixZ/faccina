@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 
-
 	interface Props {
 		class?: string | null | undefined;
 		name?: string | undefined;
@@ -9,7 +8,6 @@
 	}
 
 	let { class: className = undefined, name = undefined, children }: Props = $props();
-	
 </script>
 
 <div

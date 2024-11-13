@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { Filter } from 'lucide-svelte';
 	import { siteConfig, tagList } from '../stores';
@@ -105,7 +104,7 @@
 
 	<Button
 		class={cn('size-8 p-2', showFilters && 'bg-accent/90 text-accent-foreground/90')}
-		on:click={() => (showFilters = !showFilters)}
+		onclick={() => (showFilters = !showFilters)}
 		variant="ghost"
 	>
 		<Filter />
@@ -148,7 +147,7 @@
 				<Switch
 					bind:checked={showSelected}
 					id="show-selected"
-					on:click={() => (searchQuery.page = 1)}
+					onclick={() => (searchQuery.page = 1)}
 				/>
 				<Label class="w-full" for="show-selected">Show only selected</Label>
 			</div>

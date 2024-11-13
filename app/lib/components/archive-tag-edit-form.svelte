@@ -38,19 +38,29 @@
 
 	const { form: formData, enhance } = form;
 
-	let artists = $derived($formData.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name));
-	let circles = $derived($formData.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name));
-	let magazines = $derived($formData.tags
-		.filter((tag) => tag.namespace === 'magazine')
-		.map((tag) => tag.name));
-	let events = $derived($formData.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name));
-	let publishers = $derived($formData.tags
-		.filter((tag) => tag.namespace === 'publisher')
-		.map((tag) => tag.name));
-	let parodies = $derived($formData.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name));
-	let tags = $derived($formData.tags
-		.filter(isTag)
-		.map((tag) => (tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`)));
+	let artists = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)
+	);
+	let circles = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)
+	);
+	let magazines = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)
+	);
+	let events = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)
+	);
+	let publishers = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'publisher').map((tag) => tag.name)
+	);
+	let parodies = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)
+	);
+	let tags = $derived(
+		$formData.tags
+			.filter(isTag)
+			.map((tag) => (tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`))
+	);
 
 	const updateTags = (namespace: TagNamespace, tags: string[]) => {
 		switch (namespace) {
@@ -190,8 +200,8 @@
 	<Separator />
 
 	<div class="flex justify-between">
-		<Button on:click={() => dispatch('close')} variant="outline">Discard changes</Button>
-		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" on:click={() => form.submit()}>
+		<Button onclick={() => dispatch('close')} variant="outline">Discard changes</Button>
+		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" onclick={() => form.submit()}>
 			<Save class="size-5" />
 			<span>Save changes</span>
 		</Button>

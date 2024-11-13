@@ -10,12 +10,7 @@
 		imageWidth: number;
 	}
 
-	let {
-		gallery,
-		dataURL,
-		imageHeight,
-		imageWidth
-	}: Props = $props();
+	let { gallery, dataURL, imageHeight, imageWidth }: Props = $props();
 
 	const truncatedTitle = () => {
 		const aux = [];
@@ -38,41 +33,43 @@
 		return `${aux.join('')}${addEllipsis ? '&hellip;' : ''}`;
 	};
 
-	let [reducedTags, moreCount] = $derived((() => {
-		const maxWidth = 750;
+	let [reducedTags, moreCount] = $derived(
+		(() => {
+			const maxWidth = 750;
 
-		const tags = [
-			...gallery.tags.filter((tag) => tag.namespace === 'artist'),
-			...gallery.tags.filter((tag) => tag.namespace === 'circle'),
-			...gallery.tags.filter((tag) => tag.namespace === 'parody'),
-			...gallery.tags.filter((tag) => isTag(tag)),
-		];
+			const tags = [
+				...gallery.tags.filter((tag) => tag.namespace === 'artist'),
+				...gallery.tags.filter((tag) => tag.namespace === 'circle'),
+				...gallery.tags.filter((tag) => tag.namespace === 'parody'),
+				...gallery.tags.filter((tag) => isTag(tag)),
+			];
 
-		let tagCount = tags.length;
-		let width = 0;
+			let tagCount = tags.length;
+			let width = 0;
 
-		const reduced: Tag[] = [];
+			const reduced: Tag[] = [];
 
-		for (const tag of tags) {
-			if (reduced.find((t) => t.name === tag.name)) {
-				continue;
+			for (const tag of tags) {
+				if (reduced.find((t) => t.name === tag.name)) {
+					continue;
+				}
+
+				if (tag.namespace === 'tag' && tag.name.length > 20) {
+					continue;
+				}
+
+				if (width < maxWidth) {
+					const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
+
+					width += tagWidth;
+					reduced.push(tag);
+					tagCount--;
+				}
 			}
 
-			if (tag.namespace === 'tag' && tag.name.length > 20) {
-				continue;
-			}
-
-			if (width < maxWidth) {
-				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
-
-				width += tagWidth;
-				reduced.push(tag);
-				tagCount--;
-			}
-		}
-
-		return [reduced, tagCount];
-	})());
+			return [reduced, tagCount];
+		})()
+	);
 
 	const getBackground = (namespace: TagNamespace) => {
 		switch (namespace) {

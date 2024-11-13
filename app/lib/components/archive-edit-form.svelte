@@ -81,49 +81,49 @@
 
 		<div class="flex-auto">
 			<Form.Field {form} name="title">
-				<Form.Control >
-					{#snippet children({ attrs })}
-										<Form.Label>Title</Form.Label>
-						<Input {...attrs} bind:value={$formData.title} />
-														{/snippet}
-								</Form.Control>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Title</Form.Label>
+						<Input {...props} bind:value={$formData.title} />
+					{/snippet}
+				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<Form.Field {form} name="description">
-				<Form.Control >
-					{#snippet children({ attrs })}
-										<Form.Label>Description</Form.Label>
-						<Textarea {...attrs} bind:value={$formData.description} />
-														{/snippet}
-								</Form.Control>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Description</Form.Label>
+						<Textarea {...props} bind:value={$formData.description} />
+					{/snippet}
+				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<div class="grid grid-cols-2 gap-4">
 				<Form.Field {form} name="thumbnail">
-					<Form.Control >
-						{#snippet children({ attrs })}
-												<Form.Label>Thumbnail page</Form.Label>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Thumbnail page</Form.Label>
 							<Input
-								{...attrs}
+								{...props}
 								bind:value={$thumbnailProxy}
 								max={archive.pages}
 								min={1}
 								type="number"
 							/>
-																	{/snippet}
-										</Form.Control>
+						{/snippet}
+					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
 				<Form.Field {form} name="releasedAt">
-					<Form.Control >
-						{#snippet children({ attrs })}
-												<Form.Label>Released At</Form.Label>
-							<Input {...attrs} bind:value={$formData.releasedAt} type="datetime-local" />
-																	{/snippet}
-										</Form.Control>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Released At</Form.Label>
+							<Input {...props} bind:value={$formData.releasedAt} type="datetime-local" />
+						{/snippet}
+					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 			</div>
@@ -133,9 +133,9 @@
 				{form}
 				name="protected"
 			>
-				<Form.Control >
-					{#snippet children({ attrs })}
-										<Checkbox {...attrs} bind:checked={$formData.protected} />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Checkbox {...props} bind:checked={$formData.protected} />
 						<div class="space-y-1 leading-none">
 							<Form.Label>Protected</Form.Label>
 							<Form.Description>
@@ -144,8 +144,8 @@
 							</Form.Description>
 						</div>
 						<input hidden name={attrs.name} value={$formData.protected} />
-														{/snippet}
-								</Form.Control>
+					{/snippet}
+				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>
@@ -197,7 +197,7 @@
 						/>
 						<Button
 							class="size-9 flex-shrink-0 p-2"
-							on:click={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
+							onclick={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
 							variant="outline"
 						>
 							<Trash />
@@ -221,7 +221,7 @@
 
 			<Button
 				disabled={!sourcesValid}
-				on:click={() => ($formData.sources = [...$formData.sources, { name: '' }])}
+				onclick={() => ($formData.sources = [...$formData.sources, { name: '' }])}
 				variant="outline"
 			>
 				<Plus class="me-2 size-5" /> Add source
@@ -232,8 +232,8 @@
 	<Separator />
 
 	<div class="flex justify-between">
-		<Button on:click={() => dispatch('close')} variant="outline">Discard changes</Button>
-		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" on:click={() => form.submit()}>
+		<Button onclick={() => dispatch('close')} variant="outline">Discard changes</Button>
+		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" onclick={() => form.submit()}>
 			<Save class="size-5" />
 			<span>Save changes</span>
 		</Button>

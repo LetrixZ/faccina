@@ -32,10 +32,10 @@
 	<form method="POST" use:enhance>
 		<div class="flex items-start gap-2">
 			<Form.Field class="flex-auto" {form} name="name">
-				<Form.Control >
-					{#snippet children({ attrs })}
-										<Input
-							{...attrs}
+				<Form.Control>
+					{#snippet children({ props })}
+						<Input
+							{...props}
 							bind:value={$formData.name}
 							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
 							placeholder="Collection name"
@@ -44,8 +44,8 @@
 						{#if $errors.name}
 							<Form.FieldErrors />
 						{/if}
-														{/snippet}
-								</Form.Control>
+					{/snippet}
+				</Form.Control>
 			</Form.Field>
 
 			<Button

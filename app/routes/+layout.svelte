@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import { navigating } from '$app/stores';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { siteConfig } from '$lib/stores';

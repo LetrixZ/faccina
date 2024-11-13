@@ -27,7 +27,7 @@
 				$task.complete && 'text-success'
 			)}
 			disabled={!$task.complete}
-			on:click={save}
+			onclick={save}
 		>
 			<Save class="h-full w-full" />
 		</Button>

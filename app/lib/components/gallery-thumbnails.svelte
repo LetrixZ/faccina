@@ -14,13 +14,14 @@
 
 	let filteredImages = $derived(archive?.images.slice(0, maxCount));
 
-	let wideImages =
-		$derived(archive.images.reduce(
+	let wideImages = $derived(
+		archive.images.reduce(
 			(acc, image) => acc + (image.width && image.height ? image.width / image.height : 0),
 			0
 		) /
 			archive.images.length >=
-		1);
+			1
+	);
 </script>
 
 <div class="flex-grow space-y-2">
@@ -53,8 +54,8 @@
 
 	{#if filteredImages.length < archive.images.length}
 		<div class="grid grid-cols-2 gap-2">
-			<Button on:click={() => (maxCount += 12)} variant="indigo-outline">Show more</Button>
-			<Button on:click={() => (maxCount = archive.images.length)} variant="blue-outline">
+			<Button onclick={() => (maxCount += 12)} variant="indigo-outline">Show more</Button>
+			<Button onclick={() => (maxCount = archive.images.length)} variant="blue-outline">
 				Show all
 			</Button>
 		</div>

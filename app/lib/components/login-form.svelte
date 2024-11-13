@@ -40,27 +40,27 @@
 <form action="/login{$page.url.search}" class="space-y-3" method="POST" use:enhance>
 	<div class="flex flex-col">
 		<Form.Field {form} name="username">
-			<Form.Control >
-				{#snippet children({ attrs })}
-								<Form.Label>Username</Form.Label>
-					<Input {...attrs} autocomplete="username" bind:value={$formData.username} />
-											{/snippet}
-						</Form.Control>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Username</Form.Label>
+					<Input {...props} autocomplete="username" bind:value={$formData.username} />
+				{/snippet}
+			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="password">
-			<Form.Control >
-				{#snippet children({ attrs })}
-								<Form.Label>Password</Form.Label>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Password</Form.Label>
 					<Input
-						{...attrs}
+						{...props}
 						autocomplete="current-password"
 						bind:value={$formData.password}
 						type="password"
 					/>
-											{/snippet}
-						</Form.Control>
+				{/snippet}
+			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 	</div>
@@ -69,7 +69,7 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/register{$page.url.search}"
-			on:click={(ev) => {
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
@@ -83,7 +83,7 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href={hasMailer ? `/recover${$page.url.search}` : `/reset${$page.url.search}`}
-			on:click={(ev) => {
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState(hasMailer ? 'recover' : 'reset');

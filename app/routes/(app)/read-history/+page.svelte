@@ -8,20 +8,22 @@
 
 	let { data } = $props();
 
-	let groupedEntries = $derived(data.entries.reduce(
-		(acc, entry) => {
-			const dateKey = relativeDate(entry.lastReadAt);
+	let groupedEntries = $derived(
+		data.entries.reduce(
+			(acc, entry) => {
+				const dateKey = relativeDate(entry.lastReadAt);
 
-			if (!acc[dateKey]) {
-				acc[dateKey] = [];
-			}
+				if (!acc[dateKey]) {
+					acc[dateKey] = [];
+				}
 
-			acc[dateKey].push(entry);
+				acc[dateKey].push(entry);
 
-			return acc;
-		},
-		{} as { [key: string]: HistoryEntry[] }
-	));
+				return acc;
+			},
+			{} as { [key: string]: HistoryEntry[] }
+		)
+	);
 </script>
 
 <main class="container flex flex-auto flex-col gap-y-2">

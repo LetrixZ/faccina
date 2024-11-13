@@ -118,7 +118,7 @@
 			y: $prefs.barPlacement === 'bottom' ? '3rem' : '-3rem',
 			opacity: 1,
 		}}
-		on:click={() => readerTimeout.reset()}
+		onclick={() => readerTimeout.reset()}
 		on:mousemove={() => readerTimeout.reset()}
 		out:fly={{
 			duration: 150,
@@ -144,7 +144,7 @@
 					)}
 					draggable="false"
 					href={firstPageUrl}
-					on:click|preventDefault={() => ($readerPage = 1)}
+					onclick|preventDefault={() => ($readerPage = 1)}
 				>
 					<ChevronFirst class="ms-2" />
 					<span class="sr-only">First page</span>
@@ -157,7 +157,7 @@
 					)}
 					draggable="false"
 					href={prevPageUrl}
-					on:click|preventDefault={() => ($readerPage = $prevPage)}
+					onclick|preventDefault={() => ($readerPage = $prevPage)}
 				>
 					<ChevronLeft class="me-2" />
 					<span class="sr-only">Previous page</span>
@@ -185,7 +185,7 @@
 
 					<Button
 						class="w-full whitespace-pre font-medium underline-offset-4"
-						on:click={() => pageSelect.showPicker()}
+						onclick={() => pageSelect.showPicker()}
 						variant="link"
 					>
 						{#if validPage}
@@ -203,7 +203,7 @@
 					)}
 					draggable="false"
 					href={nextPageUrl}
-					on:click|preventDefault={() => ($readerPage = $nextPage)}
+					onclick|preventDefault={() => ($readerPage = $nextPage)}
 				>
 					<ChevronRight class="ms-2" />
 					<span class="sr-only">Next page</span>
@@ -216,7 +216,7 @@
 					)}
 					draggable="false"
 					href={lastPageUrl}
-					on:click|preventDefault={() => ($readerPage = total)}
+					onclick|preventDefault={() => ($readerPage = total)}
 				>
 					<ChevronLast class="ms-2" />
 					<span class="sr-only">Last page</span>
@@ -226,7 +226,7 @@
 			<Button
 				class="inline-flex h-full items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline"
 				draggable="false"
-				on:click={() => ($preferencesOpen = true)}
+				onclick={() => ($preferencesOpen = true)}
 				variant="link"
 			>
 				<MenuIcon class="size-5" />

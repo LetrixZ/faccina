@@ -204,7 +204,7 @@
 			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
 					class="flex w-full bg-sky-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-sky-700/80"
-					on:click={() => (editOpen = true)}
+					onclick={() => (editOpen = true)}
 				>
 					<Pencil class="size-5 shrink-0" />
 					<span class="flex-auto"> Edit info </span>
@@ -212,7 +212,7 @@
 
 				<Button
 					class="flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
-					on:click={() => (editTaxonomyOpen = true)}
+					onclick={() => (editTaxonomyOpen = true)}
 				>
 					<Tag class="size-5 shrink-0" />
 					<span class="flex-auto"> Edit tags </span>
@@ -269,7 +269,7 @@
 				<Button
 					class={'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80'}
 					disabled={!canDownload}
-					on:click={() => startDownload(gallery)}
+					onclick={() => startDownload(gallery)}
 					variant="secondary"
 				>
 					<BiSolidDownload class="size-5 shrink-0" />

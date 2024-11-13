@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import { Pencil, Trash } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
@@ -62,7 +61,7 @@
 						</Dialog.Header>
 
 						<div class="flex w-full gap-2">
-							<Button class="flex-auto" on:click={() => (deleteOpen = false)} variant="secondary">
+							<Button class="flex-auto" onclick={() => (deleteOpen = false)} variant="secondary">
 								Cancel
 							</Button>
 

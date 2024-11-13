@@ -30,23 +30,27 @@
 		}
 	})();
 
-	let namespace = $derived(['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(
-		tag.namespace
-	)
-		? null
-		: tag.namespace);
+	let namespace = $derived(
+		['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(tag.namespace)
+			? null
+			: tag.namespace
+	);
 
-	let label = $derived((() => {
-		if (namespace) {
-			return `${namespace}:${tag.displayName ?? tag.name}`;
-		} else {
-			return tag.displayName ?? tag.name;
-		}
-	})());
+	let label = $derived(
+		(() => {
+			if (namespace) {
+				return `${namespace}:${tag.displayName ?? tag.name}`;
+			} else {
+				return tag.displayName ?? tag.name;
+			}
+		})()
+	);
 
-	let url = $derived((() => {
-		return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
-	})());
+	let url = $derived(
+		(() => {
+			return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
+		})()
+	);
 </script>
 
 <Button

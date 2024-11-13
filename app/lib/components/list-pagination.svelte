@@ -8,7 +8,6 @@
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { cn } from '$lib/utils';
 
-
 	interface Props {
 		total: number;
 		limit: number;
@@ -16,26 +15,23 @@
 		class?: string | null | undefined;
 	}
 
-	let {
-		total,
-		limit,
-		value = undefined,
-		class: className = undefined
-	}: Props = $props();
+	let { total, limit, value = undefined, class: className = undefined }: Props = $props();
 
-	let currentPage = $derived((() => {
-		if (value) {
-			return value;
-		}
+	let currentPage = $derived(
+		(() => {
+			if (value) {
+				return value;
+			}
 
-		const currentPage = $page.url.searchParams.get('page');
+			const currentPage = $page.url.searchParams.get('page');
 
-		if (currentPage) {
-			return parseInt(currentPage);
-		} else {
-			return 1;
-		}
-	})());
+			if (currentPage) {
+				return parseInt(currentPage);
+			} else {
+				return 1;
+			}
+		})()
+	);
 
 	const dispatch = createEventDispatcher<{ navigate: number }>();
 
@@ -46,44 +42,48 @@
 		return `${url.pathname}?${query.toString()}`;
 	};
 
-	let prevPage = $derived((() => {
-		if (currentPage > 1) {
-			return currentPage - 1;
-		}
-	})());
+	let prevPage = $derived(
+		(() => {
+			if (currentPage > 1) {
+				return currentPage - 1;
+			}
+		})()
+	);
 
-	let nextPage = $derived((() => {
-		if (currentPage < Math.ceil(total / limit)) {
-			return currentPage + 1;
-		}
-	})());
+	let nextPage = $derived(
+		(() => {
+			if (currentPage < Math.ceil(total / limit)) {
+				return currentPage + 1;
+			}
+		})()
+	);
 
-	let prevPageUrl = $derived((() => {
-		if (currentPage > 1) {
-			const query = new URLSearchParams($page.url.searchParams.toString());
-			query.set('page', (currentPage - 1).toString());
+	let prevPageUrl = $derived(
+		(() => {
+			if (currentPage > 1) {
+				const query = new URLSearchParams($page.url.searchParams.toString());
+				query.set('page', (currentPage - 1).toString());
 
-			return `${$page.url.pathname}?${query.toString()}`;
-		}
-	})());
+				return `${$page.url.pathname}?${query.toString()}`;
+			}
+		})()
+	);
 
-	let nextPageUrl = $derived((() => {
-		if (currentPage < Math.ceil(total / limit)) {
-			const query = new URLSearchParams($page.url.searchParams.toString());
-			query.set('page', (currentPage + 1).toString());
+	let nextPageUrl = $derived(
+		(() => {
+			if (currentPage < Math.ceil(total / limit)) {
+				const query = new URLSearchParams($page.url.searchParams.toString());
+				query.set('page', (currentPage + 1).toString());
 
-			return `${$page.url.pathname}?${query.toString()}`;
-		}
-	})());
-
-	
+				return `${$page.url.pathname}?${query.toString()}`;
+			}
+		})()
+	);
 </script>
 
 <Pagination.Root
 	class={className}
 	count={total || 1}
-	
-	
 	onPageChange={(newPage) => {
 		const query = new URLSearchParams($page.url.searchParams.toString());
 		query.set('page', newPage.toString());
@@ -98,7 +98,7 @@
 				<Button
 					class={cn('gap-1 pl-2.5', !prevPageUrl && 'pointer-events-none opacity-50')}
 					href={prevPageUrl}
-					on:click={(ev) => {
+					onclick={(ev) => {
 						if (!dispatch('navigate', prevPage || 1, { cancelable: true })) {
 							ev.preventDefault();
 						}
@@ -119,7 +119,7 @@
 					<Pagination.Item>
 						<Button
 							href={getPageUrl(_page.value, $page.url)}
-							on:click={(ev) => {
+							onclick={(ev) => {
 								if (!dispatch('navigate', _page.value, { cancelable: true })) {
 									ev.preventDefault();
 								}
@@ -136,7 +136,7 @@
 				<Button
 					class={cn('gap-1 pl-2.5', !nextPageUrl && 'pointer-events-none  opacity-50 ')}
 					href={nextPageUrl}
-					on:click={(ev) => {
+					onclick={(ev) => {
 						if (!dispatch('navigate', nextPage || 1, { cancelable: true })) {
 							ev.preventDefault();
 						}

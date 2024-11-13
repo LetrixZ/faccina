@@ -1,7 +1,7 @@
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { readFileSync } from 'fs';
 import Icons from 'unplugin-icons/vite';
+import { fileURLToPath } from 'url';
 import { defineConfig, Plugin } from 'vite';
 
 const file = fileURLToPath(new URL('package.json', import.meta.url));

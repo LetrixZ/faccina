@@ -1,5 +1,5 @@
-import { randomBytes } from 'crypto';
 import chalk from 'chalk';
+import { randomBytes } from 'crypto';
 import { generateIdFromEntropySize } from 'lucia';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';

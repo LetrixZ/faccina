@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { preventDefault, stopPropagation } from 'svelte/legacy';
-
 	import { Bookmark, EyeOff } from 'lucide-svelte';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
@@ -23,46 +22,48 @@
 		enableBookmark = false,
 		bookmarked = false,
 		imageBookmark = false,
-		newTab = false
+		newTab = false,
 	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{ bookmark: boolean }>();
 
-	let [reducedTags, moreCount] = $derived((() => {
-		const maxWidth = 290;
+	let [reducedTags, moreCount] = $derived(
+		(() => {
+			const maxWidth = 290;
 
-		const tags = [
-			...gallery.tags.filter((tag) => tag.namespace === 'artist'),
-			...gallery.tags.filter((tag) => tag.namespace === 'circle'),
-			...gallery.tags.filter((tag) => tag.namespace === 'parody'),
-			...gallery.tags.filter((tag) => isTag(tag)),
-		];
+			const tags = [
+				...gallery.tags.filter((tag) => tag.namespace === 'artist'),
+				...gallery.tags.filter((tag) => tag.namespace === 'circle'),
+				...gallery.tags.filter((tag) => tag.namespace === 'parody'),
+				...gallery.tags.filter((tag) => isTag(tag)),
+			];
 
-		let tagCount = tags.length;
-		let width = 0;
+			let tagCount = tags.length;
+			let width = 0;
 
-		const reduced: Tag[] = [];
+			const reduced: Tag[] = [];
 
-		for (const tag of tags) {
-			if (reduced.find((t) => t.name === tag.name)) {
-				continue;
+			for (const tag of tags) {
+				if (reduced.find((t) => t.name === tag.name)) {
+					continue;
+				}
+
+				if (tag.namespace === 'tag' && tag.name.length > 20) {
+					continue;
+				}
+
+				if (width < maxWidth) {
+					const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
+
+					width += tagWidth;
+					reduced.push(tag);
+					tagCount--;
+				}
 			}
 
-			if (tag.namespace === 'tag' && tag.name.length > 20) {
-				continue;
-			}
-
-			if (width < maxWidth) {
-				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
-
-				width += tagWidth;
-				reduced.push(tag);
-				tagCount--;
-			}
-		}
-
-		return [reduced, tagCount];
-	})());
+			return [reduced, tagCount];
+		})()
+	);
 
 	let artists = $derived(reducedTags.filter((tag) => tag.namespace === 'artist'));
 	let circles = $derived(reducedTags.filter((tag) => tag.namespace === 'circle'));
@@ -98,9 +99,11 @@
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
 							bookmarked && 'opacity-90'
 						)}
-						onclick={stopPropagation(preventDefault(() => {
-							dispatch('bookmark', !bookmarked);
-						}))}
+						onclick={stopPropagation(
+							preventDefault(() => {
+								dispatch('bookmark', !bookmarked);
+							})
+						)}
 					>
 						<Bookmark class={cn(bookmarked && 'fill-white')} />
 					</button>

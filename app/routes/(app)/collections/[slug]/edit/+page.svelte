@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import { BookmarkPlus, Save } from 'lucide-svelte';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
@@ -23,9 +22,11 @@
 
 	let { data } = $props();
 
-	let selectedGalleries = $state(data.collection.archives as (GalleryListItem & {
-		[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
-	})[]);
+	let selectedGalleries = $state(
+		data.collection.archives as (GalleryListItem & {
+			[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
+		})[]
+	);
 
 	run(() => {
 		selectedGalleries = data.collection.archives;
@@ -72,10 +73,10 @@
 	>
 		<div class="flex w-full items-start gap-2">
 			<Form.Field class="flex-auto" {form} name="name">
-				<Form.Control >
-					{#snippet children({ attrs })}
-										<Input
-							{...attrs}
+				<Form.Control>
+					{#snippet children({ props })}
+						<Input
+							{...props}
 							bind:value={$formData.name}
 							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
 							placeholder="Collection name"
@@ -84,8 +85,8 @@
 						{#if $errors.name}
 							<Form.FieldErrors />
 						{/if}
-														{/snippet}
-								</Form.Control>
+					{/snippet}
+				</Form.Control>
 			</Form.Field>
 
 			<div class="flex gap-2">
@@ -94,7 +95,7 @@
 					<span class="sr-only">Save changes</span>
 				</Button>
 
-				<Button class="w-full gap-x-2 bg-indigo-700 hover:bg-indigo-700/80" on:click={openSearch}>
+				<Button class="w-full gap-x-2 bg-indigo-700 hover:bg-indigo-700/80" onclick={openSearch}>
 					<BookmarkPlus class="size-5" />
 					<span class="max-md:sr-only">Add galleries</span>
 				</Button>
@@ -131,7 +132,7 @@
 		{:else}
 			<div class="flex flex-auto flex-col items-center justify-center gap-4">
 				<h3 class="text-2xl font-medium">No galleries added</h3>
-				<Button on:click={openSearch} variant="outline">Add galleries</Button>
+				<Button onclick={openSearch} variant="outline">Add galleries</Button>
 			</div>
 		{/if}
 	</form>

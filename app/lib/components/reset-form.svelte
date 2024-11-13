@@ -40,42 +40,42 @@
 <form action="/reset{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
 	<div class="flex flex-col">
 		<Form.Field {form} name="password">
-			<Form.Control >
-				{#snippet children({ attrs })}
-								<Form.Label>New Password</Form.Label>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>New Password</Form.Label>
 					<Input
-						{...attrs}
+						{...props}
 						autocomplete="new-password"
 						bind:value={$formData.password}
 						type="password"
 					/>
-											{/snippet}
-						</Form.Control>
+				{/snippet}
+			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="confirmPassword">
-			<Form.Control >
-				{#snippet children({ attrs })}
-								<Form.Label>Confirm Password</Form.Label>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Confirm Password</Form.Label>
 					<Input
-						{...attrs}
+						{...props}
 						autocomplete="new-password"
 						bind:value={$formData.confirmPassword}
 						type="password"
 					/>
-											{/snippet}
-						</Form.Control>
+				{/snippet}
+			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="code">
-			<Form.Control >
-				{#snippet children({ attrs })}
-								<Form.Label>Recovery code</Form.Label>
-					<Input {...attrs} bind:value={$formData.code} />
-											{/snippet}
-						</Form.Control>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Recovery code</Form.Label>
+					<Input {...props} bind:value={$formData.code} />
+				{/snippet}
+			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 	</div>
@@ -84,7 +84,7 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/login{$page.url.search}"
-			on:click={(ev) => {
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('login');
@@ -97,7 +97,7 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/register{$page.url.search}"
-			on:click={(ev) => {
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
@@ -114,7 +114,7 @@
 	<Button
 		class="mx-auto"
 		href="/recover{$page.url.search}"
-		on:click={(ev) => {
+		onclick={(ev) => {
 			if (changeState && typeof changeState == 'function') {
 				ev.preventDefault();
 				changeState('recover');

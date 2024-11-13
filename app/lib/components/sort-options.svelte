@@ -63,15 +63,15 @@
 		<Label>Sort by</Label>
 		<Select.Root
 			items={sortOptions}
-			onSelectedChange={(option) => {
-				if (!dispatch('sort', option?.value ?? defaultSortType, { cancelable: true })) {
+			onValueChange={(value) => {
+				if (!dispatch('sort', (value as Sort) ?? defaultSortType, { cancelable: true })) {
 					return;
 				}
 
 				const query = new URLSearchParams($page.url.searchParams.toString());
-				query.set('sort', option?.value ?? defaultSortType);
+				query.set('sort', value ?? defaultSortType);
 
-				if (option?.value === 'random') {
+				if (value === 'random') {
 					if (!query.get('seed')) {
 						query.set('seed', randomString());
 					}
@@ -81,13 +81,11 @@
 
 				goto(`?${query.toString()}`);
 			}}
-			preventScroll={false}
-			selected={sortOption}
+			type="single"
+			value={sortOption?.value}
 		>
-			<Select.Trigger aria-label="Select sorting option" class="w-full sm:w-48">
-				<Select.Value class="text-muted-foreground-light" />
-			</Select.Trigger>
-			<Select.Content>
+			<Select.Trigger aria-label="Select sorting option" class="w-full sm:w-48" />
+			<Select.Content preventScroll={false}>
 				{#each sortOptions as option}
 					<Select.Item value={option.value}>{option.label}</Select.Item>
 				{/each}
@@ -98,7 +96,7 @@
 	<Button
 		class="size-8 p-0 text-muted-foreground-light"
 		disabled={sortValue === 'random'}
-		on:click={() => {
+		onclick={() => {
 			if (!dispatch('order', orderValue === 'desc' ? 'asc' : 'desc', { cancelable: true })) {
 				return;
 			}

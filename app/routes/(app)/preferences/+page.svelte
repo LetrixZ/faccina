@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run } from 'svelte/legacy';
-
 	import cookie from 'cookie';
 	import { toast } from 'svelte-sonner';
 	import { browser } from '$app/environment';

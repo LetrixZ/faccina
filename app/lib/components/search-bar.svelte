@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { run, preventDefault } from 'svelte/legacy';
-
 	import { createEventDispatcher } from 'svelte';
 	import type { Tag } from '../types';
 	import { page } from '$app/stores';
@@ -34,53 +33,55 @@
 	let negate = $state(false);
 	let or = $state(false);
 
-	let filteredTags = $derived(query.trim().length
-		? (() => {
-				let value = query.toLowerCase();
+	let filteredTags = $derived(
+		query.trim().length
+			? (() => {
+					let value = query.toLowerCase();
 
-				if (value[selectPosition - 1] !== ' ') {
-					let wordEnd = selectPosition;
-					let wordStart = selectPosition;
+					if (value[selectPosition - 1] !== ' ') {
+						let wordEnd = selectPosition;
+						let wordStart = selectPosition;
 
-					if (wordEnd < value.length) {
-						while (value[wordEnd] && value[wordEnd] !== ' ') {
-							wordEnd++;
+						if (wordEnd < value.length) {
+							while (value[wordEnd] && value[wordEnd] !== ' ') {
+								wordEnd++;
+							}
 						}
+
+						while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
+							wordStart--;
+						}
+
+						if (wordStart >= 0 && wordEnd >= 0) {
+							value = value.substring(wordStart, wordEnd);
+						}
+					} else {
+						value = '';
 					}
 
-					while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-						wordStart--;
+					if (!value.trim().length || value === '-' || value === '~') {
+						return [];
 					}
 
-					if (wordStart >= 0 && wordEnd >= 0) {
-						value = value.substring(wordStart, wordEnd);
+					negate = value[0] === '-';
+					or = value[0] === '~';
+
+					if (negate || or) {
+						value = value.substring(1);
 					}
-				} else {
-					value = '';
-				}
 
-				if (!value.trim().length || value === '-' || value === '~') {
-					return [];
-				}
-
-				negate = value[0] === '-';
-				or = value[0] === '~';
-
-				if (negate || or) {
-					value = value.substring(1);
-				}
-
-				return tags
-					.filter(({ namespace, name, displayName }) => {
-						return (
-							`${namespace}:${name}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
-							displayName?.toLowerCase().includes(value)
-						);
-					})
-					.slice(0, 5);
-			})()
-		: []);
+					return tags
+						.filter(({ namespace, name, displayName }) => {
+							return (
+								`${namespace}:${name}`.toLowerCase().includes(value) ||
+								`${namespace}:"${name}"`.toLowerCase().includes(value) ||
+								displayName?.toLowerCase().includes(value)
+							);
+						})
+						.slice(0, 5);
+				})()
+			: []
+	);
 
 	run(() => {
 		if (!isFocused) {
@@ -247,7 +248,7 @@
 
 				<Button
 					class={cn('justify-start', i === highligtedIndex && 'underline')}
-					on:click={() => {
+					onclick={() => {
 						inputEl.focus();
 						insertTag(inputEl, i);
 					}}
