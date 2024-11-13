@@ -6,8 +6,12 @@
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 
-	export let pageLimits: number[];
-	export let value: number | undefined = undefined;
+	interface Props {
+		pageLimits: number[];
+		value?: number | undefined;
+	}
+
+	let { pageLimits, value = undefined }: Props = $props();
 
 	const dispatch = createEventDispatcher<{ change: number }>();
 
@@ -16,7 +20,7 @@
 		value: limit,
 	}));
 
-	$: limit = (() => {
+	let limit = $derived((() => {
 		if (value) {
 			return value;
 		}
@@ -28,9 +32,9 @@
 		}
 
 		return parseInt(param) || pageLimits[0];
-	})();
+	})());
 
-	$: limitOption = options.find((option) => option.value === limit) ?? options[0];
+	let limitOption = $derived(options.find((option) => option.value === limit) ?? options[0]);
 </script>
 
 <div class="flex items-end justify-between gap-2">

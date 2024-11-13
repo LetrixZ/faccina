@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { Pencil, Trash } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
@@ -11,18 +13,17 @@
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
 
-	export let data;
-	export let form;
+	let { data, form } = $props();
 
-	let deleteOpen = false;
+	let deleteOpen = $state(false);
 
-	$: libraryPage = data.libraryPage;
+	let libraryPage = $derived(data.libraryPage);
 
-	$: {
+	run(() => {
 		if (form?.message && form.type === 'error') {
 			toast.error(form.message);
 		}
-	}
+	});
 </script>
 
 <svelte:head>

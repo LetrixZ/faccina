@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import type { ActionResult } from '@sveltejs/kit';
 	import { Bookmark, Clock, Heart, UserCircle } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
@@ -22,9 +24,9 @@
 	import MdiSettings from '~icons/mdi/settings';
 	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
 
-	export let data;
+	let { data, children } = $props();
 
-	$: formAction = (() => {
+	let formAction = $derived((() => {
 		switch ($page.route.id) {
 			case '/(app)/favorites':
 			case '/(app)/collections/[slug]':
@@ -32,29 +34,29 @@
 			default:
 				return '/';
 		}
-	})();
+	})());
 
-	let loginOpen = false;
-	let userFormState: UserFormState = 'login';
+	let loginOpen = $state(false);
+	let userFormState: UserFormState = $state('login');
 
-	let formEl: HTMLFormElement;
-	let inputEl: HTMLInputElement;
+	let formEl: HTMLFormElement = $state();
+	let inputEl: HTMLInputElement = $state();
 
-	$: sort = $page.url.searchParams.get('sort');
-	$: order = $page.url.searchParams.get('order');
+	let sort = $derived($page.url.searchParams.get('sort'));
+	let order = $derived($page.url.searchParams.get('order'));
 
-	$: {
+	run(() => {
 		$query = $page.url.searchParams.get('q') ?? '';
-	}
+	});
 
-	let selectPosition = -1;
-	let highligtedIndex = -1;
-	let isFocused = false;
-	let popoverOpen = false;
-	let negate = false;
-	let or = false;
+	let selectPosition = $state(-1);
+	let highligtedIndex = $state(-1);
+	let isFocused = $state(false);
+	let popoverOpen = $state(false);
+	let negate = $state(false);
+	let or = $state(false);
 
-	$: filteredTags = $query.trim().length
+	let filteredTags = $derived($query.trim().length
 		? (() => {
 				let value = $query.toLowerCase();
 
@@ -104,13 +106,13 @@
 
 				return Array.from(tagMap.values()).slice(0, 5);
 			})()
-		: [];
+		: []);
 
-	$: {
+	run(() => {
 		if (!isFocused) {
 			highligtedIndex = -1;
 		}
-	}
+	});
 
 	const insertTag = async (input: HTMLInputElement, index?: number) => {
 		let value = $query;
@@ -179,9 +181,9 @@
 		loginOpen = true;
 	};
 
-	$: {
+	run(() => {
 		$tagList = data.tags;
-	}
+	});
 </script>
 
 <svelte:head>
@@ -211,7 +213,7 @@
 				action={formAction}
 				bind:this={formEl}
 				class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
-				on:submit={() => (popoverOpen = false)}
+				onsubmit={() => (popoverOpen = false)}
 			>
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 				<Input
@@ -406,7 +408,7 @@
 </div>
 
 <div class="flex w-full flex-auto flex-col pt-12">
-	<slot />
+	{@render children?.()}
 </div>
 
 <Dialog.Root bind:open={loginOpen}>

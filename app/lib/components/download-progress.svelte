@@ -6,8 +6,12 @@
 	import { cn } from '$lib/utils';
 	import type { Task } from '$lib/models';
 
-	export let task: Readable<Task>;
-	export let save: () => unknown;
+	interface Props {
+		task: Readable<Task>;
+		save: () => unknown;
+	}
+
+	let { task, save }: Props = $props();
 </script>
 
 <div class="flex w-full flex-col space-y-1">

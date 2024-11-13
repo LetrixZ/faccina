@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import pMap from 'p-map';
 	import { toast } from 'svelte-sonner';
 	import type { Gallery, Image, ReadState } from '../types';
@@ -17,30 +19,36 @@
 	} from '$lib/reader-store';
 	import { type ReaderPreferences } from '$lib/utils';
 
-	export let gallery: Gallery;
+	interface Props {
+		gallery: Gallery;
+	}
+
+	let { gallery }: Props = $props();
 
 	type ImageState = 'idle' | 'preloading' | 'preloaded';
 
-	let imageEl: HTMLImageElement;
-	let container: HTMLDivElement;
+	let imageEl: HTMLImageElement = $state();
+	let container: HTMLDivElement = $state();
 
-	let imageStyle = '';
-	let containerStyle = '';
+	let imageStyle = $state('');
+	let containerStyle = $state('');
 
 	let pageState: (Image & { state: ImageState })[] = gallery.images.map((image) => ({
 		...image,
 		state: 'idle',
 	}));
 
-	$: currentPage = $page.state.page ?? parseInt($page.params.page);
-	$: image = gallery.images.find((image) => image?.pageNumber === currentPage);
+	let currentPage = $derived($page.state.page ?? parseInt($page.params.page));
+	let image = $derived(gallery.images.find((image) => image?.pageNumber === currentPage));
 
-	$: {
+	run(() => {
 		$prevPage = currentPage > 1 ? currentPage - 1 : undefined;
 		$nextPage = gallery.pages && currentPage < gallery.pages ? currentPage + 1 : undefined;
-	}
+	});
 
-	$: $currentArchive = gallery;
+	run(() => {
+		$currentArchive = gallery;
+	});
 
 	const readStat = (page: number) => {
 		fetch('/stats/read-page', {
@@ -163,16 +171,22 @@
 		}
 	};
 
-	$: updateStyles($prefs, image);
-	$: preloadImages(currentPage);
-	$: changePage($readerPage);
-	$: {
+	run(() => {
+		updateStyles($prefs, image);
+	});
+	run(() => {
+		preloadImages(currentPage);
+	});
+	run(() => {
+		changePage($readerPage);
+	});
+	run(() => {
 		readStat(currentPage);
-	}
+	});
 </script>
 
 <svelte:window
-	on:keydown={(event) => {
+	onkeydown={(event) => {
 		if ($preferencesOpen) {
 			return;
 		}
@@ -194,7 +208,7 @@
 				goto(`/g/${gallery.id}${$page.url.search}`);
 		}
 	}}
-	on:resize={() => updateStyles($prefs, image)}
+	onresize={() => updateStyles($prefs, image)}
 />
 
 <div class="flex h-dvh w-full flex-col overflow-clip">
@@ -214,7 +228,7 @@
 				class="m-auto"
 				height={image.height}
 				loading="eager"
-				on:error={() => toast.error('Failed to load the page')}
+				onerror={() => toast.error('Failed to load the page')}
 				src={`/image/${gallery.hash}/${image?.pageNumber}`}
 				style={imageStyle}
 				width={image.width}

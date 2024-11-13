@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import ResetForm from '$lib/components/reset-form.svelte';
 
-	export let data;
+	let { data } = $props();
 </script>
 
 <main class="container mx-auto w-full md:w-96">

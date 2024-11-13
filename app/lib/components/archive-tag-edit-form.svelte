@@ -13,8 +13,12 @@
 	import { Label } from './ui/label';
 	import { Separator } from './ui/separator';
 
-	export let data: SuperValidated<Infer<EditTagsSchema>>;
-	export let tagsList: Tag[];
+	interface Props {
+		data: SuperValidated<Infer<EditTagsSchema>>;
+		tagsList: Tag[];
+	}
+
+	let { data, tagsList }: Props = $props();
 
 	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
 
@@ -34,19 +38,19 @@
 
 	const { form: formData, enhance } = form;
 
-	$: artists = $formData.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name);
-	$: circles = $formData.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name);
-	$: magazines = $formData.tags
+	let artists = $derived($formData.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name));
+	let circles = $derived($formData.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name));
+	let magazines = $derived($formData.tags
 		.filter((tag) => tag.namespace === 'magazine')
-		.map((tag) => tag.name);
-	$: events = $formData.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name);
-	$: publishers = $formData.tags
+		.map((tag) => tag.name));
+	let events = $derived($formData.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name));
+	let publishers = $derived($formData.tags
 		.filter((tag) => tag.namespace === 'publisher')
-		.map((tag) => tag.name);
-	$: parodies = $formData.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name);
-	$: tags = $formData.tags
+		.map((tag) => tag.name));
+	let parodies = $derived($formData.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name));
+	let tags = $derived($formData.tags
 		.filter(isTag)
-		.map((tag) => (tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`));
+		.map((tag) => (tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`)));
 
 	const updateTags = (namespace: TagNamespace, tags: string[]) => {
 		switch (namespace) {
@@ -105,7 +109,7 @@
 	action="?/editTags"
 	class="space-y-4"
 	method="POST"
-	on:submit={(ev) => ev.preventDefault()}
+	onsubmit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex flex-col">

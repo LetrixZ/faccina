@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 
-	let className: string | null | undefined = undefined;
 
-	export let name: string | undefined = undefined;
-	export { className as class };
+	interface Props {
+		class?: string | null | undefined;
+		name?: string | undefined;
+		children?: import('svelte').Snippet;
+	}
+
+	let { class: className = undefined, name = undefined, children }: Props = $props();
+	
 </script>
 
 <div
@@ -17,5 +22,5 @@
 		<p class="pb-1 text-xs font-medium uppercase tracking-wide">{name}</p>
 	{/if}
 
-	<slot />
+	{@render children?.()}
 </div>

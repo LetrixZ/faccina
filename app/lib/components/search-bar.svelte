@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { createEventDispatcher } from 'svelte';
 	import type { Tag } from '../types';
 	import { page } from '$app/stores';
@@ -8,27 +10,31 @@
 	import { cn } from '$lib/utils';
 	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
 
-	export let tags: Tag[];
-	export let searchPlaceholder = '';
+	interface Props {
+		tags: Tag[];
+		searchPlaceholder?: string;
+	}
+
+	let { tags, searchPlaceholder = '' }: Props = $props();
 
 	const dispatcher = createEventDispatcher<{ search: string }>();
 
-	let formEl: HTMLFormElement;
-	let inputEl: HTMLInputElement;
+	let formEl: HTMLFormElement = $state();
+	let inputEl: HTMLInputElement = $state();
 
-	let query = '';
+	let query = $state('');
 
-	$: sort = $page.url.searchParams.get('sort');
-	$: order = $page.url.searchParams.get('order');
+	let sort = $derived($page.url.searchParams.get('sort'));
+	let order = $derived($page.url.searchParams.get('order'));
 
-	let selectPosition = -1;
-	let highligtedIndex = -1;
-	let isFocused = false;
-	let popoverOpen = false;
-	let negate = false;
-	let or = false;
+	let selectPosition = $state(-1);
+	let highligtedIndex = $state(-1);
+	let isFocused = $state(false);
+	let popoverOpen = $state(false);
+	let negate = $state(false);
+	let or = $state(false);
 
-	$: filteredTags = query.trim().length
+	let filteredTags = $derived(query.trim().length
 		? (() => {
 				let value = query.toLowerCase();
 
@@ -74,13 +80,13 @@
 					})
 					.slice(0, 5);
 			})()
-		: [];
+		: []);
 
-	$: {
+	run(() => {
 		if (!isFocused) {
 			highligtedIndex = -1;
 		}
-	}
+	});
 
 	const insertTag = async (input: HTMLInputElement, index?: number) => {
 		let value = query;
@@ -144,10 +150,10 @@
 		<form
 			bind:this={formEl}
 			class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
-			on:submit|preventDefault={() => {
+			onsubmit={preventDefault(() => {
 				popoverOpen = false;
 				dispatcher('search', query);
-			}}
+			})}
 		>
 			<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 			<Input

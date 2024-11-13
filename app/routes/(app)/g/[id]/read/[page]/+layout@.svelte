@@ -6,9 +6,9 @@
 	import { prefs } from '$lib/reader-store';
 	import type { ReaderPreferences } from '$lib/utils';
 
-	export let data;
+	let { data, children } = $props();
 
-	let isMounted = false;
+	let isMounted = $state(false);
 
 	onMount(() => {
 		const cookiePerfs = cookie.parse(document.cookie);
@@ -30,5 +30,5 @@
 {#if isMounted}
 	<ReaderBar gallery={data.gallery} />
 
-	<slot />
+	{@render children?.()}
 {/if}

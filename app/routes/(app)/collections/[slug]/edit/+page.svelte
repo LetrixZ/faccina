@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { BookmarkPlus, Save } from 'lucide-svelte';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
@@ -19,17 +21,17 @@
 	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
 
-	export let data;
+	let { data } = $props();
 
-	let selectedGalleries = data.collection.archives as (GalleryListItem & {
+	let selectedGalleries = $state(data.collection.archives as (GalleryListItem & {
 		[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
-	})[];
+	})[]);
 
-	$: {
+	run(() => {
 		selectedGalleries = data.collection.archives;
-	}
+	});
 
-	$: searchOpen = !!$page.state.searchOpen;
+	let searchOpen = $derived(!!$page.state.searchOpen);
 
 	let form = superForm(data.editForm, {
 		validators: zodClient(createCollectionSchema),
@@ -63,25 +65,27 @@
 	<form
 		class="flex flex-auto flex-col gap-2"
 		method="POST"
-		on:submit={() => {
+		onsubmit={() => {
 			$formData.archives = selectedGalleries.map((gallery) => gallery.id);
 		}}
 		use:enhance
 	>
 		<div class="flex w-full items-start gap-2">
 			<Form.Field class="flex-auto" {form} name="name">
-				<Form.Control let:attrs>
-					<Input
-						{...attrs}
-						bind:value={$formData.name}
-						class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
-						placeholder="Collection name"
-					/>
+				<Form.Control >
+					{#snippet children({ attrs })}
+										<Input
+							{...attrs}
+							bind:value={$formData.name}
+							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
+							placeholder="Collection name"
+						/>
 
-					{#if $errors.name}
-						<Form.FieldErrors />
-					{/if}
-				</Form.Control>
+						{#if $errors.name}
+							<Form.FieldErrors />
+						{/if}
+														{/snippet}
+								</Form.Control>
 			</Form.Field>
 
 			<div class="flex gap-2">
@@ -101,8 +105,8 @@
 			<div
 				aria-label="Collection"
 				class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
-				on:consider={(e) => (selectedGalleries = e.detail.items)}
-				on:finalize={(e) => (selectedGalleries = e.detail.items)}
+				onconsider={(e) => (selectedGalleries = e.detail.items)}
+				onfinalize={(e) => (selectedGalleries = e.detail.items)}
 				use:dragHandleZone={{
 					items: selectedGalleries,
 					flipDurationMs: 50,

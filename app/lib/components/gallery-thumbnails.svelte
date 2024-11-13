@@ -4,19 +4,23 @@
 	import { page } from '$app/stores';
 	import { cn, isSpread } from '$lib/utils';
 
-	export let archive: Gallery;
+	interface Props {
+		archive: Gallery;
+	}
 
-	let maxCount = 12;
+	let { archive }: Props = $props();
 
-	$: filteredImages = archive?.images.slice(0, maxCount);
+	let maxCount = $state(12);
 
-	$: wideImages =
-		archive.images.reduce(
+	let filteredImages = $derived(archive?.images.slice(0, maxCount));
+
+	let wideImages =
+		$derived(archive.images.reduce(
 			(acc, image) => acc + (image.width && image.height ? image.width / image.height : 0),
 			0
 		) /
 			archive.images.length >=
-		1;
+		1);
 </script>
 
 <div class="flex-grow space-y-2">

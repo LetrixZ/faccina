@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault, stopPropagation } from 'svelte/legacy';
+
 	import dayjs from 'dayjs';
 	import { Bookmark, BookOpen, BookOpenCheck, EyeOff } from 'lucide-svelte';
 	import pixelWidth from 'string-pixel-width';
@@ -9,17 +11,27 @@
 	import { cn, isTag, relativeDate } from '$lib/utils';
 	import { page } from '$app/stores';
 
-	export let entry: HistoryEntry;
-	export let enableBookmark = false;
-	export let bookmarked = false;
-	export let imageBookmark = false;
-	export let newTab = false;
+	interface Props {
+		entry: HistoryEntry;
+		enableBookmark?: boolean;
+		bookmarked?: boolean;
+		imageBookmark?: boolean;
+		newTab?: boolean;
+	}
 
-	$: gallery = entry.archive;
+	let {
+		entry,
+		enableBookmark = false,
+		bookmarked = false,
+		imageBookmark = false,
+		newTab = false
+	}: Props = $props();
+
+	let gallery = $derived(entry.archive);
 
 	const dispatch = createEventDispatcher<{ bookmark: boolean; dropItem: [number, number] }>();
 
-	$: [reducedTags, moreCount] = (() => {
+	let [reducedTags, moreCount] = $derived((() => {
 		const maxWidth = 290;
 
 		const tags = [
@@ -53,12 +65,12 @@
 		}
 
 		return [reduced, tagCount];
-	})();
+	})());
 
-	$: artists = reducedTags.filter((tag) => tag.namespace === 'artist');
-	$: circles = reducedTags.filter((tag) => tag.namespace === 'circle');
-	$: parodies = reducedTags.filter((tag) => tag.namespace === 'parody');
-	$: tags = reducedTags.filter((tag) => isTag(tag));
+	let artists = $derived(reducedTags.filter((tag) => tag.namespace === 'artist'));
+	let circles = $derived(reducedTags.filter((tag) => tag.namespace === 'circle'));
+	let parodies = $derived(reducedTags.filter((tag) => tag.namespace === 'parody'));
+	let tags = $derived(reducedTags.filter((tag) => isTag(tag)));
 </script>
 
 <div class="group relative flex justify-between gap-2 rounded bg-background/70 pe-6">
@@ -67,7 +79,7 @@
 		tabindex="-1"
 		{...newTab && { target: '_blank' }}
 		class="flex-shrink-0"
-		on:click={(ev) => {
+		onclick={(ev) => {
 			if (enableBookmark && imageBookmark) {
 				ev.preventDefault();
 				dispatch('bookmark', !bookmarked);
@@ -91,9 +103,9 @@
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
 							bookmarked && 'opacity-90'
 						)}
-						on:click|preventDefault|stopPropagation={() => {
+						onclick={stopPropagation(preventDefault(() => {
 							dispatch('bookmark', !bookmarked);
-						}}
+						}))}
 					>
 						<Bookmark class={cn(bookmarked && 'fill-white')} />
 					</button>

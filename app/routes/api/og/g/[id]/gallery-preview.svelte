@@ -3,10 +3,19 @@
 	import type { Gallery, Tag, TagNamespace } from '$lib/types';
 	import { cn, isTag } from '$lib/utils';
 
-	export let gallery: Gallery;
-	export let dataURL: string;
-	export let imageHeight: number;
-	export let imageWidth: number;
+	interface Props {
+		gallery: Gallery;
+		dataURL: string;
+		imageHeight: number;
+		imageWidth: number;
+	}
+
+	let {
+		gallery,
+		dataURL,
+		imageHeight,
+		imageWidth
+	}: Props = $props();
 
 	const truncatedTitle = () => {
 		const aux = [];
@@ -29,7 +38,7 @@
 		return `${aux.join('')}${addEllipsis ? '&hellip;' : ''}`;
 	};
 
-	$: [reducedTags, moreCount] = (() => {
+	let [reducedTags, moreCount] = $derived((() => {
 		const maxWidth = 750;
 
 		const tags = [
@@ -63,7 +72,7 @@
 		}
 
 		return [reduced, tagCount];
-	})();
+	})());
 
 	const getBackground = (namespace: TagNamespace) => {
 		switch (namespace) {
@@ -86,14 +95,14 @@
 </script>
 
 <div tw="bg-[#0A0A0A] flex flex-col w-full h-full text-white">
-	<!-- svelte-ignore a11y-missing-attribute -->
+	<!-- svelte-ignore a11y_missing_attribute -->
 	<img
 		src={dataURL}
 		style="filter: blur(40px) brightness(0.2)"
 		tw="rounded-md absolute h-full w-full inset-0 m-auto"
 	/>
 	<div tw="flex flex-auto p-4">
-		<!-- svelte-ignore a11y-missing-attribute -->
+		<!-- svelte-ignore a11y_missing_attribute -->
 		<img height={imageHeight} src={dataURL} tw="rounded-md" width={imageWidth} />
 		<div tw="flex ml-4 flex-auto flex-col">
 			<span style="font-size: 32px" tw="font-bold flex-shrink-0 mb-1">

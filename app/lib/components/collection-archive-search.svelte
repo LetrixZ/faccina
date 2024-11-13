@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { Filter } from 'lucide-svelte';
 	import { siteConfig, tagList } from '../stores';
@@ -14,22 +16,26 @@
 	import { type Order, type Sort } from '$lib/schemas';
 	import type { GalleryListItem, LibraryResponse } from '$lib/types';
 
-	export let selectedGalleries: number[] = [];
+	interface Props {
+		selectedGalleries?: number[];
+	}
+
+	let { selectedGalleries = [] }: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		bookmark: { gallery: GalleryListItem; bookmark: boolean };
 	}>();
 
-	let isMounted = false;
-	let showSelected = false;
-	let showFilters = false;
+	let isMounted = $state(false);
+	let showSelected = $state(false);
+	let showFilters = $state(false);
 
-	let library: LibraryResponse = {
+	let library: LibraryResponse = $state({
 		archives: [],
 		limit: $siteConfig.pageLimits[0],
 		total: 0,
 		page: 1,
-	};
+	});
 
 	let searchQuery: {
 		query: string;
@@ -38,14 +44,14 @@
 		sort: Sort;
 		order: Order;
 		ids: number[];
-	} = {
+	} = $state({
 		query: '',
 		page: 1,
 		limit: $siteConfig.pageLimits[0],
 		sort: $siteConfig.defaultSort,
 		order: $siteConfig.defaultOrder,
 		ids: [],
-	};
+	});
 
 	const search = async () => {
 		const { query, page, limit, sort, order, ids } = searchQuery;
@@ -73,13 +79,13 @@
 		library = data as LibraryResponse;
 	};
 
-	$: {
+	run(() => {
 		searchQuery.ids = showSelected ? selectedGalleries : [];
 
 		if (isMounted) {
 			search();
 		}
-	}
+	});
 
 	onMount(() => {
 		isMounted = true;

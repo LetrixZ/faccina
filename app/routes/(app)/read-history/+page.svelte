@@ -6,9 +6,9 @@
 	import type { HistoryEntry } from '$lib/types';
 	import { relativeDate } from '$lib/utils';
 
-	export let data;
+	let { data } = $props();
 
-	$: groupedEntries = data.entries.reduce(
+	let groupedEntries = $derived(data.entries.reduce(
 		(acc, entry) => {
 			const dateKey = relativeDate(entry.lastReadAt);
 
@@ -21,7 +21,7 @@
 			return acc;
 		},
 		{} as { [key: string]: HistoryEntry[] }
-	);
+	));
 </script>
 
 <main class="container flex flex-auto flex-col gap-y-2">

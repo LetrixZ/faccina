@@ -1,21 +1,32 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { createEventDispatcher } from 'svelte';
 	import { cn, slugify } from '../utils';
 	import { Button } from './ui/button';
 	import Input from './ui/input/input.svelte';
 	import * as Popover from '$lib/components/ui/popover';
 
-	export let chips: string[] = [];
-	export let id: string | undefined = undefined;
-	export let tags: string[] = [];
-	export let placeholder: string | undefined = undefined;
+	interface Props {
+		chips?: string[];
+		id?: string | undefined;
+		tags?: string[];
+		placeholder?: string | undefined;
+	}
+
+	let {
+		chips = $bindable([]),
+		id = undefined,
+		tags = [],
+		placeholder = undefined
+	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{ update: string[] }>();
 
-	let input = '';
+	let input = $state('');
 
-	let containerEl: HTMLDivElement;
-	let inputEl: HTMLInputElement;
+	let containerEl: HTMLDivElement = $state();
+	let inputEl: HTMLInputElement = $state();
 
 	const removeChip = (chip: string) => {
 		chips = chips.filter((_chip) => _chip !== chip);
@@ -46,16 +57,16 @@
 		input = '';
 	};
 
-	let selectPosition = -1;
-	let highligtedIndex = -1;
-	let isFocused = false;
-	let popoverOpen = false;
+	let selectPosition = $state(-1);
+	let highligtedIndex = $state(-1);
+	let isFocused = $state(false);
+	let popoverOpen = $state(false);
 
-	$: {
+	run(() => {
 		if (!isFocused) {
 			highligtedIndex = -1;
 		}
-	}
+	});
 
 	const insertTag = async (inputEl: HTMLInputElement, index?: number) => {
 		const currentPosition = inputEl.selectionStart;
@@ -98,7 +109,7 @@
 		input = '';
 	};
 
-	$: filteredTags = input.trim().length
+	let filteredTags = $derived(input.trim().length
 		? (() => {
 				let value = input.toLowerCase();
 
@@ -136,12 +147,12 @@
 					})
 					.slice(0, 5);
 			})()
-		: [];
+		: []);
 </script>
 
 <form
 	class="rounded-md border border-input ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
-	on:submit|preventDefault={submit}
+	onsubmit={preventDefault(submit)}
 >
 	<Popover.Root
 		disableFocusTrap={true}
@@ -240,7 +251,7 @@
 			{#each chips as chip}
 				<button
 					class="rounded-md bg-secondary px-2 py-0.5 text-sm text-neutral-200 hover:bg-secondary/80 hover:text-white motion-safe:duration-150"
-					on:click={() => removeChip(chip)}
+					onclick={() => removeChip(chip)}
 					type="button"
 				>
 					{chip}

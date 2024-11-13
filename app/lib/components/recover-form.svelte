@@ -11,9 +11,13 @@
 	import * as Form from '$lib/components/ui/form';
 	import { page } from '$app/stores';
 
-	export let data: SuperValidated<Infer<RecoverSchema>>;
-	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
-	export let hasMailer: boolean;
+	interface Props {
+		data: SuperValidated<Infer<RecoverSchema>>;
+		changeState?: ((state: UserFormState) => void) | undefined;
+		hasMailer: boolean;
+	}
+
+	let { data, changeState = undefined, hasMailer }: Props = $props();
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
@@ -37,10 +41,12 @@
 	{#if hasMailer}
 		<div class="flex flex-col">
 			<Form.Field {form} name="username">
-				<Form.Control let:attrs>
-					<Form.Label>Username</Form.Label>
-					<Input {...attrs} bind:value={$formData.username} />
-				</Form.Control>
+				<Form.Control >
+					{#snippet children({ attrs })}
+										<Form.Label>Username</Form.Label>
+						<Input {...attrs} bind:value={$formData.username} />
+														{/snippet}
+								</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>

@@ -17,8 +17,12 @@
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
 
-	export let data: SuperValidated<Infer<EditArchiveSchema>>;
-	export let archive: Archive;
+	interface Props {
+		data: SuperValidated<Infer<EditArchiveSchema>>;
+		archive: Archive;
+	}
+
+	let { data, archive }: Props = $props();
 
 	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
 
@@ -40,16 +44,16 @@
 
 	const thumbnailProxy = intProxy(form, 'thumbnail');
 
-	$: thumbnail = parseInt($thumbnailProxy);
+	let thumbnail = $derived(parseInt($thumbnailProxy));
 
-	$: sourcesValid = $formData.sources.every((source) => source.name);
+	let sourcesValid = $derived($formData.sources.every((source) => source.name));
 </script>
 
 <form
 	action="?/editInfo"
 	class="space-y-4"
 	method="POST"
-	on:submit={(ev) => ev.preventDefault()}
+	onsubmit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex gap-4">
@@ -77,41 +81,49 @@
 
 		<div class="flex-auto">
 			<Form.Field {form} name="title">
-				<Form.Control let:attrs>
-					<Form.Label>Title</Form.Label>
-					<Input {...attrs} bind:value={$formData.title} />
-				</Form.Control>
+				<Form.Control >
+					{#snippet children({ attrs })}
+										<Form.Label>Title</Form.Label>
+						<Input {...attrs} bind:value={$formData.title} />
+														{/snippet}
+								</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<Form.Field {form} name="description">
-				<Form.Control let:attrs>
-					<Form.Label>Description</Form.Label>
-					<Textarea {...attrs} bind:value={$formData.description} />
-				</Form.Control>
+				<Form.Control >
+					{#snippet children({ attrs })}
+										<Form.Label>Description</Form.Label>
+						<Textarea {...attrs} bind:value={$formData.description} />
+														{/snippet}
+								</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<div class="grid grid-cols-2 gap-4">
 				<Form.Field {form} name="thumbnail">
-					<Form.Control let:attrs>
-						<Form.Label>Thumbnail page</Form.Label>
-						<Input
-							{...attrs}
-							bind:value={$thumbnailProxy}
-							max={archive.pages}
-							min={1}
-							type="number"
-						/>
-					</Form.Control>
+					<Form.Control >
+						{#snippet children({ attrs })}
+												<Form.Label>Thumbnail page</Form.Label>
+							<Input
+								{...attrs}
+								bind:value={$thumbnailProxy}
+								max={archive.pages}
+								min={1}
+								type="number"
+							/>
+																	{/snippet}
+										</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
 				<Form.Field {form} name="releasedAt">
-					<Form.Control let:attrs>
-						<Form.Label>Released At</Form.Label>
-						<Input {...attrs} bind:value={$formData.releasedAt} type="datetime-local" />
-					</Form.Control>
+					<Form.Control >
+						{#snippet children({ attrs })}
+												<Form.Label>Released At</Form.Label>
+							<Input {...attrs} bind:value={$formData.releasedAt} type="datetime-local" />
+																	{/snippet}
+										</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 			</div>
@@ -121,17 +133,19 @@
 				{form}
 				name="protected"
 			>
-				<Form.Control let:attrs>
-					<Checkbox {...attrs} bind:checked={$formData.protected} />
-					<div class="space-y-1 leading-none">
-						<Form.Label>Protected</Form.Label>
-						<Form.Description>
-							Indicate if this gallery should be protected against metadata changes that impact
-							during indexing. If enabled, only path, hash, size and images will be updated.
-						</Form.Description>
-					</div>
-					<input hidden name={attrs.name} value={$formData.protected} />
-				</Form.Control>
+				<Form.Control >
+					{#snippet children({ attrs })}
+										<Checkbox {...attrs} bind:checked={$formData.protected} />
+						<div class="space-y-1 leading-none">
+							<Form.Label>Protected</Form.Label>
+							<Form.Description>
+								Indicate if this gallery should be protected against metadata changes that impact
+								during indexing. If enabled, only path, hash, size and images will be updated.
+							</Form.Description>
+						</div>
+						<input hidden name={attrs.name} value={$formData.protected} />
+														{/snippet}
+								</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 		</div>

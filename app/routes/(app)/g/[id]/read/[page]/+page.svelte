@@ -3,11 +3,11 @@
 	import { page } from '$app/stores';
 	import Reader from '$lib/components/reader.svelte';
 
-	export let data;
+	let { data } = $props();
 
-	$: gallery = data.gallery;
+	let gallery = $derived(data.gallery);
 
-	$: currentPage = $page.state.page || parseInt($page.params.page);
+	let currentPage = $derived($page.state.page || parseInt($page.params.page));
 </script>
 
 <svelte:head>

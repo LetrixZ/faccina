@@ -1,12 +1,14 @@
-<script>
+<script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { navigating } from '$app/stores';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { siteConfig } from '$lib/stores';
 	import '../app.pcss';
 
-	export let data;
+	let { data, children } = $props();
 
-	$: {
+	run(() => {
 		if ($navigating) {
 			fetch('/stats', {
 				method: 'POST',
@@ -16,13 +18,13 @@
 				},
 			});
 		}
-	}
+	});
 
-	$: {
+	run(() => {
 		$siteConfig = data.site;
-	}
+	});
 </script>
 
 <Toaster position="bottom-center" richColors />
 
-<slot></slot>
+{@render children?.()}

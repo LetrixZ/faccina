@@ -1,28 +1,30 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import cookie from 'cookie';
 	import { toast } from 'svelte-sonner';
 	import { browser } from '$app/environment';
 	import InputChip from '$lib/components/input-chip.svelte';
 
-	export let data;
+	let { data } = $props();
 
 	let isMouted = false;
 	let selectedTags: string[] = [];
 
-	$: {
+	run(() => {
 		if (browser && isMouted) {
 			document.cookie = cookie.serialize('blacklist', selectedTags.join(','), {
 				path: '/',
 				maxAge: 31536000,
 			});
 		}
-	}
+	});
 
-	let blacklist: string[] = [];
+	let blacklist: string[] = $state([]);
 
-	$: {
+	run(() => {
 		blacklist = data.blacklist;
-	}
+	});
 
 	const save = async () => {
 		const formData = new FormData();

@@ -31,23 +31,23 @@
 	import AiOutlineRead from '~icons/ant-design/read-outlined';
 	import BiSolidDownload from '~icons/bxs/download';
 
-	export let data;
+	let { data } = $props();
 
-	let editOpen = false;
-	let editTaxonomyOpen = false;
-	let collectionsOpen = false;
+	let editOpen = $state(false);
+	let editTaxonomyOpen = $state(false);
+	let collectionsOpen = $state(false);
 
-	$: canDownload = data.site.guestDownloads || !!data.user;
-	$: gallery = data.gallery;
-	$: archive = data.archive;
+	let canDownload = $derived(data.site.guestDownloads || !!data.user);
+	let gallery = $derived(data.gallery);
+	let archive = $derived(data.archive);
 
-	$: artists = gallery.tags.filter((tag) => tag.namespace === 'artist');
-	$: circles = gallery.tags.filter((tag) => tag.namespace === 'circle');
-	$: magazines = gallery.tags.filter((tag) => tag.namespace === 'magazine');
-	$: events = gallery.tags.filter((tag) => tag.namespace === 'event');
-	$: publishers = gallery.tags.filter((tag) => tag.namespace === 'publisher');
-	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
-	$: tags = gallery.tags.filter(isTag);
+	let artists = $derived(gallery.tags.filter((tag) => tag.namespace === 'artist'));
+	let circles = $derived(gallery.tags.filter((tag) => tag.namespace === 'circle'));
+	let magazines = $derived(gallery.tags.filter((tag) => tag.namespace === 'magazine'));
+	let events = $derived(gallery.tags.filter((tag) => tag.namespace === 'event'));
+	let publishers = $derived(gallery.tags.filter((tag) => tag.namespace === 'publisher'));
+	let parodies = $derived(gallery.tags.filter((tag) => tag.namespace === 'parody'));
+	let tags = $derived(gallery.tags.filter(isTag));
 
 	const startDownload = async (gallery: Gallery) => {
 		const streamSaver = await import('streamsaver');

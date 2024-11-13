@@ -1,3 +1,4 @@
+<!-- @migration-task Error while migrating Svelte code: `<span>` is invalid inside `<select>` -->
 <script lang="ts">
 	import cookie from 'cookie';
 	import dayjs from 'dayjs';

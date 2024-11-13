@@ -11,7 +11,7 @@
 	import { createCollectionSchema } from '$lib/schemas';
 	import { cn } from '$lib/utils';
 
-	export let data;
+	let { data } = $props();
 
 	let form = superForm(data.createForm, {
 		validators: zodClient(createCollectionSchema),
@@ -32,18 +32,20 @@
 	<form method="POST" use:enhance>
 		<div class="flex items-start gap-2">
 			<Form.Field class="flex-auto" {form} name="name">
-				<Form.Control let:attrs>
-					<Input
-						{...attrs}
-						bind:value={$formData.name}
-						class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
-						placeholder="Collection name"
-					/>
+				<Form.Control >
+					{#snippet children({ attrs })}
+										<Input
+							{...attrs}
+							bind:value={$formData.name}
+							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
+							placeholder="Collection name"
+						/>
 
-					{#if $errors.name}
-						<Form.FieldErrors />
-					{/if}
-				</Form.Control>
+						{#if $errors.name}
+							<Form.FieldErrors />
+						{/if}
+														{/snippet}
+								</Form.Control>
 			</Form.Field>
 
 			<Button

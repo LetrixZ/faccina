@@ -15,9 +15,18 @@
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 
-	export let source: { name: string; url?: string | null };
 
-	$: image = (() => {
+
+
+	interface Props {
+		source: { name: string; url?: string | null };
+		class?: $$Props['class'];
+	}
+
+	let { source, class: className = undefined }: Props = $props();
+
+	
+	let image = $derived((() => {
 		switch (source.name.toLowerCase()) {
 			case 'fakku':
 				return Fakku;
@@ -44,9 +53,8 @@
 			default:
 				return;
 		}
-	})();
-
-	$: style = (() => {
+	})());
+	let style = $derived((() => {
 		switch (source.name.toLowerCase()) {
 			case 'fakku':
 				return 'background: #AB2328; padding: 0.25rem';
@@ -65,11 +73,7 @@
 			case 'hentainexus':
 				return 'background: black;';
 		}
-	})();
-
-	let className: $$Props['class'] = undefined;
-
-	export { className as class };
+	})());
 </script>
 
 <a

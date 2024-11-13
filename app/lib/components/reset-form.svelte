@@ -11,8 +11,12 @@
 	import { page } from '$app/stores';
 	import * as Form from '$lib/components/ui/form';
 
-	export let data: SuperValidated<Infer<ResetSchema>>;
-	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
+	interface Props {
+		data: SuperValidated<Infer<ResetSchema>>;
+		changeState?: ((state: UserFormState) => void) | undefined;
+	}
+
+	let { data, changeState = undefined }: Props = $props();
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
@@ -36,36 +40,42 @@
 <form action="/reset{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
 	<div class="flex flex-col">
 		<Form.Field {form} name="password">
-			<Form.Control let:attrs>
-				<Form.Label>New Password</Form.Label>
-				<Input
-					{...attrs}
-					autocomplete="new-password"
-					bind:value={$formData.password}
-					type="password"
-				/>
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>New Password</Form.Label>
+					<Input
+						{...attrs}
+						autocomplete="new-password"
+						bind:value={$formData.password}
+						type="password"
+					/>
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="confirmPassword">
-			<Form.Control let:attrs>
-				<Form.Label>Confirm Password</Form.Label>
-				<Input
-					{...attrs}
-					autocomplete="new-password"
-					bind:value={$formData.confirmPassword}
-					type="password"
-				/>
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>Confirm Password</Form.Label>
+					<Input
+						{...attrs}
+						autocomplete="new-password"
+						bind:value={$formData.confirmPassword}
+						type="password"
+					/>
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="code">
-			<Form.Control let:attrs>
-				<Form.Label>Recovery code</Form.Label>
-				<Input {...attrs} bind:value={$formData.code} />
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>Recovery code</Form.Label>
+					<Input {...attrs} bind:value={$formData.code} />
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 	</div>

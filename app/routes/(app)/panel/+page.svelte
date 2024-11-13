@@ -7,7 +7,7 @@
 	import MdiLogout from '~icons/mdi/logout';
 	import MdiSettings from '~icons/mdi/settings';
 
-	export let data;
+	let { data } = $props();
 </script>
 
 <main class="container relative flex flex-col items-center space-y-2 md:w-96">

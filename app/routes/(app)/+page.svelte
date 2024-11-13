@@ -6,9 +6,9 @@
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 
-	export let data;
+	let { data } = $props();
 
-	$: library = data.library;
+	let library = $derived(data.library);
 </script>
 
 <svelte:head>

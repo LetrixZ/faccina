@@ -11,9 +11,13 @@
 	import { page } from '$app/stores';
 	import * as Form from '$lib/components/ui/form';
 
-	export let data: SuperValidated<Infer<RegisterSchema>>;
-	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
-	export let hasMailer: boolean;
+	interface Props {
+		data: SuperValidated<Infer<RegisterSchema>>;
+		changeState?: ((state: UserFormState) => void) | undefined;
+		hasMailer: boolean;
+	}
+
+	let { data, changeState = undefined, hasMailer }: Props = $props();
 
 	const dispatch = createEventDispatcher<{ result: ActionResult }>();
 
@@ -36,46 +40,54 @@
 <form action="/register{$page.url.search}" class="space-y-3" method="POST" use:enhance>
 	<div class="flex flex-col">
 		<Form.Field {form} name="username">
-			<Form.Control let:attrs>
-				<Form.Label>Username</Form.Label>
-				<Input {...attrs} autocomplete="username" bind:value={$formData.username} />
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>Username</Form.Label>
+					<Input {...attrs} autocomplete="username" bind:value={$formData.username} />
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="password">
-			<Form.Control let:attrs>
-				<Form.Label>Password</Form.Label>
-				<Input
-					{...attrs}
-					autocomplete="new-password"
-					bind:value={$formData.password}
-					type="password"
-				/>
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>Password</Form.Label>
+					<Input
+						{...attrs}
+						autocomplete="new-password"
+						bind:value={$formData.password}
+						type="password"
+					/>
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="confirmPassword">
-			<Form.Control let:attrs>
-				<Form.Label>Confirm Password</Form.Label>
-				<Input
-					{...attrs}
-					autocomplete="new-password"
-					bind:value={$formData.confirmPassword}
-					type="password"
-				/>
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>Confirm Password</Form.Label>
+					<Input
+						{...attrs}
+						autocomplete="new-password"
+						bind:value={$formData.confirmPassword}
+						type="password"
+					/>
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="email">
-			<Form.Control let:attrs>
-				<Form.Label>
-					Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
-				</Form.Label>
-				<Input {...attrs} autocomplete="email" bind:value={$formData.email} type="email" />
-			</Form.Control>
+			<Form.Control >
+				{#snippet children({ attrs })}
+								<Form.Label>
+						Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
+					</Form.Label>
+					<Input {...attrs} autocomplete="email" bind:value={$formData.email} type="email" />
+											{/snippet}
+						</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 	</div>

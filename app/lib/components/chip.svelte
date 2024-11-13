@@ -3,9 +3,13 @@
 	import { Button } from './ui/button';
 	import { cn, encodeURL } from '$lib/utils';
 
-	export let tag: Tag;
-	export let type: TagNamespace;
-	export let newTab = false;
+	interface Props {
+		tag: Tag;
+		type: TagNamespace;
+		newTab?: boolean;
+	}
+
+	let { tag, type, newTab = false }: Props = $props();
 
 	const classes = (() => {
 		switch (type) {
@@ -26,23 +30,23 @@
 		}
 	})();
 
-	$: namespace = ['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(
+	let namespace = $derived(['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(
 		tag.namespace
 	)
 		? null
-		: tag.namespace;
+		: tag.namespace);
 
-	$: label = (() => {
+	let label = $derived((() => {
 		if (namespace) {
 			return `${namespace}:${tag.displayName ?? tag.name}`;
 		} else {
 			return tag.displayName ?? tag.name;
 		}
-	})();
+	})());
 
-	$: url = (() => {
+	let url = $derived((() => {
 		return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
-	})();
+	})());
 </script>
 
 <Button

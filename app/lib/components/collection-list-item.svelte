@@ -3,9 +3,13 @@
 	import type { Collection } from '../types';
 	import { cn } from '$lib/utils';
 
-	export let collection: Collection;
+	interface Props {
+		collection: Collection;
+	}
 
-	$: archives = collection.archives.slice(0, 3).reverse();
+	let { collection }: Props = $props();
+
+	let archives = $derived(collection.archives.slice(0, 3).reverse());
 
 	const getStyle = (index: number) => {
 		if (archives.length === 2) {
