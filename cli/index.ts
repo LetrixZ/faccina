@@ -1,9 +1,5 @@
 import chalk from 'chalk';
-import { Command, Option } from 'commander';
-import { indexArchives, pruneArchives } from './archive';
-import { generateImages } from './images';
-import { migrateDatabase, migrateImages } from './migrate';
-import { generateLoginLink, recoverAccess } from './users';
+import { Argument, Command, Option } from 'commander';
 
 const program = new Command();
 
@@ -28,18 +24,19 @@ program
 			force?: boolean;
 			reindex?: boolean;
 			verbose?: boolean;
-		}) => {
-			indexArchives({
-				...options,
-				force: options.reindex === true ? true : options.force,
-			});
-		}
+		}) =>
+			import('./archive').then((m) =>
+				m.indexArchives({
+					...options,
+					force: options.reindex === true ? true : options.force,
+				})
+			)
 	);
 
 program
 	.command('prune')
 	.description('Remove archives that do not exists in the filesystem.')
-	.action(() => pruneArchives());
+	.action(() => import('./archive').then((m) => m.pruneArchives()));
 
 program
 	.command('generate-images')
@@ -50,20 +47,22 @@ program
 	)
 	.option('--reverse', 'Reverse the archive list to generate.')
 	.option('-f --force', 'Do not check if the image already exists.')
-	.action((options) => generateImages(options));
+	.action((options) => import('./images').then((m) => m.generateImages(options)));
 
 program
 	.command('uli')
 	.argument('<username>')
 	.description('Generate a one time login link for the specified user.')
-	.action((username) => generateLoginLink(username));
+	.action((username) => import('./users').then((m) => m.generateLoginLink(username)));
 
 program
 	.command('recovery')
 	.argument('<username>')
 	.option('-c --code', 'Return recovery code without sending an email.')
 	.description('Send access recovery code to the specified user if they have an email.')
-	.action((username, { code }: { code: boolean }) => recoverAccess(username, code));
+	.action((username, { code }: { code: boolean }) =>
+		import('./users').then((m) => m.recoverAccess(username, code))
+	);
 
 program
 	.command('migrate:images')
@@ -76,12 +75,28 @@ program
 		'Indicate which image format to move for the old resampled images [webp, jpeg, png, jxl, avif].'
 	)
 	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
-	.action((opts) => migrateImages(opts));
+	.action((opts) => import('./migrate').then((m) => m.migrateImages(opts)));
 
 program
 	.command('migrate:db')
 	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite.')
 	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
-	.action((opts) => migrateDatabase(opts.dbUrl));
+	.action((opts) => import('./migrate').then((m) => m.migrateDatabase(opts.dbUrl)));
+
+program
+	.command('metadata:scrape')
+	.description('Scrape metadata from specified site.')
+	.addArgument(new Argument('<site>', 'Site to scrape metadata from.').choices(['hentag']))
+	.addOption(
+		new Option('--ids <ID ranges>', 'Re-index given archive IDs.').conflicts(['paths', 'fromPath'])
+	)
+	.option(
+		'--sleep <time>',
+		'Indicate how much time in milliseconds to wait between site requests.',
+		'5000'
+	)
+	.action((site, { ids, sleep }) =>
+		import('./metadata-cli').then((m) => m.scrape(site, { idRanges: ids, sleep: parseInt(sleep) }))
+	);
 
 program.parse();

@@ -3,7 +3,7 @@ import config from '../../shared/config';
 import { ArchiveMetadata } from '../../shared/metadata';
 import { parseFilename } from './utils';
 
-const metadataSchema = z.object({
+export const metadataSchema = z.object({
 	title: z.string(),
 	parodies: z.array(z.string()).optional(),
 	circles: z.array(z.string()).optional(),

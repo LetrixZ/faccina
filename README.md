@@ -312,6 +312,16 @@ Use the `--ids <IDs...>` option to indicate which archives it should generate im
 
 `-f` or `--force` can be used to re-generate images.
 
+### Scrape
+
+You can scrape sites for metadata. Use `bun cli metadata:scrape <site>`. Currently, only `hentag` is supported.
+
+Use the `--ids <IDs...>` option to indicate which archives it should scrape metadata for.
+
+With `--sleep <time>` you can indicate (in milliseconds) how much time to wait between site requests. By default it's 5 seconds.
+
+Keep in mind that always the first result that the site gives will be chosen.
+
 ### User login
 
 You can generate a one-time login link for any user using the `uli <username>` command.

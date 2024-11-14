@@ -3,8 +3,8 @@ import { Glob } from 'bun';
 import chalk from 'chalk';
 import { sql } from 'kysely';
 import db from '../shared/db';
-import type { Image, Source, Tag } from './metadata';
 import config from './config';
+import type { Image, Source, Tag } from './metadata';
 import { leadingZeros } from './utils';
 
 /**
@@ -19,13 +19,20 @@ export const upsertSources = async (id: number, metadataSources: Source[], verbo
 
 			if (source.name?.length) {
 				const normalizedSource = ignoreCase ? source.name.toLowerCase() : source.name;
-				return normalizedSource === normalizedMatch;
+
+				if (normalizedSource === normalizedMatch) {
+					return true;
+				}
 			}
 
 			if (source.url?.length) {
 				const normalizedUrl = ignoreCase ? source.url.toLowerCase() : source.url;
-				return normalizedUrl.includes(normalizedMatch);
+				if (normalizedUrl.includes(normalizedMatch)) {
+					return true;
+				}
 			}
+
+			return false;
 		});
 
 		return {
