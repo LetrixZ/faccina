@@ -69,6 +69,7 @@ export const actions: Actions = {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
+			secure: config.site.secureSessionCookie,
 		});
 
 		event.locals.analytics?.postMessage({

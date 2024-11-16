@@ -1,5 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import { lucia } from '$lib/server/auth';
+import config from '~shared/config';
 
 export const POST = async ({ locals, cookies, url }) => {
 	const user = locals.user;
@@ -15,6 +16,7 @@ export const POST = async ({ locals, cookies, url }) => {
 	cookies.set(sessionCookie.name, sessionCookie.value, {
 		path: '.',
 		...sessionCookie.attributes,
+		secure: config.site.secureSessionCookie,
 	});
 
 	locals.analytics?.postMessage({

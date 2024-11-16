@@ -57,6 +57,7 @@ const siteSchema = z
 		gallery_listing: listingSchema.default({}),
 		search_placeholder: z.string().default(''),
 		store_og_images: z.boolean().default(true),
+		secure_session_cookie: z.boolean().default(true),
 	})
 	.transform(camelize);
 

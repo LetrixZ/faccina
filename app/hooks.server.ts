@@ -27,6 +27,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
+			secure: config.site.secureSessionCookie,
 		});
 	}
 
@@ -35,6 +36,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
+			secure: config.site.secureSessionCookie,
 		});
 	}
 

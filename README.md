@@ -37,6 +37,7 @@ default_order = 'desc'
 guest_downloads = true
 search_placeholder = ''
 store_og_images = true
+secure_session_cookie = true
 ```
 
 - `site_name`: Specifies the title showed in pages and emails.
@@ -50,6 +51,7 @@ store_og_images = true
 - `guest_downloads`: Show download button for guests users.
 - `search_placeholder`: Placeholder text for the search bar.
 - `store_og_images`: Save generated OpenGraph meta images on disk.
+- `secure_session_cookie`: Indicate if the session cookie should be secure or not.
 
 #### Gallery listing
 
