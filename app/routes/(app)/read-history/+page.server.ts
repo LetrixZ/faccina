@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import { handleTags } from '$lib/server/utils';
 import type { HistoryEntry } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
@@ -9,39 +10,43 @@ export const load = async ({ locals }) => {
 		redirect(301, '/');
 	}
 
-	const historyEntries = (await db
-		.selectFrom('userReadHistory')
-		.select((eb) => [
-			'lastPage',
-			'startPage',
-			'startedAt',
-			'lastReadAt',
-			'finishedAt',
-			jsonObjectFrom(
-				eb
-					.selectFrom('archives')
-					.select((eb) => [
-						'archives.id',
-						'archives.hash',
-						'archives.title',
-						'archives.pages',
-						'archives.thumbnail',
-						'archives.deletedAt',
-						jsonArrayFrom(
-							eb
-								.selectFrom('archiveTags')
-								.leftJoin('tags', 'tags.id', 'tagId')
-								.select(['tags.id', 'tags.namespace', 'tags.name', 'tags.displayName'])
-								.whereRef('archives.id', '=', 'archiveId')
-								.orderBy('archiveTags.createdAt asc')
-						).as('tags'),
-					])
-					.whereRef('archiveId', '=', 'archives.id')
-			).as('archive'),
-		])
-		.where('userId', '=', locals.user.id)
-		.orderBy('lastReadAt desc')
-		.execute()) as HistoryEntry[];
+	const historyEntries: HistoryEntry[] = (
+		await db
+			.selectFrom('userReadHistory')
+			.select((eb) => [
+				'lastPage',
+				'startPage',
+				'startedAt',
+				'lastReadAt',
+				'finishedAt',
+				jsonObjectFrom(
+					eb
+						.selectFrom('archives')
+						.select((eb) => [
+							'archives.id',
+							'archives.hash',
+							'archives.title',
+							'archives.pages',
+							'archives.thumbnail',
+							'archives.deletedAt',
+							jsonArrayFrom(
+								eb
+									.selectFrom('archiveTags')
+									.innerJoin('tags', 'tags.id', 'tagId')
+									.select(['tags.id', 'tags.namespace', 'tags.name', 'tags.displayName'])
+									.whereRef('archives.id', '=', 'archiveId')
+									.orderBy('archiveTags.createdAt asc')
+							).as('tags'),
+						])
+						.whereRef('archiveId', '=', 'archives.id')
+				)
+					.$notNull()
+					.as('archive'),
+			])
+			.where('userId', '=', locals.user.id)
+			.orderBy('lastReadAt desc')
+			.execute()
+	).map((entry) => ({ ...entry, archive: handleTags(entry.archive) }));
 
 	return {
 		entries: historyEntries,
