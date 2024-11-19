@@ -322,7 +322,7 @@ Use the `--ids <IDs...>` option to indicate which archives it should scrape meta
 
 With `--sleep <time>` you can indicate (in milliseconds) how much time to wait between site requests. By default it's 5 seconds.
 
-Keep in mind that always the first result that the site gives will be chosen.
+You can also use `-y` or `--no-interact` to skip any prompts. If there are multiple results from the scraper, the best one will be chosen by comparing its titles. If not specified, you will be prompted to select from a list.
 
 ### User login
 
