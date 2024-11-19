@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
 	import { Filter } from 'lucide-svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import { siteConfig, tagList } from '../stores';
 	import { cn } from '../utils';
-	import { Switch } from './ui/switch';
 	import { Button } from './ui/button';
+	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
@@ -24,12 +25,7 @@
 	let showSelected = false;
 	let showFilters = false;
 
-	let library: LibraryResponse = {
-		archives: [],
-		limit: $siteConfig.pageLimits[0],
-		total: 0,
-		page: 1,
-	};
+	let library: LibraryResponse | null = null;
 
 	let searchQuery: {
 		query: string;
@@ -68,9 +64,12 @@
 			},
 		});
 
-		const data = await res.json();
-
-		library = data as LibraryResponse;
+		if (res.ok) {
+			const data = await res.json();
+			library = data as LibraryResponse;
+		} else {
+			toast.error('Failed to load galleries');
+		}
 	};
 
 	$: {
@@ -149,34 +148,39 @@
 		</div>
 	{/if}
 
-	<ListPagination
-		class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
-		limit={library.limit}
-		on:navigate={(ev) => {
-			ev.preventDefault();
-			searchQuery = { ...searchQuery, page: ev.detail };
-			search();
-		}}
-		total={library.total}
-		value={searchQuery.page}
-	/>
+	{#if library}
+		<ListPagination
+			class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
+			limit={library.limit}
+			on:navigate={(ev) => {
+				ev.preventDefault();
+				searchQuery = { ...searchQuery, page: ev.detail };
+				search();
+			}}
+			total={library.total}
+			value={searchQuery.page}
+		/>
+	{/if}
 </div>
 
-{#if library.archives.length}
-	<div
-		class="grid flex-1 grid-cols-2 gap-2 overflow-auto pb-2 pe-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
-	>
-		{#each library.archives as gallery (gallery.id)}
-			<ListItem
-				bookmarked={selectedGalleries.includes(gallery.id)}
-				enableBookmark
-				{gallery}
-				imageBookmark
-				newTab
-				on:bookmark={(ev) => dispatch('bookmark', { gallery, bookmark: ev.detail })}
-			/>
-		{/each}
-	</div>
-{:else}
-	<p class="mx-auto my-auto w-fit py-20 text-2xl font-medium">No results found</p>
+{#if library}
+	{#if library.archives.length}
+		<div
+			class="grid flex-1 grid-cols-2 gap-2 overflow-auto pb-2 pe-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
+		>
+			{#each library.archives as gallery (gallery.id)}
+				<ListItem
+					bookmarked={selectedGalleries.includes(gallery.id)}
+					enableBookmark
+					{gallery}
+					imageBookmark
+					newTab
+					on:bookmark={(ev) => dispatch('bookmark', { gallery, bookmark: ev.detail })}
+					type="collection"
+				/>
+			{/each}
+		</div>
+	{:else}
+		<p class="mx-auto my-auto w-fit py-20 text-2xl font-medium">No results found</p>
+	{/if}
 {/if}

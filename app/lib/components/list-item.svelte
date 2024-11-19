@@ -2,7 +2,7 @@
 	import { Bookmark, EyeOff } from 'lucide-svelte';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
-	import type { GalleryListItem, Tag } from '../types';
+	import type { GalleryListItem, ListPageType, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
 	import { cn, isTag } from '$lib/utils';
@@ -13,6 +13,7 @@
 	export let bookmarked = false;
 	export let imageBookmark = false;
 	export let newTab = false;
+	export let type: ListPageType;
 
 	const dispatch = createEventDispatcher<{ bookmark: boolean }>();
 
@@ -80,7 +81,12 @@
 				width={640}
 			/>
 			{#if enableBookmark}
-				<div class={cn('absolute end-1 top-1 hidden group-hover:block', bookmarked && 'block')}>
+				<div
+					class={cn(
+						'absolute end-1 top-1 hidden group-hover:block',
+						bookmarked && type !== 'main' && type !== 'favorites' && 'block'
+					)}
+				>
 					<button
 						class={cn(
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',

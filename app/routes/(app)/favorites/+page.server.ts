@@ -1,15 +1,11 @@
-import { error, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
+import { searchSchema } from '$lib/schemas';
 import { libraryItems, search } from '$lib/server/db/queries';
 import config from '~shared/config';
 import db from '~shared/db';
-import { searchSchema } from '$lib/schemas';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	if (!config.site.enableUsers) {
-		error(404, { message: 'Not Found' });
-	}
-
 	if (!locals.user) {
 		redirect(302, `/login?to=/favorites`);
 	}

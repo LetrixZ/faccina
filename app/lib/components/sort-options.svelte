@@ -9,8 +9,9 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import type { ListPageType } from '$lib/types';
 
-	export let type: 'main' | 'favorites' | 'collection' = 'main';
+	export let type: ListPageType = 'main';
 	export let defaultSort: Sort = 'released_at';
 	export let defaultOrder: Order = 'desc';
 	export let sort: Sort | undefined = undefined;

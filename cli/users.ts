@@ -59,10 +59,6 @@ export const generateLoginLink = async (username: string) => {
 };
 
 export const recoverAccess = async (username: string, codeOnly: boolean) => {
-	if (!config.site.enableUsers) {
-		throw new Error('Users are disabled');
-	}
-
 	const db = (await import('../shared/db')).default;
 
 	const user = await db

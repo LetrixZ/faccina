@@ -13,7 +13,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import type { UserFormState } from '$lib/models';
-	import { query, tagList } from '$lib/stores';
+	import { query, tagList, userCollections } from '$lib/stores';
 	import { cn } from '$lib/utils';
 	import IonMdHome from '~icons/ion/md-home';
 	import MdiAccount from '~icons/mdi/account';
@@ -181,6 +181,10 @@
 
 	$: {
 		$tagList = data.tags;
+	}
+
+	$: {
+		$userCollections = data.userCollections;
 	}
 </script>
 
@@ -371,34 +375,34 @@
 					{/if}
 				{/if}
 
-				{#if data.site.enableUsers}
+				{#if data.user}
 					<DropdownMenu.Separator />
 
-					{#if data.user}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							href="/account"
-						>
-							Account
-							<MdiAccount class="ms-auto size-[1.125rem]" />
-						</DropdownMenu.Item>
+					<DropdownMenu.Item
+						class="flex w-full cursor-pointer items-center text-neutral-200"
+						href="/account"
+					>
+						Account
+						<MdiAccount class="ms-auto size-[1.125rem]" />
+					</DropdownMenu.Item>
 
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							on:click={logout}
-						>
-							Logout
-							<MdiLogout class="ms-auto size-4" />
-						</DropdownMenu.Item>
-					{:else}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							on:click={showLogin}
-						>
-							Login
-							<MdiLogin class="ms-auto size-4" />
-						</DropdownMenu.Item>
-					{/if}
+					<DropdownMenu.Item
+						class="flex w-full cursor-pointer items-center text-neutral-200"
+						on:click={logout}
+					>
+						Logout
+						<MdiLogout class="ms-auto size-4" />
+					</DropdownMenu.Item>
+				{:else if data.site.enableUsers}
+					<DropdownMenu.Separator />
+
+					<DropdownMenu.Item
+						class="flex w-full cursor-pointer items-center text-neutral-200"
+						on:click={showLogin}
+					>
+						Login
+						<MdiLogin class="ms-auto size-4" />
+					</DropdownMenu.Item>
 				{/if}
 			</DropdownMenu.Group>
 		</DropdownMenu.Content>

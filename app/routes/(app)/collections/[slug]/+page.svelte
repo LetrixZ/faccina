@@ -2,21 +2,20 @@
 	import { Pencil, Trash } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
-	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
+	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
-	import SortOptions from '$lib/components/sort-options.svelte';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import PageTitle from '$lib/components/page-title.svelte';
 
 	export let data;
 	export let form;
 
 	let deleteOpen = false;
 
-	$: libraryPage = data.libraryPage;
+	$: library = data.libraryPage;
 
 	$: {
 		if (form?.message && form.type === 'error') {
@@ -32,7 +31,7 @@
 <main class="container relative flex h-full flex-col gap-y-2">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<PageTitle>
-			{data.collection.name} ({libraryPage.total})
+			{data.collection.name} ({library.total})
 		</PageTitle>
 
 		<div class="flex gap-2">
@@ -76,28 +75,15 @@
 	</div>
 
 	<div class="grid items-end gap-2 md:flex">
-		<div class="flex w-full gap-2">
-			<LimitOptions pageLimits={data.site.pageLimits} />
-			<SortOptions
-				class="w-full"
-				defaultOrder={data.site.defaultOrder}
-				defaultSort={data.site.defaultSort}
-				type="favorites"
-			/>
-		</div>
-		<ListPagination
-			class="mx-auto w-fit md:mx-0 md:ms-auto"
-			limit={libraryPage.limit}
-			total={libraryPage.total}
-		/>
+		<ListNavbar {library} type="collection" />
 	</div>
 
 	<Separator />
 
-	{#if libraryPage.archives.length}
+	{#if library.archives.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each libraryPage.archives as archive (archive.id)}
-				<ListItem gallery={archive} />
+			{#each library.archives as archive (archive.id)}
+				<ListItem gallery={archive} type="collection" />
 			{/each}
 		</div>
 	{:else}
@@ -108,7 +94,7 @@
 
 	<ListPagination
 		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
-		limit={libraryPage.limit}
-		total={libraryPage.total}
+		limit={library.limit}
+		total={library.total}
 	/>
 </main>

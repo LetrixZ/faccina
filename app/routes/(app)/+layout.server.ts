@@ -16,6 +16,7 @@ export const load = async ({ locals }) => {
 				'collection.id',
 				'collection.name',
 				'collection.slug',
+				'collection.protected',
 				jsonArrayFrom(
 					eb
 						.selectFrom('collectionArchive')

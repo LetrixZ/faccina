@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { AsyncZipDeflate, strToU8, Zip, ZipPassThrough } from 'fflate';
-	import { BookmarkPlus, Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
+	import { Bookmark, Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
 	import pMap from 'p-map';
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
@@ -9,6 +9,7 @@
 	import { page } from '$app/stores';
 	import ArchiveEditForm from '$lib/components/archive-edit-form.svelte';
 	import ArchiveTagsEditForm from '$lib/components/archive-tag-edit-form.svelte';
+	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
 	import Chip from '$lib/components/chip.svelte';
 	import DownloadProgress from '$lib/components/download-progress.svelte';
 	import GallerySource from '$lib/components/gallery-source.svelte';
@@ -157,6 +158,10 @@
 			duration: 10000,
 		});
 	};
+
+	$: isBookmarked = !!data.userCollections
+		.find((c) => c.protected)
+		?.archives.find((a) => a.id === gallery.id);
 </script>
 
 <svelte:head>
@@ -316,67 +321,19 @@
 						<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
 							<Dialog.Trigger>
 								<Button
-									class="flex w-full bg-transparent text-center font-semibold text-white "
+									class="flex w-full bg-transparent p-2 text-center font-semibold text-white"
 									variant="ghost"
 								>
-									<BookmarkPlus class="size-6" />
+									{#if isBookmarked}
+										<Bookmark class="size-6 fill-current" />
+									{:else}
+										<Bookmark class="size-6" />
+									{/if}
 									<span class="sr-only"> Bookmark </span>
 								</Button>
 							</Dialog.Trigger>
 							<Dialog.Content>
-								{#if data.userCollections.length}
-									<ul class="grid gap-2">
-										{#each data.userCollections as collection}
-											{@const archives = collection.archives}
-											<li class="flex items-center justify-between">
-												<div class="flex gap-2">
-													•
-													<div class="flex flex-col">
-														<a
-															class="text-lg font-medium"
-															href="/collections/{collection.slug}"
-															target="_blank"
-														>
-															{collection.name}
-														</a>
-														<span class="text-sm text-muted-foreground">
-															{#if archives.length === 1}
-																1 gallery
-															{:else if !archives.length}
-																No galleries
-															{:else}
-																{archives.length} galleries
-															{/if}
-														</span>
-													</div>
-												</div>
-
-												{#if archives.some(({ id }) => id === gallery.id)}
-													<form action="?/removeCollection" method="POST" use:enhance>
-														<input class="hidden" name="collection" value={collection.id} />
-														<input class="hidden" name="archive" value={gallery.id} />
-														<Button class="ms-auto" size="sm" type="submit" variant="destructive">
-															Remove
-														</Button>
-													</form>
-												{:else}
-													<form action="?/addCollection" method="POST" use:enhance>
-														<input class="hidden" name="collection" value={collection.id} />
-														<input class="hidden" name="archive" value={gallery.id} />
-														<Button class="ms-auto" size="sm" type="submit" variant="indigo">
-															Add
-														</Button>
-													</form>
-												{/if}
-											</li>
-										{/each}
-									</ul>
-								{:else}
-									<div class="flex flex-auto flex-col items-center justify-center gap-4 py-12">
-										<h3 class="text-2xl font-medium">No collections found</h3>
-										<Button href="/collections/new" variant="outline">Create a collection</Button>
-									</div>
-								{/if}
+								<BookmarkDialog {gallery} />
 							</Dialog.Content>
 						</Dialog.Root>
 					{/if}

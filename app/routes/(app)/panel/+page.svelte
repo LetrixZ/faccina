@@ -55,38 +55,38 @@
 		{/if}
 	{/if}
 
-	{#if data.site.enableUsers}
+	{#if data.user}
 		<Separator class="!mb-1 !mt-3" />
 
-		{#if data.user}
-			<Button
-				class="flex w-full items-center justify-between gap-2 text-neutral-200"
-				href="/account"
-				variant="outline"
-			>
-				Acount
-				<MdiAccount class="size-4" />
-			</Button>
+		<Button
+			class="flex w-full items-center justify-between gap-2 text-neutral-200"
+			href="/account"
+			variant="outline"
+		>
+			Acount
+			<MdiAccount class="size-4" />
+		</Button>
 
-			<form action="/logout?to=/panel" class="w-full" method="POST">
-				<Button
-					class="flex w-full items-center justify-between gap-2 text-neutral-200"
-					type="submit"
-					variant="outline"
-				>
-					Logout
-					<MdiLogout class="size-4" />
-				</Button>
-			</form>
-		{:else}
+		<form action="/logout?to=/panel" class="w-full" method="POST">
 			<Button
 				class="flex w-full items-center justify-between gap-2 text-neutral-200"
-				href="/login"
+				type="submit"
 				variant="outline"
 			>
-				Login
-				<MdiLogin class="size-4" />
+				Logout
+				<MdiLogout class="size-4" />
 			</Button>
-		{/if}
+		</form>
+	{:else if data.site.enableUsers}
+		<Separator class="!mb-1 !mt-3" />
+
+		<Button
+			class="flex w-full items-center justify-between gap-2 text-neutral-200"
+			href="/login"
+			variant="outline"
+		>
+			Login
+			<MdiLogin class="size-4" />
+		</Button>
 	{/if}
 </main>

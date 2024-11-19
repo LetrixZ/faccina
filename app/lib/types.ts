@@ -231,6 +231,7 @@ export type CollectionItem = {
 	id: number;
 	name: string;
 	slug: string;
+	protected: boolean;
 	archives: Pick<Archive, 'id'>[];
 };
 
@@ -272,3 +273,5 @@ export const readStatSchema = z.object({
 });
 
 export type ReadState = z.infer<typeof readStatSchema>;
+
+export type ListPageType = 'main' | 'favorites' | 'collection';

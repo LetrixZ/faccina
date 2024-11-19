@@ -95,8 +95,15 @@ program
 		'Indicate how much time in milliseconds to wait between site requests.',
 		'5000'
 	)
-	.action((site, { ids, sleep }) =>
-		import('./metadata-cli').then((m) => m.scrape(site, { idRanges: ids, sleep: parseInt(sleep) }))
-	);
+	.option(
+		'-y --no-interaction',
+		'Skip any prompts. If there are multiple results, the most similar one will be chosen.'
+	)
+	.option('-v --verbose', 'Print more logs.')
+	.action((site, { ids, sleep, interaction, verbose }) => {
+		import('./metadata-cli').then((m) =>
+			m.scrape(site, { idRanges: ids, sleep: parseInt(sleep), interaction, verbose })
+		);
+	});
 
 program.parse();
