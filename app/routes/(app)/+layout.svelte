@@ -42,6 +42,7 @@
 
 	$: sort = $page.url.searchParams.get('sort');
 	$: order = $page.url.searchParams.get('order');
+	$: seed = $page.url.searchParams.get('seed');
 
 	$: {
 		$query = $page.url.searchParams.get('q') ?? '';
@@ -290,6 +291,10 @@
 
 				{#if order}
 					<input class="hidden" name="order" value={order} />
+				{/if}
+
+				{#if seed}
+					<input class="hidden" name="seed" value={seed} />
 				{/if}
 
 				<Button

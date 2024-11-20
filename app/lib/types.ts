@@ -4,9 +4,9 @@ import {
 	editArchiveSchema,
 	editTagsSchema,
 	type Order,
-	searchSchema,
 	type Sort,
 } from './schemas';
+import { searchSchema } from './server/utils';
 
 export type TagNamespace =
 	| 'artist'
@@ -249,6 +249,7 @@ export type LibraryResponse = {
 	page: number;
 	limit: number;
 	total: number;
+	seed?: string;
 };
 
 export type SiteConfig = {

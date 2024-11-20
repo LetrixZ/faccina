@@ -17,7 +17,7 @@
 	export let sort: Sort | undefined = undefined;
 	export let order: Order | undefined = undefined;
 
-	const dispatch = createEventDispatcher<{ sort: Sort; order: Order }>();
+	const dispatch = createEventDispatcher<{ sort: { sort: Sort; seed?: string }; order: Order }>();
 
 	$: defaultSortType = (() => {
 		switch (type) {
@@ -64,7 +64,14 @@
 		<Select.Root
 			items={sortOptions}
 			onSelectedChange={(option) => {
-				if (!dispatch('sort', option?.value ?? defaultSortType, { cancelable: true })) {
+				const newSort = option?.value ?? defaultSortType;
+				if (
+					!dispatch(
+						'sort',
+						{ sort: newSort, seed: newSort === 'random' ? randomString() : undefined },
+						{ cancelable: true }
+					)
+				) {
 					return;
 				}
 

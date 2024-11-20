@@ -1,5 +1,8 @@
+import { omit } from 'ramda';
+import { z } from 'zod';
 import type { GalleryListItem, Tag } from '../types';
 import config from '~shared/config';
+import { orderSchema, sortSchema, type Order, type Sort } from '$lib/schemas';
 
 export const handleTags = (archive: GalleryListItem): GalleryListItem => {
 	const { tagExclude, tagWeight } = config.site.galleryListing;
@@ -43,3 +46,47 @@ export const handleTags = (archive: GalleryListItem): GalleryListItem => {
 
 	return archive;
 };
+
+export const searchSchema = z
+	.object({
+		q: z.string().default(''),
+		page: z.coerce.number().default(1),
+		sort: sortSchema.optional(),
+		order: orderSchema.optional(),
+		limit: z.coerce.number().int().catch(24),
+		seed: z.string().optional(),
+		ids: z
+			.string()
+			.transform((str) =>
+				str
+					.split(',')
+					.map((id) => parseInt(id))
+					.filter((id) => !isNaN(id))
+			)
+			.optional(),
+	})
+	.transform((val) => ({
+		query: val.q,
+		...omit(['q'], val),
+	}));
+
+export type SearchParams = z.infer<typeof searchSchema>;
+
+export const parseSearchParams = (
+	searchParams: URLSearchParams,
+	defaults?: { sort?: Sort; order?: Order }
+) =>
+	searchSchema
+		.transform((val) => {
+			if (!config.site.galleryListing.pageLimits.includes(val.limit)) {
+				val.limit = config.site.galleryListing.pageLimits[0];
+			}
+
+			return val;
+		})
+		.transform((val) => ({
+			...val,
+			sort: val.sort ?? defaults?.sort ?? config.site.defaultSort,
+			order: val.order ?? defaults?.order ?? config.site.defaultOrder,
+		}))
+		.parse(Object.fromEntries(searchParams));

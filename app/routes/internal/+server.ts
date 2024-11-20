@@ -1,19 +1,16 @@
-import { json } from '@sveltejs/kit';
-import config from '~shared/config';
-import { searchSchema } from '$lib/schemas';
+import { json, redirect } from '@sveltejs/kit';
 import { getUserBlacklist, libraryItems, search } from '$lib/server/db/queries';
-import { decompressBlacklist } from '$lib/utils';
+import { parseSearchParams } from '$lib/server/utils';
+import type { LibraryResponse } from '$lib/types';
+import { decompressBlacklist, randomString } from '$lib/utils';
 
 export const GET = async ({ url, cookies, locals }) => {
-	const searchParams = searchSchema
-		.transform((val) => {
-			if (!config.site.galleryListing.pageLimits.includes(val.limit)) {
-				val.limit = config.site.galleryListing.pageLimits[0];
-			}
+	const searchParams = parseSearchParams(url.searchParams);
 
-			return val;
-		})
-		.parse(Object.fromEntries(url.searchParams));
+	if (searchParams.sort === 'random' && !searchParams.seed) {
+		url.searchParams.set('seed', randomString());
+		throw redirect(302, url.pathname + `?${url.searchParams.toString()}`);
+	}
 
 	const blacklist = await (async () => {
 		if (locals.user) {
@@ -42,5 +39,6 @@ export const GET = async ({ url, cookies, locals }) => {
 		page: searchParams.page,
 		limit: searchParams.limit,
 		total,
-	});
+		seed: searchParams.seed,
+	} as LibraryResponse);
 };

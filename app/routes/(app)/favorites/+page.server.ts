@@ -1,24 +1,24 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { searchSchema } from '$lib/schemas';
 import { libraryItems, search } from '$lib/server/db/queries';
+import { parseSearchParams } from '$lib/server/utils';
 import config from '~shared/config';
 import db from '~shared/db';
+import { randomString } from '$lib/utils';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
 		redirect(302, `/login?to=/favorites`);
 	}
 
-	const searchParams = searchSchema
-		.transform((val) => {
-			if (!config.site.galleryListing.pageLimits.includes(val.limit)) {
-				val.limit = config.site.galleryListing.pageLimits[0];
-			}
+	const searchParams = parseSearchParams(url.searchParams, {
+		sort: 'saved_at',
+	});
 
-			return val;
-		})
-		.parse(Object.fromEntries(url.searchParams));
+	if (searchParams.sort === 'random' && !searchParams.seed) {
+		url.searchParams.set('seed', randomString());
+		throw redirect(302, url.pathname + `?${url.searchParams.toString()}`);
+	}
 
 	const sort = searchParams.sort ?? 'saved_at';
 	const order = searchParams.order ?? config.site.defaultOrder;

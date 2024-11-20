@@ -1,10 +1,7 @@
 <script lang="ts">
-	import { Filter } from 'lucide-svelte';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { siteConfig, tagList } from '../stores';
-	import { cn } from '../utils';
-	import { Button } from './ui/button';
 	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
@@ -23,7 +20,6 @@
 
 	let isMounted = false;
 	let showSelected = false;
-	let showFilters = false;
 
 	let library: LibraryResponse | null = null;
 
@@ -34,6 +30,7 @@
 		sort: Sort;
 		order: Order;
 		ids: number[];
+		seed?: string;
 	} = {
 		query: '',
 		page: 1,
@@ -44,7 +41,7 @@
 	};
 
 	const search = async () => {
-		const { query, page, limit, sort, order, ids } = searchQuery;
+		const { query, page, limit, sort, order, ids, seed } = searchQuery;
 
 		const params = new URLSearchParams({
 			q: query,
@@ -53,6 +50,10 @@
 			sort,
 			order,
 		});
+
+		if (seed) {
+			params.set('seed', seed);
+		}
 
 		if (showSelected) {
 			params.set('ids', ids.join(','));
@@ -67,6 +68,7 @@
 		if (res.ok) {
 			const data = await res.json();
 			library = data as LibraryResponse;
+			searchQuery.seed = library.seed;
 		} else {
 			toast.error('Failed to load galleries');
 		}
@@ -95,58 +97,48 @@
 		searchPlaceholder={$siteConfig.searchPlaceholder}
 		tags={$tagList}
 	/>
-
-	<Button
-		class={cn('size-8 p-2', showFilters && 'bg-accent/90 text-accent-foreground/90')}
-		on:click={() => (showFilters = !showFilters)}
-		variant="ghost"
-	>
-		<Filter />
-	</Button>
 </div>
 
 <div class="grid items-end gap-2 lg:flex">
-	{#if showFilters}
-		<div class="flex flex-wrap items-end gap-2">
-			<LimitOptions
-				on:change={(ev) => {
+	<div class="flex flex-wrap items-end gap-2">
+		<LimitOptions
+			on:change={(ev) => {
+				ev.preventDefault();
+				searchQuery = { ...searchQuery, limit: ev.detail };
+				search();
+			}}
+			pageLimits={$siteConfig.pageLimits}
+			value={searchQuery.limit}
+		/>
+
+		<div class="max-xs:flex-auto">
+			<SortOptions
+				defaultOrder={$siteConfig.defaultOrder}
+				defaultSort={$siteConfig.defaultSort}
+				on:order={(ev) => {
 					ev.preventDefault();
-					searchQuery = { ...searchQuery, limit: ev.detail };
+					searchQuery = { ...searchQuery, order: ev.detail };
 					search();
 				}}
-				pageLimits={$siteConfig.pageLimits}
-				value={searchQuery.limit}
+				on:sort={(ev) => {
+					ev.preventDefault();
+					searchQuery = { ...searchQuery, sort: ev.detail.sort, seed: ev.detail.seed };
+					search();
+				}}
+				order={searchQuery.order}
+				sort={searchQuery.sort}
 			/>
-
-			<div class="max-xs:flex-auto">
-				<SortOptions
-					defaultOrder={$siteConfig.defaultOrder}
-					defaultSort={$siteConfig.defaultSort}
-					on:order={(ev) => {
-						ev.preventDefault();
-						searchQuery = { ...searchQuery, order: ev.detail };
-						search();
-					}}
-					on:sort={(ev) => {
-						ev.preventDefault();
-						searchQuery = { ...searchQuery, sort: ev.detail };
-						search();
-					}}
-					order={searchQuery.order}
-					sort={searchQuery.sort}
-				/>
-			</div>
-
-			<div class="flex items-center gap-2 py-1 max-xs:w-full">
-				<Switch
-					bind:checked={showSelected}
-					id="show-selected"
-					on:click={() => (searchQuery.page = 1)}
-				/>
-				<Label class="w-full" for="show-selected">Show only selected</Label>
-			</div>
 		</div>
-	{/if}
+
+		<div class="flex items-center gap-2 py-1 max-xs:w-full">
+			<Switch
+				bind:checked={showSelected}
+				id="show-selected"
+				on:click={() => (searchQuery.page = 1)}
+			/>
+			<Label class="w-full" for="show-selected">Show only selected</Label>
+		</div>
+	</div>
 
 	{#if library}
 		<ListPagination

@@ -1,4 +1,3 @@
-import { omit } from 'ramda';
 import { z } from 'zod';
 
 const usernameSchema = z
@@ -113,31 +112,6 @@ export type Sort = z.infer<typeof sortSchema>;
 export const orderSchema = z.enum(['asc', 'desc']);
 
 export type Order = z.infer<typeof orderSchema>;
-
-export const searchSchema = z
-	.object({
-		q: z.string().default(''),
-		page: z.coerce.number().default(1),
-		sort: sortSchema.optional(),
-		order: orderSchema.optional(),
-		limit: z.coerce.number().int().catch(24),
-		seed: z.string().optional(),
-		ids: z
-			.string()
-			.transform((str) =>
-				str
-					.split(',')
-					.map((id) => parseInt(id))
-					.filter((id) => !isNaN(id))
-			)
-			.optional(),
-	})
-	.transform((val) => ({
-		query: val.q,
-		...omit(['q'], val),
-	}));
-
-export type SearchParams = z.infer<typeof searchSchema>;
 
 export const createCollectionSchema = z.object({
 	name: z

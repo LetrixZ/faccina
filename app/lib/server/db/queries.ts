@@ -7,28 +7,14 @@ import {
 } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
-import { handleTags } from '../utils';
-import { type Order, type SearchParams, type Sort } from '$lib/schemas';
+import { handleTags, type SearchParams } from '../utils';
+import { type Order, type Sort } from '$lib/schemas';
 import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
 import { shuffle } from '$lib/utils';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, like } from '~shared/db/helpers';
 import type { DB } from '~shared/types';
-
-export enum Sorting {
-	RELEVANCE = 'relevance',
-	RELEASED_AT = 'released_at',
-	CREATED_AT = 'created_at',
-	TITLE = 'title',
-	PAGES = 'pages',
-	RANDOM = 'random',
-}
-
-export enum Ordering {
-	ASC = 'asc',
-	DESC = 'desc',
-}
 
 export type QueryOptions = {
 	showHidden?: boolean;
@@ -227,16 +213,15 @@ export const search = async (
 		switch (sort) {
 			case 'released_at':
 				return `archives.released_at ${order}`;
-			case 'created_at':
-				return `archives.created_at ${order}`;
 			case 'title':
 				return config.database.vendor === 'postgresql'
 					? `archives.title ${order}`
 					: sql`archives.title collate nocase ${sql.raw(order)}`;
 			case 'pages':
 				return `archives.pages ${order}`;
+			case 'created_at':
 			default:
-				return sortQuery(config.site.defaultSort, config.site.defaultOrder);
+				return `archives.created_at ${order}`;
 		}
 	};
 
@@ -440,17 +425,17 @@ export const search = async (
 
 	query = query
 		.orderBy([orderBy])
-		.orderBy(order === Ordering.ASC ? 'archives.createdAt asc' : 'archives.createdAt desc')
-		.orderBy(order === Ordering.ASC ? 'archives.id asc' : 'archives.id desc');
+		.orderBy(order === 'asc' ? 'archives.createdAt asc' : 'archives.createdAt desc')
+		.orderBy(order === 'asc' ? 'archives.id asc' : 'archives.id desc');
 
 	let filteredResults = await query.execute();
 
-	if (sort === Sorting.TITLE) {
+	if (sort === 'title') {
 		filteredResults = filteredResults.toSorted((a, b) =>
 			naturalCompare(a.title.toLowerCase(), b.title.toLowerCase())
 		);
 
-		if (order === Ordering.DESC) {
+		if (order === 'desc') {
 			filteredResults = filteredResults.toReversed();
 		}
 	}
@@ -464,7 +449,7 @@ export const search = async (
 		};
 	}
 
-	if (sort === Sorting.RANDOM && params.seed) {
+	if (sort === 'random' && params.seed) {
 		allIds = shuffle(allIds, params.seed);
 	}
 

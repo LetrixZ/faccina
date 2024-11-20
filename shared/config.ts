@@ -51,7 +51,9 @@ const siteSchema = z
 		enable_read_history: z.boolean().default(true),
 		enable_analytics: z.boolean().default(true),
 		admin_users: z.array(z.string()).default([]),
-		default_sort: z.enum(['released_at', 'created_at', 'title', 'pages']).default('released_at'),
+		default_sort: z
+			.enum(['released_at', 'created_at', 'title', 'pages', 'random'])
+			.default('released_at'),
 		default_order: z.enum(['asc', 'desc']).default('desc'),
 		guest_downloads: z.boolean().default(true),
 		gallery_listing: listingSchema.default({}),
