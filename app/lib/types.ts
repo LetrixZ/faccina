@@ -106,6 +106,13 @@ export const messageSchema = z.discriminatedUnion('action', [
 		}),
 	}),
 	z.object({
+		action: z.literal('gallery_download_server'),
+		payload: z.object({
+			archiveId: z.number(),
+			userId: z.string().optional(),
+		}),
+	}),
+	z.object({
 		action: z.literal('gallery_start_read'),
 		payload: z.object({
 			archiveId: z.number(),
@@ -263,8 +270,9 @@ export type SiteConfig = {
 	defaultOrder: Order;
 	guestDownloads: boolean;
 	searchPlaceholder: string;
-	pageLimits: number[];
 	defaultPageLimit: number;
+	pageLimits: number[];
+	clientSideDownloads: boolean;
 };
 
 export const readStatSchema = z.object({

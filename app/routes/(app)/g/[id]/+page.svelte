@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AsyncZipDeflate, strToU8, Zip, ZipPassThrough } from 'fflate';
+	import { strToU8, Zip, ZipPassThrough } from 'fflate';
 	import { Bookmark, Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
 	import pMap from 'p-map';
 	import { MetaTags } from 'svelte-meta-tags';
@@ -20,8 +20,8 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { type Task } from '$lib/models';
 	import { siteConfig } from '$lib/stores';
-	import type { Gallery } from '$lib/types';
 	import {
+		cn,
 		dateTimeFormat,
 		generateFilename,
 		getMetadata,
@@ -50,7 +50,13 @@
 	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
 	$: tags = gallery.tags.filter(isTag);
 
-	const startDownload = async (gallery: Gallery) => {
+	const startDownload = async (ev: MouseEvent) => {
+		if (!$siteConfig.clientSideDownloads) {
+			return;
+		} else {
+			ev.preventDefault();
+		}
+
 		const streamSaver = await import('streamsaver');
 		streamSaver.default.mitm = '/ss-mitm.html';
 
@@ -90,11 +96,12 @@
 				.catch(() => {});
 
 			try {
-				const metadataFile = new AsyncZipDeflate('info.json');
-
+				const metadataFile = new ZipPassThrough('info.json');
 				zip.add(metadataFile);
-
-				metadataFile.push(strToU8(JSON.stringify(getMetadata(gallery), null, 2)), true);
+				metadataFile.push(
+					strToU8(JSON.stringify(getMetadata(gallery, location.origin), null, 2)),
+					true
+				);
 
 				pMap(
 					gallery.images,
@@ -272,9 +279,12 @@
 
 			<div class="relative">
 				<Button
-					class={'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80'}
-					disabled={!canDownload}
-					on:click={() => startDownload(gallery)}
+					class={cn(
+						'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80',
+						!canDownload && 'pointer-events-none opacity-50'
+					)}
+					href="/g/{gallery.id}/download"
+					on:click={startDownload}
 					variant="secondary"
 				>
 					<BiSolidDownload class="size-5 shrink-0" />

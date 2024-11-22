@@ -38,6 +38,7 @@ guest_downloads = true
 search_placeholder = ''
 store_og_images = true
 secure_session_cookie = true
+client_side_downloads = true
 ```
 
 - `site_name`: Specifies the title showed in pages and emails.
@@ -52,6 +53,7 @@ secure_session_cookie = true
 - `search_placeholder`: Placeholder text for the search bar.
 - `store_og_images`: Save generated OpenGraph meta images on disk.
 - `secure_session_cookie`: Indicate if the session cookie should be secure or not.
+- `client_side_downloads`: Indicate if it gallery downloads should happen on the client or not. Client-side downloads work by downloading the image in the user's browser and packaging the ZIP locally.
 
 #### Gallery listing
 

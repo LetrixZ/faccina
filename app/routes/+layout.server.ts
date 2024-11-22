@@ -15,6 +15,7 @@ export const load: LayoutServerLoad = ({ locals }) => {
 			defaultSort: config.site.defaultSort,
 			defaultOrder: config.site.defaultOrder,
 			guestDownloads: config.site.guestDownloads,
+			clientSideDownloads: config.site.clientSideDownloads,
 			searchPlaceholder: config.site.searchPlaceholder,
 			pageLimits: config.site.galleryListing.pageLimits,
 			defaultPageLimit: config.site.galleryListing.defaultPageLimit,

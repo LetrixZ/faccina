@@ -56,6 +56,7 @@ const siteSchema = z
 			.default('released_at'),
 		default_order: z.enum(['asc', 'desc']).default('desc'),
 		guest_downloads: z.boolean().default(true),
+		client_side_downloads: z.boolean().default(true),
 		gallery_listing: listingSchema.default({}),
 		search_placeholder: z.string().default(''),
 		store_og_images: z.boolean().default(true),

@@ -158,7 +158,7 @@ export const randomString = () => {
 	return result;
 };
 
-export const getMetadata = (gallery: Gallery) => {
+export const getMetadata = (gallery: Gallery, origin: string) => {
 	const artists = gallery.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name);
 	const circles = gallery.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name);
 	const magazines = gallery.tags
@@ -184,7 +184,7 @@ export const getMetadata = (gallery: Gallery) => {
 		Publisher: publishers.length ? publishers : undefined,
 		Pages: gallery.pages,
 		Tags: tags,
-		Source: `https://${location.hostname}/g/${gallery.id}`,
+		Source: `${origin}/g/${gallery.id}`,
 		Released: gallery.releasedAt && new Date(gallery.releasedAt).getTime() / 1000,
 		Thumbnail: gallery.thumbnail - 1,
 	};
