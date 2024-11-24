@@ -248,7 +248,7 @@ export const search = async (
 			query = query.where('namespace', '=', namespace);
 		}
 
-		return query.where('name', like(), name).execute();
+		return query.where((eb) => eb('name', like(), name).or('displayName', like(), name)).execute();
 	};
 
 	const excludeTags = (
@@ -312,7 +312,7 @@ export const search = async (
 							.whereRef('archives.id', '=', 'archiveId')
 							.where((eb) =>
 								tag.namespace === 'tag'
-									? eb('name', like(), tag.name)
+									? eb('name', like(), tag.name).or('displayName', like(), tag.name)
 									: eb('name', like(), tag.name).and('namespace', '=', tag.namespace)
 							)
 					)
@@ -366,7 +366,9 @@ export const search = async (
 							.innerJoin('tags', 'id', 'tagId')
 							.select('id')
 							.whereRef('archiveId', '=', 'archives.id')
-							.where('name', like(), split)
+							.where((eb) =>
+								eb('name', like(), `%${split}%`).or('displayName', like(), `%${split}%`)
+							)
 					);
 				};
 
