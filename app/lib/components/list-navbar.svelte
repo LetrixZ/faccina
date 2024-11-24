@@ -18,6 +18,7 @@
 		{type}
 	/>
 </div>
+
 <ListPagination
 	class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
 	limit={library.limit}

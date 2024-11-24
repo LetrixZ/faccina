@@ -1,7 +1,7 @@
 <script>
 	import { navigating } from '$app/stores';
 	import { Toaster } from '$lib/components/ui/sonner';
-	import { siteConfig } from '$lib/stores';
+	import { siteConfig, user } from '$lib/stores';
 	import '../app.pcss';
 
 	export let data;
@@ -20,6 +20,10 @@
 
 	$: {
 		$siteConfig = data.site;
+	}
+
+	$: {
+		$user = data.user;
 	}
 </script>
 

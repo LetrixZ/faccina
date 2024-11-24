@@ -1,8 +1,7 @@
-import type { LayoutServerLoad } from './$types';
 import type { SiteConfig } from '$lib/types';
 import config from '~shared/config';
 
-export const load: LayoutServerLoad = ({ locals }) => {
+export const load = ({ locals }) => {
 	return {
 		user: locals.user,
 		site: {

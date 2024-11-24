@@ -5,16 +5,16 @@
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import type { Tag, TagNamespace } from '../types';
+	import type { TagNamespace } from '../types';
 	import { editTagsSchema, type EditTagsSchema } from '../schemas';
 	import { isTag } from '../utils';
 	import InputChip from './input-chip.svelte';
 	import { Button } from './ui/button';
 	import { Label } from './ui/label';
 	import { Separator } from './ui/separator';
+	import { tagList } from '$lib/stores';
 
 	export let data: SuperValidated<Infer<EditTagsSchema>>;
-	export let tagsList: Tag[];
 
 	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
 
@@ -118,7 +118,7 @@
 				chips={artists}
 				id="artists"
 				on:update={(ev) => updateTags('artist', ev.detail)}
-				tags={tagsList.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)}
+				tags={$tagList.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)}
 			/>
 		</div>
 	</div>
@@ -129,7 +129,7 @@
 			chips={circles}
 			id="circles"
 			on:update={(ev) => updateTags('circle', ev.detail)}
-			tags={tagsList.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)}
+			tags={$tagList.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -139,7 +139,7 @@
 			chips={magazines}
 			id="magazines"
 			on:update={(ev) => updateTags('magazine', ev.detail)}
-			tags={tagsList.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)}
+			tags={$tagList.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -149,7 +149,7 @@
 			chips={events}
 			id="events"
 			on:update={(ev) => updateTags('event', ev.detail)}
-			tags={tagsList.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)}
+			tags={$tagList.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -159,7 +159,7 @@
 			chips={publishers}
 			id="publishers"
 			on:update={(ev) => updateTags('publisher', ev.detail)}
-			tags={tagsList.filter((tag) => tag.namespace === 'publishers').map((tag) => tag.name)}
+			tags={$tagList.filter((tag) => tag.namespace === 'publishers').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -169,7 +169,7 @@
 			chips={parodies}
 			id="parodies"
 			on:update={(ev) => updateTags('parody', ev.detail)}
-			tags={tagsList.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)}
+			tags={$tagList.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -179,7 +179,7 @@
 			chips={tags}
 			id="tags"
 			on:update={(ev) => updateTags('tag', ev.detail)}
-			tags={tagsList.filter(isTag).map((tag) => tag.name)}
+			tags={$tagList.filter(isTag).map((tag) => tag.name)}
 		/>
 	</div>
 

@@ -154,7 +154,25 @@ export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
 		mimetype = `image/${extension.replace('.', '')}`;
 	}
 
-	setHeaders({ 'content-type': mimetype });
+	setHeaders({
+		'Content-Type': mimetype,
+	});
+
+	if (config.image.caching) {
+		if (imageType === 'cover') {
+			setHeaders({
+				'Cache-Control': `public, max-age=${config.image.caching.cover}, immutable`,
+			});
+		} else if (imageType === 'thumbnail') {
+			setHeaders({
+				'Cache-Control': `public, max-age=${config.image.caching.thumbnail}, immutable`,
+			});
+		} else if (!imageType) {
+			setHeaders({
+				'Cache-Control': `public, max-age=${config.image.caching.page}, immutable`,
+			});
+		}
+	}
 
 	return new Response(image);
 };

@@ -7,6 +7,7 @@
 	import { Button } from './ui/button';
 	import { cn, isTag } from '$lib/utils';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 
 	export let gallery: GalleryListItem;
 	export let enableBookmark = false;
@@ -80,7 +81,8 @@
 				src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
-			{#if enableBookmark}
+
+			{#if browser && enableBookmark}
 				<div
 					class={cn(
 						'absolute end-1 top-1 hidden group-hover:block',
@@ -100,6 +102,7 @@
 					</button>
 				</div>
 			{/if}
+
 			<div class="absolute bottom-1 end-1 flex gap-1">
 				{#if gallery.deletedAt}
 					<div

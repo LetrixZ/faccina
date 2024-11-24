@@ -182,6 +182,12 @@ const presetSchema = z
 	.transform(camelize)
 	.and(z.object({ width: z.number() }));
 
+const cachingSchema = z.object({
+	page: z.number().default(365 * 24 * 3600),
+	thumbnail: z.number().default(2 * 24 * 3600),
+	cover: z.number().default(5 * 24 * 3600),
+});
+
 const imageSchema = z
 	.object({
 		cover_preset: z.string().default('cover'),
@@ -189,6 +195,19 @@ const imageSchema = z
 		aspect_ratio_similar: z.boolean().default(true),
 		remove_on_update: z.boolean().default(true),
 		preset: z.record(z.string(), presetSchema).default({}),
+		caching: z
+			.union([z.boolean(), z.number(), cachingSchema])
+			.optional()
+			.default(true)
+			.transform((val) => {
+				if (typeof val === 'boolean') {
+					return cachingSchema.parse({});
+				} else if (typeof val === 'number') {
+					return cachingSchema.parse({ page: val, thumbnail: val, cover: val });
+				}
+
+				return val;
+			}),
 	})
 	.transform(camelize)
 	.superRefine((val, ctx) => {

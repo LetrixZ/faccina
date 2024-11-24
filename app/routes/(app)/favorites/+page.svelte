@@ -42,12 +42,12 @@
 			{#each library.archives as archive (archive.id)}
 				<ListItem
 					bookmarked={!!data.userCollections
-						.find((c) => c.protected)
+						?.find((c) => c.protected)
 						?.archives.find((a) => a.id === archive.id)}
 					enableBookmark
 					gallery={archive}
 					on:bookmark={({ detail }) => {
-						const defaultCollection = data.userCollections.find((c) => c.protected);
+						const defaultCollection = data.userCollections?.find((c) => c.protected);
 
 						if (!defaultCollection) {
 							return;

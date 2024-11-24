@@ -56,6 +56,12 @@
 	})();
 
 	$: sortOption = sortValue && sortOptions.find((option) => option.value === sortValue);
+
+	const newOrderQuery = () => {
+		const query = new URLSearchParams($page.url.searchParams.toString());
+		query.set('order', orderValue === 'desc' ? 'asc' : 'desc');
+		return query.toString();
+	};
 </script>
 
 <div class={cn('flex items-end gap-2', $$props.class)}>
@@ -103,9 +109,14 @@
 	</div>
 
 	<Button
-		class="size-8 p-0 text-muted-foreground-light"
-		disabled={sortValue === 'random'}
-		on:click={() => {
+		class={cn(
+			'size-8 p-0 text-muted-foreground-light',
+			sortValue === 'random' && 'pointer-events-none opacity-50'
+		)}
+		href="?{newOrderQuery()}"
+		on:click={(ev) => {
+			ev.preventDefault();
+
 			if (!dispatch('order', orderValue === 'desc' ? 'asc' : 'desc', { cancelable: true })) {
 				return;
 			}

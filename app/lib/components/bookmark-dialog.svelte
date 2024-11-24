@@ -7,7 +7,7 @@
 	export let gallery: Pick<Gallery, 'id'>;
 </script>
 
-{#if $userCollections.length}
+{#if $userCollections?.length}
 	<ul class="grid gap-2">
 		{#each $userCollections as collection}
 			{@const archives = collection.archives}

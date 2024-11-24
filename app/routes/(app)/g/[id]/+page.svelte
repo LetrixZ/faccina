@@ -19,7 +19,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Separator } from '$lib/components/ui/separator';
 	import { type Task } from '$lib/models';
-	import { siteConfig } from '$lib/stores';
+	import { siteConfig, userCollections } from '$lib/stores';
 	import {
 		cn,
 		dateTimeFormat,
@@ -166,8 +166,8 @@
 		});
 	};
 
-	$: isBookmarked = !!data.userCollections
-		.find((c) => c.protected)
+	$: isBookmarked = !!$userCollections
+		?.find((c) => c.protected)
 		?.archives.find((a) => a.id === gallery.id);
 </script>
 
@@ -331,7 +331,7 @@
 						<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
 							<Dialog.Trigger>
 								<Button
-									class="flex w-full bg-transparent p-2 text-center font-semibold text-white"
+									class="flex w-fit bg-transparent p-2 text-center font-semibold text-white"
 									variant="ghost"
 								>
 									{#if isBookmarked}
@@ -512,7 +512,6 @@
 						editTaxonomyOpen = false;
 					}
 				}}
-				tagsList={data.tags}
 			/>
 		{/if}
 	</Dialog.Content>

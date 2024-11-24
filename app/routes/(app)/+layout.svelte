@@ -93,7 +93,7 @@
 
 				const tagMap = new Map();
 
-				data.tags
+				$tagList
 					.filter(({ namespace, name, displayName }) => {
 						return (
 							`${namespace}:${name}`.toLowerCase().includes(value) ||
@@ -181,11 +181,11 @@
 	};
 
 	$: {
-		$tagList = data.tags;
+		$userCollections = data.userCollections;
 	}
 
 	$: {
-		$userCollections = data.userCollections;
+		$tagList = data.tagList;
 	}
 </script>
 

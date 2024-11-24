@@ -222,6 +222,34 @@ width = 360
 - `aspect_ratio_similar`: If enabled, images that are similar to 45:64 (0.703125) aspect ratio will be adapted to it. This will trigger if the aspect ratio is between 0.65 and 0.75. Example, 2:3 (0.66) aspect ratio will be transformed to 45:64.
 - `remove_on_update`: If enabled during indexing, any image change will remove the resampled image. Useful when changing filename:page number pairs.
 
+#### Caching
+
+By default, the server will send a Cache-Control header in the image response:
+`Cache-Control: public, max-age=432000, immutable`.
+
+You can configure the seconds for every type of image (page, thumbnail or cover) with:
+
+```toml
+[image.caching]
+page = 31104000 # 365 days
+thumbnail = 172800 # 2 days
+cover = 432000 # 5 days
+```
+
+You can also specify seconds for all the types with:
+
+```toml
+[image]
+caching = 432000
+```
+
+To disable setting a Cache-Control header use:
+
+```toml
+[image]
+caching = false
+```
+
 #### Encoding options
 
 Below are the default encoding options for every supported format that can be overriden.
