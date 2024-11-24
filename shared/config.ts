@@ -200,7 +200,7 @@ const imageSchema = z
 			.optional()
 			.default(true)
 			.transform((val) => {
-				if (typeof val === 'boolean') {
+				if (typeof val === 'boolean' && val === true) {
 					return cachingSchema.parse({});
 				} else if (typeof val === 'number') {
 					return cachingSchema.parse({ page: val, thumbnail: val, cover: val });
