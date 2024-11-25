@@ -10,9 +10,16 @@
 <main class="container flex flex-auto flex-col space-y-2">
 	<div class="flex w-full items-center justify-between gap-4">
 		<PageTitle>Collections</PageTitle>
-		<Button class="h-fit py-1" href="collections/new" variant="link">
-			Create a new collection
-		</Button>
+
+		<div class="flex gap-2">
+			<Button class="h-fit py-1" href="/collections/new" variant="link">
+				Create a new collection
+			</Button>
+
+			<Button class="h-fit py-1" href="/collections/export" variant="link">
+				Export collections
+			</Button>
+		</div>
 	</div>
 
 	<Separator />

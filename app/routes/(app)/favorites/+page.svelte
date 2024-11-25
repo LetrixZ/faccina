@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { FileText } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
@@ -7,6 +8,7 @@
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import type { GalleryListItem } from '$lib/types';
@@ -29,7 +31,13 @@
 </svelte:head>
 
 <main class="container relative flex flex-auto flex-col gap-y-2">
-	<PageTitle>Favorites ({library.total})</PageTitle>
+	<div class="flex justify-between">
+		<PageTitle>Favorites ({library.total})</PageTitle>
+
+		<Button class="flex gap-2" href="/favorites/export" variant="outline">
+			<FileText class="size-4" /> Export Favorites
+		</Button>
+	</div>
 
 	<div class="grid items-end gap-2 md:flex">
 		<ListNavbar {library} type="favorites" />

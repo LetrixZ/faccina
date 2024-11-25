@@ -305,7 +305,7 @@
 						{#if data.isFavorite}
 							<form action="?/removeFavorite" method="POST" use:enhance>
 								<Button
-									class="flex w-full bg-transparent text-center font-semibold text-white "
+									class="flex w-full bg-transparent text-center font-semibold text-white"
 									type="submit"
 									variant="ghost"
 								>
@@ -316,7 +316,7 @@
 						{:else}
 							<form action="?/addFavorite" method="POST" use:enhance>
 								<Button
-									class="flex w-full bg-transparent text-center font-semibold text-white  "
+									class="flex w-full bg-transparent text-center font-semibold text-white"
 									type="submit"
 									variant="ghost"
 								>
