@@ -45,7 +45,7 @@
 					bookmarked={!!data.userCollections
 						?.find((c) => c.protected)
 						?.archives.find((a) => a.id === archive.id)}
-					enableBookmark
+					enableBookmark={!!data.user}
 					gallery={archive}
 					on:bookmark={({ detail }) => {
 						const defaultCollection = data.userCollections?.find((c) => c.protected);
