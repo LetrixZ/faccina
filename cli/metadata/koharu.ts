@@ -1,4 +1,3 @@
-import capitalize from 'capitalize';
 import YAML from 'yaml';
 import { z } from 'zod';
 import config from '../../shared/config';
@@ -42,7 +41,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	}
 
 	archive.description = data.description;
-	archive.language = data.language?.map((language) => capitalize.words(language))[0];
+	archive.language = data.language?.[0];
 
 	archive.tags = [];
 

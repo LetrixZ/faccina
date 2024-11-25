@@ -112,7 +112,7 @@ The server supports both PostgreSQL and SQLite.\
 SQLite is blazingly fast but can cause problems when multiple writers are needed.\
 This might present problems when users are involved in the equation. Registration, login and favorites all need to write to the database. Add to that indexing and image dimension calculation.
 
-#### SQLite example
+#### SQLite
 
 ```toml
 [database]
@@ -130,7 +130,7 @@ PRAGMA busy_timeout = 5000;
 PRAGMA foreign_keys = true;
 ```
 
-#### PostgreSQL example
+#### PostgreSQL
 
 ```toml
 [database]
@@ -140,7 +140,10 @@ database = faccina
 password = supersecurepassword
 host = 127.0.0.1
 port = 5432
+enable_fts = false
 ```
+
+You can make use of the Full-Text Search features of PostgreSQL by setting `enable_fts = true`.
 
 ### Metadata
 

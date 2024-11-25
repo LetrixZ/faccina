@@ -397,7 +397,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						path,
 						hash,
 						description: archive.description,
-						language: archive.language,
+						language: archive.language ?? config.metadata.defaultLanguage,
 						releasedAt: archive.releasedAt?.toISOString(),
 						thumbnail: archive.thumbnail,
 						pages: images.length,

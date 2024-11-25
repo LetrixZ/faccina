@@ -83,6 +83,7 @@ const databaseSchema = z
 			password: z.string(),
 			host: z.string().default('localhost'),
 			port: z.number().default(5432),
+			enable_fts: z.boolean().default(false),
 		}),
 	])
 	.transform(camelize);
@@ -128,6 +129,7 @@ const defaultSourceMappings: SourceMapping[] = [
 const metadataSchema = z
 	.object({
 		parse_filename_as_title: z.boolean().default(true),
+		default_language: z.string().optional(),
 		tag_mapping: z.array(tagMappingSchema).default([]),
 		source_mapping: z
 			.array(sourceMappingSchema)

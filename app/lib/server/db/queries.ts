@@ -126,10 +126,14 @@ export const parseQuery = (query: string) => {
 	const tagQueryMatches = query.match(/[-|~]?(\w+):(".*?"|[^\s]+)/g);
 
 	const titleMatch = query
-		.replaceAll(/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b/g, '')
-		.trim();
-
-	const pagesMatch = Array.from(query.matchAll(/\bpages(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+		.replaceAll(
+			/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b|\blanguage:(\w+)\b/g,
+			'#||#'
+		)
+		.trim()
+		.split('#||#')
+		.map((s) => s.trim())
+		.filter((s) => s.length);
 
 	const urlMatch = Array.from(query.matchAll(/-?(url):(".*?"|[^\s]+)/g))
 		.map((match) => match[2])
@@ -148,6 +152,8 @@ export const parseQuery = (query: string) => {
 		.map((match) => match[2])
 		.filter((match) => match !== undefined);
 
+	const pagesMatch = Array.from(query.matchAll(/\bpages(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
 	let pagesNumber: number | undefined = undefined;
 	let pagesExpression: string | undefined = undefined;
 
@@ -155,6 +161,8 @@ export const parseQuery = (query: string) => {
 		pagesNumber = parseInt(pagesMatch[2]);
 		pagesExpression = pagesMatch[1];
 	}
+
+	const languageMatch = Array.from(query.matchAll(/\blanguage:(\w+)\b/g));
 
 	const matches = {
 		titleMatch,
@@ -164,6 +172,7 @@ export const parseQuery = (query: string) => {
 		},
 		urlMatch,
 		sourceMatch,
+		languageMatch: languageMatch.map((match) => match?.[1]),
 	};
 
 	const tagMatches: TagMatch[] = [];
@@ -175,10 +184,16 @@ export const parseQuery = (query: string) => {
 	for (const match of tagQueryMatches) {
 		const split = [match.slice(0, match.indexOf(':')), match.slice(match.indexOf(':') + 1)];
 
-		const name = split[1].replaceAll('"', '');
+		let name = split[1].replaceAll('"', '');
 
 		if (/^%+$/.test(name)) {
 			continue;
+		}
+
+		if (!name.endsWith('$')) {
+			name = name + '%';
+		} else {
+			name = name.slice(0, -1);
 		}
 
 		let namespace = split[0];
@@ -188,7 +203,7 @@ export const parseQuery = (query: string) => {
 
 		namespace = negate || or ? namespace.slice(1) : namespace;
 
-		if (['source', 'url'].includes(namespace)) {
+		if (['source', 'url', 'language'].includes(namespace)) {
 			continue;
 		}
 
@@ -207,7 +222,9 @@ export const search = async (
 	params: SearchParams,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
-	const { tagMatches, titleMatch, pagesMatch, urlMatch, sourceMatch } = parseQuery(params.query);
+	const { tagMatches, titleMatch, pagesMatch, languageMatch, urlMatch, sourceMatch } = parseQuery(
+		params.query
+	);
 
 	const sortQuery = (sort: Sort, order: Order) => {
 		switch (sort) {
@@ -294,7 +311,13 @@ export const search = async (
 		).map((at) => at.archiveId);
 	}
 
-	let query = db.selectFrom('archives').select(['archives.id', 'archives.title']);
+	let query = (() => {
+		if (config.database.vendor === 'sqlite') {
+			return db.selectFrom('archives').select(['archives.id', 'archives.title']);
+		} else {
+			return db.selectFrom('archives').select(['archives.id']);
+		}
+	})();
 
 	const inclusiveTags = tagMatches.filter((tag) => !tag.or && !tag.negate);
 
@@ -331,51 +354,68 @@ export const search = async (
 		query = query.where('id', 'in', archiveIdsOptional);
 	}
 
-	if (titleMatch.length) {
-		for (let split of titleMatch.split(' ')) {
-			split = split.trim();
+	if (config.database.vendor === 'postgresql' && config.database.enableFts) {
+		query = query.innerJoin('archiveFts', 'archiveFts.archiveId', 'archives.id').where(
+			(eb) =>
+				sql`(${eb.ref('titleTsv')} || ${eb.ref('descriptionTsv')} || ${eb.ref('tagsTsv')} || to_tsvector('english', coalesce(language, ''))) @@ to_tsquery('english', ${titleMatch[0]
+					.split(' ')
+					.map((s) => {
+						if (s.startsWith('-')) {
+							return '!' + s.slice(1);
+						}
 
-			if (!split.length) {
-				continue;
-			}
+						return s;
+					})
+					.join('&')})`
+		);
+	} else {
+		if (titleMatch.length) {
+			for (let split of titleMatch) {
+				split = split.trim();
 
-			const negate = split.startsWith('-');
-
-			split = negate ? split.slice(1) : split;
-
-			query = query.where(({ eb, and, or, not, exists, selectFrom }) => {
-				const conditions: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
-
-				if (negate) {
-					conditions.push(
-						or([
-							not(eb('title', like(), `%${split}%`)),
-							not(eb('description', like(), `%${split}%`)),
-						])
-					);
-				} else {
-					conditions.push(
-						eb('title', like(), `%${split}%`),
-						eb('description', like(), `%${split}%`)
-					);
+				if (!split.length) {
+					continue;
 				}
 
-				const buildTagQuery = () => {
-					return exists(
-						selectFrom('archiveTags')
-							.innerJoin('tags', 'id', 'tagId')
-							.select('id')
-							.whereRef('archiveId', '=', 'archives.id')
-							.where((eb) =>
-								eb('name', like(), `%${split}%`).or('displayName', like(), `%${split}%`)
-							)
-					);
-				};
+				const negate = split.startsWith('-');
 
-				conditions.push(negate ? not(buildTagQuery()) : buildTagQuery());
+				split = negate ? split.slice(1) : split;
 
-				return negate ? and(conditions) : or(conditions);
-			});
+				query = query.where(({ eb, and, or, not, exists, selectFrom }) => {
+					const conditions: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
+
+					if (negate) {
+						conditions.push(
+							or([
+								not(eb('title', like(), `%${split}%`)),
+								not(eb('description', like(), `%${split}%`)),
+							])
+						);
+					} else {
+						conditions.push(
+							eb('title', like(), `%${split}%`),
+							eb('description', like(), `%${split}%`)
+						);
+					}
+
+					const buildTagQuery = () => {
+						return exists(
+							selectFrom('archiveTags')
+								.innerJoin('tags', 'id', 'tagId')
+								.select('id')
+								.where((eb) =>
+									eb('name', like(), `${split}%`).or('displayName', like(), `${split}%`)
+								)
+								.where('namespace', 'in', ['artist', 'circle'])
+								.whereRef('archiveId', '=', 'archives.id')
+						);
+					};
+
+					conditions.push(negate ? not(buildTagQuery()) : buildTagQuery());
+
+					return negate ? and(conditions) : or(conditions);
+				});
+			}
 		}
 	}
 
@@ -384,6 +424,12 @@ export const search = async (
 
 		if (data) {
 			query = query.where('pages', data, pagesMatch.number);
+		}
+	}
+
+	if (languageMatch?.length) {
+		for (const language of languageMatch) {
+			query = query.where('language', like(), language);
 		}
 	}
 
@@ -432,8 +478,8 @@ export const search = async (
 
 	let filteredResults = await query.execute();
 
-	if (sort === 'title') {
-		filteredResults = filteredResults.toSorted((a, b) =>
+	if (config.database.vendor === 'sqlite' && sort === 'title') {
+		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
 			naturalCompare(a.title.toLowerCase(), b.title.toLowerCase())
 		);
 

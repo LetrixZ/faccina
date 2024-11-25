@@ -92,7 +92,7 @@
 				<Form.FieldErrors />
 			</Form.Field>
 
-			<div class="grid grid-cols-2 gap-4">
+			<div class="grid grid-cols-3 gap-4">
 				<Form.Field {form} name="thumbnail">
 					<Form.Control let:attrs>
 						<Form.Label>Thumbnail page</Form.Label>
@@ -111,6 +111,14 @@
 					<Form.Control let:attrs>
 						<Form.Label>Released At</Form.Label>
 						<Input {...attrs} bind:value={$formData.releasedAt} type="datetime-local" />
+					</Form.Control>
+					<Form.FieldErrors />
+				</Form.Field>
+
+				<Form.Field {form} name="language">
+					<Form.Control let:attrs>
+						<Form.Label>Language</Form.Label>
+						<Input {...attrs} bind:value={$formData.language} />
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>

@@ -302,6 +302,7 @@ export const actions = {
 			description,
 			thumbnail,
 			releasedAt,
+			language,
 			sources,
 			protected: isProtected,
 		} = form.data;
@@ -313,6 +314,7 @@ export const actions = {
 				description,
 				thumbnail,
 				releasedAt: dayjs(releasedAt).toISOString(),
+				language,
 				protected: isProtected,
 				updatedAt: now(),
 			})
