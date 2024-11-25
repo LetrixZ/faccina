@@ -354,22 +354,23 @@ export const search = async (
 		query = query.where('id', 'in', archiveIdsOptional);
 	}
 
-	if (config.database.vendor === 'postgresql' && config.database.enableFts) {
-		query = query.innerJoin('archiveFts', 'archiveFts.archiveId', 'archives.id').where(
-			(eb) =>
-				sql`(${eb.ref('titleTsv')} || ${eb.ref('descriptionTsv')} || ${eb.ref('tagsTsv')} || to_tsvector('english', coalesce(language, ''))) @@ to_tsquery('english', ${titleMatch[0]
-					.split(' ')
-					.map((s) => {
-						if (s.startsWith('-')) {
-							return '!' + s.slice(1);
-						}
+	if (titleMatch.length) {
+		if (config.database.vendor === 'postgresql' && config.database.enableFts) {
+			query = query.innerJoin('archiveFts', 'archiveFts.archiveId', 'archives.id').where(
+				(eb) =>
+					sql`(${eb.ref('titleTsv')} || ${eb.ref('descriptionTsv')} || ${eb.ref('tagsTsv')} || to_tsvector('english', coalesce(language, ''))) @@ to_tsquery('english', ${titleMatch
+						.join(' ')
+						.split(' ')
+						.map((s) => {
+							if (s.startsWith('-')) {
+								return '!' + s.slice(1);
+							}
 
-						return s;
-					})
-					.join('&')})`
-		);
-	} else {
-		if (titleMatch.length) {
+							return s;
+						})
+						.join('&')})`
+			);
+		} else {
 			for (let split of titleMatch) {
 				split = split.trim();
 
