@@ -51,19 +51,19 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 	zip.add(metadataFile);
 	metadataFile.push(encodedMetadata, true);
 
-	await Promise.all(
-		gallery.images.map((image) =>
-			fetch(`/image/${gallery.hash}/${image.pageNumber}`)
+	(async () => {
+		for (const image of gallery.images) {
+			await fetch(`/image/${gallery.hash}/${image.pageNumber}`)
 				.then((res) => res.arrayBuffer())
 				.then((buffer) => {
 					const imageFile = new ZipPassThrough(image.filename);
 					zip.add(imageFile);
 					imageFile.push(new Uint8Array(buffer), true);
-				})
-		)
-	);
+				});
+		}
 
-	zip.end();
+		zip.end();
+	})();
 
 	locals.analytics?.postMessage({
 		action: 'gallery_download_server',
