@@ -10,16 +10,6 @@ export type Generated<T> =
 		? ColumnType<S, I | undefined, U>
 		: ColumnType<T, T | undefined, T>;
 
-export interface ArchiveFts {
-	archiveId: number;
-	description: string | null;
-	descriptionTsv: Generated<string | null>;
-	tags: string;
-	tagsTsv: Generated<string | null>;
-	title: string;
-	titleTsv: Generated<string | null>;
-}
-
 export interface ArchiveImages {
 	archiveId: number;
 	filename: string;
@@ -32,6 +22,7 @@ export interface Archives {
 	createdAt: Generated<string>;
 	deletedAt: string | null;
 	description: string | null;
+	fts: string | null;
 	hash: string;
 	id: Generated<number>;
 	language: string | null;
@@ -136,7 +127,6 @@ export interface UserSessions {
 }
 
 export interface DB {
-	archiveFts: ArchiveFts;
 	archiveImages: ArchiveImages;
 	archives: Archives;
 	archiveSources: ArchiveSources;
