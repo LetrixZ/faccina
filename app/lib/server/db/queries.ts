@@ -359,7 +359,7 @@ export const search = async (
 			query = query.where(
 				'archives.fts',
 				'@@',
-				sql<string>`websearch_to_tsquery('simple', ${titleMatch.join(' ')})`
+				sql<string>`websearch_to_tsquery('simple', ${titleMatch.join(' ').replaceAll('- ', '\\- ')})`
 			);
 		} else {
 			for (let split of titleMatch) {
