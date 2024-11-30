@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import { now } from '../shared/db/helpers';
+import { now } from '../helpers';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema

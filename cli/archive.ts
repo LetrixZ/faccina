@@ -1,19 +1,20 @@
 import { createReadStream } from 'node:fs';
-import { exists, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'path';
-import { Glob, sleep } from 'bun';
+import { createHash } from 'node:crypto';
+import { rename, stat } from 'node:fs/promises';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
 import slugify from 'slugify';
+import { glob } from 'glob';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
-import { readStream } from '../shared/utils';
+import { exists, readStream, sleep } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
@@ -73,11 +74,14 @@ export const indexArchives = async (opts: IndexOptions) => {
 			const info = await stat(path).catch(() => null);
 
 			if (info?.isDirectory()) {
-				const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
+				// const glob = new Glob();
 				indexPaths.push(
-					...(await Array.fromAsync(
-						glob.scan({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
-					))
+					...glob.globSync(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}', {
+						cwd: path,
+						absolute: true,
+						follow: true,
+						nodir: true,
+					})
 				);
 			} else if (info?.isFile()) {
 				indexPaths.push(path);
@@ -172,10 +176,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 			continue;
 		}
 
-		const hasher = new Bun.CryptoHasher('sha256');
-		hasher.update(buffer);
-
-		const hash = hasher.digest('hex').substring(0, 16);
+		const hash = createHash('sha256').update(buffer).digest('hex').substring(0, 16);
 
 		const existingHash = await db
 			.selectFrom('archives')
@@ -184,7 +185,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 			.executeTakeFirst();
 
 		if (existingHash && existingHash.path !== path) {
-			if (await Bun.file(existingHash.path).exists()) {
+			if (await exists(existingHash.path)) {
 				multibar.log(
 					chalk.yellow.bold(
 						`${chalk.magenta(`[ID: ${existingHash.id}]`)} ${chalk.bold(existingHash.path)} and ${existing ? chalk.magenta(`[ID: ${existing.id}] `) : ''}${chalk.bold(path)} have the same hash, skipping\n`
@@ -454,7 +455,7 @@ export const pruneArchives = async () => {
 	const toDelete: number[] = [];
 
 	for (const archive of archives) {
-		if (await Bun.file(archive.path).exists()) {
+		if (await exists(archive.path)) {
 			continue;
 		}
 

@@ -1,4 +1,6 @@
-import { join } from 'node:path';
+import { mkdir, readFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
+import { writeFile } from 'node:fs/promises';
 import { og } from '@ethercorps/sveltekit-og';
 import { error } from '@sveltejs/kit';
 import sharp from 'sharp';
@@ -7,7 +9,7 @@ import interBold from '$assets/Inter-Bold.ttf?raw-hex';
 import interRegular from '$assets/Inter-Regular.ttf?raw-hex';
 import { getGallery } from '$lib/server/db/queries';
 import config from '~shared/config';
-import { leadingZeros } from '~shared/utils';
+import { leadingZeros, exists } from '~shared/utils';
 
 export const GET = async ({ fetch, params }) => {
 	const { id } = params;
@@ -26,10 +28,8 @@ export const GET = async ({ fetch, params }) => {
 	);
 
 	if (config.site.storeOgImages) {
-		const file = Bun.file(imagePath);
-
-		if (await file.exists()) {
-			return new Response(await file.bytes(), {
+		if (await exists(imagePath)) {
+			return new Response(await readFile(imagePath), {
 				headers: {
 					'content-type': 'image/png',
 				},
@@ -74,7 +74,8 @@ export const GET = async ({ fetch, params }) => {
 	);
 
 	if (config.site.storeOgImages) {
-		await Bun.write(imagePath, metaImage);
+		await mkdir(basename(imagePath), { recursive: true });
+		await writeFile(imagePath, metaImage);
 	}
 
 	return new Response(metaImage, {

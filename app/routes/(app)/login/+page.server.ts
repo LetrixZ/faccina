@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
+import argon2 from 'argon2';
 import type { Actions, PageServerLoad } from './$types';
 import { loginSchema } from '$lib/schemas';
 import { lucia } from '$lib/server/auth';
@@ -54,7 +55,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const validPassword = await Bun.password.verify(password, user.passwordHash, 'argon2id');
+		const validPassword = await argon2.verify(user.passwordHash, password);
 
 		if (!validPassword) {
 			return fail(400, {

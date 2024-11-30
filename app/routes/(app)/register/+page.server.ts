@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { generateIdFromEntropySize } from 'lucia';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
+import argon2 from 'argon2';
 import type { Actions, PageServerLoad } from './$types';
 import db from '~shared/db';
 import config from '~shared/config';
@@ -44,8 +45,7 @@ export const actions: Actions = {
 		const email = form.data.email;
 
 		const userId = generateIdFromEntropySize(10);
-		const passwordHash = await Bun.password.hash(password, {
-			algorithm: 'argon2id',
+		const passwordHash = await argon2.hash(password, {
 			memoryCost: 19456,
 			timeCost: 2,
 		});

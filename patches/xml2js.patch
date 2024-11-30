@@ -1,5 +1,5 @@
 diff --git a/lib/parser.js b/lib/parser.js
-index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..296d116e49dd662ab35f4e2aa1acd90713fac3a2 100644
+index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..ab057c47a7df1e1265e33b0cf4f9d46c8db150b2 100644
 --- a/lib/parser.js
 +++ b/lib/parser.js
 @@ -46,6 +46,7 @@
@@ -10,41 +10,41 @@ index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..296d116e49dd662ab35f4e2aa1acd907
        this.parseString = bind(this.parseString, this);
        this.reset = bind(this.reset, this);
        this.assignOrPush = bind(this.assignOrPush, this);
-@@ -345,6 +346,21 @@
-         }
+@@ -346,6 +347,21 @@
        }
      };
-+    
-+    Parser.prototype.parseStringSync = function(str) {
-+      var cb, err, result;
-+      result = void 0;
-+      err = void 0;
-+      cb = function(_err, _result) {
-+        result = _result;
-+        return err = _err;
-+      };
-+      this.parseString(str, cb);
-+      if (err) {
-+        throw err;
-+      }
-+      return result;
-+    };
  
++    Parser.prototype.parseStringSync = function (str) {
++			var cb, err, result;
++			result = void 0;
++			err = void 0;
++			cb = function (_err, _result) {
++				result = _result;
++				return (err = _err);
++			};
++			this.parseString(str, cb);
++			if (err) {
++				throw err;
++			}
++			return result;
++		};
++
      Parser.prototype.parseStringPromise = function(str) {
        return new Promise((function(_this) {
+         return function(resolve, reject) {
 @@ -383,6 +399,15 @@
      return parser.parseString(str, cb);
    };
  
-+  exports.parseStringSync = function(str, a) {
-+    var options, parser;
-+    if (typeof a === 'object') {
-+      options = a;
-+    }
-+    parser = new exports.Parser(options);
-+    return parser.parseStringSync(str);
-+  };
-+
++  exports.parseStringSync = function (str, a) {
++		var options, parser;
++		if (typeof a === 'object') {
++			options = a;
++		}
++		parser = new exports.Parser(options);
++		return parser.parseStringSync(str);
++	};
++    
    exports.parseStringPromise = function(str, a) {
      var options, parser;
      if (typeof a === 'object') {

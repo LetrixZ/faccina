@@ -2,14 +2,14 @@
 
 ## Running
 
-To run the server you need to have [Bun](https://bun.sh/) installed.
+To run the server you need Node.js v22 and [pnpm](https://pnpm.io). You can install it with [nvm](https://github.com/nvm-sh/nvm)
 
 - Clone the project and enter the directory.
-- Install the dependencies by running `bun install`.
+- Install the dependencies by running `pnpm install`.
 - Check the [configuration](#configuration).
-- Run `bun run build` to build the website.
+- Run `pnpm build` to build the website.
 
-You can then start the server with `bun start` or you can use `bun cluster` to start multiple servers as a [cluster](https://bun.sh/guides/http/cluster).
+You can then start the server with `pnpm start`.
 
 ## Docker Compose
 

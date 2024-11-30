@@ -1,3 +1,5 @@
+import type { PathLike } from 'node:fs';
+import { access } from 'node:fs/promises';
 import type { Tag } from './metadata';
 
 export const readStream = async (stream: NodeJS.ReadableStream) => {
@@ -60,4 +62,15 @@ export const generateFilename = (title: string, tags?: Tag[]) => {
 		.replace('\u{FF1F}', '?')
 		.replace('\u{2044}', '/')
 		.replace('\u{A792}', ':');
+};
+
+export const sleep = (time: number) => new Promise((r) => setTimeout(r, time));
+
+export const exists = async (path: PathLike) => {
+	try {
+		await access(path);
+		return true;
+	} catch {
+		return false;
+	}
 };

@@ -1,5 +1,5 @@
-import { join } from 'node:path';
-import { sleep } from 'bun';
+import { basename, join } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import StreamZip from 'node-stream-zip';
@@ -9,7 +9,7 @@ import { match } from 'ts-pattern';
 import config, { Preset } from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
-import { leadingZeros, readStream } from '../shared/utils';
+import { exists, leadingZeros, readStream, sleep } from '../shared/utils';
 import { queryIdRanges } from './utilts';
 
 type GenerateImagesOptions = {
@@ -66,7 +66,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 			if (image.pageNumber === archive.thumbnail) {
 				const savePath = getPath(coverPreset);
 
-				if (!options.force && (await Bun.file(savePath).exists())) {
+				if (!options.force && (await exists(savePath))) {
 					skipped++;
 				} else {
 					images.push({
@@ -81,7 +81,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 
 			const savePath = getPath(thumbnailPreset);
 
-			if (!options.force && (await Bun.file(savePath).exists())) {
+			if (!options.force && (await exists(savePath))) {
 				skipped++;
 			} else {
 				images.push({
@@ -166,7 +166,8 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						.exhaustive();
 
 					const newImage = await pipeline.toBuffer();
-					await Bun.write(image.savePath, newImage);
+					await mkdir(basename(image.savePath), { recursive: true });
+					await writeFile(image.savePath, newImage);
 
 					generatedCount++;
 				} catch (error) {

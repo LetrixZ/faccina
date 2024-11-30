@@ -1,13 +1,15 @@
+import { Worker } from 'node:worker_threads';
 import type { Handle } from '@sveltejs/kit';
 import analyticsWorker from '$lib/analytics?raw';
 import { lucia } from '$lib/server/auth';
 import config from '~shared/config';
 
-const url = URL.createObjectURL(new Blob([analyticsWorker], { type: 'application/typescript' }));
-const worker = new Worker(url);
-
 export const handle: Handle = async ({ event, resolve }) => {
 	if (config.site.enableAnalytics) {
+		const url = URL.createObjectURL(
+			new Blob([analyticsWorker], { type: 'application/typescript' })
+		);
+		const worker = new Worker(url);
 		event.locals.analytics = worker;
 	}
 

@@ -6,6 +6,7 @@ import { match } from 'ts-pattern';
 import { z } from 'zod';
 import { upsertSources, upsertTags } from '../shared/archive';
 import db from '../shared/db';
+import { sleep } from '../shared/utils';
 import { jsonArrayFrom, now } from '../shared/db/helpers';
 import { generateFilename } from '../shared/utils';
 import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
@@ -47,7 +48,7 @@ export const scrape = async (
 
 const scrapeHenTag = async ({
 	idRanges,
-	sleep,
+	sleep: sleepTime,
 	interaction,
 	verbose,
 }: {
@@ -147,12 +148,12 @@ const scrapeHenTag = async ({
 				if (verbose) {
 					multibar.log(
 						chalk.gray(
-							`[HenTag] Rate limited - Sleeping for ${chalk.bold(`${sleep}ms before retrying`)}\n`
+							`[HenTag] Rate limited - Sleeping for ${chalk.bold(`${sleepTime}ms before retrying`)}\n`
 						)
 					);
 				}
 
-				await Bun.sleep(sleep);
+				await sleep(sleepTime);
 
 				retries++;
 				res = await fetch(`${henTagUrl}/${type}`, { method: 'POST', body: JSON.stringify(body) });
@@ -307,14 +308,14 @@ const scrapeHenTag = async ({
 
 		count++;
 
-		if (archives.length > 1 && i !== archives.length - 1 && sleep) {
-			multibar.log(chalk.gray(`--- Sleeping for ${sleep}ms ---\n`));
-			await Bun.sleep(sleep);
+		if (archives.length > 1 && i !== archives.length - 1 && sleepTime) {
+			multibar.log(chalk.gray(`--- Sleeping for ${sleepTime}ms ---\n`));
+			await sleep(sleepTime);
 		}
 	}
 
 	await db.destroy();
-	await Bun.sleep(250);
+	await sleep(250);
 
 	multibar.stop();
 };

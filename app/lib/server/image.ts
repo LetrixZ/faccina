@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
@@ -123,7 +125,8 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	const newImage = await pipeline.toBuffer();
 
 	try {
-		await Bun.write(args.savePath, newImage);
+		await mkdir(dirname(args.savePath), { recursive: true });
+		await writeFile(args.savePath, newImage);
 	} catch (err) {
 		console.error(
 			chalk.red(

@@ -1,11 +1,12 @@
-import { extname } from 'path';
+import { basename, extname } from 'path';
+import { readFile } from 'node:fs/promises';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
 import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
 import type { ArchiveMetadata } from '../../shared/metadata';
-import { readStream } from '../../shared/utils';
+import { exists, readStream } from '../../shared/utils';
 import anchira from './anchira';
 import booru from './booru';
 import ccdc06 from './ccdc06';
@@ -227,22 +228,24 @@ const metadataFormat = (filename: string) => {
 export const addExternalMetadata = async (path: string, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
-	const files = [
-		Bun.file(path.replace(/\.(cbz|zip)/, '.yaml')),
-		Bun.file(path.replace(/\.(cbz|zip)/, '.yml')),
-		Bun.file(path.replace(/\.(cbz|zip)/, '.json')),
-		Bun.file(path.replace(/\.(cbz|zip)/, '.booru.txt')),
-		Bun.file(path.replace(/\.(cbz|zip)/, '.xml')),
+	const paths = [
+		path.replace(/\.(cbz|zip)/, '.yaml'),
+		path.replace(/\.(cbz|zip)/, '.yml'),
+		path.replace(/\.(cbz|zip)/, '.json'),
+		path.replace(/\.(cbz|zip)/, '.booru.txt'),
+		path.replace(/\.(cbz|zip)/, '.xml'),
 	];
 
-	for (const file of files) {
-		if (!(await file.exists()) || !file.name) {
+	for (const metadataPath of paths) {
+		if (!metadataPath.length || !(await exists(metadataPath))) {
 			continue;
 		}
 
-		const content = await file.text();
+		const filename = basename(metadataPath);
 
-		return handleMetadataFormat(content, file.name, metadataFormat(file.name), archive);
+		const content = await readFile(metadataPath, 'utf8');
+
+		return handleMetadataFormat(content, filename, metadataFormat(filename), archive);
 	}
 
 	throw new Error('No external metadata file found');

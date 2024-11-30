@@ -1,5 +1,5 @@
 import { Kysely, sql } from 'kysely';
-import config from '../shared/config';
+import config from '../../config';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {

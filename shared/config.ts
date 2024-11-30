@@ -1,6 +1,8 @@
+import { readFile } from 'node:fs/promises';
 import camelcaseKeys from 'camelcase-keys';
 import { parseTOML } from 'confbox';
 import { z } from 'zod';
+import { exists } from './utils';
 
 const camelize = <T extends Record<string, unknown> | ReadonlyArray<Record<string, unknown>>>(
 	val: T
@@ -306,13 +308,12 @@ export default await (async () => {
 	}
 
 	const configFile = process.env.CONFIG_FILE ?? 'config.toml';
-	const file = Bun.file(configFile);
 
-	if (!(await file.exists())) {
+	if (!(await exists(configFile))) {
 		throw new Error('No configuration file found.');
 	}
 
-	const content = await file.text();
+	const content = await readFile(configFile, 'utf8');
 
 	return configSchema.parse(parseTOML(content));
 })();

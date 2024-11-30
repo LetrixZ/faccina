@@ -1,6 +1,7 @@
 import 'svelte/elements';
 import 'unplugin-icons/types/svelte';
 
+import type { Worker } from 'node:worker_threads';
 import type { Message } from '$lib/types';
 
 export interface AnalyticsWorker extends Worker {

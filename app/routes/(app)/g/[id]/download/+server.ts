@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
-import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import contentDisposition from 'content-disposition';
-import { getGallery } from '$lib/server/db/queries';
+import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import { generateFilename, getMetadata } from '$lib/utils';
+import { getGallery } from '$lib/server/db/queries';
 import config from '~shared/config';
 
 export const GET = async ({ params, locals, fetch, setHeaders }) => {
@@ -27,44 +27,6 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 		'Content-Disposition': contentDisposition(generateFilename(gallery) + '.cbz'),
 	});
 
-	const { readable, writable } = new TransformStream();
-	const writer = writable.getWriter();
-
-	const zip = new Zip();
-
-	zip.ondata = (err, data, final) => {
-		if (err) {
-			writer.abort(err);
-		} else {
-			writer.write(data);
-
-			if (final) {
-				writer.close();
-			}
-		}
-	};
-
-	const metadataFile = new ZipPassThrough('info.json');
-	const encodedMetadata = strToU8(
-		JSON.stringify(getMetadata(gallery, config.site.url ?? ''), null, 2)
-	);
-	zip.add(metadataFile);
-	metadataFile.push(encodedMetadata, true);
-
-	(async () => {
-		for (const image of gallery.images) {
-			await fetch(`/image/${gallery.hash}/${image.pageNumber}`)
-				.then((res) => res.arrayBuffer())
-				.then((buffer) => {
-					const imageFile = new ZipPassThrough(image.filename);
-					zip.add(imageFile);
-					imageFile.push(new Uint8Array(buffer), true);
-				});
-		}
-
-		zip.end();
-	})();
-
 	locals.analytics?.postMessage({
 		action: 'gallery_download_server',
 		payload: {
@@ -73,5 +35,48 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 		},
 	});
 
-	return new Response(readable);
+	const zip = new Zip();
+
+	return new Response(
+		new ReadableStream({
+			async start(controller) {
+				try {
+					zip.ondata = (err, data, final) => {
+						if (err) {
+							controller.error(err);
+						} else {
+							controller.enqueue(data);
+
+							if (final) {
+								controller.close();
+							}
+						}
+					};
+
+					const metadataFile = new ZipPassThrough('info.json');
+					const encodedMetadata = strToU8(
+						JSON.stringify(getMetadata(gallery, config.site.url ?? ''), null, 2)
+					);
+					zip.add(metadataFile);
+					metadataFile.push(encodedMetadata, true);
+
+					for (const image of gallery.images) {
+						const res = await fetch(`/image/${gallery.hash}/${image.pageNumber}`);
+						const buffer = await res.arrayBuffer();
+
+						const imageFile = new ZipPassThrough(image.filename);
+						zip.add(imageFile);
+						imageFile.push(new Uint8Array(buffer), true);
+					}
+
+					zip.end();
+				} catch (error) {
+					controller.error(error);
+				}
+			},
+			cancel() {
+				zip.terminate();
+			},
+		})
+	);
 };

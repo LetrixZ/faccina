@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
+import argon2 from 'argon2';
 import type { Actions, PageServerLoad } from './$types';
 import { resetSchema } from '$lib/schemas';
 import config from '~shared/config';
@@ -57,8 +58,7 @@ export const actions: Actions = {
 
 		await db.updateTable('userCodes').set({ consumedAt: now() }).where('code', '=', code).execute();
 
-		const hash = await Bun.password.hash(password, {
-			algorithm: 'argon2id',
+		const hash = await argon2.hash(password, {
 			memoryCost: 19456,
 			timeCost: 2,
 		});

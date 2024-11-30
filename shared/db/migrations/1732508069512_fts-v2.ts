@@ -1,20 +1,17 @@
 import { Kysely, sql } from 'kysely';
-import config from '../shared/config';
+import config from '../../config';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
-		await db.schema.dropTable('archive_fts').execute();
+		await sql`CREATE COLLATION numeric (provider = icu, locale = 'en@colNumeric=yes');`.execute(db);
+		await sql`ALTER TABLE "archives" ALTER COLUMN title TYPE VARCHAR(1024) COLLATE NUMERIC;`.execute(
+			db
+		);
 
-		await sql`
-		CREATE TABLE archive_fts (
-			archive_id INT PRIMARY KEY REFERENCES archives(id) ON DELETE CASCADE,
-			title TEXT NOT NULL,
-			title_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', title), 'A')) STORED,
-			description TEXT,
-			description_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', description), 'D')) STORED,
-			tags TEXT NOT NULL,
-			tags_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', tags), 'D')) STORED
-		);`.execute(db);
+		await sql`ALTER TABLE archive_fts DROP COLUMN tags_tsv;`.execute(db);
+		await sql`ALTER TABLE archive_fts ADD COLUMN tags_tsv TSVECTOR GENERATED ALWAYS AS (SETWEIGHT(TO_TSVECTOR('english', tags), 'B')) STORED;`.execute(
+			db
+		);
 
 		await sql`
     CREATE OR REPLACE FUNCTION update_archive_fts()
@@ -29,7 +26,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 				VALUES (
 					NEW.id,
 					(SELECT archives.title FROM archives WHERE id = NEW.id),
-					(SELECT archives.description FROM archives WHERE id = NEW.id),
+					(COALESCE((SELECT archives.description FROM archives WHERE id = NEW.id), '')),
 					(COALESCE((SELECT string_agg(tags.name, ' ') FROM tags INNER JOIN archive_tags r ON r.tag_id = tags.id  WHERE r.archive_id = NEW.id), ''))
 				)
 				ON CONFLICT (archive_id) DO UPDATE SET
@@ -40,6 +37,8 @@ export async function up(db: Kysely<any>): Promise<void> {
 			END;
 			$$ LANGUAGE plpgsql;
     `.execute(db);
+
+		await sql`UPDATE archives SET description = description`.execute(db);
 
 		await sql`
     CREATE OR REPLACE FUNCTION update_archive_fts_rela()
@@ -54,7 +53,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 				VALUES (
 					NEW.archive_id,
 					(SELECT archives.title FROM archives WHERE id = NEW.archive_id),
-					(SELECT archives.description FROM archives WHERE id = NEW.archive_id),
+					(COALESCE((SELECT archives.description FROM archives WHERE id = NEW.archive_id), '')),
 					(COALESCE((SELECT string_agg(tags.name, ' ') FROM tags INNER JOIN archive_tags r ON r.tag_id = tags.id  WHERE r.archive_id = NEW.archive_id), ''))
 				)
 				ON CONFLICT (archive_id) DO UPDATE SET
@@ -67,7 +66,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       `.execute(db);
 
 		await sql`
-    CREATE TRIGGER trigger_update_archive_fts_on_archive_tags
+    CREATE OR REPLACE TRIGGER trigger_update_archive_fts_on_archive_tags
     AFTER INSERT OR UPDATE ON archive_tags
     FOR EACH ROW
     EXECUTE FUNCTION update_archive_fts_rela();

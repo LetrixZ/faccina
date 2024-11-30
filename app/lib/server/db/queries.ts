@@ -222,6 +222,8 @@ export const search = async (
 	params: SearchParams,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
+	const start = performance.now();
+
 	const { tagMatches, titleMatch, pagesMatch, languageMatch, urlMatch, sourceMatch } = parseQuery(
 		params.query
 	);
@@ -483,6 +485,8 @@ export const search = async (
 	let allIds = filteredResults.map(({ id }) => id);
 
 	if (!allIds.length) {
+		console.info(`Query "${params.query}" took ${(performance.now() - start).toFixed(2)}ms`);
+
 		return {
 			ids: [],
 			total: allIds.length,
@@ -492,6 +496,8 @@ export const search = async (
 	if (sort === 'random' && params.seed) {
 		allIds = shuffle(allIds, params.seed);
 	}
+
+	console.info(`Query "${params.query}" took ${(performance.now() - start).toFixed(2)}ms`);
 
 	return {
 		ids: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),

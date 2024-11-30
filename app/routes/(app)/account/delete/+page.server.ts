@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import argon2 from 'argon2';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { userDeleteSchema } from '$lib/schemas';
@@ -23,7 +24,7 @@ export const actions = {
 			.where('id', '=', user.id)
 			.executeTakeFirstOrThrow();
 
-		const validPassword = await Bun.password.verify(currentPassword, passwordHash, 'argon2id');
+		const validPassword = await argon2.verify(passwordHash, currentPassword);
 
 		if (!validPassword) {
 			return setError(form, 'currentPassword', 'The current password is invalid.');

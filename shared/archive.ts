@@ -1,5 +1,5 @@
 import { rm } from 'node:fs/promises';
-import { Glob } from 'bun';
+import { glob } from 'glob';
 import chalk from 'chalk';
 import { sql } from 'kysely';
 import db from '../shared/db';
@@ -123,7 +123,7 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 			(acc, image) => [
 				...acc,
 				...Array.from(
-					new Glob(`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`).scanSync({
+					glob.sync(`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`, {
 						cwd: config.directories.images,
 						absolute: true,
 					})

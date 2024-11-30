@@ -1,6 +1,7 @@
 import { randomBytes } from 'crypto';
 import chalk from 'chalk';
 import { generateIdFromEntropySize } from 'lucia';
+import argon2 from 'argon2';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import { recoveryCode, sendRecoveryEmail } from '../shared/users';
@@ -16,14 +17,14 @@ export const generateLoginLink = async (username: string) => {
 
 	if (!user) {
 		if (config.site.adminUsers.includes(username)) {
-			console.info(chalk.cyan(`Created new user ${chalk.bold(username)}`));
+			console.info(chalk.cyan(`Created new admin user ${chalk.bold(username)}`));
 
 			user = await db
 				.insertInto('users')
 				.values({
 					id: generateIdFromEntropySize(10),
 					username,
-					passwordHash: Bun.password.hashSync(randomBytes(24).toString('hex')),
+					passwordHash: await argon2.hash(randomBytes(24).toString('hex')),
 				})
 				.returning('id')
 				.executeTakeFirstOrThrow();

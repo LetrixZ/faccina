@@ -1,0 +1,16 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index cfae85a27f3626e44fea1fb9e7fe4a09026fdffd..6a2f4c7d4d28549c6c52137e0514f73ba9988a18 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -1,2 +1,2 @@
+-export { ImageResponse } from "./api.js";
+-export type { ImageResponseOptions } from "./types.js";
++export { ImageResponse, og } from './api.js';
++export type { ImageResponseOptions } from './types.js';
+diff --git a/dist/index.js b/dist/index.js
+index 4602ace79499054465f1c9ad3e1aefec579ac855..229487311cd8f7c345e122ade0d3daac97374d11 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1 +1 @@
+-export { ImageResponse } from "./api.js";
++export { ImageResponse, og } from './api.js';

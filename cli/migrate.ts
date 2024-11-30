@@ -1,10 +1,11 @@
-import { cp, exists, mkdir } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { Glob } from 'bun';
 import chalk from 'chalk';
-import pg, { Client } from 'pg';
+import { glob } from 'glob';
+import pg from 'pg';
 import { z } from 'zod';
 import config from '../shared/config';
+import { exists } from '../shared/utils';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -25,7 +26,7 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 		throw new Error('Specified data directory does not exists or is not a directory');
 	}
 
-	const client = new Client(dbUrl);
+	const client = new pg.Client(dbUrl);
 
 	await client.connect();
 
@@ -60,8 +61,7 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 		await mkdir(join(newDirname, 'cover'), { recursive: true });
 		await mkdir(join(newDirname, 'thumbnail'), { recursive: true });
 
-		const glob = new Glob(`*.${format}`);
-		const files = Array.from(glob.scanSync({ cwd: dirname, absolute: true }));
+		const files = Array.from(glob.sync(`*.${format}`, { cwd: dirname, absolute: true }));
 
 		for (const filepath of files.filter((filename) => filename.includes('.c.'))) {
 			await cp(filepath, join(newDirname, 'cover', basename(filepath.replace('.c', ''))));
@@ -97,7 +97,7 @@ export const migrateDatabase = async (dbUrl: string) => {
 
 	pg.types.setTypeParser(pg.types.builtins.INT8, (value) => parseInt(value));
 
-	const client = new Client(dbUrl);
+	const client = new pg.Client(dbUrl);
 
 	await client.connect();
 
@@ -137,7 +137,7 @@ export const migrateDatabase = async (dbUrl: string) => {
 
 	if (count !== rows.length) {
 		const timestamp = new Date().getTime();
-		Bun.write(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
+		await writeFile(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
 
 		console.info(
 			`Due to duplicated paths, only ${chalk.bold(count)} archives will be migrated.\nA list containing ${chalk.bold(lostArchives.length)} will be saved at ${chalk.bold(`lost_${timestamp}.json`)}.`

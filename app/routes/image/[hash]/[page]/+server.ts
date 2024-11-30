@@ -1,15 +1,16 @@
+import { readFile } from 'node:fs/promises';
 import { extname, join } from 'path';
+import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
-import { error } from '@sveltejs/kit';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { leadingZeros, readStream } from '~shared/utils';
-import db from '~shared/db';
 import config from '~shared/config';
+import db from '~shared/db';
+import { exists, leadingZeros, readStream } from '~shared/utils';
 import { calculateDimensions, encodeImage } from '$lib/server/image';
 
 type ImageArchive = {
@@ -24,7 +25,7 @@ type ImageArchive = {
 };
 
 const originalImage = async (archive: ImageArchive): Promise<[Buffer, string]> => {
-	if (!(await Bun.file(archive.path).exists())) {
+	if (!(await exists(archive.path))) {
 		console.error(
 			chalk.red(
 				`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - ZIP archive not found in path ${chalk.bold(archive.path)}\n`
@@ -81,10 +82,8 @@ const resampledImage = async (
 		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);
 
-	const file = Bun.file(imagePath);
-
-	if (await file.exists()) {
-		return [await file.bytes(), extname(imagePath)];
+	if (await exists(imagePath)) {
+		return [await readFile(imagePath), extname(imagePath)];
 	}
 
 	try {
