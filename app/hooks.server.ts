@@ -1,18 +1,13 @@
-import { Worker } from 'node:worker_threads';
 import type { Handle } from '@sveltejs/kit';
-import analyticsWorker from '$lib/analytics?raw';
+import chalk from 'chalk';
 import { lucia } from '$lib/server/auth';
 import config from '~shared/config';
 
-export const handle: Handle = async ({ event, resolve }) => {
-	if (config.site.enableAnalytics) {
-		const url = URL.createObjectURL(
-			new Blob([analyticsWorker], { type: 'application/typescript' })
-		);
-		const worker = new Worker(url);
-		event.locals.analytics = worker;
-	}
+if (config.site.enableAnalytics) {
+	console.warn(chalk.yellow('Analytics worker is not supported in Node.js'));
+}
 
+export const handle: Handle = async ({ event, resolve }) => {
 	const sessionId = event.cookies.get(lucia().sessionCookieName);
 
 	if (!sessionId) {
