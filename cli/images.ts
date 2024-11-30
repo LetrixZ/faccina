@@ -1,5 +1,5 @@
-import { basename, join } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import StreamZip from 'node-stream-zip';
@@ -166,7 +166,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						.exhaustive();
 
 					const newImage = await pipeline.toBuffer();
-					await mkdir(basename(image.savePath), { recursive: true });
+					await mkdir(dirname(image.savePath), { recursive: true });
 					await writeFile(image.savePath, newImage);
 
 					generatedCount++;
