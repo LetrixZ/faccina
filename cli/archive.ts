@@ -74,7 +74,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 			const info = await stat(path).catch(() => null);
 
 			if (info?.isDirectory()) {
-				// const glob = new Glob();
 				indexPaths.push(
 					...glob.globSync(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}', {
 						cwd: path,

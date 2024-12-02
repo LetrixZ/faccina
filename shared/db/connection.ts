@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client';
+import { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
 import { match } from 'ts-pattern';
 import config from '../config';
@@ -10,16 +10,14 @@ const connection = match(config.database)
 		return new pg.Pool(data);
 	})
 	.with({ vendor: 'sqlite' }, (data) => {
-		const db = createClient({ url: `file:${data.path}` });
-		db.execute('PRAGMA case_sensitive_like = off');
+		const db = new DatabaseSync(data.path);
+		db.exec('PRAGMA case_sensitive_like = off');
 
 		if (data.applyOptimizations) {
-			db.executeMultiple(`
-				PRAGMA journal_mode = wal;
-				PRAGMA synchronous = normal;
-				PRAGMA busy_timeout = 5000;
-				PRAGMA foreign_keys = true;
-			`);
+			db.exec('PRAGMA journal_mode = wal;');
+			db.exec('PRAGMA synchronous = normal;');
+			db.exec('PRAGMA busy_timeout = 5000;');
+			db.exec('PRAGMA foreign_keys = true;');
 		}
 
 		return db;

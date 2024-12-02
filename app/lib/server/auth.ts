@@ -1,13 +1,13 @@
-import type { Client } from '@libsql/client';
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
-import { LibSQLAdapter } from '@lucia-auth/adapter-sqlite';
 import { Lucia } from 'lucia';
+import type { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
 import { match } from 'ts-pattern';
 import { dev } from '$app/environment';
 import config from '~shared/config';
 import { databaseType } from '~shared/db';
 import connection from '~shared/db/connection';
+import { NodeSQLiteAdapter } from '~shared/db/node-adapter';
 
 let _lucia: Lucia<
 	Record<never, never>,
@@ -31,7 +31,7 @@ export const lucia = (): Lucia => {
 			.with(
 				'sqlite',
 				() =>
-					new LibSQLAdapter(connection as Client, {
+					new NodeSQLiteAdapter(connection as DatabaseSync, {
 						user: 'users',
 						session: 'user_sessions',
 					})
