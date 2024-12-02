@@ -64,6 +64,13 @@ const siteSchema = z
 	})
 	.transform(camelize);
 
+const serverSchema = z
+	.object({
+		logging: z.union([z.boolean(), z.string()]).default(false),
+		auto_unpack: z.boolean().default(false),
+	})
+	.transform(camelize);
+
 const directoriesSchema = z.object({
 	content: z.string(),
 	images: z.string(),
@@ -278,6 +285,7 @@ const mailerSchema = z.object({
 
 const configSchema = z.object({
 	site: siteSchema.default({}),
+	server: serverSchema.default({}),
 	directories: directoriesSchema,
 	database: databaseSchema,
 	metadata: metadataSchema.default({}),

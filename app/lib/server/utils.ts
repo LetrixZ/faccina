@@ -1,4 +1,8 @@
+import { appendFile } from 'fs/promises';
+import chalk from 'chalk';
+import dayjs from 'dayjs';
 import { omit } from 'ramda';
+import stripAnsi from 'strip-ansi';
 import { z } from 'zod';
 import type { GalleryListItem, Tag } from '../types';
 import config from '~shared/config';
@@ -90,3 +94,16 @@ export const parseSearchParams = (
 			order: val.order ?? defaults?.order ?? config.site.defaultOrder,
 		}))
 		.parse(Object.fromEntries(searchParams));
+
+export const log = (message: string) => {
+	if (!config.server.logging) {
+		return;
+	}
+
+	message = `${message} - ${chalk.cyan(`${dayjs().format('YYYY-MM-DD HH:mm:ss')}`)}`;
+	console.debug(message);
+
+	if (typeof config.server.logging === 'string') {
+		appendFile(config.server.logging, stripAnsi(message) + '\n');
+	}
+};

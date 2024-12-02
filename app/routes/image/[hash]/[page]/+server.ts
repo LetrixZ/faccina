@@ -1,59 +1,69 @@
 import { extname, join } from 'path';
+import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
-import { error } from '@sveltejs/kit';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { leadingZeros, readStream } from '~shared/utils';
-import db from '~shared/db';
 import config from '~shared/config';
+import db from '~shared/db';
+import { leadingZeros } from '~shared/utils';
+import type { ImageArchive } from '$lib/types';
 import { calculateDimensions, encodeImage } from '$lib/server/image';
 
-type ImageArchive = {
-	id: number;
-	hash: string;
-	path: string;
-	pages: number;
-	filename: string;
-	pageNumber: number;
-	width: number | null;
-	height: number | null;
-};
+const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Array, string]> => {
+	const imagePath = join(
+		config.directories.images,
+		archive.hash,
+		`${leadingZeros(archive.pageNumber, archive.pages)}${extname(archive.filename)}`
+	);
 
-const originalImage = async (archive: ImageArchive): Promise<[Buffer, string]> => {
-	if (!(await Bun.file(archive.path).exists())) {
-		console.error(
-			chalk.red(
-				`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - ZIP archive not found in path ${chalk.bold(archive.path)}\n`
-			)
-		);
+	let data: Buffer | Uint8Array;
+	let extension: string;
 
-		error(404, {
-			message: 'Archive file not found',
-			status: 404,
-		});
-	}
+	try {
+		data = await Bun.file(imagePath).bytes();
+		extension = extname(imagePath);
+	} catch {
+		if (!(await Bun.file(archive.path).exists())) {
+			console.error(
+				chalk.red(
+					`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - ZIP archive not found in path ${chalk.bold(archive.path)}`
+				)
+			);
 
-	const zip = new StreamZip.async({ file: archive.path });
-	const stream = await zip.stream(archive.filename);
-	const buffer = await readStream(stream);
-
-	if (!archive.width || !archive.height) {
-		const { width, height } = await sharp(buffer).metadata();
-
-		if (width && height) {
-			calculateDimensions({
-				archive,
-				page: archive.pageNumber,
-				dimensions: { width, height },
+			error(404, {
+				message: 'Archive file not found',
+				status: 404,
 			});
+		}
+
+		const zip = new StreamZip.async({ file: archive.path });
+		data = await zip.entryData(archive.filename);
+		extension = extname(archive.filename);
+
+		if (config.server.autoUnpack) {
+			Bun.write(imagePath, data);
 		}
 	}
 
-	return [buffer, extname(archive.filename)];
+	if (!archive.width || !archive.height) {
+		sharp(data)
+			.metadata()
+			.then(({ width, height }) => {
+				if (width && height) {
+					calculateDimensions({
+						archive,
+						page: archive.pageNumber,
+						dimensions: { width, height },
+					});
+				}
+			});
+	}
+
+	return [data, extension];
 };
 
 const resampledImage = async (
@@ -99,7 +109,7 @@ const resampledImage = async (
 	} catch (err) {
 		console.error(
 			chalk.red(
-				`[${new Date().toISOString()}] ${chalk.blue`resampledImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - Failed to encode image\n`
+				`[${new Date().toISOString()}] ${chalk.blue`resampledImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - Failed to encode image`
 			),
 			err
 		);
@@ -140,13 +150,14 @@ export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
 
 	const imageType = url.searchParams.get('type');
 
-	const [image, extension] = await (() => {
-		if (imageType) {
-			return resampledImage(archive, imageType);
-		} else {
-			return originalImage(archive);
-		}
-	})();
+	let image: Buffer | Uint8Array;
+	let extension: string;
+
+	if (imageType) {
+		[image, extension] = await resampledImage(archive, imageType);
+	} else {
+		[image, extension] = await originalImage(archive);
+	}
 
 	let mimetype = filetypemime(image)?.[0];
 
@@ -154,23 +165,25 @@ export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
 		mimetype = `image/${extension.replace('.', '')}`;
 	}
 
-	setHeaders({
-		'Content-Type': mimetype,
-	});
+	setHeaders({ 'Content-Type': mimetype });
 
 	if (config.image.caching) {
-		if (imageType === 'cover') {
-			setHeaders({
-				'Cache-Control': `public, max-age=${config.image.caching.cover}, immutable`,
-			});
-		} else if (imageType === 'thumbnail') {
-			setHeaders({
-				'Cache-Control': `public, max-age=${config.image.caching.thumbnail}, immutable`,
-			});
-		} else if (!imageType) {
-			setHeaders({
-				'Cache-Control': `public, max-age=${config.image.caching.page}, immutable`,
-			});
+		switch (imageType) {
+			case 'cover':
+				setHeaders({
+					'Cache-Control': `public, max-age=${config.image.caching.cover}, immutable`,
+				});
+				break;
+			case 'thumbnail':
+				setHeaders({
+					'Cache-Control': `public, max-age=${config.image.caching.thumbnail}, immutable`,
+				});
+				break;
+			default:
+				setHeaders({
+					'Cache-Control': `public, max-age=${config.image.caching.page}, immutable`,
+				});
+				break;
 		}
 	}
 

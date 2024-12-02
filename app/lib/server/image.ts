@@ -1,13 +1,15 @@
+import { extname, join } from 'path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import { readStream } from '~shared/utils';
-import db from '~shared/db';
+import type { ImageArchive } from '$lib/types';
 import config, { type Preset } from '~shared/config';
+import db from '~shared/db';
+import { leadingZeros } from '~shared/utils';
 
 export type ImageEncodingArgs = {
-	archive: { id: number; path: string };
+	archive: ImageArchive;
 	page: number;
 	savePath: string;
 	preset: Preset;
@@ -80,11 +82,26 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 		throw new Error('Image not found');
 	}
 
-	const zip = new StreamZip.async({ file: args.archive.path });
-	const stream = await zip.stream(image.filename);
-	const buffer = await readStream(stream);
+	let data: Buffer | Uint8Array;
 
-	let pipeline = sharp(buffer);
+	const originalImagePath = join(
+		config.directories.images,
+		args.archive.hash,
+		`${leadingZeros(args.archive.pageNumber, args.archive.pages)}${extname(args.archive.filename)}`
+	);
+
+	try {
+		data = await Bun.file(originalImagePath).bytes();
+	} catch {
+		const zip = new StreamZip.async({ file: args.archive.path });
+		data = await zip.entryData(image.filename);
+
+		if (config.server.autoUnpack) {
+			Bun.write(originalImagePath, data);
+		}
+	}
+
+	let pipeline = sharp(data);
 
 	const { width, height } = await pipeline.metadata();
 

@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { exists, rename, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { parse } from 'path';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
@@ -9,11 +9,11 @@ import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
 import slugify from 'slugify';
-import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
-import { readStream } from '../shared/utils';
+import type { ArchiveMetadata, Image } from '../shared/metadata';
+import { leadingZeros, readStream } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
@@ -32,6 +32,7 @@ interface IndexOptions {
 	fromPath?: string;
 	force?: boolean;
 	reindex?: boolean;
+	unpack?: boolean;
 	verbose?: boolean;
 }
 
@@ -174,7 +175,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 		const hasher = new Bun.CryptoHasher('sha256');
 		hasher.update(buffer);
-
 		const hash = hasher.digest('hex').substring(0, 16);
 
 		const existingHash = await db
@@ -370,7 +370,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					if (opts.verbose) {
 						multibar.log(
 							chalk.bgBlue(
-								`Moving thumbnails from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)}\n`
+								`Moving generated images from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)}\n`
 							)
 						);
 					}
@@ -380,7 +380,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					} catch (error) {
 						multibar.log(
 							chalk.red(
-								`Failed to move thumbnails from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)} - ${(error as Error).message}\n`
+								`Failed to move generated images from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)} - ${(error as Error).message}\n`
 							)
 						);
 					}
@@ -420,6 +420,54 @@ export const indexArchives = async (opts: IndexOptions) => {
 			}
 
 			await upsertImages(id, images, hash);
+
+			if (opts.unpack || config.server.autoUnpack) {
+				let unpacked = 0;
+				let skipped = 0;
+
+				if (opts.verbose) {
+					multibar.log(chalk.bgBlue(`Unpacking ${images.length} images for ${chalk.bold(path)}\n`));
+				}
+
+				for (const image of images) {
+					const imagePath = join(
+						config.directories.images,
+						hash,
+						`${leadingZeros(image.pageNumber, images.length)}${extname(image.filename)}`
+					);
+
+					let data: Buffer<ArrayBufferLike>;
+
+					if (await exists(imagePath)) {
+						data = await zip.entryData(image.filename);
+
+						const hasher = new Bun.CryptoHasher('sha256');
+						const newImageHash = hasher.update(data).digest('hex').substring(0, 16);
+
+						const buffer = await readStream(createReadStream(imagePath));
+						const oldImageHash = hasher.update(buffer).digest('hex').substring(0, 16);
+
+						if (newImageHash === oldImageHash) {
+							if (opts.verbose) {
+								multibar.log(chalk.yellow(`${chalk.bold(imagePath)} already exists\n`));
+							}
+
+							skipped++;
+							continue;
+						}
+					} else {
+						data = await zip.entryData(image.filename);
+					}
+
+					await Bun.write(imagePath, data);
+
+					unpacked++;
+				}
+
+				if (opts.verbose) {
+					multibar.log(chalk.blue(`Unpacked ${unpacked} and skipped ${skipped} images\n`));
+				}
+			}
 
 			indexed++;
 		} catch (error) {
