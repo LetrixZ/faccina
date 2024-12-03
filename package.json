@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-alpha.43",
+	"version": "2.0.0-alpha.44",
 	"private": true,
 	"scripts": {
 		"dev": "bunx --bun vite dev",

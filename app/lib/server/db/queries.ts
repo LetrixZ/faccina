@@ -229,7 +229,9 @@ export const search = async (
 	const sortQuery = (sort: Sort, order: Order) => {
 		switch (sort) {
 			case 'released_at':
-				return `archives.released_at ${order}`;
+				return config.database.vendor === 'postgresql'
+					? sql`archives.released_at ${sql.raw(order)} nulls last`
+					: `archives.released_at ${order}`;
 			case 'title':
 				return config.database.vendor === 'postgresql'
 					? `archives.title ${order}`
