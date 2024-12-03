@@ -1,20 +1,20 @@
-import { createReadStream } from 'node:fs';
-import { join } from 'node:path';
-import { parse } from 'path';
 import { createHash } from 'node:crypto';
-import { rename, stat } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { rename, stat, writeFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
+import { parse } from 'path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
+import { glob } from 'glob';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
 import slugify from 'slugify';
-import { glob } from 'glob';
-import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
-import { exists, readStream, sleep } from '../shared/utils';
+import type { ArchiveMetadata, Image } from '../shared/metadata';
+import { exists, leadingZeros, readStream, sleep } from '../shared/utils';
 import {
 	addEmbeddedMetadata,
 	addExternalMetadata,
@@ -33,6 +33,7 @@ interface IndexOptions {
 	fromPath?: string;
 	force?: boolean;
 	reindex?: boolean;
+	unpack?: boolean;
 	verbose?: boolean;
 }
 
@@ -370,7 +371,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					if (opts.verbose) {
 						multibar.log(
 							chalk.bgBlue(
-								`Moving thumbnails from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)}\n`
+								`Moving generated images from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)}\n`
 							)
 						);
 					}
@@ -380,7 +381,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					} catch (error) {
 						multibar.log(
 							chalk.red(
-								`Failed to move thumbnails from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)} - ${(error as Error).message}\n`
+								`Failed to move generated images from ${chalk.bold(sourcePath)} to ${chalk.bold(destinationPath)} - ${(error as Error).message}\n`
 							)
 						);
 					}
@@ -420,6 +421,53 @@ export const indexArchives = async (opts: IndexOptions) => {
 			}
 
 			await upsertImages(id, images, hash);
+
+			if (opts.unpack || config.server.autoUnpack) {
+				let unpacked = 0;
+				let skipped = 0;
+
+				if (opts.verbose) {
+					multibar.log(chalk.bgBlue(`Unpacking ${images.length} images for ${chalk.bold(path)}\n`));
+				}
+
+				for (const image of images) {
+					const imagePath = join(
+						config.directories.images,
+						hash,
+						`${leadingZeros(image.pageNumber, images.length)}${extname(image.filename)}`
+					);
+
+					let data: Buffer;
+
+					if (await exists(imagePath)) {
+						data = await zip.entryData(image.filename);
+
+						const newImageHash = createHash('sha256').update(data).digest('hex').substring(0, 16);
+
+						const buffer = await readStream(createReadStream(imagePath));
+						const oldImageHash = createHash('sha256').update(buffer).digest('hex').substring(0, 16);
+
+						if (newImageHash === oldImageHash) {
+							if (opts.verbose) {
+								multibar.log(chalk.yellow(`${chalk.bold(imagePath)} already exists\n`));
+							}
+
+							skipped++;
+							continue;
+						}
+					} else {
+						data = await zip.entryData(image.filename);
+					}
+
+					writeFile(imagePath, data);
+
+					unpacked++;
+				}
+
+				if (opts.verbose) {
+					multibar.log(chalk.blue(`Unpacked ${unpacked} and skipped ${skipped} images\n`));
+				}
+			}
 
 			indexed++;
 		} catch (error) {

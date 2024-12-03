@@ -284,3 +284,14 @@ export const readStatSchema = z.object({
 export type ReadState = z.infer<typeof readStatSchema>;
 
 export type ListPageType = 'main' | 'favorites' | 'collection';
+
+export type ImageArchive = {
+	id: number;
+	hash: string;
+	path: string;
+	pages: number;
+	filename: string;
+	pageNumber: number;
+	width: number | null;
+	height: number | null;
+};

@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-alpha.42",
+	"version": "2.0.0-alpha.43",
 	"private": true,
 	"scripts": {
 		"dev": "NODE_OPTIONS='--experimental-sqlite' vite dev",
@@ -111,6 +111,7 @@
 		"slugify": "^1.6.6",
 		"streamsaver": "^2.0.6",
 		"string-pixel-width": "^1.11.0",
+		"strip-ansi": "^7.1.0",
 		"svelte-dnd-action": "^0.9.52",
 		"svelte-meta-tags": "^3.1.4",
 		"svelte-sonner": "^0.3.28",

@@ -13,6 +13,7 @@ program
 	.option('-r --recursive', 'Navigate given paths recursively.')
 	.option('-f --force', 'Do not check if the archive is alredy indexed.')
 	.option('--reindex', 'Check if the archive is already indexed.')
+	.option('--unpack', 'Unpack archives in the images directory.')
 	.option('-v --verbose', 'Print more logs.')
 	.description('Index archives to the database.')
 	.action(
@@ -23,6 +24,7 @@ program
 			recursive?: boolean;
 			force?: boolean;
 			reindex?: boolean;
+			unpack?: boolean;
 			verbose?: boolean;
 		}) =>
 			import('./archive').then((m) =>
