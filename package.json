@@ -3,16 +3,16 @@
 	"version": "2.0.0-alpha.43",
 	"private": true,
 	"scripts": {
-		"dev": "NODE_OPTIONS='--experimental-sqlite' vite dev",
-		"build": "NODE_OPTIONS='--experimental-sqlite' vite build",
-		"preview": "NODE_OPTIONS='--experimental-sqlite' vite preview",
-		"start": "NODE_OPTIONS='--experimental-sqlite' node ./build",
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"start": "node ./build",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"cli": "NODE_OPTIONS='--experimental-sqlite' tsx ./cli/index.ts",
-		"kysely": "NODE_OPTIONS='--experimental-sqlite' kysely"
+		"cli": "tsx ./cli/index.ts",
+		"kysely": "kysely"
 	},
 	"devDependencies": {
 		"@iconify/json": "^2.2.262",

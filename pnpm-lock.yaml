@@ -178,6 +178,9 @@ importers:
       string-pixel-width:
         specifier: ^1.11.0
         version: 1.11.0
+      strip-ansi:
+        specifier: ^7.1.0
+        version: 7.1.0
       svelte-dnd-action:
         specifier: ^0.9.52
         version: 0.9.52(svelte@4.2.19)
