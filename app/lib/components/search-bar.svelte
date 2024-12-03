@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { Search } from 'lucide-svelte';
 	import type { Tag } from '../types';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
-	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
 
 	export let tags: Tag[];
 	export let searchPlaceholder = '';
@@ -230,7 +230,7 @@
 				variant="ghost"
 			>
 				<span class="sr-only">Search</span>
-				<PhMagnifyingGlass />
+				<Search class="size-5" />
 			</Button>
 		</form>
 

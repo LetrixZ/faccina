@@ -1,6 +1,16 @@
 <script lang="ts">
 	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import { Bookmark, Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
+	import {
+		Bookmark,
+		Eye,
+		EyeOff,
+		Heart,
+		Info,
+		Pencil,
+		Tag,
+		BookOpenText,
+		Download,
+	} from 'lucide-svelte';
 	import pMap from 'p-map';
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
@@ -29,8 +39,6 @@
 		isTag,
 		randomString,
 	} from '$lib/utils';
-	import AiOutlineRead from '~icons/ant-design/read-outlined';
-	import BiSolidDownload from '~icons/bxs/download';
 
 	export let data;
 
@@ -263,7 +271,7 @@
 					href={`./${gallery.id}/read/1${$page.url.search}`}
 					variant="secondary"
 				>
-					<AiOutlineRead class="size-5 shrink-0" />
+					<BookOpenText class="size-5 shrink-0" />
 					<span class="flex-auto"> Start reading </span>
 				</Button>
 			{:else}
@@ -272,7 +280,7 @@
 					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
 					variant="secondary"
 				>
-					<AiOutlineRead class="size-5 shrink-0" />
+					<BookOpenText class="size-5 shrink-0" />
 					<span class="flex-auto"> Continue </span>
 				</Button>
 			{/if}
@@ -287,7 +295,7 @@
 					on:click={startDownload}
 					variant="secondary"
 				>
-					<BiSolidDownload class="size-5 shrink-0" />
+					<Download class="size-5 shrink-0" />
 					<span class="flex-auto"> Download </span>
 				</Button>
 			</div>

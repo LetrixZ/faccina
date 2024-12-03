@@ -1,5 +1,4 @@
 import 'svelte/elements';
-import 'unplugin-icons/types/svelte';
 
 import type { Message } from '$lib/types';
 
