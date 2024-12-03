@@ -2,6 +2,8 @@ import type { PathLike } from 'node:fs';
 import { access } from 'node:fs/promises';
 import type { Tag } from './metadata';
 
+export const isBun = !!process.versions.bun;
+
 export const readStream = async (stream: NodeJS.ReadableStream) => {
 	const chunks: Buffer[] = [];
 

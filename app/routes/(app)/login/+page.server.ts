@@ -4,7 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import argon2 from 'argon2';
 import type { Actions, PageServerLoad } from './$types';
 import { loginSchema } from '$lib/schemas';
-import { lucia } from '$lib/server/auth';
+import lucia from '$lib/server/auth';
 import config from '~shared/config';
 import db from '~shared/db';
 
@@ -64,8 +64,8 @@ export const actions: Actions = {
 			});
 		}
 
-		const session = await lucia().createSession(user.id, {});
-		const sessionCookie = lucia().createSessionCookie(session.id);
+		const session = await lucia.createSession(user.id, {});
+		const sessionCookie = lucia.createSessionCookie(session.id);
 
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',

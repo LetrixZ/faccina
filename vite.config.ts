@@ -32,7 +32,7 @@ export default defineConfig({
 	},
 	build: {
 		rollupOptions: {
-			external: ['@resvg/resvg-js', 'css-tree'],
+			external: ['@resvg/resvg-js', 'css-tree', 'bun:sqlite'],
 		},
 	},
 });

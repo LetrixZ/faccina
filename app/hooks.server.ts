@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import chalk from 'chalk';
-import { lucia } from '$lib/server/auth';
+import lucia from '$lib/server/auth';
 import config from '~shared/config';
 import { log } from '$lib/server/utils';
 
@@ -10,16 +10,16 @@ if (config.site.enableAnalytics) {
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const start = performance.now();
-	const sessionId = event.cookies.get(lucia().sessionCookieName);
+	const sessionId = event.cookies.get(lucia.sessionCookieName);
 
 	if (!sessionId) {
 		event.locals.user = null;
 		event.locals.session = null;
 	} else {
-		const { session, user } = await lucia().validateSession(sessionId);
+		const { session, user } = await lucia.validateSession(sessionId);
 
 		if (session && session.fresh) {
-			const sessionCookie = lucia().createSessionCookie(session.id);
+			const sessionCookie = lucia.createSessionCookie(session.id);
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
 				path: '.',
 				...sessionCookie.attributes,
@@ -28,7 +28,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 
 		if (!session) {
-			const sessionCookie = lucia().createBlankSessionCookie();
+			const sessionCookie = lucia.createBlankSessionCookie();
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
 				path: '.',
 				...sessionCookie.attributes,

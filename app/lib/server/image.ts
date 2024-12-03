@@ -98,7 +98,9 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 		data = await zip.entryData(image.filename);
 
 		if (config.server.autoUnpack) {
-			writeFile(originalImagePath, data);
+			mkdir(dirname(originalImagePath), { recursive: true }).then(() =>
+				writeFile(originalImagePath, data)
+			);
 		}
 	}
 

@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { lucia } from '$lib/server/auth';
+import lucia from '$lib/server/auth';
 import db from '~shared/db';
 import config from '~shared/config';
 
@@ -21,8 +21,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		});
 	}
 
-	const session = await lucia().createSession(user.userId, {});
-	const sessionCookie = lucia().createSessionCookie(session.id);
+	const session = await lucia.createSession(user.userId, {});
+	const sessionCookie = lucia.createSessionCookie(session.id);
 
 	cookies.set(sessionCookie.name, sessionCookie.value, {
 		path: '.',

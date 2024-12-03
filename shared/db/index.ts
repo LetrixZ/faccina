@@ -4,13 +4,15 @@ import {
 	Kysely,
 	ParseJSONResultsPlugin,
 	PostgresDialect,
+	SqliteDialect,
 } from 'kysely';
 import pg from 'pg';
 import config from '../config';
 import type { DB } from '../types';
 import connection from './connection';
 import migrations from './migrations';
-import { NodeSQLiteDialect } from './node-dialect';
+import { SqliteBooleanPlugin } from './sqlite-bool';
+import { isBun } from '~shared/utils';
 
 export const databaseType = config.database.vendor;
 
@@ -19,7 +21,12 @@ let dialect: Dialect | undefined = undefined;
 if (connection instanceof pg.Pool) {
 	dialect = new PostgresDialect({ pool: connection });
 } else {
-	dialect = new NodeSQLiteDialect(connection);
+	if (isBun) {
+		const { BunSqliteDialect } = await import('kysely-bun-sqlite');
+		dialect = new BunSqliteDialect({ database: connection });
+	} else {
+		dialect = new SqliteDialect({ database: connection });
+	}
 }
 
 if (!dialect) {
@@ -28,7 +35,7 @@ if (!dialect) {
 
 const db = new Kysely<DB>({
 	dialect,
-	plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()],
+	plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin(), new SqliteBooleanPlugin()],
 });
 
 await migrations(db);

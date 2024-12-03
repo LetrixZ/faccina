@@ -1,5 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { extname, join } from 'path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, extname, join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
@@ -46,7 +46,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 		extension = extname(archive.filename);
 
 		if (config.server.autoUnpack) {
-			writeFile(imagePath, data);
+			mkdir(dirname(imagePath), { recursive: true }).then(() => writeFile(imagePath, data));
 		}
 	}
 

@@ -10,6 +10,8 @@ export type Generated<T> =
 		? ColumnType<S, I | undefined, U>
 		: ColumnType<T, T | undefined, T>;
 
+type GeneratedBool = ColumnType<boolean, number | undefined, number | undefined>;
+
 export interface ArchiveImages {
 	archiveId: number;
 	filename: string;
@@ -28,7 +30,7 @@ export interface Archives {
 	language: string | null;
 	pages: number;
 	path: string;
-	protected: Generated<boolean>;
+	protected: GeneratedBool;
 	releasedAt: string | null;
 	size: number;
 	thumbnail: Generated<number>;
@@ -50,12 +52,12 @@ export interface ArchiveTags {
 }
 
 export interface Collection {
-	anonymous: Generated<boolean>;
+	anonymous: GeneratedBool;
 	createdAt: Generated<string>;
 	id: Generated<number>;
 	name: string;
-	protected: Generated<boolean>;
-	public: Generated<boolean>;
+	protected: GeneratedBool;
+	public: GeneratedBool;
 	slug: string;
 	updatedAt: Generated<string>;
 	userId: string;
@@ -72,7 +74,7 @@ export interface CollectionArchive {
 export interface Tags {
 	createdAt: Generated<string>;
 	displayName: string | null;
-	hidden: Generated<boolean>;
+	hidden: GeneratedBool;
 	id: Generated<number>;
 	name: string;
 	namespace: string;

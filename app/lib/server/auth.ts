@@ -1,64 +1,65 @@
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
+import { BetterSqlite3Adapter, BunSQLiteAdapter } from '@lucia-auth/adapter-sqlite';
 import { Lucia } from 'lucia';
-import type { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
-import { match } from 'ts-pattern';
 import { dev } from '$app/environment';
 import config from '~shared/config';
 import { databaseType } from '~shared/db';
 import connection from '~shared/db/connection';
-import { NodeSQLiteAdapter } from '~shared/db/node-adapter';
+import { isBun } from '~shared/utils';
 
-let _lucia: Lucia<
-	Record<never, never>,
-	{
-		username: string;
-		admin: boolean;
-	}
->;
+export default await (async () => {
+	let adapter: NodePostgresAdapter | BunSQLiteAdapter | BetterSqlite3Adapter;
 
-export const lucia = (): Lucia => {
-	if (!_lucia) {
-		const adapter = match(databaseType)
-			.with(
-				'postgresql',
-				() =>
-					new NodePostgresAdapter(connection as pg.Pool, {
-						user: 'users',
-						session: 'user_sessions',
-					})
-			)
-			.with(
-				'sqlite',
-				() =>
-					new NodeSQLiteAdapter(connection as DatabaseSync, {
-						user: 'users',
-						session: 'user_sessions',
-					})
-			)
-			.exhaustive();
-
-		_lucia = new Lucia(adapter, {
-			sessionCookie: {
-				attributes: {
-					secure: !dev,
-				},
-			},
-			getUserAttributes: (attributes) => {
-				return {
-					username: attributes.username,
-					admin: config.site.adminUsers.includes(attributes.username),
-				};
-			},
-		});
+	switch (databaseType) {
+		case 'postgresql': {
+			adapter = new NodePostgresAdapter(connection as pg.Pool, {
+				user: 'users',
+				session: 'user_sessions',
+			});
+			break;
+		}
+		case 'sqlite': {
+			if (isBun) {
+				// @ts-expect-error Bun
+				adapter = new BunSQLiteAdapter(connection as import('bun:sqlite'), {
+					user: 'users',
+					session: 'user_sessions',
+				});
+			} else {
+				adapter = new BetterSqlite3Adapter(connection as import('better-sqlite3').Database, {
+					user: 'users',
+					session: 'user_sessions',
+				});
+			}
+			break;
+		}
 	}
 
-	return _lucia;
-};
+	return new Lucia<
+		Record<never, never>,
+		{
+			username: string;
+			admin: boolean;
+		}
+	>(adapter, {
+		sessionCookie: {
+			attributes: {
+				secure: !dev,
+			},
+		},
+		getUserAttributes: (attributes) => {
+			return {
+				username: attributes.username,
+				admin: config.site.adminUsers.includes(attributes.username),
+			};
+		},
+	});
+})();
 
 declare module 'lucia' {
 	interface Register {
-		Lucia: typeof _lucia;
+		Lucia: Lucia<Record<never, never>, { username: string; admin: boolean }>;
 		DatabaseUserAttributes: DatabaseUserAttributes;
 	}
 }

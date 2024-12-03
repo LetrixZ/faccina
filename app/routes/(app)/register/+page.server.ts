@@ -6,7 +6,7 @@ import argon2 from 'argon2';
 import type { Actions, PageServerLoad } from './$types';
 import db from '~shared/db';
 import config from '~shared/config';
-import { lucia } from '$lib/server/auth';
+import lucia from '$lib/server/auth';
 import { registerSchema } from '$lib/schemas';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -75,8 +75,8 @@ export const actions: Actions = {
 			})
 			.execute();
 
-		const session = await lucia().createSession(userId, {});
-		const sessionCookie = lucia().createSessionCookie(session.id);
+		const session = await lucia.createSession(userId, {});
+		const sessionCookie = lucia.createSessionCookie(session.id);
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
@@ -88,7 +88,7 @@ export const actions: Actions = {
 			.values({
 				name: 'Bookmarks',
 				slug: `bookmarks-${userId}`,
-				protected: true,
+				protected: 1,
 				userId,
 			})
 			.execute();
