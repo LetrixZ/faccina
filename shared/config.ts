@@ -49,7 +49,6 @@ const siteSchema = z
 		enable_users: z.boolean().default(true),
 		enable_collections: z.boolean().default(true),
 		enable_read_history: z.boolean().default(true),
-		enable_analytics: z.boolean().default(true),
 		admin_users: z.array(z.string()).default([]),
 		default_sort: z
 			.enum(['released_at', 'created_at', 'title', 'pages', 'random'])

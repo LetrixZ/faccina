@@ -185,3 +185,5 @@ config.toml
 
 *.sqlite*
 docker-compose.yaml
+
+compile

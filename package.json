@@ -43,6 +43,7 @@
 		"globals": "^15.11.0",
 		"kysely-codegen": "^0.16.8",
 		"kysely-ctl": "^0.9.0",
+		"make-vfs": "^1.0.15",
 		"p-limit": "^6.1.0",
 		"postcss": "^8.4.47",
 		"prettier": "^3.3.3",
