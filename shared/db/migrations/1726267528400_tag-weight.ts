@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import { id } from '../shared/db/helpers';
+import { id } from '../helpers';
 
 const weights = [
 	['illustration', 20],
