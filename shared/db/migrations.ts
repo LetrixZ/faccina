@@ -1,45 +1,7 @@
-import path, { basename } from 'node:path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import chalk from 'chalk';
-import { Kysely, type Migration, type MigrationProvider, Migrator } from 'kysely';
-import { glob } from 'glob';
+import { Kysely, Migrator } from 'kysely';
 import type { DB } from '../types';
-
-export class FileMigrationProvider implements MigrationProvider {
-	async getMigrations(): Promise<Record<string, Migration>> {
-		try {
-			const migrations: Record<string, Migration> = import.meta.glob('./migrations/**.ts', {
-				eager: true,
-			});
-
-			return Object.entries(migrations).reduce(
-				(acc, [key, value]) => {
-					acc[basename(key).replace('.ts', '')] = value;
-					return acc;
-				},
-				{} as Record<string, Migration>
-			);
-		} catch {
-			const migrations: Record<string, Migration> = {};
-
-			const __filename = fileURLToPath(import.meta.url);
-			const __dirname = dirname(__filename);
-
-			const files = glob.globSync('*.ts', {
-				cwd: path.join(__dirname, 'migrations'),
-				absolute: true,
-			});
-
-			for (const filepath of files) {
-				const migration = await import(/* @vite-ignore */ filepath);
-				migrations[path.parse(filepath).name] = migration;
-			}
-
-			return migrations;
-		}
-	}
-}
+import migrations from './migration-list';
 
 export default async (db: Kysely<DB>) => {
 	const shouldMigrate = await (async () => {
@@ -55,7 +17,9 @@ export default async (db: Kysely<DB>) => {
 	if (shouldMigrate) {
 		const migrator = new Migrator({
 			db,
-			provider: new FileMigrationProvider(),
+			provider: {
+				getMigrations: async () => migrations,
+			},
 		});
 
 		const { error, results } = await migrator.migrateToLatest();

@@ -1,6 +1,5 @@
 import { randomBytes } from 'crypto';
 import chalk from 'chalk';
-import mjml2html from 'mjml';
 import config from './config';
 import db from './db';
 import { now } from './db/helpers';
@@ -50,32 +49,36 @@ export const sendRecoveryEmail = async (email: string, code: string, username: s
 		`[${new Date().toISOString()}] Sending access recovery email to user ${chalk.bold(username)} with email ${chalk.bold(email)}`
 	);
 
-	const html = mjml2html(`
-		<mjml>
-			<mj-body background-color="#0a0a0a">
-				<mj-section>
-					<mj-column>
-						<mj-text color="white">
+	const html = `
+		<div style='background-color: #282828; padding: 1rem;'>
+			<div style='background-color: #0a0a0a; font-family: Inter, sans-serif; padding: 1rem; border-radius: 6px; font-size: 0.825rem'>
+				<div>
+					<div>
+						<div style="color: white;">
 							<p>A request to recover access to this account was made. Ignore this email if it wasn't you.</p>
 							<p>Recovery code: <b>${code}</b></p>
-						</mj-text>
+						</div>
 						${
 							config.site.url
 								? (() => {
 										const recoveryLink = `${config.site.url}/reset?code=${code}`;
-										return `<mj-button background-color="#dc2828" border-radius="8px" font-size="14px" font-weight="500" font-family="Inter" height="40px" href="${recoveryLink}">
-															Click to Reset Password
-														</mj-button>
-														<mj-text color="white">
-															Copy this link if you can't click the button: <a href="${recoveryLink}">${recoveryLink}</a>
-														</mj-text>`;
+										return `
+										<div style='padding-top: 10px;'>
+											<a style='background-color: #dc2828; border-radius: 8px; font-size: 0.825rem; font-weight: 500; height: 40px; color: white; padding: 0.5rem; text-decoration: none;' href="${recoveryLink}">
+												Click to Reset Password
+											</a>
+											<p style="color: white; font-size: 0.625rem; padding-top: 4px">
+												Copy this link if you can't click the button</br><a href="${recoveryLink}">${recoveryLink}</a>
+											</p>
+										</div>
+										`;
 									})()
 								: ``
 						}
-					</mj-column>
-				</mj-section>
-			</mj-body>
-		</mjml>`).html;
+					</div>
+				</div>
+			</div>
+		</div>`;
 
 	const response = await transporter().sendMail({
 		from: config.mailer.from,

@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-alpha.44",
+	"version": "2.0.0-alpha.45",
 	"private": true,
 	"scripts": {
 		"dev": "bunx --bun vite dev",
@@ -24,7 +24,6 @@
 		"@types/cli-progress": "^3.11.6",
 		"@types/content-disposition": "^0.5.8",
 		"@types/eslint": "^8.56.12",
-		"@types/mjml": "^4.7.4",
 		"@types/natural-compare-lite": "^1.4.2",
 		"@types/node": "^22.7.8",
 		"@types/nodemailer": "^6.4.16",
@@ -88,7 +87,6 @@
 		"lucia": "^3.2.2",
 		"lucide-svelte": "^0.454.0",
 		"magic-bytes.js": "^1.10.0",
-		"mjml": "^4.15.3",
 		"natural-compare-lite": "^1.4.0",
 		"node-addon-api": "^8.2.1",
 		"node-gyp": "^10.2.0",

@@ -276,10 +276,10 @@ const imageSchema = z
 const mailerSchema = z.object({
 	host: z.string(),
 	port: z.number(),
-	secure: z.boolean(),
+	secure: z.boolean().default(false),
 	user: z.string().optional(),
 	pass: z.string().optional(),
-	from: z.string(),
+	from: z.string().default('admin@faccina'),
 });
 
 const configSchema = z.object({
