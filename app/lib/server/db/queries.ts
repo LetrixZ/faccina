@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import {
 	type Expression,
 	ExpressionWrapper,
@@ -7,7 +8,7 @@ import {
 } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
-import { handleTags, type SearchParams } from '../utils';
+import { handleTags, log, type SearchParams } from '../utils';
 import { type Order, type Sort } from '$lib/schemas';
 import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
 import { shuffle } from '$lib/utils';
@@ -127,7 +128,7 @@ export const parseQuery = (query: string) => {
 
 	const titleMatch = query
 		.replaceAll(
-			/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b|\blanguage:(\w+)\b/g,
+			/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b|\btags(>|<|=|>=|<=)(\d+)\b|\blanguage:(\w+)\b/g,
 			'#||#'
 		)
 		.trim()
@@ -162,6 +163,16 @@ export const parseQuery = (query: string) => {
 		pagesExpression = pagesMatch[1];
 	}
 
+	const tagsQuantityMatch = Array.from(query.matchAll(/\btags(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
+	let tagsQuantity: number | undefined = undefined;
+	let tagsQuantityExpression: string | undefined = undefined;
+
+	if (tagsQuantityMatch) {
+		tagsQuantity = parseInt(tagsQuantityMatch[2]);
+		tagsQuantityExpression = tagsQuantityMatch[1];
+	}
+
 	const languageMatch = Array.from(query.matchAll(/\blanguage:(\w+)\b/g));
 
 	const matches = {
@@ -169,6 +180,10 @@ export const parseQuery = (query: string) => {
 		pagesMatch: {
 			number: pagesNumber,
 			expression: pagesExpression,
+		},
+		tagsQuantityMatch: {
+			quantity: tagsQuantity,
+			expression: tagsQuantityExpression,
 		},
 		urlMatch,
 		sourceMatch,
@@ -222,9 +237,25 @@ export const search = async (
 	params: SearchParams,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
-	const { tagMatches, titleMatch, pagesMatch, languageMatch, urlMatch, sourceMatch } = parseQuery(
-		params.query
+	let start = performance.now();
+
+	const {
+		tagMatches,
+		titleMatch,
+		pagesMatch,
+		tagsQuantityMatch,
+		languageMatch,
+		urlMatch,
+		sourceMatch,
+	} = parseQuery(params.query);
+
+	log(
+		chalk.blue(
+			`• Query parsed in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${params.query.length ? ` - ${params.query}` : ''}`
+		)
 	);
+
+	start = performance.now();
 
 	const sortQuery = (sort: Sort, order: Order) => {
 		switch (sort) {
@@ -312,6 +343,14 @@ export const search = async (
 				.execute()
 		).map((at) => at.archiveId);
 	}
+
+	log(
+		chalk.blue(
+			`• Exclude and optional tags fetched in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${params.query.length ? ` - ${params.query}` : ''}`
+		)
+	);
+
+	start = performance.now();
 
 	let query = (() => {
 		if (config.database.vendor === 'sqlite') {
@@ -421,6 +460,20 @@ export const search = async (
 		}
 	}
 
+	if (tagsQuantityMatch.expression !== undefined && tagsQuantityMatch.quantity !== undefined) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(tagsQuantityMatch.expression);
+
+		const quantity = tagsQuantityMatch.quantity;
+
+		if (data) {
+			// @ts-expect-error works
+			query = query
+				.leftJoin('archiveTags', 'archiveTags.archiveId', 'archives.id')
+				.having((eb) => eb(eb.fn.count<number>('archiveTags.tagId'), data, quantity))
+				.groupBy('archives.id');
+		}
+	}
+
 	if (languageMatch?.length) {
 		for (const language of languageMatch) {
 			query = query.where('language', like(), language);
@@ -470,7 +523,20 @@ export const search = async (
 		.orderBy(order === 'asc' ? 'archives.createdAt asc' : 'archives.createdAt desc')
 		.orderBy(order === 'asc' ? 'archives.id asc' : 'archives.id desc');
 
+	const compiled = query.compile();
+	log(
+		chalk.blue(
+			`• Main query builded in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)} - Compiled query:\n${chalk.gray(compiled.sql)}\nParameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${params.query.length ? ` - ${params.query}` : ''}`
+		)
+	);
+
+	start = performance.now();
+
 	let filteredResults = await query.execute();
+
+	log(
+		chalk.blue(`• Query exceuted in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}`)
+	);
 
 	if (config.database.vendor === 'sqlite' && sort === 'title') {
 		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
