@@ -438,11 +438,10 @@ export const indexArchives = async (opts: IndexOptions) => {
 				archive.title = filename;
 			}
 
-			const info = await stat(scan.path);
 			let size: number;
 
 			if (scan.type === 'archive') {
-				size = info.size;
+				size = (await stat(scan.path)).size;
 			} else {
 				size = await directorySize(scan.path);
 			}
@@ -480,7 +479,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 							releasedAt: archive.releasedAt?.toISOString(),
 							thumbnail: archive.thumbnail,
 							pages: images.length,
-							size: info.size,
+							size,
 							updatedAt: now(),
 						})
 						.where('id', '=', existingPath.id)
@@ -539,7 +538,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						releasedAt: archive.releasedAt?.toISOString(),
 						thumbnail: archive.thumbnail,
 						pages: images.length,
-						size: info.size,
+						size,
 					})
 					.returning('id')
 					.executeTakeFirstOrThrow();
