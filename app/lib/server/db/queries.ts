@@ -128,7 +128,7 @@ export const parseQuery = (query: string) => {
 
 	const titleMatch = query
 		.replaceAll(
-			/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b|\btags(>|<|=|>=|<=)(\d+)\b|\blanguage:(\w+)\b/g,
+			/[-|~]?(\w+):(".*?"|[^\s]+)|\b(\w+)(>|<|=|>=|<=)(\d+)([kmg])?\b|\blanguage:(\w+)\b/gi,
 			'#||#'
 		)
 		.trim()
@@ -173,6 +173,66 @@ export const parseQuery = (query: string) => {
 		tagsQuantityExpression = tagsQuantityMatch[1];
 	}
 
+	const sourcesQuantityMatch = Array.from(query.matchAll(/\bsources(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
+	let sourcesQuantity: number | undefined = undefined;
+	let sourcesQuantityExpression: string | undefined = undefined;
+
+	if (sourcesQuantityMatch) {
+		sourcesQuantity = parseInt(sourcesQuantityMatch[2]);
+		sourcesQuantityExpression = sourcesQuantityMatch[1];
+	}
+
+	const sizeMatch = Array.from(query.matchAll(/\bsize(>|<|=|>=|<=)(\d+)([kmg])?\b/gi)).at(-1);
+
+	let sizeNumber: number | undefined = undefined;
+	let sizeExpression: string | undefined = undefined;
+
+	if (sizeMatch) {
+		const parsedSize = parseInt(sizeMatch[2]);
+
+		switch (sizeMatch[3]?.toLowerCase()) {
+			case 'k':
+				sizeNumber = parsedSize * 1024;
+				break;
+			case 'm':
+				sizeNumber = parsedSize * 1024 * 1024;
+				break;
+			case 'g':
+				sizeNumber = parsedSize * 1024 * 1024 * 1024;
+				break;
+			default:
+				sizeNumber = parsedSize;
+				break;
+		}
+
+		sizeExpression = sizeMatch[1];
+	}
+
+	const tagNamespaceQuantityMatch = Array.from(query.matchAll(/\b(\w+)(>|<|=|>=|<=)(\d+)\b/g));
+
+	const tagNamespaceQuantity: {
+		namespace: string;
+		quantity: number;
+		expression: string;
+	}[] = [];
+
+	if (tagNamespaceQuantityMatch.length) {
+		for (const match of tagNamespaceQuantityMatch) {
+			const namespace = match[1];
+
+			if (['source', 'sources', 'url', 'language', 'size', 'tags'].includes(namespace)) {
+				continue;
+			}
+
+			tagNamespaceQuantity.push({
+				namespace: match[1],
+				expression: match[2],
+				quantity: parseInt(match[3]),
+			});
+		}
+	}
+
 	const languageMatch = Array.from(query.matchAll(/\blanguage:(\w+)\b/g));
 
 	const matches = {
@@ -185,6 +245,15 @@ export const parseQuery = (query: string) => {
 			quantity: tagsQuantity,
 			expression: tagsQuantityExpression,
 		},
+		sourcesQuantityMatch: {
+			quantity: sourcesQuantity,
+			expression: sourcesQuantityExpression,
+		},
+		size: {
+			number: sizeNumber,
+			expression: sizeExpression,
+		},
+		tagNamespaceQuantity,
 		urlMatch,
 		sourceMatch,
 		languageMatch: languageMatch.map((match) => match?.[1]),
@@ -218,7 +287,7 @@ export const parseQuery = (query: string) => {
 
 		namespace = negate || or ? namespace.slice(1) : namespace;
 
-		if (['source', 'url', 'language'].includes(namespace)) {
+		if (['source', 'sources', 'url', 'language', 'size', 'tags'].includes(namespace)) {
 			continue;
 		}
 
@@ -244,6 +313,9 @@ export const search = async (
 		titleMatch,
 		pagesMatch,
 		tagsQuantityMatch,
+		sourcesQuantityMatch,
+		size,
+		tagNamespaceQuantity,
 		languageMatch,
 		urlMatch,
 		sourceMatch,
@@ -462,15 +534,66 @@ export const search = async (
 
 	if (tagsQuantityMatch.expression !== undefined && tagsQuantityMatch.quantity !== undefined) {
 		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(tagsQuantityMatch.expression);
-
 		const quantity = tagsQuantityMatch.quantity;
+
+		if (data) {
+			query = query.where((eb) =>
+				eb.exists(
+					eb
+						.selectFrom('archiveTags')
+						.select('archiveId')
+						.whereRef('archiveTags.archiveId', '=', 'archives.id')
+						.having((eb) => eb(eb.fn.count<number>('archiveTags.tagId'), data, quantity))
+						.groupBy('archiveTags.archiveId')
+				)
+			);
+		}
+	}
+
+	if (
+		sourcesQuantityMatch.expression !== undefined &&
+		sourcesQuantityMatch.quantity !== undefined
+	) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(sourcesQuantityMatch.expression);
+		const quantity = sourcesQuantityMatch.quantity;
 
 		if (data) {
 			// @ts-expect-error works
 			query = query
-				.leftJoin('archiveTags', 'archiveTags.archiveId', 'archives.id')
-				.having((eb) => eb(eb.fn.count<number>('archiveTags.tagId'), data, quantity))
+				.leftJoin('archiveSources', 'archiveSources.archiveId', 'archives.id')
+				.having((eb) => eb(eb.fn.count<number>('archiveSources.archiveId'), data, quantity))
 				.groupBy('archives.id');
+		}
+	}
+
+	if (size.expression !== undefined && size.number !== undefined) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(size.expression);
+
+		if (data) {
+			query = query.where('size', data, size.number).groupBy('archives.id');
+		}
+	}
+
+	if (tagNamespaceQuantity.length) {
+		// @ts-expect-error works
+		query = query
+			.leftJoin('archiveTags as namespaceQuantity', 'namespaceQuantity.archiveId', 'archives.id')
+			.groupBy('archives.id');
+
+		for (const { namespace, expression, quantity } of tagNamespaceQuantity) {
+			const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(expression);
+
+			if (data) {
+				// @ts-expect-error works
+				query = query
+					.leftJoin(`tags as ${namespace}`, (join) =>
+						join
+							// @ts-expect-error works
+							.onRef(`${namespace}.id`, '=', 'namespaceQuantity.tagId')
+							.on(`${namespace}.namespace`, '=', namespace)
+					)
+					.having((eb) => eb(eb.fn.count<number>(`${namespace}.id`), data, quantity));
+			}
 		}
 	}
 
