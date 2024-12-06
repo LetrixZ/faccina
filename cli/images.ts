@@ -1,3 +1,4 @@
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { sleep } from 'bun';
 import chalk from 'chalk';
@@ -9,7 +10,7 @@ import { match } from 'ts-pattern';
 import config, { Preset } from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
-import { leadingZeros, readStream } from '../shared/utils';
+import { leadingZeros } from '../shared/utils';
 import { queryIdRanges } from './utilts';
 
 type GenerateImagesOptions = {
@@ -122,12 +123,24 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 	await pMap(
 		archivesEncode,
 		async (archive) => {
-			const zip = new StreamZip.async({ file: archive.path });
+			const info = await stat(archive.path);
+			let zip: StreamZip.StreamZipAsync | null = null;
+
+			if (info.isFile()) {
+				zip = new StreamZip.async({ file: archive.path });
+			}
+
+			const getImage = (filename: string) => {
+				if (zip) {
+					return zip.entryData(filename);
+				} else {
+					return Bun.file(join(archive.path, filename)).bytes();
+				}
+			};
 
 			for (const image of archive.images) {
 				try {
-					const stream = await zip.stream(image.filename);
-					const buffer = await readStream(stream);
+					const buffer = await getImage(image.filename);
 
 					let pipeline = sharp(buffer);
 

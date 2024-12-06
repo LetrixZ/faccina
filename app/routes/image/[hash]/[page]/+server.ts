@@ -1,4 +1,5 @@
-import { extname, join } from 'path';
+import { stat } from 'fs/promises';
+import { extname, join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
@@ -9,7 +10,7 @@ import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { leadingZeros } from '~shared/utils';
+import { exists, leadingZeros } from '~shared/utils';
 import type { ImageArchive } from '$lib/types';
 import { calculateDimensions, encodeImage } from '$lib/server/image';
 
@@ -27,7 +28,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 		data = await Bun.file(imagePath).bytes();
 		extension = extname(imagePath);
 	} catch {
-		if (!(await Bun.file(archive.path).exists())) {
+		if (!exists(archive.path)) {
 			console.error(
 				chalk.red(
 					`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - ZIP archive not found in path ${chalk.bold(archive.path)}`
@@ -40,12 +41,19 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 			});
 		}
 
-		const zip = new StreamZip.async({ file: archive.path });
-		data = await zip.entryData(archive.filename);
-		extension = extname(archive.filename);
+		const info = await stat(archive.path);
 
-		if (config.server.autoUnpack) {
-			Bun.write(imagePath, data);
+		if (info.isFile()) {
+			const zip = new StreamZip.async({ file: archive.path });
+			data = await zip.entryData(archive.filename);
+			extension = extname(archive.filename);
+
+			if (config.server.autoUnpack) {
+				Bun.write(imagePath, data);
+			}
+		} else {
+			data = await Bun.file(join(archive.path, archive.filename)).bytes();
+			extension = extname(archive.filename);
 		}
 	}
 

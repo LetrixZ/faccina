@@ -1,4 +1,5 @@
 import { extname, join } from 'path';
+import { stat } from 'node:fs/promises';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
@@ -93,11 +94,17 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	try {
 		data = await Bun.file(originalImagePath).bytes();
 	} catch {
-		const zip = new StreamZip.async({ file: args.archive.path });
-		data = await zip.entryData(image.filename);
+		const info = await stat(args.archive.path);
 
-		if (config.server.autoUnpack) {
-			Bun.write(originalImagePath, data);
+		if (info.isFile()) {
+			const zip = new StreamZip.async({ file: args.archive.path });
+			data = await zip.entryData(image.filename);
+
+			if (config.server.autoUnpack) {
+				Bun.write(originalImagePath, data);
+			}
+		} else {
+			data = await Bun.file(join(args.archive.path, args.archive.filename)).bytes();
 		}
 	}
 
