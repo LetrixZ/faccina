@@ -257,7 +257,7 @@
 
 		<h3 class="text-lg font-medium">Touch layout</h3>
 
-		<div class="mx-auto flex flex-wrap gap-1">
+		<div class="mx-auto flex flex-wrap gap-2">
 			<Button
 				on:click={() => ($prefs.touchLayout = TouchLayout.LeftToRight)}
 				variant={$prefs.touchLayout === TouchLayout.LeftToRight ? 'secondary' : 'outline'}
@@ -282,22 +282,24 @@
 
 			<h3 class="text-lg font-medium">Image quality</h3>
 
-			{#each $presets as preset}
+			<div class="grid grid-cols-2 gap-2">
 				<Button
-					on:click={() => ($prefs.preset = preset.name)}
-					value={preset.name}
-					variant={$prefs.preset === preset.name ? 'secondary' : 'outline'}
+					on:click={() => ($prefs.preset = undefined)}
+					variant={!$prefs.preset ? 'secondary' : 'outline'}
 				>
-					{preset.label}
+					Original
 				</Button>
-			{/each}
 
-			<Button
-				on:click={() => ($prefs.preset = undefined)}
-				variant={!$prefs.preset ? 'secondary' : 'outline'}
-			>
-				Original
-			</Button>
+				{#each $presets as preset}
+					<Button
+						on:click={() => ($prefs.preset = preset.name)}
+						value={preset.name}
+						variant={$prefs.preset === preset.name ? 'secondary' : 'outline'}
+					>
+						{preset.label}
+					</Button>
+				{/each}
+			</div>
 		{/if}
 
 		<Separator />
@@ -305,7 +307,7 @@
 		<h3 class="text-lg font-medium">Image scaling</h3>
 
 		<ToggleGroup.Root
-			class="flex flex-wrap"
+			class="flex flex-wrap gap-2"
 			id="fit-mode"
 			onValueChange={onModeChange}
 			type="single"
