@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
-import { type ClassValue, clsx } from 'clsx';
+import { clsx, type ClassValue } from 'clsx';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
@@ -15,6 +15,7 @@ import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
 import { ImageSize, TouchLayout } from './models';
 import type { Gallery, Image, Tag } from './types';
+import { presetSchema } from '$lib/image-presets';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -196,6 +197,7 @@ export const preferencesSchema = z.object({
 	minWidth: z.number().optional(),
 	maxWidth: z.number().optional().default(1280),
 	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
+	preset: presetSchema.and(z.object({ name: z.string() })).optional(),
 });
 
 export interface ReaderPreferences {
@@ -204,6 +206,7 @@ export interface ReaderPreferences {
 	minWidth: number | undefined;
 	maxWidth: number | undefined;
 	barPlacement: 'top' | 'bottom';
+	preset: string | undefined;
 }
 
 export type BarPlacement = ReaderPreferences['barPlacement'];

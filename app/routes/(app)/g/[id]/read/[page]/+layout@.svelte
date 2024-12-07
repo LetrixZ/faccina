@@ -3,10 +3,12 @@
 	import { onMount } from 'svelte';
 	import ReaderBar from '$lib/components/reader-bar.svelte';
 	import { TouchLayout } from '$lib/models';
-	import { prefs } from '$lib/reader-store';
+	import { prefs, presets } from '$lib/reader-store';
 	import type { ReaderPreferences } from '$lib/utils';
 
 	export let data;
+
+	presets.set(data.presets);
 
 	let isMounted = false;
 

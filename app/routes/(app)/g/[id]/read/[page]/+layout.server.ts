@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { getGallery } from '$lib/server/db/queries';
+import config from '~shared/config';
 
 export const load: LayoutServerLoad = async ({ params, locals }) => {
 	const id = parseInt(params.id);
@@ -25,5 +26,6 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 
 	return {
 		gallery,
+		presets: config.image.readerPresets,
 	};
 };

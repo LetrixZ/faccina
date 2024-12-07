@@ -1,11 +1,12 @@
-import { extname, join } from 'path';
 import { stat } from 'node:fs/promises';
+import { extname, join } from 'path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import type { ImageArchive } from '$lib/types';
-import config, { type Preset } from '~shared/config';
+import type { Preset } from '$lib/image-presets';
+import config from '~shared/config';
 import db from '~shared/db';
 import { leadingZeros } from '~shared/utils';
 
@@ -124,7 +125,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 	let newHeight: number | undefined = undefined;
 
-	if (config.image.aspectRatioSimilar) {
+	if (!preset.reader && config.image.aspectRatioSimilar) {
 		const aspectRatio = width! / height!;
 
 		if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {
@@ -133,8 +134,8 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	}
 
 	pipeline = pipeline.resize({
-		width: Math.floor(preset.width),
-		height: newHeight ? Math.floor(newHeight) : undefined,
+		width: Math.round(preset.width),
+		height: newHeight ? Math.round(newHeight) : undefined,
 	});
 	pipeline = match(preset)
 		.with({ format: 'webp' }, (data) => pipeline.webp(data))

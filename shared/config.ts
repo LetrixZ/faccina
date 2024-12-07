@@ -1,6 +1,9 @@
+import { readFileSync } from 'fs';
 import camelcaseKeys from 'camelcase-keys';
 import { parseTOML } from 'confbox';
+import { omit } from 'ramda';
 import { z } from 'zod';
+import { presetSchema, type Preset } from '../app/lib/image-presets';
 
 const camelize = <T extends Record<string, unknown> | ReadonlyArray<Record<string, unknown>>>(
 	val: T
@@ -153,43 +156,6 @@ const metadataSchema = z
 	})
 	.transform(camelize);
 
-const presetSchema = z
-	.discriminatedUnion('format', [
-		z.object({
-			format: z.literal('webp'),
-			quality: z.number().min(1).max(100).optional(),
-			lossless: z.boolean().optional(),
-			near_lossless: z.boolean().optional(),
-			effort: z.number().min(0).max(6).optional(),
-		}),
-		z.object({
-			format: z.literal('jpeg'),
-			quality: z.number().min(1).max(100).optional(),
-			progressive: z.boolean().optional(),
-		}),
-		z.object({
-			format: z.literal('png'),
-			progressive: z.boolean().optional(),
-			effort: z.number().min(1).max(10).optional(),
-			compression_level: z.number().min(0).max(9).optional(),
-		}),
-		z.object({
-			format: z.literal('jxl'),
-			quality: z.number().min(1).max(100).optional(),
-			lossless: z.boolean().optional(),
-			effort: z.number().min(3).max(9).optional(),
-			distance: z.number().min(0).max(15).optional(),
-		}),
-		z.object({
-			format: z.literal('avif'),
-			quality: z.number().min(1).max(100).optional(),
-			lossless: z.boolean().optional(),
-			effort: z.number().min(0).max(9).optional(),
-		}),
-	])
-	.transform(camelize)
-	.and(z.object({ width: z.number() }));
-
 const cachingSchema = z.object({
 	page: z.number().default(365 * 24 * 3600),
 	thumbnail: z.number().default(2 * 24 * 3600),
@@ -219,44 +185,40 @@ const imageSchema = z
 	})
 	.transform(camelize)
 	.superRefine((val, ctx) => {
-		if (val.coverPreset === 'cover') {
-			if (!val.preset || !('cover' in val.preset)) {
-				val.preset = {
-					...val.preset,
-					cover: {
-						format: 'webp',
-						width: 540,
-					},
-				};
-			}
-		} else {
-			if (!val.preset || !(val.coverPreset in val.preset)) {
-				ctx.addIssue({
-					code: 'custom',
-					path: ['encoding', 'preset'],
-					message: `Preset '${val.coverPreset}' was not defined as a preset`,
-				});
-			}
+		if (val.coverPreset === 'cover' && (!val.preset || !('cover' in val.preset))) {
+			val.preset = {
+				...val.preset,
+				cover: {
+					format: 'webp',
+					width: 540,
+					label: 'Cover',
+					reader: false,
+				},
+			};
+		} else if (!val.preset || !(val.coverPreset in val.preset)) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['encoding', 'preset'],
+				message: `Preset '${val.coverPreset}' was not defined as a preset`,
+			});
 		}
 
-		if (val.thumbnailPreset === 'thumbnail') {
-			if (!val.preset || !('thumbnail' in val.preset)) {
-				val.preset = {
-					...val.preset,
-					thumbnail: {
-						format: 'webp',
-						width: 360,
-					},
-				};
-			}
-		} else {
-			if (!val.preset || !(val.thumbnailPreset in val.preset)) {
-				ctx.addIssue({
-					code: 'custom',
-					path: ['encoding', 'preset'],
-					message: `Preset '${val.thumbnailPreset}' was not defined as a preset`,
-				});
-			}
+		if (val.thumbnailPreset === 'thumbnail' && (!val.preset || !('thumbnail' in val.preset))) {
+			val.preset = {
+				...val.preset,
+				thumbnail: {
+					format: 'webp',
+					width: 360,
+					label: 'Thumbnail',
+					reader: false,
+				},
+			};
+		} else if (!val.preset || !(val.thumbnailPreset in val.preset)) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['encoding', 'preset'],
+				message: `Preset '${val.thumbnailPreset}' was not defined as a preset`,
+			});
 		}
 	})
 	.transform((val) => ({
@@ -270,7 +232,40 @@ const imageSchema = z
 		...val,
 		coverPreset: val.preset[val.coverPreset],
 		thumbnailPreset: val.preset[val.thumbnailPreset],
-		preset: val.preset,
+		preset: (() => {
+			const labels = new Map<string, string[]>();
+
+			for (const [key, value] of Object.entries(val.preset)) {
+				const existing = labels.get(value.label);
+
+				if (existing) {
+					existing.push(key);
+				} else {
+					labels.set(value.label, [key]);
+				}
+			}
+
+			for (const [label, presets] of labels
+				.entries()
+				.filter(([_, presets]) => presets.length > 1)) {
+				for (const preset of presets) {
+					val.preset[preset].label = `${label} (${preset})`;
+				}
+			}
+
+			return val.preset;
+		})(),
+	}))
+	.transform((val) => ({
+		...omit(['preset'], val),
+		readerPresets: Object.entries(val.preset).reduce((acc, [name, preset]) => {
+			if (!preset.reader) {
+				return acc;
+			}
+
+			acc.push({ ...preset, name });
+			return acc;
+		}, [] as Preset[]),
 	}));
 
 const mailerSchema = z.object({
@@ -292,37 +287,7 @@ const configSchema = z.object({
 	mailer: mailerSchema.optional(),
 });
 
-export default await (async () => {
-	try {
-		const { building } = await import('$app/environment');
+const configFile = process.env.CONFIG_FILE ?? 'config.toml';
+const content = readFileSync(configFile, 'utf8');
 
-		if (building) {
-			return configSchema.parse({
-				database: {
-					vendor: 'sqlite',
-					path: ':memory:',
-				},
-				directories: {
-					content: '/tmp',
-					images: '/tmp',
-				},
-			});
-		}
-	} catch {
-		/* empty */
-	}
-
-	const configFile = process.env.CONFIG_FILE ?? 'config.toml';
-	const file = Bun.file(configFile);
-
-	if (!(await file.exists())) {
-		throw new Error('No configuration file found.');
-	}
-
-	const content = await file.text();
-
-	return configSchema.parse(parseTOML(content));
-})();
-
-export type Preset = z.infer<typeof presetSchema> & { name: string };
-export type DatabaseVendor = z.infer<typeof databaseSchema>['vendor'];
+export default configSchema.parse(parseTOML(content));

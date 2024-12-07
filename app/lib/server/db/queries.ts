@@ -647,9 +647,10 @@ export const search = async (
 		.orderBy(order === 'asc' ? 'archives.id asc' : 'archives.id desc');
 
 	const compiled = query.compile();
+
 	log(
 		chalk.blue(
-			`• Main query builded in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)} - Compiled query:\n${chalk.gray(compiled.sql)}\nParameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${params.query.length ? ` - ${params.query}` : ''}`
+			`• Main query builded in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)} - \n  Compiled query: ${chalk.gray(compiled.sql)}\n  Parameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${params.query.length ? ` - ${params.query}` : ''}`
 		)
 	);
 

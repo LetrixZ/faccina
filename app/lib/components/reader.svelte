@@ -12,6 +12,7 @@
 		nextPage,
 		preferencesOpen,
 		prefs,
+		presets,
 		prevPage,
 		readerPage,
 	} from '$lib/reader-store';
@@ -42,6 +43,46 @@
 
 	$: $currentArchive = gallery;
 
+	const getImageUrl = (image: Image | undefined, preset: string | undefined) => {
+		if (!image) {
+			return '';
+		}
+
+		if (preset) {
+			return `/image/${gallery.hash}/${image.pageNumber}?type=${preset}`;
+		} else {
+			return `/image/${gallery.hash}/${image.pageNumber}`;
+		}
+	};
+
+	const getImageDimensions = (image: Image | undefined, preset: string | undefined) => {
+		if (!image) {
+			return;
+		}
+
+		if (!image.height || !image.width) {
+			return;
+		}
+
+		if (preset) {
+			const presetItem = $presets.find((p) => p.name === preset);
+
+			if (presetItem) {
+				const width = presetItem.width;
+
+				return {
+					width: Math.round(width),
+					height: Math.round((width * image.height) / image.width),
+				};
+			}
+		}
+
+		return {
+			width: image.width,
+			height: image.height,
+		};
+	};
+
 	const readStat = (page: number) => {
 		fetch('/stats/read-page', {
 			method: 'POST',
@@ -67,8 +108,10 @@
 			return;
 		}
 
-		const newImage = new Image(imageInfo.width ?? undefined, imageInfo.height ?? undefined);
-		newImage.src = `/image/${gallery.hash}/${imageInfo.pageNumber}`;
+		const dimensions = getImageDimensions(imageInfo, $prefs.preset);
+
+		const newImage = new Image(dimensions?.width, dimensions?.height);
+		newImage.src = getImageUrl(imageInfo, $prefs.preset);
 		newImage.alt = `Page ${currentPage}`;
 		newImage.onerror = () => toast.error('Failed to load the page');
 
@@ -97,7 +140,7 @@
 				.filter((page) => pageState.find((state) => state.pageNumber === page)!.state === 'idle')
 				.map((page) => gallery.images.find(({ pageNumber }) => pageNumber === page)!),
 			async (imageInfo) => {
-				const { filename, pageNumber } = imageInfo;
+				const { pageNumber } = imageInfo;
 
 				if (pageState.find((state) => state.pageNumber === pageNumber)!.state !== 'idle') {
 					return;
@@ -105,8 +148,10 @@
 
 				changePageState(pageNumber, 'preloading');
 
-				const newImage = new Image(imageInfo.width ?? undefined, imageInfo.height ?? undefined);
-				newImage.src = `/image/${gallery.hash}/${filename}`;
+				const dimensions = getImageDimensions(imageInfo, $prefs.preset);
+
+				const newImage = new Image(dimensions?.width, dimensions?.height);
+				newImage.src = getImageUrl(imageInfo, $prefs.preset);
 
 				if (newImage.complete) {
 					newImage.addEventListener('error', () => changePageState(pageNumber, 'preloaded'));
@@ -123,13 +168,16 @@
 		{ imageSize: fitMode, minWidth, maxWidth }: ReaderPreferences,
 		image: Image
 	) => {
+		const dimensions = getImageDimensions(image, $prefs.preset);
+		const width = dimensions?.width;
+
 		switch (fitMode) {
 			case ImageSize.FillWidth:
-				if (image.width) {
+				if (width !== undefined) {
 					if (maxWidth) {
-						return `width: clamp(${Math.min(maxWidth, Math.max(image.width, minWidth ?? 1))}px, 100%, ${maxWidth}px); height: auto;`;
+						return `width: clamp(${Math.min(maxWidth, Math.max(width, minWidth ?? 1))}px, 100%, ${maxWidth}px); height: auto;`;
 					} else if (minWidth) {
-						return `width: max(${Math.max(image.width, minWidth)}px, 100%); height: auto;`;
+						return `width: max(${Math.max(width, minWidth)}px, 100%); height: auto;`;
 					}
 				}
 
@@ -138,11 +186,11 @@
 				return `height: 100%; width: auto; object-fit: contain;`;
 			case ImageSize.Original:
 			default:
-				if (image.width) {
+				if (width !== undefined) {
 					if (maxWidth) {
-						return `width: min(${Math.max(image.width, minWidth ?? 1)}px, min(${maxWidth}px, 100%));`;
+						return `width: min(${Math.max(width, minWidth ?? 1)}px, min(${maxWidth}px, 100%));`;
 					} else if (minWidth) {
-						return `width: min(${Math.max(image.width, minWidth)}px, 100%);`;
+						return `width: min(${Math.max(width, minWidth)}px, 100%);`;
 					}
 				}
 
@@ -166,9 +214,9 @@
 	$: updateStyles($prefs, image);
 	$: preloadImages(currentPage);
 	$: changePage($readerPage);
-	$: {
-		readStat(currentPage);
-	}
+	$: readStat(currentPage);
+
+	$: imgSrc = getImageUrl(image, $prefs.preset);
 </script>
 
 <svelte:window
@@ -212,12 +260,12 @@
 				alt={`Page ${currentPage}`}
 				bind:this={imageEl}
 				class="m-auto"
-				height={image.height}
+				height={getImageDimensions(image, $prefs.preset)?.height}
 				loading="eager"
 				on:error={() => toast.error('Failed to load the page')}
-				src={`/image/${gallery.hash}/${image?.pageNumber}`}
+				src={imgSrc}
 				style={imageStyle}
-				width={image.width}
+				width={getImageDimensions(image, $prefs.preset)?.width}
 			/>
 		{/if}
 	</div>

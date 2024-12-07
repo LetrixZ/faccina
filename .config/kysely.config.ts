@@ -31,7 +31,5 @@ const db = new Kysely<DB>({
 
 export default defineConfig({
 	kysely: db,
-	migrations: {
-		migrationFolder: 'migrations',
-	},
+	migrations: { migrationFolder: 'shared/db/migrations' },
 });

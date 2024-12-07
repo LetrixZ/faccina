@@ -78,19 +78,22 @@ const resampledImage = async (
 	archive: ImageArchive,
 	type: string
 ): Promise<[Buffer | Uint8Array, string]> => {
-	const result = z.enum(['cover', 'thumb']).safeParse(type);
+	let presetName: string | undefined = undefined;
+
+	const result = z
+		.enum(['cover', 'thumb', ...config.image.readerPresets.map((preset) => preset.name)])
+		.safeParse(type);
 
 	if (!result.data) {
-		error(400, {
-			message: `Requested image type "${type}" is not valid.`,
-			status: 400,
-		});
+		return originalImage(archive);
+	} else {
+		presetName = result.data;
 	}
 
-	const preset = match(result.data)
+	const preset = match(presetName)
 		.with('cover', () => config.image.coverPreset)
 		.with('thumb', () => config.image.thumbnailPreset)
-		.exhaustive();
+		.otherwise((name) => config.image.readerPresets.find((preset) => preset.name === name)!);
 
 	const imagePath = join(
 		config.directories.images,
