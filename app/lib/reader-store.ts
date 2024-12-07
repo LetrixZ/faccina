@@ -32,3 +32,5 @@ export const readerTimeout = (() => {
 })();
 
 export const presets = writable<Preset[]>([]);
+export const defaultPreset = writable<string | undefined>(undefined);
+export const allowOriginal = writable(true);

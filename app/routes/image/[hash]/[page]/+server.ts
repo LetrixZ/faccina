@@ -81,7 +81,7 @@ const resampledImage = async (
 	let presetName: string | undefined = undefined;
 
 	const result = z
-		.enum(['cover', 'thumb', ...config.image.readerPresets.map((preset) => preset.name)])
+		.enum(['cover', 'thumb', ...config.image.presets.map((preset) => preset.name)])
 		.safeParse(type);
 
 	if (!result.data) {
@@ -90,10 +90,18 @@ const resampledImage = async (
 		presetName = result.data;
 	}
 
+	let allowAspectRatioSimilar = false;
+
 	const preset = match(presetName)
-		.with('cover', () => config.image.coverPreset)
-		.with('thumb', () => config.image.thumbnailPreset)
-		.otherwise((name) => config.image.readerPresets.find((preset) => preset.name === name)!);
+		.with('cover', () => {
+			allowAspectRatioSimilar = true;
+			return config.image.coverPreset;
+		})
+		.with('thumb', () => {
+			allowAspectRatioSimilar = true;
+			return config.image.thumbnailPreset;
+		})
+		.otherwise((name) => config.image.presets.find((preset) => preset.name === name)!);
 
 	const imagePath = join(
 		config.directories.images,
@@ -114,6 +122,7 @@ const resampledImage = async (
 			page: archive.pageNumber,
 			savePath: imagePath,
 			preset,
+			allowAspectRatioSimilar,
 		});
 
 		return [encodedImage, extname(imagePath)];

@@ -27,5 +27,7 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 	return {
 		gallery,
 		presets: config.image.readerPresets,
+		defaultPreset: config.image.readerDefaultPreset,
+		allowOriginal: config.image.readerAllowOriginal,
 	};
 };

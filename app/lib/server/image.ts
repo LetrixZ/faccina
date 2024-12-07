@@ -15,6 +15,7 @@ export type ImageEncodingArgs = {
 	page: number;
 	savePath: string;
 	preset: Preset;
+	allowAspectRatioSimilar: boolean;
 };
 
 export type ImageDimensionsArgs = {
@@ -125,7 +126,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 	let newHeight: number | undefined = undefined;
 
-	if (!preset.reader && config.image.aspectRatioSimilar) {
+	if (config.image.aspectRatioSimilar && args.allowAspectRatioSimilar) {
 		const aspectRatio = width! / height!;
 
 		if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {

@@ -169,6 +169,9 @@ const imageSchema = z
 		aspect_ratio_similar: z.boolean().default(true),
 		remove_on_update: z.boolean().default(true),
 		preset: z.record(z.string(), presetSchema).default({}),
+		reader_presets: z.array(z.string()).default([]),
+		reader_default_preset: z.string().optional(),
+		reader_allow_original: z.boolean().default(true),
 		caching: z
 			.union([z.boolean(), z.number(), cachingSchema])
 			.optional()
@@ -192,7 +195,6 @@ const imageSchema = z
 					format: 'webp',
 					width: 540,
 					label: 'Cover',
-					reader: false,
 				},
 			};
 		} else if (!val.preset || !(val.coverPreset in val.preset)) {
@@ -210,7 +212,6 @@ const imageSchema = z
 					format: 'webp',
 					width: 360,
 					label: 'Thumbnail',
-					reader: false,
 				},
 			};
 		} else if (!val.preset || !(val.thumbnailPreset in val.preset)) {
@@ -256,17 +257,48 @@ const imageSchema = z
 			return val.preset;
 		})(),
 	}))
-	.transform((val) => ({
-		...omit(['preset'], val),
-		readerPresets: Object.entries(val.preset).reduce((acc, [name, preset]) => {
-			if (!preset.reader) {
-				return acc;
-			}
-
+	.transform((val) => {
+		const presets = Object.entries(val.preset).reduce((acc, [name, preset]) => {
 			acc.push({ ...preset, name });
 			return acc;
-		}, [] as Preset[]),
-	}));
+		}, [] as Preset[]);
+
+		const readerPresets = presets
+			.filter((preset) => val.readerPresets.includes(preset.name))
+			.sort((a, b) => {
+				const indexA = val.readerPresets.indexOf(a.name);
+				const indexB = val.readerPresets.indexOf(b.name);
+				return indexA - indexB;
+			});
+
+		return {
+			...omit(['preset'], val),
+			presets,
+			readerPresets,
+		};
+	})
+	.superRefine((val, ctx) => {
+		if (!val.readerAllowOriginal && !val.readerPresets.length) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['images'],
+				message: `You need to specify images presets for the reader if original images aren't allowed in the reader`,
+			});
+		}
+
+		const readerDefaultPreset = val.readerDefaultPreset;
+
+		if (
+			readerDefaultPreset !== undefined &&
+			!val.readerPresets.some((preset) => preset.name.includes(readerDefaultPreset))
+		) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['images'],
+				message: `The default reader preset was not found in the reader presets array.`,
+			});
+		}
+	});
 
 const mailerSchema = z.object({
 	host: z.string(),

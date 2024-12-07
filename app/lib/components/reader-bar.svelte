@@ -21,6 +21,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index';
 	import {
+		allowOriginal,
 		nextPage,
 		preferencesOpen,
 		prefs,
@@ -283,12 +284,14 @@
 			<h3 class="text-lg font-medium">Image quality</h3>
 
 			<div class="grid grid-cols-2 gap-2">
-				<Button
-					on:click={() => ($prefs.preset = undefined)}
-					variant={!$prefs.preset ? 'secondary' : 'outline'}
-				>
-					Original
-				</Button>
+				{#if $allowOriginal}
+					<Button
+						on:click={() => ($prefs.preset = undefined)}
+						variant={!$prefs.preset ? 'secondary' : 'outline'}
+					>
+						Original
+					</Button>
+				{/if}
 
 				{#each $presets as preset}
 					<Button
