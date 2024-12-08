@@ -1,5 +1,6 @@
 import type { PathLike } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Tag } from './metadata';
 
 export const isBun = !!process.versions.bun;
@@ -68,11 +69,45 @@ export const generateFilename = (title: string, tags?: Tag[]) => {
 
 export const sleep = (time: number) => new Promise((r) => setTimeout(r, time));
 
-export const exists = async (path: PathLike) => {
-	try {
-		await access(path);
-		return true;
-	} catch {
-		return false;
+export const exists = async (path: PathLike) =>
+	access(path)
+		.then(() => true)
+		.catch(() => false);
+
+/**
+ * @see https://github.com/svenschoenung/glob-escape/blob/master/index.js
+ */
+export const escapeGlob = (str: string) =>
+	str
+		.replace(/\\/g, '\\\\')
+		.replace(/\*/g, '\\*')
+		.replace(/\?/g, '\\?')
+		.replace(/\[/g, '\\[')
+		.replace(/\]/g, '\\]')
+		.replace(/\{/g, '\\{')
+		.replace(/\}/g, '\\}')
+		.replace(/\)/g, '\\)')
+		.replace(/\(/g, '\\(')
+		// eslint-disable-next-line no-useless-escape
+		.replace(/\!/g, '\\!');
+
+/**
+ * @see https://stackoverflow.com/a/75986922
+ */
+export const directorySize = async (path: string) => {
+	let size = 0;
+	const files = await readdir(path);
+
+	for (let i = 0; i < files.length; i++) {
+		const filePath = join(path, files[i]);
+		const stats = await stat(filePath);
+
+		if (stats.isFile()) {
+			size += stats.size;
+		} else if (stats.isDirectory()) {
+			size += await directorySize(filePath);
+		}
 	}
+
+	return size;
 };

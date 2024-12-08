@@ -1,12 +1,13 @@
-import { basename, extname } from 'path';
-import { readFile } from 'node:fs/promises';
+import { basename, dirname, extname, parse } from 'node:path';
+import { Glob } from 'bun';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
 import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
 import type { ArchiveMetadata } from '../../shared/metadata';
-import { exists, readStream } from '../../shared/utils';
+import { escapeGlob, readStream } from '../../shared/utils';
+import { IndexScan, MetadataScan } from '../archive';
 import anchira from './anchira';
 import booru from './booru';
 import ccdc06 from './ccdc06';
@@ -109,14 +110,16 @@ export const getJsonSchema = (content: string) => {
 
 	if (minified.match(/("coverImageUrl"|"maleTags"|"femaleTags")/)) {
 		return MetadataSchema.HenTag;
-	} else if (minified.match(/"gallery_info":\{/)) {
-		return MetadataSchema.EzeSad;
-	} else if (minified.match(/("group":|"artist":|"male":|"female":)\[/)) {
-		return MetadataSchema.Eze;
-	} else if (minified.match(/("artist:.*"|"group:.*"|"male:.*"|"female:.*")/)) {
-		return MetadataSchema.GalleryDL;
 	} else if (minified.match(/(("Tags":)\[)|("Artist":")/)) {
 		return MetadataSchema.Koromo;
+	} else if (minified.match(/"gallery_info":\{/)) {
+		return MetadataSchema.EzeSad;
+	} else if (
+		minified.match(/"tags":{.*?(artist|group|parody|character|language|female|male|misc)(.*?)},/)
+	) {
+		return MetadataSchema.Eze;
+	} else if (minified.match(/"tags":\[.*?(artist|group|parody|character|language)(.*?)\],/)) {
+		return MetadataSchema.GalleryDL;
 	}
 
 	throw new Error('Failed to determine JSON metadata schema');
@@ -225,33 +228,30 @@ const metadataFormat = (filename: string) => {
 		});
 };
 
-export const addExternalMetadata = async (path: string, archive: ArchiveMetadata) => {
+export const addExternalMetadata = async (scan: IndexScan, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
-	const paths = [
-		path.replace(/\.(cbz|zip)/, '.yaml'),
-		path.replace(/\.(cbz|zip)/, '.yml'),
-		path.replace(/\.(cbz|zip)/, '.json'),
-		path.replace(/\.(cbz|zip)/, '.booru.txt'),
-		path.replace(/\.(cbz|zip)/, '.xml'),
-	];
+	const normalized =
+		scan.type === 'archive' ? escapeGlob(parse(scan.path).name) : escapeGlob(basename(scan.path));
+	const glob = new Glob(`${normalized}.{json,yaml,yml,xml,booru.txt}`);
 
-	for (const metadataPath of paths) {
-		if (!metadataPath.length || !(await exists(metadataPath))) {
-			continue;
+	const paths: string[] = Array.from(
+		glob.scanSync({ cwd: dirname(scan.path), absolute: true, followSymlinks: true })
+	);
+
+	for (const path of paths) {
+		try {
+			const content = await Bun.file(path).text();
+			return handleMetadataFormat(content, basename(path), metadataFormat(basename(path)), archive);
+		} catch {
+			/* empty */
 		}
-
-		const filename = basename(metadataPath);
-
-		const content = await readFile(metadataPath, 'utf8');
-
-		return handleMetadataFormat(content, filename, metadataFormat(filename), archive);
 	}
 
 	throw new Error('No external metadata file found');
 };
 
-export const addEmbeddedMetadata = async (zip: StreamZipAsync, archive: ArchiveMetadata) => {
+export const addEmbeddedZipMetadata = async (zip: StreamZipAsync, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
 	const entries = [
@@ -273,5 +273,40 @@ export const addEmbeddedMetadata = async (zip: StreamZipAsync, archive: ArchiveM
 		return handleMetadataFormat(content, entry.name, metadataFormat(entry.name), archive);
 	}
 
-	throw new Error('No embedded metadata file found');
+	throw new Error('No embedded ZIP metadata file found');
+};
+
+export const addEmbeddedDirMetadata = async (scan: MetadataScan, archive: ArchiveMetadata) => {
+	archive = structuredClone(archive);
+
+	if (scan.metadata) {
+		const content = await Bun.file(scan.metadata).text();
+		return handleMetadataFormat(
+			content,
+			basename(scan.metadata),
+			metadataFormat(basename(scan.metadata)),
+			archive
+		);
+	} else {
+		const metadataGlob = new Glob('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}');
+		const paths = Array.from(
+			metadataGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
+		);
+
+		for (const path of paths) {
+			try {
+				const content = await Bun.file(path).text();
+				return handleMetadataFormat(
+					content,
+					basename(path),
+					metadataFormat(basename(path)),
+					archive
+				);
+			} catch {
+				/* empty */
+			}
+		}
+	}
+
+	throw new Error('No embedded directory metadata file found');
 };

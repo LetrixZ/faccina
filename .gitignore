@@ -185,3 +185,7 @@ config.toml
 
 *.sqlite*
 docker-compose.yaml
+
+compile
+faccina
+faccina.tar.gz

@@ -1,11 +1,12 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, extname, join } from 'node:path';
+import { stat } from 'node:fs/promises';
+import { extname, join } from 'path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import type { ImageArchive } from '$lib/types';
-import config, { type Preset } from '~shared/config';
+import type { Preset } from '$lib/image-presets';
+import config from '~shared/config';
 import db from '~shared/db';
 import { leadingZeros } from '~shared/utils';
 
@@ -14,6 +15,7 @@ export type ImageEncodingArgs = {
 	page: number;
 	savePath: string;
 	preset: Preset;
+	allowAspectRatioSimilar: boolean;
 };
 
 export type ImageDimensionsArgs = {
@@ -92,15 +94,19 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	);
 
 	try {
-		data = await readFile(originalImagePath);
+		data = await Bun.file(originalImagePath).bytes();
 	} catch {
-		const zip = new StreamZip.async({ file: args.archive.path });
-		data = await zip.entryData(image.filename);
+		const info = await stat(args.archive.path);
 
-		if (config.server.autoUnpack) {
-			mkdir(dirname(originalImagePath), { recursive: true }).then(() =>
-				writeFile(originalImagePath, data)
-			);
+		if (info.isFile()) {
+			const zip = new StreamZip.async({ file: args.archive.path });
+			data = await zip.entryData(image.filename);
+
+			if (config.server.autoUnpack) {
+				Bun.write(originalImagePath, data);
+			}
+		} else {
+			data = await Bun.file(join(args.archive.path, args.archive.filename)).bytes();
 		}
 	}
 
@@ -120,7 +126,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 	let newHeight: number | undefined = undefined;
 
-	if (config.image.aspectRatioSimilar) {
+	if (config.image.aspectRatioSimilar && args.allowAspectRatioSimilar) {
 		const aspectRatio = width! / height!;
 
 		if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {
@@ -129,8 +135,8 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	}
 
 	pipeline = pipeline.resize({
-		width: Math.floor(preset.width),
-		height: newHeight ? Math.floor(newHeight) : undefined,
+		width: Math.round(preset.width),
+		height: newHeight ? Math.round(newHeight) : undefined,
 	});
 	pipeline = match(preset)
 		.with({ format: 'webp' }, (data) => pipeline.webp(data))
@@ -143,8 +149,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	const newImage = await pipeline.toBuffer();
 
 	try {
-		await mkdir(dirname(args.savePath), { recursive: true });
-		await writeFile(args.savePath, newImage);
+		await Bun.write(args.savePath, newImage);
 	} catch (err) {
 		console.error(
 			chalk.red(

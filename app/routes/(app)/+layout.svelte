@@ -1,6 +1,17 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-	import { Bookmark, Clock, Heart, UserCircle } from 'lucide-svelte';
+	import {
+		Bookmark,
+		Clock,
+		Heart,
+		UserCircle,
+		Home,
+		LogIn,
+		LogOut,
+		User,
+		Search,
+		Settings,
+	} from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import LoginForm from '$lib/components/login-form.svelte';
@@ -15,12 +26,6 @@
 	import type { UserFormState } from '$lib/models';
 	import { query, tagList, userCollections } from '$lib/stores';
 	import { cn } from '$lib/utils';
-	import IonMdHome from '~icons/ion/md-home';
-	import MdiAccount from '~icons/mdi/account';
-	import MdiLogin from '~icons/mdi/login';
-	import MdiLogout from '~icons/mdi/logout';
-	import MdiSettings from '~icons/mdi/settings';
-	import PhMagnifyingGlass from '~icons/ph/magnifying-glass';
 
 	export let data;
 
@@ -201,7 +206,7 @@
 		title="Go home"
 		variant="ghost"
 	>
-		<IonMdHome class="size-6" />
+		<Home class="size-6" />
 	</Button>
 
 	<div class="h-12 w-full flex-1 p-2">
@@ -303,7 +308,7 @@
 					variant="ghost"
 				>
 					<span class="sr-only">Search</span>
-					<PhMagnifyingGlass />
+					<Search class="size-5" />
 				</Button>
 			</form>
 
@@ -345,7 +350,7 @@
 					href="/preferences"
 				>
 					Preferences
-					<MdiSettings class="ms-auto size-4" />
+					<Settings class="ms-auto size-4" />
 				</DropdownMenu.Item>
 
 				{#if data.user}
@@ -388,7 +393,7 @@
 						href="/account"
 					>
 						Account
-						<MdiAccount class="ms-auto size-[1.125rem]" />
+						<User class="ms-auto size-[1.125rem]" />
 					</DropdownMenu.Item>
 
 					<DropdownMenu.Item
@@ -396,7 +401,7 @@
 						on:click={logout}
 					>
 						Logout
-						<MdiLogout class="ms-auto size-4" />
+						<LogOut class="ms-auto size-4" />
 					</DropdownMenu.Item>
 				{:else if data.site.enableUsers}
 					<DropdownMenu.Separator />
@@ -406,7 +411,7 @@
 						on:click={showLogin}
 					>
 						Login
-						<MdiLogin class="ms-auto size-4" />
+						<LogIn class="ms-auto size-4" />
 					</DropdownMenu.Item>
 				{/if}
 			</DropdownMenu.Group>

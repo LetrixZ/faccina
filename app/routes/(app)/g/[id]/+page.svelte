@@ -1,11 +1,23 @@
 <script lang="ts">
 	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import { Bookmark, Eye, EyeOff, Heart, Info, Pencil, Tag } from 'lucide-svelte';
+	import {
+		Bookmark,
+		BookOpenText,
+		Download,
+		Eye,
+		EyeOff,
+		Heart,
+		Info,
+		Pencil,
+		Tag,
+		Trash2,
+	} from 'lucide-svelte';
 	import pMap from 'p-map';
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
 	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import ArchiveEditForm from '$lib/components/archive-edit-form.svelte';
 	import ArchiveTagsEditForm from '$lib/components/archive-tag-edit-form.svelte';
@@ -15,6 +27,7 @@
 	import GallerySource from '$lib/components/gallery-source.svelte';
 	import GalleryThumbnails from '$lib/components/gallery-thumbnails.svelte';
 	import InfoSection from '$lib/components/info-section.svelte';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Separator } from '$lib/components/ui/separator';
@@ -29,14 +42,13 @@
 		isTag,
 		randomString,
 	} from '$lib/utils';
-	import AiOutlineRead from '~icons/ant-design/read-outlined';
-	import BiSolidDownload from '~icons/bxs/download';
 
 	export let data;
 
 	let editOpen = false;
 	let editTaxonomyOpen = false;
 	let collectionsOpen = false;
+	let removeArchiveOpen = false;
 
 	$: canDownload = data.site.guestDownloads || !!data.user;
 	$: gallery = data.gallery;
@@ -169,6 +181,27 @@
 	$: isBookmarked = !!$userCollections
 		?.find((c) => c.protected)
 		?.archives.find((a) => a.id === gallery.id);
+
+	const remove = async () => {
+		toast.promise(fetch(`/internal/${gallery.id}/remove`, { method: 'DELETE' }), {
+			loading: 'Deleting archive',
+			success: () => {
+				goto('/');
+				return 'Archive succesfully deleted';
+			},
+			error: (error) => {
+				console.error(error);
+
+				if (error instanceof Error) {
+					return `Failed to delete archive: ${error.message}`;
+				}
+
+				return 'Failed to delete archive';
+			},
+			position: 'bottom-center',
+			duration: 10000,
+		});
+	};
 </script>
 
 <svelte:head>
@@ -231,7 +264,7 @@
 				</Button>
 
 				{#if archive?.deletedAt}
-					<form action="?/show" class="col-span-2" method="POST" use:enhance>
+					<form action="?/show" method="POST" use:enhance>
 						<Button
 							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
 							type="submit"
@@ -241,7 +274,7 @@
 						</Button>
 					</form>
 				{:else}
-					<form action="?/hide" class="col-span-2" method="POST" use:enhance>
+					<form action="?/hide" method="POST" use:enhance>
 						<Button
 							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
 							type="submit"
@@ -251,6 +284,16 @@
 						</Button>
 					</form>
 				{/if}
+
+				<Button
+					class="flex w-full bg-red-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-red-700/80"
+					on:click={() =>
+						$siteConfig.admin.deleteRequireConfirmation ? (removeArchiveOpen = true) : remove()}
+					type="submit"
+				>
+					<Trash2 class="size-5 shrink-0" />
+					<span class="flex-auto"> Delete </span>
+				</Button>
 			</div>
 
 			<Separator />
@@ -263,7 +306,7 @@
 					href={`./${gallery.id}/read/1${$page.url.search}`}
 					variant="secondary"
 				>
-					<AiOutlineRead class="size-5 shrink-0" />
+					<BookOpenText class="size-5 shrink-0" />
 					<span class="flex-auto"> Start reading </span>
 				</Button>
 			{:else}
@@ -272,7 +315,7 @@
 					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
 					variant="secondary"
 				>
-					<AiOutlineRead class="size-5 shrink-0" />
+					<BookOpenText class="size-5 shrink-0" />
 					<span class="flex-auto"> Continue </span>
 				</Button>
 			{/if}
@@ -287,7 +330,7 @@
 					on:click={startDownload}
 					variant="secondary"
 				>
-					<BiSolidDownload class="size-5 shrink-0" />
+					<Download class="size-5 shrink-0" />
 					<span class="flex-auto"> Download </span>
 				</Button>
 			</div>
@@ -516,3 +559,19 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+<AlertDialog.Root onOpenChange={(open) => (removeArchiveOpen = open)} open={removeArchiveOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Are you sure?</AlertDialog.Title>
+			<AlertDialog.Description>
+				This will permanently delete the archive from the database, the associated files and
+				generated images.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action on:click={remove}>Continue</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

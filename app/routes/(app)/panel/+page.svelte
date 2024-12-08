@@ -1,11 +1,7 @@
 <script lang="ts">
-	import { Bookmark, Clock, Heart } from 'lucide-svelte';
+	import { Bookmark, Clock, Heart, Settings, LogOut, LogIn, User } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import MdiAccount from '~icons/mdi/account';
-	import MdiLogin from '~icons/mdi/login';
-	import MdiLogout from '~icons/mdi/logout';
-	import MdiSettings from '~icons/mdi/settings';
 
 	export let data;
 </script>
@@ -17,7 +13,7 @@
 		variant="outline"
 	>
 		Preferences
-		<MdiSettings class="size-4" />
+		<Settings class="size-4" />
 	</Button>
 
 	{#if data.user}
@@ -64,17 +60,17 @@
 			variant="outline"
 		>
 			Acount
-			<MdiAccount class="size-4" />
+			<User class="size-4" />
 		</Button>
 
 		<form action="/logout?to=/panel" class="w-full" method="POST">
 			<Button
-				class="flex w-full items-center justify-between gap-2 text-neutral-200"
+				class="iteƒms-center flex w-full justify-between gap-2 text-neutral-200"
 				type="submit"
 				variant="outline"
 			>
 				Logout
-				<MdiLogout class="size-4" />
+				<LogOut class="size-4" />
 			</Button>
 		</form>
 	{:else if data.site.enableUsers}
@@ -86,7 +82,7 @@
 			variant="outline"
 		>
 			Login
-			<MdiLogin class="size-4" />
+			<LogIn class="size-4" />
 		</Button>
 	{/if}
 </main>

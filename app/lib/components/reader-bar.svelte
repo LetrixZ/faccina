@@ -21,9 +21,11 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index';
 	import {
+		allowOriginal,
 		nextPage,
 		preferencesOpen,
 		prefs,
+		presets,
 		previewLayout,
 		prevPage,
 		readerPage,
@@ -52,10 +54,6 @@
 
 	const onModeChange = (mode: string | undefined) => {
 		$prefs.imageSize = (mode ?? ImageSize.Original) as ImageSize;
-	};
-
-	const onLayoutChange = (mode: string | undefined) => {
-		$prefs.touchLayout = (mode ?? TouchLayout.LeftToRight) as TouchLayout;
 	};
 
 	$: {
@@ -236,7 +234,10 @@
 {/if}
 
 <Dialog.Root bind:open={$preferencesOpen}>
-	<Dialog.Content>
+	<Dialog.Content
+		class={cn($previewLayout && 'bg-opacity-70')}
+		overlayClass={cn($previewLayout && 'backdrop-blur-none bg-background/20')}
+	>
 		<Dialog.Header>
 			<Dialog.Title>Reader preferences</Dialog.Title>
 		</Dialog.Header>
@@ -257,29 +258,59 @@
 
 		<h3 class="text-lg font-medium">Touch layout</h3>
 
-		<ToggleGroup.Root
-			class="flex flex-wrap"
-			id="fit-mode"
-			onValueChange={onLayoutChange}
-			type="single"
-			value={$prefs.touchLayout}
-			variant="outline"
-		>
-			<ToggleGroup.Item value={TouchLayout.LeftToRight}>Left to Right</ToggleGroup.Item>
-			<ToggleGroup.Item value={TouchLayout.RightToLeft}>Right to Left</ToggleGroup.Item>
-		</ToggleGroup.Root>
+		<div class="mx-auto flex flex-wrap gap-2">
+			<Button
+				on:click={() => ($prefs.touchLayout = TouchLayout.LeftToRight)}
+				variant={$prefs.touchLayout === TouchLayout.LeftToRight ? 'secondary' : 'outline'}
+			>
+				Left to Right
+			</Button>
+			<Button
+				on:click={() => ($prefs.touchLayout = TouchLayout.RightToLeft)}
+				variant={$prefs.touchLayout === TouchLayout.RightToLeft ? 'secondary' : 'outline'}
+			>
+				Right to Left
+			</Button>
+		</div>
 
 		<div class="flex items-center">
 			<Label class="w-full" for="preview-layout">Preview touch layout</Label>
 			<Checkbox bind:checked={$previewLayout} id="preview-layout" />
 		</div>
 
+		{#if $presets.length}
+			<Separator />
+
+			<h3 class="text-lg font-medium">Image quality</h3>
+
+			<div class="grid grid-cols-2 gap-2">
+				{#if $allowOriginal}
+					<Button
+						on:click={() => ($prefs.preset = undefined)}
+						variant={!$prefs.preset ? 'secondary' : 'outline'}
+					>
+						Original
+					</Button>
+				{/if}
+
+				{#each $presets as preset}
+					<Button
+						on:click={() => ($prefs.preset = preset.name)}
+						value={preset.name}
+						variant={$prefs.preset === preset.name ? 'secondary' : 'outline'}
+					>
+						{preset.label}
+					</Button>
+				{/each}
+			</div>
+		{/if}
+
 		<Separator />
 
 		<h3 class="text-lg font-medium">Image scaling</h3>
 
 		<ToggleGroup.Root
-			class="flex flex-wrap"
+			class="flex flex-wrap gap-2"
 			id="fit-mode"
 			onValueChange={onModeChange}
 			type="single"

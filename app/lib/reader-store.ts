@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import type { Gallery } from './types';
 import { preferencesSchema, type ReaderPreferences } from './utils';
+import type { Preset } from './image-presets';
 
 export const showBar = writable(true);
 
@@ -29,3 +30,7 @@ export const readerTimeout = (() => {
 
 	return { reset, clear };
 })();
+
+export const presets = writable<Preset[]>([]);
+export const defaultPreset = writable<string | undefined>(undefined);
+export const allowOriginal = writable(true);

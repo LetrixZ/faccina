@@ -12,7 +12,7 @@ export const multiTextField = z
 
 export type MultiTextField = z.infer<typeof multiTextField>;
 
-export const mapMultiField = (field?: MultiTextField) => {
+export const mapMultiField = (field: MultiTextField | null | undefined) => {
 	if (!field) {
 		return [];
 	}

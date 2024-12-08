@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, extname, join } from 'node:path';
+import { stat } from 'fs/promises';
+import { extname, join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
@@ -25,10 +25,10 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 	let extension: string;
 
 	try {
-		data = await readFile(imagePath);
+		data = await Bun.file(imagePath).bytes();
 		extension = extname(imagePath);
 	} catch {
-		if (!(await exists(archive.path))) {
+		if (!exists(archive.path)) {
 			console.error(
 				chalk.red(
 					`[${new Date().toISOString()}] ${chalk.blue`originalImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - ZIP archive not found in path ${chalk.bold(archive.path)}`
@@ -41,12 +41,19 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 			});
 		}
 
-		const zip = new StreamZip.async({ file: archive.path });
-		data = await zip.entryData(archive.filename);
-		extension = extname(archive.filename);
+		const info = await stat(archive.path);
 
-		if (config.server.autoUnpack) {
-			mkdir(dirname(imagePath), { recursive: true }).then(() => writeFile(imagePath, data));
+		if (info.isFile()) {
+			const zip = new StreamZip.async({ file: archive.path });
+			data = await zip.entryData(archive.filename);
+			extension = extname(archive.filename);
+
+			if (config.server.autoUnpack) {
+				Bun.write(imagePath, data);
+			}
+		} else {
+			data = await Bun.file(join(archive.path, archive.filename)).bytes();
+			extension = extname(archive.filename);
 		}
 	}
 
@@ -71,19 +78,30 @@ const resampledImage = async (
 	archive: ImageArchive,
 	type: string
 ): Promise<[Buffer | Uint8Array, string]> => {
-	const result = z.enum(['cover', 'thumb']).safeParse(type);
+	let presetName: string | undefined = undefined;
+
+	const result = z
+		.enum(['cover', 'thumb', ...config.image.presets.map((preset) => preset.name)])
+		.safeParse(type);
 
 	if (!result.data) {
-		error(400, {
-			message: `Requested image type "${type}" is not valid.`,
-			status: 400,
-		});
+		return originalImage(archive);
+	} else {
+		presetName = result.data;
 	}
 
-	const preset = match(result.data)
-		.with('cover', () => config.image.coverPreset)
-		.with('thumb', () => config.image.thumbnailPreset)
-		.exhaustive();
+	let allowAspectRatioSimilar = false;
+
+	const preset = match(presetName)
+		.with('cover', () => {
+			allowAspectRatioSimilar = true;
+			return config.image.coverPreset;
+		})
+		.with('thumb', () => {
+			allowAspectRatioSimilar = true;
+			return config.image.thumbnailPreset;
+		})
+		.otherwise((name) => config.image.presets.find((preset) => preset.name === name)!);
 
 	const imagePath = join(
 		config.directories.images,
@@ -92,8 +110,10 @@ const resampledImage = async (
 		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);
 
-	if (await exists(imagePath)) {
-		return [await readFile(imagePath), extname(imagePath)];
+	const file = Bun.file(imagePath);
+
+	if (await file.exists()) {
+		return [await file.bytes(), extname(imagePath)];
 	}
 
 	try {
@@ -102,6 +122,7 @@ const resampledImage = async (
 			page: archive.pageNumber,
 			savePath: imagePath,
 			preset,
+			allowAspectRatioSimilar,
 		});
 
 		return [encodedImage, extname(imagePath)];

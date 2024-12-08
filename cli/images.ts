@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
@@ -6,10 +6,11 @@ import StreamZip from 'node-stream-zip';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import config, { Preset } from '../shared/config';
+import { Preset } from '../app/lib/image-presets';
+import config from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
-import { exists, leadingZeros, readStream, sleep } from '../shared/utils';
+import { exists, leadingZeros, sleep } from '../shared/utils';
 import { queryIdRanges } from './utilts';
 
 type GenerateImagesOptions = {
@@ -122,12 +123,24 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 	await pMap(
 		archivesEncode,
 		async (archive) => {
-			const zip = new StreamZip.async({ file: archive.path });
+			const info = await stat(archive.path);
+			let zip: StreamZip.StreamZipAsync | null = null;
+
+			if (info.isFile()) {
+				zip = new StreamZip.async({ file: archive.path });
+			}
+
+			const getImage = (filename: string) => {
+				if (zip) {
+					return zip.entryData(filename);
+				} else {
+					return Bun.file(join(archive.path, filename)).bytes();
+				}
+			};
 
 			for (const image of archive.images) {
 				try {
-					const stream = await zip.stream(image.filename);
-					const buffer = await readStream(stream);
+					const buffer = await getImage(image.filename);
 
 					let pipeline = sharp(buffer);
 

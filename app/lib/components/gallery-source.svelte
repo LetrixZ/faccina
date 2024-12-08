@@ -11,7 +11,6 @@
 	import Patreon from '$assets/patreon.webp';
 	import Pixiv from '$assets/pixiv.webp';
 	import ProjectHentai from '$assets/project-hentai.webp';
-	import IcBaselineQuestionMark from '~icons/ic/baseline-question-mark';
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 
@@ -85,6 +84,6 @@
 	{#if image}
 		<img alt={`${source.name} icon`} src={image} />
 	{:else}
-		<IcBaselineQuestionMark class="text-black" />
+		<span>?</span>
 	{/if}
 </a>

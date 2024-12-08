@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'url';
-import Icons from 'unplugin-icons/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, Plugin } from 'vite';
 
@@ -26,7 +25,7 @@ const hexLoader: Plugin = {
 
 export default defineConfig({
 	server: { fs: { allow: ['app'] } },
-	plugins: [hexLoader, sveltekit(), Icons({ compiler: 'svelte' })],
+	plugins: [hexLoader, sveltekit()],
 	define: {
 		PKG: pkg,
 	},

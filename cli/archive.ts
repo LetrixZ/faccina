@@ -1,11 +1,9 @@
-import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { rename, stat, writeFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
-import { parse } from 'path';
+import { rename, stat } from 'node:fs/promises';
+import { dirname, extname, join, parse } from 'node:path';
+import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
-import { glob } from 'glob';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
@@ -14,9 +12,10 @@ import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { exists, leadingZeros, readStream, sleep } from '../shared/utils';
+import { directorySize, exists, leadingZeros, readStream } from '../shared/utils';
 import {
-	addEmbeddedMetadata,
+	addEmbeddedDirMetadata,
+	addEmbeddedZipMetadata,
 	addExternalMetadata,
 	MetadataFormat,
 	MetadataSchema,
@@ -25,6 +24,8 @@ import { parseFilename } from './metadata/utils';
 import { queryIdRanges } from './utilts';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
+
+const imageGlob = new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}');
 
 interface IndexOptions {
 	paths?: string[];
@@ -37,12 +38,25 @@ interface IndexOptions {
 	verbose?: boolean;
 }
 
+export type ArchiveScan = {
+	type: 'archive';
+	path: string;
+};
+
+export type MetadataScan = {
+	type: 'metadata';
+	path: string;
+	metadata?: string;
+};
+
+export type IndexScan = ArchiveScan | MetadataScan;
+
 /**
  * Index archives to the database
  * @param opts Indexing options
  */
 export const indexArchives = async (opts: IndexOptions) => {
-	let indexPaths: string[] = [];
+	let indexScans: IndexScan[] = [];
 
 	const db = (await import('../shared/db')).default;
 
@@ -51,8 +65,26 @@ export const indexArchives = async (opts: IndexOptions) => {
 			.select('archives.path')
 			.execute();
 
-		indexPaths = archives.map((archive) => archive.path);
+		for (const archive of archives) {
+			const info = await stat(archive.path).catch(() => null);
+
+			if (!info) {
+				console.error(
+					chalk.bold(
+						`Archive path ${chalk.bold(archive.path)} does not exist or is not a directory or file.`
+					)
+				);
+				continue;
+			}
+
+			if (info.isDirectory()) {
+				indexScans.push({ type: 'metadata', path: archive.path });
+			} else if (info.isFile()) {
+				indexScans.push({ type: 'archive', path: archive.path });
+			}
+		}
 	} else {
+		// Path argument
 		const hasPaths = opts.paths ? opts.paths?.length > 0 : false;
 
 		if (!opts.paths || !hasPaths) {
@@ -68,49 +100,84 @@ export const indexArchives = async (opts: IndexOptions) => {
 				);
 			}
 
+			// Add content directory to scanning paths
 			opts.paths = [config.directories.content];
 		}
 
 		for (const path of opts.paths) {
 			const info = await stat(path).catch(() => null);
 
-			if (info?.isDirectory()) {
-				indexPaths.push(
-					...glob.globSync(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}', {
-						cwd: path,
-						absolute: true,
-						follow: true,
-						nodir: true,
-					})
-				);
-			} else if (info?.isFile()) {
-				indexPaths.push(path);
-			} else {
+			if (!info) {
 				console.error(
 					chalk.bold(`Path ${chalk.bold(path)} does not exist or is not a directory or file.`)
 				);
+				continue;
+			}
+
+			if (info.isDirectory()) {
+				const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
+				const archiveMatches: ArchiveScan[] = Array.from(
+					glob.scanSync({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
+				).map((path) => ({ type: 'archive', path }));
+				indexScans.push(...archiveMatches);
+
+				// Match metadata files
+				const metadataGlob = new Glob(
+					opts.recursive
+						? '**/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}'
+						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}'
+				);
+				const metadataMatches: MetadataScan[] = Array.from(
+					metadataGlob.scanSync({
+						cwd: path,
+						absolute: true,
+						followSymlinks: true,
+					})
+				)
+					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+					.map((path) => ({ type: 'metadata', path: dirname(path), metadata: path }));
+				indexScans.push(...metadataMatches);
+
+				const rootMetadataMatches = Array.from(
+					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`).scanSync({
+						cwd: path,
+						absolute: true,
+						followSymlinks: true,
+					})
+				);
+
+				indexScans.push(
+					...rootMetadataMatches
+						.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+						.map(
+							(path) =>
+								({ type: 'metadata', path: dirname(path), metadata: path }) satisfies MetadataScan
+						)
+				);
+			} else if (info.isFile()) {
+				indexScans.push({ type: 'archive', path });
 			}
 		}
 
 		if (opts.fromPath && !hasPaths) {
 			let shouldAdd = false;
-			const paths: string[] = [];
+			const paths: IndexScan[] = [];
 
-			for (const path of indexPaths) {
-				if (path === opts.fromPath) {
+			for (const scan of indexScans) {
+				if (scan.path === opts.fromPath) {
 					shouldAdd = true;
 				}
 
 				if (shouldAdd) {
-					paths.push(path);
+					paths.push(scan);
 				}
 			}
 
-			indexPaths = paths;
+			indexScans = paths;
 		}
 	}
 
-	console.info(`Found ${chalk.bold(indexPaths.length)} files to index\n`);
+	console.info(`Found ${chalk.bold(indexScans.length)} files to index\n`);
 
 	const multibar = new cliProgress.MultiBar(
 		{
@@ -121,26 +188,26 @@ export const indexArchives = async (opts: IndexOptions) => {
 		cliProgress.Presets.shades_grey
 	);
 
-	const progress = multibar.create(indexPaths.length, 0);
+	const progress = multibar.create(indexScans.length, 0);
 	let count = 0;
 	let indexed = 0;
 	let skipped = 0;
 
 	const start = performance.now();
 
-	for (const path of indexPaths) {
-		progress.update(count, { path });
+	for (const scan of indexScans) {
+		progress.update(count, { path: scan.path });
 
 		const existing = await db
 			.selectFrom('archives')
 			.select('id')
-			.where('path', '=', path)
+			.where('path', '=', scan.path)
 			.executeTakeFirst();
 
 		// If using --reindex, then skip non indexed archives
 		if (opts.reindex && !existing) {
 			if (opts.verbose) {
-				multibar.log(chalk.yellow(`${chalk.bold(path)} is not indexed, skipping\n`));
+				multibar.log(chalk.yellow(`${chalk.bold(scan.path)} is not indexed, skipping\n`));
 			}
 
 			progress.increment();
@@ -153,7 +220,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 		// If --force wasn't used, skip already indexed archives
 		if (!opts.force && existing) {
 			if (opts.verbose) {
-				multibar.log(chalk.yellow(`${chalk.bold(path)} is already indexed, skipping\n`));
+				multibar.log(chalk.yellow(`${chalk.bold(scan.path)} is already indexed, skipping\n`));
 			}
 
 			progress.increment();
@@ -163,20 +230,37 @@ export const indexArchives = async (opts: IndexOptions) => {
 			continue;
 		}
 
-		const buffer = await readStream(createReadStream(path, { start: 0, end: 8192 }));
+		let hash: string;
 
-		const filetype = filetypemime(buffer)[0];
+		if (scan.type === 'archive') {
+			const buffer = await readStream(createReadStream(scan.path, { start: 0, end: 8192 }));
 
-		if (filetype !== 'application/zip') {
-			multibar.log(chalk.yellow(`${chalk.bold(path)} is not a zip file, skipping\n`));
-			progress.increment();
-			count++;
-			skipped++;
+			if (filetypemime(buffer)?.[0] !== 'application/zip') {
+				multibar.log(chalk.yellow(`${chalk.bold(scan.path)} is not a zip file, skipping\n`));
+				progress.increment();
+				count++;
+				skipped++;
 
-			continue;
+				continue;
+			}
+
+			const hasher = new Bun.CryptoHasher('sha256');
+			hasher.update(buffer);
+			hash = hasher.digest('hex').substring(0, 16);
+		} else {
+			const images = Array.from(
+				imageGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
+			);
+			const readEnd = images.length > 10 ? 1024 : 4096;
+			const hasher = new Bun.CryptoHasher('sha256');
+
+			for (const image of images) {
+				const buffer = await readStream(createReadStream(image, { start: 0, end: readEnd }));
+				hasher.update(buffer);
+			}
+
+			hash = hasher.digest('hex').substring(0, 16);
 		}
-
-		const hash = createHash('sha256').update(buffer).digest('hex').substring(0, 16);
 
 		const existingHash = await db
 			.selectFrom('archives')
@@ -184,22 +268,28 @@ export const indexArchives = async (opts: IndexOptions) => {
 			.where('hash', '=', hash)
 			.executeTakeFirst();
 
-		if (existingHash && existingHash.path !== path) {
+		if (existingHash && existingHash.path !== scan.path) {
+			// Hash exists in the database but the database path and the index path are different
 			if (await exists(existingHash.path)) {
-				multibar.log(
-					chalk.yellow.bold(
-						`${chalk.magenta(`[ID: ${existingHash.id}]`)} ${chalk.bold(existingHash.path)} and ${existing ? chalk.magenta(`[ID: ${existing.id}] `) : ''}${chalk.bold(path)} have the same hash, skipping\n`
-					)
-				);
+				// Database path exists in the file system, skips
+				if (opts.verbose) {
+					multibar.log(
+						chalk.yellow.bold(
+							`${chalk.magenta(`[ID: ${existingHash.id}]`)} ${chalk.bold(existingHash.path)} and ${existing ? chalk.magenta(`[ID: ${existing.id}] `) : ''}${chalk.bold(scan.path)} have the same hash, skipping\n`
+						)
+					);
+				}
+
 				progress.increment();
 				count++;
 				skipped++;
 
 				continue;
 			} else {
+				// Database path does NOT exists in the file system, update archive
 				await db
 					.updateTable('archives')
-					.set({ path, updatedAt: now() })
+					.set({ path: scan.path, updatedAt: now() })
 					.where('id', '=', existingHash.id)
 					.execute();
 			}
@@ -209,87 +299,136 @@ export const indexArchives = async (opts: IndexOptions) => {
 		let metadataSchema: MetadataSchema;
 		let metadataFormat: MetadataFormat;
 
-		const filename = parse(path).name;
+		const filename = parse(scan.path).name;
 
 		try {
-			const zip = new StreamZip.async({ file: path });
-
-			try {
-				[archive, [metadataSchema, metadataFormat]] = await addExternalMetadata(path, archive);
-
-				if (opts.verbose) {
-					multibar.log(
-						`Found external ${metadataFormat} metadata with schema ${chalk.bold(metadataSchema)}\n`
-					);
-				}
-			} catch (error) {
+			const externalResult = await addExternalMetadata(scan, archive).catch((error) => {
 				if (opts.verbose) {
 					multibar.log(
 						chalk.yellow(
-							`Failed to add external metadata for ${chalk.bold(path)} - ${chalk.bold((error as Error).message)}\n`
+							`Failed to add external metadata for ${chalk.bold(scan.path)} - ${chalk.bold((error as Error).message)}\n`
 						)
 					);
 				}
 
-				try {
-					[archive, [metadataSchema, metadataFormat]] = await addEmbeddedMetadata(zip, archive);
+				return null;
+			});
 
-					if (opts.verbose) {
-						multibar.log(
-							`Found embedded ${chalk.bold(metadataFormat)} metadata with schema ${chalk.bold(metadataSchema)}\n`
-						);
-					}
-				} catch (error) {
-					if (opts.verbose) {
-						multibar.log(
-							chalk.yellow(
-								`Failed to add embedded metadata for ${chalk.bold(path)} - ${(error as Error).message}\n`
-							)
-						);
-					}
+			if (externalResult) {
+				[archive, [metadataSchema, metadataFormat]] = externalResult;
 
-					if (config.metadata?.parseFilenameAsTitle) {
-						const [title, artists, circles] = parseFilename(filename);
+				if (opts.verbose) {
+					multibar.log(
+						`Found external ${metadataFormat} metadata with schema ${chalk.bold(metadataSchema)} for ${chalk.bold(scan.path)}\n`
+					);
+				}
+			} else {
+				if (scan.type === 'archive') {
+					const zip = new StreamZip.async({ file: scan.path });
 
-						if (title) {
-							archive.title = title ?? filename;
-
-							archive.tags = [];
-
-							if (artists) {
-								archive.tags.push(
-									...artists.map((tag) => ({
-										namespace: 'artist',
-										name: tag,
-									}))
-								);
-							}
-
-							if (circles) {
-								archive.tags.push(
-									...circles.map((tag) => ({
-										namespace: 'circle',
-										name: tag,
-									}))
-								);
-							}
+					const embeddedResult = await addEmbeddedZipMetadata(zip, archive).catch((error) => {
+						if (opts.verbose) {
+							multibar.log(
+								chalk.yellow(
+									`Failed to add embedded ZIP metadata for ${chalk.bold(scan.path)} - ${(error as Error).message}\n`
+								)
+							);
 						}
-					} else {
-						archive.title = filename;
+
+						return null;
+					});
+
+					if (embeddedResult) {
+						[archive, [metadataSchema, metadataFormat]] = embeddedResult;
+
+						if (opts.verbose) {
+							multibar.log(
+								`Found embedded ${chalk.bold(metadataFormat)} ZIP metadata with schema ${chalk.bold(metadataSchema)} for ${chalk.bold(scan.path)}\n`
+							);
+						}
+					}
+				} else {
+					const embeddedResult = await addEmbeddedDirMetadata(scan, archive).catch((error) => {
+						if (opts.verbose) {
+							multibar.log(
+								chalk.yellow(
+									`Failed to add embedded directory metadata for ${chalk.bold(scan.path)} - ${(error as Error).message}\n`
+								)
+							);
+						}
+
+						return null;
+					});
+
+					if (embeddedResult) {
+						[archive, [metadataSchema, metadataFormat]] = embeddedResult;
+
+						if (opts.verbose) {
+							multibar.log(
+								`Found embedded ${chalk.bold(metadataFormat)} directory metadata with schema ${chalk.bold(metadataSchema)} for ${chalk.bold(scan.path)}\n`
+							);
+						}
 					}
 				}
 			}
 
-			let images: Image[] = Object.keys(await zip.entries())
-				.filter((key) => key.match(/.(jpeg|jpg|png|webp|avif|jxl|bmp)$/i))
-				.sort(naturalCompare)
-				.map((filename, i) => ({
-					filename,
-					pageNumber: i + 1,
-				}));
+			if (!archive.title) {
+				if (config.metadata?.parseFilenameAsTitle) {
+					const [title, artists, circles] = parseFilename(filename);
+
+					if (title) {
+						archive.title = title ?? filename;
+
+						archive.tags = [];
+
+						if (artists) {
+							archive.tags.push(
+								...artists.map((tag) => ({
+									namespace: 'artist',
+									name: tag,
+								}))
+							);
+						}
+
+						if (circles) {
+							archive.tags.push(
+								...circles.map((tag) => ({
+									namespace: 'circle',
+									name: tag,
+								}))
+							);
+						}
+					}
+				} else {
+					archive.title = filename;
+				}
+			}
+
+			let images: Image[];
+
+			if (scan.type === 'archive') {
+				const zip = new StreamZip.async({ file: scan.path });
+				images = Object.keys(await zip.entries())
+					.filter((key) => key.match(/.(jpeg|jpg|png|webp|avif|jxl)$/i))
+					.sort(naturalCompare)
+					.map((filename, i) => ({
+						filename,
+						pageNumber: i + 1,
+					}));
+			} else {
+				images = Array.from(imageGlob.scanSync({ cwd: scan.path, followSymlinks: true }))
+					.sort(naturalCompare)
+					.map((path, i) => ({
+						filename: path,
+						pageNumber: i + 1,
+					}));
+			}
 
 			if (images.length === 0) {
-				multibar.log(chalk.yellow(`No images found for ${chalk.bold(path)}, skpping\n`));
+				if (opts.verbose) {
+					multibar.log(chalk.yellow(`No images found for ${chalk.bold(scan.path)}, skpping\n`));
+				}
+
 				progress.increment();
 				count++;
 				skipped++;
@@ -312,28 +451,37 @@ export const indexArchives = async (opts: IndexOptions) => {
 				archive.title = filename;
 			}
 
-			const info = await stat(path);
+			let size: number;
+
+			if (scan.type === 'archive') {
+				size = (await stat(scan.path)).size;
+			} else {
+				size = await directorySize(scan.path);
+			}
 
 			const existingPath = await db
 				.selectFrom('archives')
 				.select(['id', 'hash', 'protected'])
-				.where('path', '=', path)
+				.where('path', '=', scan.path)
 				.executeTakeFirst();
 
 			let id: number;
 			const isProtected = existingPath?.protected;
 
 			if (existingPath) {
+				// Index path already exists in database
 				if (isProtected) {
+					// Archive is protected, so only basic info is updated
 					const update = await db
 						.updateTable('archives')
-						.set({ hash, pages: images.length, size: info.size, updatedAt: now() })
+						.set({ hash, pages: images.length, size, updatedAt: now() })
 						.where('id', '=', existingPath.id)
 						.returning(['id', 'protected'])
 						.executeTakeFirstOrThrow();
 
 					id = update.id;
 				} else {
+					// Archive is NOT protected, so everything is updated
 					const update = await db
 						.updateTable('archives')
 						.set({
@@ -344,7 +492,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 							releasedAt: archive.releasedAt?.toISOString(),
 							thumbnail: archive.thumbnail,
 							pages: images.length,
-							size: info.size,
+							size,
 							updatedAt: now(),
 						})
 						.where('id', '=', existingPath.id)
@@ -391,18 +539,19 @@ export const indexArchives = async (opts: IndexOptions) => {
 					await moveImages();
 				}
 			} else {
+				// Index path does NOT exists in database
 				const insert = await db
 					.insertInto('archives')
 					.values({
 						title: archive.title,
-						path,
+						path: scan.path,
 						hash,
 						description: archive.description,
 						language: archive.language ?? config.metadata.defaultLanguage,
 						releasedAt: archive.releasedAt?.toISOString(),
 						thumbnail: archive.thumbnail,
 						pages: images.length,
-						size: info.size,
+						size,
 					})
 					.returning('id')
 					.executeTakeFirstOrThrow();
@@ -422,13 +571,17 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 			await upsertImages(id, images, hash);
 
-			if (opts.unpack || config.server.autoUnpack) {
+			if ((scan.type === 'archive' && opts.unpack) || config.server.autoUnpack) {
 				let unpacked = 0;
 				let skipped = 0;
 
 				if (opts.verbose) {
-					multibar.log(chalk.bgBlue(`Unpacking ${images.length} images for ${chalk.bold(path)}\n`));
+					multibar.log(
+						chalk.bgBlue(`Unpacking ${images.length} images for ${chalk.bold(scan.path)}\n`)
+					);
 				}
+
+				const zip = new StreamZip.async({ file: scan.path });
 
 				for (const image of images) {
 					const imagePath = join(
@@ -442,14 +595,15 @@ export const indexArchives = async (opts: IndexOptions) => {
 					if (await exists(imagePath)) {
 						data = await zip.entryData(image.filename);
 
-						const newImageHash = createHash('sha256').update(data).digest('hex').substring(0, 16);
+						const hasher = new Bun.CryptoHasher('sha256');
+						const newImageHash = hasher.update(data).digest('hex').substring(0, 16);
 
 						const buffer = await readStream(createReadStream(imagePath));
-						const oldImageHash = createHash('sha256').update(buffer).digest('hex').substring(0, 16);
+						const oldImageHash = hasher.update(buffer).digest('hex').substring(0, 16);
 
 						if (newImageHash === oldImageHash) {
 							if (opts.verbose) {
-								multibar.log(chalk.yellow(`${chalk.bold(imagePath)} already exists\n`));
+								multibar.log(chalk.yellow(`${chalk.bold(imagePath)} already exists, skipping\n`));
 							}
 
 							skipped++;
@@ -459,7 +613,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						data = await zip.entryData(image.filename);
 					}
 
-					writeFile(imagePath, data);
+					await Bun.write(imagePath, data);
 
 					unpacked++;
 				}
@@ -472,7 +626,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 			indexed++;
 		} catch (error) {
 			multibar.log(
-				chalk.redBright(`Failed to index ${chalk.bold(path)} - ${(error as Error).message}\n`)
+				chalk.redBright(`Failed to index ${chalk.bold(scan.path)} - ${(error as Error).message}\n`)
 			);
 		} finally {
 			progress.increment();

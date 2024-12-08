@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import {
 	type Expression,
 	ExpressionWrapper,
@@ -7,7 +8,7 @@ import {
 } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
-import { handleTags, type SearchParams } from '../utils';
+import { handleTags, log, type SearchParams } from '../utils';
 import { type Order, type Sort } from '$lib/schemas';
 import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
 import { shuffle } from '$lib/utils';
@@ -127,7 +128,7 @@ export const parseQuery = (query: string) => {
 
 	const titleMatch = query
 		.replaceAll(
-			/[-|~]?(\w+):(".*?"|[^\s]+)|\bpages(>|<|=|>=|<=)(\d+)\b|\blanguage:(\w+)\b/g,
+			/[-|~]?(\w+):(".*?"|[^\s]+)|\b(\w+)(>|<|=|>=|<=)(\d+)([kmg])?\b|\blanguage:(\w+)\b/gi,
 			'#||#'
 		)
 		.trim()
@@ -162,6 +163,76 @@ export const parseQuery = (query: string) => {
 		pagesExpression = pagesMatch[1];
 	}
 
+	const tagsQuantityMatch = Array.from(query.matchAll(/\btags(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
+	let tagsQuantity: number | undefined = undefined;
+	let tagsQuantityExpression: string | undefined = undefined;
+
+	if (tagsQuantityMatch) {
+		tagsQuantity = parseInt(tagsQuantityMatch[2]);
+		tagsQuantityExpression = tagsQuantityMatch[1];
+	}
+
+	const sourcesQuantityMatch = Array.from(query.matchAll(/\bsources(>|<|=|>=|<=)(\d+)\b/g)).at(-1);
+
+	let sourcesQuantity: number | undefined = undefined;
+	let sourcesQuantityExpression: string | undefined = undefined;
+
+	if (sourcesQuantityMatch) {
+		sourcesQuantity = parseInt(sourcesQuantityMatch[2]);
+		sourcesQuantityExpression = sourcesQuantityMatch[1];
+	}
+
+	const sizeMatch = Array.from(query.matchAll(/\bsize(>|<|=|>=|<=)(\d+)([kmg])?\b/gi)).at(-1);
+
+	let sizeNumber: number | undefined = undefined;
+	let sizeExpression: string | undefined = undefined;
+
+	if (sizeMatch) {
+		const parsedSize = parseInt(sizeMatch[2]);
+
+		switch (sizeMatch[3]?.toLowerCase()) {
+			case 'k':
+				sizeNumber = parsedSize * 1024;
+				break;
+			case 'm':
+				sizeNumber = parsedSize * 1024 * 1024;
+				break;
+			case 'g':
+				sizeNumber = parsedSize * 1024 * 1024 * 1024;
+				break;
+			default:
+				sizeNumber = parsedSize;
+				break;
+		}
+
+		sizeExpression = sizeMatch[1];
+	}
+
+	const tagNamespaceQuantityMatch = Array.from(query.matchAll(/\b(\w+)(>|<|=|>=|<=)(\d+)\b/g));
+
+	const tagNamespaceQuantity: {
+		namespace: string;
+		quantity: number;
+		expression: string;
+	}[] = [];
+
+	if (tagNamespaceQuantityMatch.length) {
+		for (const match of tagNamespaceQuantityMatch) {
+			const namespace = match[1];
+
+			if (['source', 'sources', 'url', 'language', 'size', 'tags'].includes(namespace)) {
+				continue;
+			}
+
+			tagNamespaceQuantity.push({
+				namespace: match[1],
+				expression: match[2],
+				quantity: parseInt(match[3]),
+			});
+		}
+	}
+
 	const languageMatch = Array.from(query.matchAll(/\blanguage:(\w+)\b/g));
 
 	const matches = {
@@ -170,6 +241,19 @@ export const parseQuery = (query: string) => {
 			number: pagesNumber,
 			expression: pagesExpression,
 		},
+		tagsQuantityMatch: {
+			quantity: tagsQuantity,
+			expression: tagsQuantityExpression,
+		},
+		sourcesQuantityMatch: {
+			quantity: sourcesQuantity,
+			expression: sourcesQuantityExpression,
+		},
+		size: {
+			number: sizeNumber,
+			expression: sizeExpression,
+		},
+		tagNamespaceQuantity,
 		urlMatch,
 		sourceMatch,
 		languageMatch: languageMatch.map((match) => match?.[1]),
@@ -203,7 +287,7 @@ export const parseQuery = (query: string) => {
 
 		namespace = negate || or ? namespace.slice(1) : namespace;
 
-		if (['source', 'url', 'language'].includes(namespace)) {
+		if (['source', 'sources', 'url', 'language', 'size', 'tags'].includes(namespace)) {
 			continue;
 		}
 
@@ -222,11 +306,28 @@ export const search = async (
 	params: SearchParams,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
-	const start = performance.now();
+	let start = performance.now();
 
-	const { tagMatches, titleMatch, pagesMatch, languageMatch, urlMatch, sourceMatch } = parseQuery(
-		params.query
+	const {
+		tagMatches,
+		titleMatch,
+		pagesMatch,
+		tagsQuantityMatch,
+		sourcesQuantityMatch,
+		size,
+		tagNamespaceQuantity,
+		languageMatch,
+		urlMatch,
+		sourceMatch,
+	} = parseQuery(params.query);
+
+	log(
+		chalk.blue(
+			`• Query parsed in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${params.query.length ? ` - ${params.query}` : ''}`
+		)
 	);
+
+	start = performance.now();
 
 	const sortQuery = (sort: Sort, order: Order) => {
 		switch (sort) {
@@ -314,6 +415,14 @@ export const search = async (
 				.execute()
 		).map((at) => at.archiveId);
 	}
+
+	log(
+		chalk.blue(
+			`• Exclude and optional tags fetched in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${params.query.length ? ` - ${params.query}` : ''}`
+		)
+	);
+
+	start = performance.now();
 
 	let query = (() => {
 		if (config.database.vendor === 'sqlite') {
@@ -423,6 +532,71 @@ export const search = async (
 		}
 	}
 
+	if (tagsQuantityMatch.expression !== undefined && tagsQuantityMatch.quantity !== undefined) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(tagsQuantityMatch.expression);
+		const quantity = tagsQuantityMatch.quantity;
+
+		if (data) {
+			query = query.where((eb) =>
+				eb.exists(
+					eb
+						.selectFrom('archiveTags')
+						.select('archiveId')
+						.whereRef('archiveTags.archiveId', '=', 'archives.id')
+						.having((eb) => eb(eb.fn.count<number>('archiveTags.tagId'), data, quantity))
+						.groupBy('archiveTags.archiveId')
+				)
+			);
+		}
+	}
+
+	if (
+		sourcesQuantityMatch.expression !== undefined &&
+		sourcesQuantityMatch.quantity !== undefined
+	) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(sourcesQuantityMatch.expression);
+		const quantity = sourcesQuantityMatch.quantity;
+
+		if (data) {
+			// @ts-expect-error works
+			query = query
+				.leftJoin('archiveSources', 'archiveSources.archiveId', 'archives.id')
+				.having((eb) => eb(eb.fn.count<number>('archiveSources.archiveId'), data, quantity))
+				.groupBy('archives.id');
+		}
+	}
+
+	if (size.expression !== undefined && size.number !== undefined) {
+		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(size.expression);
+
+		if (data) {
+			query = query.where('size', data, size.number).groupBy('archives.id');
+		}
+	}
+
+	if (tagNamespaceQuantity.length) {
+		// @ts-expect-error works
+		query = query
+			.leftJoin('archiveTags as namespaceQuantity', 'namespaceQuantity.archiveId', 'archives.id')
+			.groupBy('archives.id');
+
+		for (const { namespace, expression, quantity } of tagNamespaceQuantity) {
+			const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(expression);
+
+			if (data) {
+				// @ts-expect-error works
+				query = query
+					.leftJoin(`tags as ${namespace}`, (join) =>
+						join
+							// @ts-expect-error works
+							.onRef(`${namespace}.id`, '=', 'namespaceQuantity.tagId')
+							.on(`${namespace}.namespace`, '=', namespace)
+					)
+					.having((eb) => eb(eb.fn.count<number>(`${namespace}.id`), data, quantity));
+			}
+		}
+	}
+
 	if (languageMatch?.length) {
 		for (const language of languageMatch) {
 			query = query.where('language', like(), language);
@@ -472,7 +646,21 @@ export const search = async (
 		.orderBy(order === 'asc' ? 'archives.createdAt asc' : 'archives.createdAt desc')
 		.orderBy(order === 'asc' ? 'archives.id asc' : 'archives.id desc');
 
+	const compiled = query.compile();
+
+	log(
+		chalk.blue(
+			`• Main query builded in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)} - \n  Compiled query: ${chalk.gray(compiled.sql)}\n  Parameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${params.query.length ? ` - ${params.query}` : ''}`
+		)
+	);
+
+	start = performance.now();
+
 	let filteredResults = await query.execute();
+
+	log(
+		chalk.blue(`• Query exceuted in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}`)
+	);
 
 	if (config.database.vendor === 'sqlite' && sort === 'title') {
 		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
@@ -487,8 +675,6 @@ export const search = async (
 	let allIds = filteredResults.map(({ id }) => id);
 
 	if (!allIds.length) {
-		console.info(`Query "${params.query}" took ${(performance.now() - start).toFixed(2)}ms`);
-
 		return {
 			ids: [],
 			total: allIds.length,
@@ -498,8 +684,6 @@ export const search = async (
 	if (sort === 'random' && params.seed) {
 		allIds = shuffle(allIds, params.seed);
 	}
-
-	console.info(`Query "${params.query}" took ${(performance.now() - start).toFixed(2)}ms`);
 
 	return {
 		ids: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),

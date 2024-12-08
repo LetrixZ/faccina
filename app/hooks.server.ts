@@ -4,10 +4,6 @@ import lucia from '$lib/server/auth';
 import config from '~shared/config';
 import { log } from '$lib/server/utils';
 
-if (config.site.enableAnalytics) {
-	console.warn(chalk.yellow('Analytics worker is not supported in Node.js'));
-}
-
 export const handle: Handle = async ({ event, resolve }) => {
 	const start = performance.now();
 	const sessionId = event.cookies.get(lucia.sessionCookieName);
