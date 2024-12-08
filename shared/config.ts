@@ -75,7 +75,7 @@ const siteSchema = z
 
 const serverSchema = z
 	.object({
-		logging: z.union([z.boolean(), z.string()]).default(false),
+		logging: z.union([z.boolean(), z.string()]).default(true),
 		auto_unpack: z.boolean().default(false),
 	})
 	.transform(camelize);
@@ -99,7 +99,6 @@ const databaseSchema = z
 			password: z.string(),
 			host: z.string().default('localhost'),
 			port: z.number().default(5432),
-			enable_fts: z.boolean().default(false),
 		}),
 	])
 	.transform(camelize);

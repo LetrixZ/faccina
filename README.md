@@ -140,12 +140,10 @@ database = 'faccina'
 password = 'supersecurepassword'
 host = '127.0.0.1'
 port = 5432
-enable_fts = false
 ```
 
-You can make use of the Full-Text Search features of PostgreSQL by setting `enable_fts = true`.
-
 If using PostresSQL 15 and newer (https://www.postgresql.org/about/news/postgresql-15-released-2526/) you need to do this to the created database:
+
 ```sql
 ALTER DATABASE faccina OWNER TO db_admin;
 ```

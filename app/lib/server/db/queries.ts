@@ -468,7 +468,7 @@ export const search = async (
 	}
 
 	if (titleMatch.length) {
-		if (config.database.vendor === 'postgresql' && config.database.enableFts) {
+		if (config.database.vendor === 'postgresql') {
 			query = query.where(
 				'archives.fts',
 				'@@',
