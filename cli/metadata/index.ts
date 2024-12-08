@@ -110,14 +110,16 @@ export const getJsonSchema = (content: string) => {
 
 	if (minified.match(/("coverImageUrl"|"maleTags"|"femaleTags")/)) {
 		return MetadataSchema.HenTag;
-	} else if (minified.match(/"gallery_info":\{/)) {
-		return MetadataSchema.EzeSad;
-	} else if (minified.match(/("group":|"artist":|"male":|"female":)\[/)) {
-		return MetadataSchema.Eze;
-	} else if (minified.match(/("artist:.*"|"group:.*"|"male:.*"|"female:.*")/)) {
-		return MetadataSchema.GalleryDL;
 	} else if (minified.match(/(("Tags":)\[)|("Artist":")/)) {
 		return MetadataSchema.Koromo;
+	} else if (minified.match(/"gallery_info":\{/)) {
+		return MetadataSchema.EzeSad;
+	} else if (
+		minified.match(/"tags":{.*?(artist|group|parody|character|language|female|male|misc)(.*?)},/)
+	) {
+		return MetadataSchema.Eze;
+	} else if (minified.match(/"tags":\[.*?(artist|group|parody|character|language)(.*?)\],/)) {
+		return MetadataSchema.GalleryDL;
 	}
 
 	throw new Error('Failed to determine JSON metadata schema');
