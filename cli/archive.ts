@@ -306,8 +306,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 					);
 				}
 			} else {
-				let hasEmbedded = false;
-
 				if (scan.type === 'archive') {
 					const zip = new StreamZip.async({ file: scan.path });
 
@@ -325,7 +323,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 					if (embeddedResult) {
 						[archive, [metadataSchema, metadataFormat]] = embeddedResult;
-						hasEmbedded = true;
 
 						if (opts.verbose) {
 							multibar.log(
@@ -348,7 +345,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 					if (embeddedResult) {
 						[archive, [metadataSchema, metadataFormat]] = embeddedResult;
-						hasEmbedded = true;
 
 						if (opts.verbose) {
 							multibar.log(
@@ -357,37 +353,37 @@ export const indexArchives = async (opts: IndexOptions) => {
 						}
 					}
 				}
+			}
 
-				if (!hasEmbedded) {
-					if (config.metadata?.parseFilenameAsTitle) {
-						const [title, artists, circles] = parseFilename(filename);
+			if (!archive.title) {
+				if (config.metadata?.parseFilenameAsTitle) {
+					const [title, artists, circles] = parseFilename(filename);
 
-						if (title) {
-							archive.title = title ?? filename;
+					if (title) {
+						archive.title = title ?? filename;
 
-							archive.tags = [];
+						archive.tags = [];
 
-							if (artists) {
-								archive.tags.push(
-									...artists.map((tag) => ({
-										namespace: 'artist',
-										name: tag,
-									}))
-								);
-							}
-
-							if (circles) {
-								archive.tags.push(
-									...circles.map((tag) => ({
-										namespace: 'circle',
-										name: tag,
-									}))
-								);
-							}
+						if (artists) {
+							archive.tags.push(
+								...artists.map((tag) => ({
+									namespace: 'artist',
+									name: tag,
+								}))
+							);
 						}
-					} else {
-						archive.title = filename;
+
+						if (circles) {
+							archive.tags.push(
+								...circles.map((tag) => ({
+									namespace: 'circle',
+									name: tag,
+								}))
+							);
+						}
 					}
+				} else {
+					archive.title = filename;
 				}
 			}
 
