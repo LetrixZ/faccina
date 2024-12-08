@@ -6,14 +6,13 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"start": "node ./build",
+		"start": "node ./build/index.js",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"cli": "tsx ./cli/index.ts",
 		"kysely": "kysely",
-		"compile": "esbuild entrypoint.ts --bundle --platform=node --outfile=entrypoint.js --loader:.node=file --external:sharp --external:argon2 --external:bun:sqlite --format=esm"
+		"cli": "tsx ./cli/index.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
