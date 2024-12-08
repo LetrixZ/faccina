@@ -179,8 +179,9 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						.exhaustive();
 
 					const newImage = await pipeline.toBuffer();
-					await mkdir(dirname(image.savePath), { recursive: true });
-					await writeFile(image.savePath, newImage);
+					await mkdir(dirname(image.savePath), { recursive: true }).then(() =>
+						writeFile(image.savePath, newImage)
+					);
 
 					generatedCount++;
 				} catch (error) {

@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, rename, stat, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, parse } from 'node:path';
 import { createHash } from 'node:crypto';
 import chalk from 'chalk';
@@ -474,7 +474,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 			if (archive.imageOrder) {
 				images = images
-					// @ts-expect-error works
 					.toSorted((a: Image, b: Image) => {
 						const indexA = archive.imageOrder!.findIndex((image) => image.filename === a.filename);
 						const indexB = archive.imageOrder!.findIndex((image) => image.filename === b.filename);
@@ -650,7 +649,9 @@ export const indexArchives = async (opts: IndexOptions) => {
 						data = await zip.entryData(image.filename);
 					}
 
-					await writeFile(imagePath, data);
+					await mkdir(dirname(imagePath), { recursive: true }).then(() =>
+						writeFile(imagePath, data)
+					);
 
 					unpacked++;
 				}

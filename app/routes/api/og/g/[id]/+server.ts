@@ -73,8 +73,9 @@ export const GET = async ({ fetch, params }) => {
 	);
 
 	if (config.site.storeOgImages) {
-		await mkdir(dirname(imagePath), { recursive: true });
-		await writeFile(imagePath, metaImage);
+		await mkdir(dirname(imagePath), { recursive: true }).then(() =>
+			writeFile(imagePath, metaImage)
+		);
 	}
 
 	return new Response(metaImage, {

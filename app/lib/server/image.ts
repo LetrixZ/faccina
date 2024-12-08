@@ -1,5 +1,6 @@
-import { readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { extname, join } from 'path';
+import { dirname } from 'node:path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
@@ -103,7 +104,9 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 			data = await zip.entryData(image.filename);
 
 			if (config.server.autoUnpack) {
-				writeFile(originalImagePath, data);
+				await mkdir(dirname(originalImagePath), { recursive: true }).then(() =>
+					writeFile(originalImagePath, newImage)
+				);
 			}
 		} else {
 			data = await readFile(join(args.archive.path, args.archive.filename));
@@ -149,7 +152,9 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	const newImage = await pipeline.toBuffer();
 
 	try {
-		await writeFile(args.savePath, newImage);
+		await mkdir(dirname(args.savePath), { recursive: true }).then(() =>
+			writeFile(args.savePath, newImage)
+		);
 	} catch (err) {
 		console.error(
 			chalk.red(

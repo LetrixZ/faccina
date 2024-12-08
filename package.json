@@ -12,7 +12,8 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"cli": "tsx ./cli/index.ts",
-		"kysely": "kysely"
+		"kysely": "kysely",
+		"compile": "esbuild entrypoint.ts --bundle --platform=node --outfile=entrypoint.js --loader:.node=file --external:sharp --external:argon2 --external:bun:sqlite --format=esm"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
@@ -23,6 +24,7 @@
 		"@types/cli-progress": "^3.11.6",
 		"@types/content-disposition": "^0.5.8",
 		"@types/eslint": "^8.56.12",
+		"@types/express": "^5.0.0",
 		"@types/natural-compare-lite": "^1.4.2",
 		"@types/node": "^22.10.1",
 		"@types/nodemailer": "^6.4.17",
@@ -33,6 +35,7 @@
 		"@types/string-pixel-width": "^1.10.3",
 		"@types/xml2js": "^0.4.14",
 		"autoprefixer": "^10.4.20",
+		"esbuild": "^0.24.0",
 		"eslint": "^9.16.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-import": "^2.31.0",
@@ -83,6 +86,7 @@
 		"css-tree": "^3.0.1",
 		"dayjs": "^1.11.13",
 		"dotenv": "^16.4.7",
+		"express": "^4.21.2",
 		"fflate": "^0.8.2",
 		"formsnap": "^1.0.1",
 		"fuzzball": "^2.1.3",

@@ -1,9 +1,8 @@
-import { extname } from 'path';
-import { BunFile, ServeOptions } from 'bun';
+import process from 'node:process';
 import { Option } from 'commander';
-import { build_options, env, handler_default } from './build/handler';
+import express from 'express';
+import { handler } from './build/handler.js';
 import program from './cli/commands';
-import clientRoutes from './compile/client-routes';
 
 const mimes = {
 	gz: 'application/gzip',
@@ -90,45 +89,39 @@ const mimes = {
 };
 
 const serve = async (hostname: string, port: number) => {
-	const { httpserver } = handler_default(build_options.assets ?? true);
+	const app = express();
 
-	const serverOptions = {
-		fetch: async (req, srv) => {
-			const url = new URL(req.url);
-			const path = url.pathname.slice(1);
+	app.use((req, res, next) => {
+		console.log(req.url);
+		next();
+	});
 
-			if (path in clientRoutes) {
-				const file: BunFile = clientRoutes[path];
+	app.use(handler);
 
-				const headers = new Headers({
-					'Content-Length': file.size.toString(),
-					'Content-Type': mimes[extname(path).slice(1)],
-					'Last-Modified': new Date(file.lastModified).toUTCString(),
-				});
+	app.listen(port, hostname, () =>
+		console.info(`[PID: ${process.pid}] Listening on ${hostname + ':' + port}`)
+	);
 
-				if (path.includes('/immutable/')) {
-					headers.set('Cache-Control', 'public,max-age=31536000,immutable');
-				}
+	// const url = new URL(req.url);
+	// const path = url.pathname.slice(1);
 
-				return new Response(await clientRoutes[path].bytes(), {
-					headers,
-				});
-			}
+	// if (path in clientRoutes) {
+	// 	const file: BunFile = clientRoutes[path];
 
-			return httpserver(req, srv);
-		},
-		hostname,
-		port,
-		development: env('SERVERDEV', build_options.development ?? false),
-		error(error) {
-			console.error(error);
-			return new Response('Uh oh!!', { status: 500 });
-		},
-	} satisfies ServeOptions;
+	// 	const headers = new Headers({
+	// 		'Content-Length': file.size.toString(),
+	// 		'Content-Type': mimes[extname(path).slice(1)],
+	// 		'Last-Modified': new Date(file.lastModified).toUTCString(),
+	// 	});
 
-	console.info(`[PID: ${process.pid}] Listening on ${hostname + ':' + port}`);
+	// 	if (path.includes('/immutable/')) {
+	// 		headers.set('Cache-Control', 'public,max-age=31536000,immutable');
+	// 	}
 
-	Bun.serve(serverOptions);
+	// 	return new Response(await clientRoutes[path].bytes(), {
+	// 		headers,
+	// 	});
+	// }
 };
 
 program
