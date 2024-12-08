@@ -232,7 +232,10 @@ const imageSchema = z
 	.transform((val) => ({
 		...val,
 		preset: Object.entries(val.preset).reduce(
-			(acc, [name, preset]) => ({ ...acc, [name]: { ...preset, name } }),
+			(acc, [name, preset]) => ({
+				...acc,
+				[name]: { ...preset, name, label: preset.label ?? name },
+			}),
 			{} as { [key: string]: Preset }
 		),
 	}))

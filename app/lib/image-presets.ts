@@ -40,6 +40,6 @@ export const presetSchema = z
 		}),
 	])
 	.transform(camelize)
-	.and(z.object({ width: z.number(), label: z.string().max(30) }));
+	.and(z.object({ width: z.number(), label: z.string().max(30).optional() }));
 
-export type Preset = z.infer<typeof presetSchema> & { name: string };
+export type Preset = z.infer<typeof presetSchema> & { name: string; label: string };
