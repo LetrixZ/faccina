@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
@@ -134,7 +134,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				if (zip) {
 					return zip.entryData(filename);
 				} else {
-					return Bun.file(join(archive.path, filename)).bytes();
+					return readFile(join(archive.path, filename));
 				}
 			};
 

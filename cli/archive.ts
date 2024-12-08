@@ -1,18 +1,19 @@
 import { createReadStream } from 'node:fs';
-import { rename, stat } from 'node:fs/promises';
+import { rename, stat, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, parse } from 'node:path';
-import { Glob, sleep } from 'bun';
+import { createHash } from 'node:crypto';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
 import slugify from 'slugify';
+import { Glob } from 'glob';
 import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { directorySize, exists, leadingZeros, readStream } from '../shared/utils';
+import { directorySize, exists, leadingZeros, readStream, sleep } from '../shared/utils';
 import {
 	addEmbeddedDirMetadata,
 	addEmbeddedZipMetadata,
@@ -24,8 +25,6 @@ import { parseFilename } from './metadata/utils';
 import { queryIdRanges } from './utilts';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
-
-const imageGlob = new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}');
 
 interface IndexOptions {
 	paths?: string[];
@@ -115,40 +114,68 @@ export const indexArchives = async (opts: IndexOptions) => {
 			}
 
 			if (info.isDirectory()) {
-				const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
-				const archiveMatches: ArchiveScan[] = Array.from(
-					glob.scanSync({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
-				).map((path) => ({ type: 'archive', path }));
+				const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}', {
+					cwd: path,
+					absolute: true,
+					follow: true,
+					nodir: true,
+				});
+				const archiveMatches: ArchiveScan[] = Array.from(glob.iterateSync()).map((path) => ({
+					type: 'archive',
+					path,
+				}));
 				indexScans.push(...archiveMatches);
 
 				// Match metadata files
 				const metadataGlob = new Glob(
 					opts.recursive
 						? '**/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}'
-						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}'
-				);
-				const metadataMatches: MetadataScan[] = Array.from(
-					metadataGlob.scanSync({
+						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}',
+					{
 						cwd: path,
 						absolute: true,
-						followSymlinks: true,
-					})
-				)
-					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+						follow: true,
+						nodir: true,
+					}
+				);
+
+				const metadataMatches: MetadataScan[] = Array.from(metadataGlob.iterateSync())
+					.filter(
+						(path) =>
+							Array.from(
+								new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', {
+									cwd: dirname(path),
+									absolute: true,
+									follow: true,
+									nodir: true,
+								}).iterateSync()
+							).length
+					)
 					.map((path) => ({ type: 'metadata', path: dirname(path), metadata: path }));
 				indexScans.push(...metadataMatches);
 
 				const rootMetadataMatches = Array.from(
-					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`).scanSync({
+					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`, {
 						cwd: path,
 						absolute: true,
-						followSymlinks: true,
-					})
+						follow: true,
+						nodir: true,
+					}).iterateSync()
 				);
 
 				indexScans.push(
 					...rootMetadataMatches
-						.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+						.filter(
+							(path) =>
+								Array.from(
+									new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', {
+										cwd: dirname(path),
+										absolute: true,
+										follow: true,
+										nodir: true,
+									}).iterateSync()
+								).length
+						)
 						.map(
 							(path) =>
 								({ type: 'metadata', path: dirname(path), metadata: path }) satisfies MetadataScan
@@ -244,15 +271,18 @@ export const indexArchives = async (opts: IndexOptions) => {
 				continue;
 			}
 
-			const hasher = new Bun.CryptoHasher('sha256');
-			hasher.update(buffer);
-			hash = hasher.digest('hex').substring(0, 16);
+			hash = createHash('sha256').update(buffer).digest('hex').substring(0, 16);
 		} else {
 			const images = Array.from(
-				imageGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
+				new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', {
+					cwd: scan.path,
+					absolute: true,
+					follow: true,
+					nodir: true,
+				}).iterateSync()
 			);
 			const readEnd = images.length > 10 ? 1024 : 4096;
-			const hasher = new Bun.CryptoHasher('sha256');
+			const hasher = createHash('sha256');
 
 			for (const image of images) {
 				const buffer = await readStream(createReadStream(image, { start: 0, end: readEnd }));
@@ -416,7 +446,13 @@ export const indexArchives = async (opts: IndexOptions) => {
 						pageNumber: i + 1,
 					}));
 			} else {
-				images = Array.from(imageGlob.scanSync({ cwd: scan.path, followSymlinks: true }))
+				images = Array.from(
+					new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', {
+						cwd: scan.path,
+						follow: true,
+						nodir: true,
+					}).iterateSync()
+				)
 					.sort(naturalCompare)
 					.map((path, i) => ({
 						filename: path,
@@ -438,7 +474,8 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 			if (archive.imageOrder) {
 				images = images
-					.toSorted((a, b) => {
+					// @ts-expect-error works
+					.toSorted((a: Image, b: Image) => {
 						const indexA = archive.imageOrder!.findIndex((image) => image.filename === a.filename);
 						const indexB = archive.imageOrder!.findIndex((image) => image.filename === b.filename);
 
@@ -595,7 +632,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					if (await exists(imagePath)) {
 						data = await zip.entryData(image.filename);
 
-						const hasher = new Bun.CryptoHasher('sha256');
+						const hasher = createHash('sha256');
 						const newImageHash = hasher.update(data).digest('hex').substring(0, 16);
 
 						const buffer = await readStream(createReadStream(imagePath));
@@ -613,7 +650,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						data = await zip.entryData(image.filename);
 					}
 
-					await Bun.write(imagePath, data);
+					await writeFile(imagePath, data);
 
 					unpacked++;
 				}

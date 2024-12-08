@@ -1,5 +1,6 @@
 import { basename, dirname, extname, parse } from 'node:path';
-import { Glob } from 'bun';
+import { readFile } from 'node:fs/promises';
+import { Glob } from 'glob';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
 import { match } from 'ts-pattern';
@@ -233,15 +234,18 @@ export const addExternalMetadata = async (scan: IndexScan, archive: ArchiveMetad
 
 	const normalized =
 		scan.type === 'archive' ? escapeGlob(parse(scan.path).name) : escapeGlob(basename(scan.path));
-	const glob = new Glob(`${normalized}.{json,yaml,yml,xml,booru.txt}`);
+	const glob = new Glob(`${normalized}.{json,yaml,yml,xml,booru.txt}`, {
+		cwd: dirname(scan.path),
+		absolute: true,
+		follow: true,
+		nodir: true,
+	});
 
-	const paths: string[] = Array.from(
-		glob.scanSync({ cwd: dirname(scan.path), absolute: true, followSymlinks: true })
-	);
+	const paths: string[] = Array.from(glob.iterateSync());
 
 	for (const path of paths) {
 		try {
-			const content = await Bun.file(path).text();
+			const content = await readFile(path, 'utf8');
 			return handleMetadataFormat(content, basename(path), metadataFormat(basename(path)), archive);
 		} catch {
 			/* empty */
@@ -280,7 +284,7 @@ export const addEmbeddedDirMetadata = async (scan: MetadataScan, archive: Archiv
 	archive = structuredClone(archive);
 
 	if (scan.metadata) {
-		const content = await Bun.file(scan.metadata).text();
+		const content = await readFile(scan.metadata, 'utf8');
 		return handleMetadataFormat(
 			content,
 			basename(scan.metadata),
@@ -288,14 +292,17 @@ export const addEmbeddedDirMetadata = async (scan: MetadataScan, archive: Archiv
 			archive
 		);
 	} else {
-		const metadataGlob = new Glob('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}');
-		const paths = Array.from(
-			metadataGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
-		);
+		const metadataGlob = new Glob('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}', {
+			cwd: scan.path,
+			absolute: true,
+			follow: true,
+			nodir: true,
+		});
+		const paths = Array.from(metadataGlob.iterateSync());
 
 		for (const path of paths) {
 			try {
-				const content = await Bun.file(path).text();
+				const content = await readFile(path, 'utf8');
 				return handleMetadataFormat(
 					content,
 					basename(path),
