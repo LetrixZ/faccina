@@ -45,6 +45,12 @@ const listingSchema = z
 			: val.pageLimits[0],
 	}));
 
+const siteAdminSchema = z
+	.object({
+		delete_require_confirmation: z.boolean().default(true),
+	})
+	.transform(camelize);
+
 const siteSchema = z
 	.object({
 		site_name: z.string().default('Faccina'),
@@ -63,6 +69,7 @@ const siteSchema = z
 		search_placeholder: z.string().default(''),
 		store_og_images: z.boolean().default(true),
 		secure_session_cookie: z.boolean().default(true),
+		admin: siteAdminSchema.default({}),
 	})
 	.transform(camelize);
 

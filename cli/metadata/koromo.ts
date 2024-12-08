@@ -7,27 +7,27 @@ import { parseFilename } from './utils';
 
 const metadataSchema = z.object({
 	Title: z.string(),
-	Description: z.string().optional(),
-	Source: z.string().optional(),
-	URL: z.string().optional(),
-	Artists: multiTextField.optional(),
-	Artist: multiTextField.optional(),
-	Circle: multiTextField.optional(),
-	Groups: multiTextField.optional(),
-	Magazine: multiTextField.optional(),
-	Magazines: multiTextField.optional(),
-	Publisher: multiTextField.optional(),
-	Publishers: multiTextField.optional(),
-	Event: multiTextField.optional(),
-	Events: multiTextField.optional(),
-	Parody: multiTextField.optional(),
-	Parodies: multiTextField.optional(),
-	Series: multiTextField.optional(),
-	Characters: multiTextField.optional(),
-	Tags: multiTextField.optional(),
-	Thumbnail: z.number().optional(),
-	Released: z.number().optional(),
-	Published: z.number().optional(),
+	Description: z.string().nullable().optional(),
+	Source: z.string().nullable().optional(),
+	URL: z.string().nullable().optional(),
+	Artists: multiTextField.nullable().optional(),
+	Artist: multiTextField.nullable().optional(),
+	Circle: multiTextField.nullable().optional(),
+	Groups: multiTextField.nullable().optional(),
+	Magazine: multiTextField.nullable().optional(),
+	Magazines: multiTextField.nullable().optional(),
+	Publisher: multiTextField.nullable().optional(),
+	Publishers: multiTextField.nullable().optional(),
+	Event: multiTextField.nullable().optional(),
+	Events: multiTextField.nullable().optional(),
+	Parody: multiTextField.nullable().optional(),
+	Parodies: multiTextField.nullable().optional(),
+	Series: multiTextField.nullable().optional(),
+	Characters: multiTextField.nullable().optional(),
+	Tags: multiTextField.nullable().optional(),
+	Thumbnail: z.number().nullable().optional(),
+	Released: z.number().nullable().optional(),
+	Published: z.number().nullable().optional(),
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -46,8 +46,9 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		archive.title = data.Title;
 	}
 
-	archive.description = data.Description;
-	archive.thumbnail = data.Thumbnail !== undefined ? data.Thumbnail + 1 : undefined;
+	archive.description = data.Description ?? undefined;
+	archive.thumbnail =
+		data.Thumbnail !== null && data.Thumbnail !== undefined ? data.Thumbnail + 1 : undefined;
 	archive.releasedAt = (() => {
 		if (data.Released) {
 			return dayjs.unix(data.Released).toDate();

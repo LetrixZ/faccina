@@ -137,6 +137,23 @@ export const indexArchives = async (opts: IndexOptions) => {
 					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
 					.map((path) => ({ type: 'metadata', path: dirname(path), metadata: path }));
 				indexScans.push(...metadataMatches);
+
+				const rootMetadataMatches = Array.from(
+					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`).scanSync({
+						cwd: path,
+						absolute: true,
+						followSymlinks: true,
+					})
+				);
+
+				indexScans.push(
+					...rootMetadataMatches
+						.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+						.map(
+							(path) =>
+								({ type: 'metadata', path: dirname(path), metadata: path }) satisfies MetadataScan
+						)
+				);
 			} else if (info.isFile()) {
 				indexScans.push({ type: 'archive', path });
 			}
@@ -302,7 +319,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 				if (opts.verbose) {
 					multibar.log(
-						`Found external ${metadataFormat} metadata with schema ${chalk.bold(metadataSchema)}\n`
+						`Found external ${metadataFormat} metadata with schema ${chalk.bold(metadataSchema)} for ${chalk.bold(scan.path)}\n`
 					);
 				}
 			} else {
@@ -326,7 +343,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 						if (opts.verbose) {
 							multibar.log(
-								`Found embedded ${chalk.bold(metadataFormat)} ZIP metadata with schema ${chalk.bold(metadataSchema)}\n`
+								`Found embedded ${chalk.bold(metadataFormat)} ZIP metadata with schema ${chalk.bold(metadataSchema)} for ${chalk.bold(scan.path)}\n`
 							);
 						}
 					}
@@ -348,7 +365,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 						if (opts.verbose) {
 							multibar.log(
-								`Found embedded ${chalk.bold(metadataFormat)} directory metadata with schema ${chalk.bold(metadataSchema)}\n`
+								`Found embedded ${chalk.bold(metadataFormat)} directory metadata with schema ${chalk.bold(metadataSchema)} for ${chalk.bold(scan.path)}\n`
 							);
 						}
 					}

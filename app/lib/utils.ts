@@ -186,7 +186,8 @@ export const getMetadata = (gallery: Gallery, origin: string) => {
 		Pages: gallery.pages,
 		Tags: tags,
 		Source: `${origin}/g/${gallery.id}`,
-		Released: gallery.releasedAt && new Date(gallery.releasedAt).getTime() / 1000,
+		Released:
+			gallery.releasedAt !== null ? new Date(gallery.releasedAt).getTime() / 1000 : undefined,
 		Thumbnail: gallery.thumbnail - 1,
 	};
 };

@@ -18,6 +18,9 @@ export const load = ({ locals }) => {
 			searchPlaceholder: config.site.searchPlaceholder,
 			pageLimits: config.site.galleryListing.pageLimits,
 			defaultPageLimit: config.site.galleryListing.defaultPageLimit,
+			admin: {
+				deleteRequireConfirmation: config.site.admin.deleteRequireConfirmation,
+			},
 		} satisfies SiteConfig,
 	};
 };

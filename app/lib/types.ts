@@ -273,6 +273,9 @@ export type SiteConfig = {
 	defaultPageLimit: number;
 	pageLimits: number[];
 	clientSideDownloads: boolean;
+	admin: {
+		deleteRequireConfirmation: boolean;
+	};
 };
 
 export const readStatSchema = z.object({
