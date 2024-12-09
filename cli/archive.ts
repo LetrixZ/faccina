@@ -474,7 +474,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 			if (archive.imageOrder) {
 				images = images
-					.toSorted((a: Image, b: Image) => {
+					.sort((a: Image, b: Image) => {
 						const indexA = archive.imageOrder!.findIndex((image) => image.filename === a.filename);
 						const indexB = archive.imageOrder!.findIndex((image) => image.filename === b.filename);
 

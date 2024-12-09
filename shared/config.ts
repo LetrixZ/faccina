@@ -253,9 +253,9 @@ const imageSchema = z
 				}
 			}
 
-			for (const [label, presets] of labels
-				.entries()
-				.filter(([_, presets]) => presets.length > 1)) {
+			for (const [label, presets] of Array.from(labels.entries()).filter(
+				([_, presets]) => presets.length > 1
+			)) {
 				for (const preset of presets) {
 					val.preset[preset].label = `${label} (${preset})`;
 				}

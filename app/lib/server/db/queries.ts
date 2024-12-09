@@ -663,7 +663,7 @@ export const search = async (
 	);
 
 	if (config.database.vendor === 'sqlite' && sort === 'title') {
-		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
+		filteredResults = (filteredResults as { id: number; title: string }[]).sort((a, b) =>
 			naturalCompare(a.title.toLowerCase(), b.title.toLowerCase())
 		);
 
@@ -725,9 +725,9 @@ export const libraryItems = async (
 	if (options?.sortingIds) {
 		const ids = options.sortingIds;
 
-		return archives.toSorted((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+		return archives.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 	} else {
-		return archives.toSorted((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+		return archives.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 	}
 };
 
