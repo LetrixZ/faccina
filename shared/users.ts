@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import chalk from 'chalk';
 import config from './config';
 import db from './db';

@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import chalk from 'chalk';
 import { generateIdFromEntropySize } from 'lucia';
 import argon2 from 'argon2';
