@@ -1,17 +1,15 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-	import {
-		Bookmark,
-		Clock,
-		Heart,
-		UserCircle,
-		Home,
-		LogIn,
-		LogOut,
-		User,
-		Search,
-		Settings,
-	} from 'lucide-svelte';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Heart from 'lucide-svelte/icons/heart';
+	import Home from 'lucide-svelte/icons/house';
+	import LogIn from 'lucide-svelte/icons/log-in';
+	import LogOut from 'lucide-svelte/icons/log-out';
+	import Search from 'lucide-svelte/icons/search';
+	import Settings from 'lucide-svelte/icons/settings';
+	import User from 'lucide-svelte/icons/user';
+	import UserCircle from 'lucide-svelte/icons/user-round';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import LoginForm from '$lib/components/login-form.svelte';

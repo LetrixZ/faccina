@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Save } from 'lucide-svelte';
+	import Save from 'lucide-svelte/icons/save';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { AlignJustify, Bookmark, EyeOff } from 'lucide-svelte';
+	import AlignJustify from 'lucide-svelte/icons/align-justify';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
 	import { dragHandle } from 'svelte-dnd-action';

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Bookmark, EyeOff } from 'lucide-svelte';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
 	import type { GalleryListItem, ListPageType, Tag } from '../types';

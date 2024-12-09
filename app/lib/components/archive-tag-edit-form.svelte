@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ActionResult } from '@sveltejs/kit';
-	import { Save } from 'lucide-svelte';
+	import Save from 'lucide-svelte/icons/save';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';

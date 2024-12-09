@@ -1,6 +1,9 @@
 <script lang="ts">
 	import dayjs from 'dayjs';
-	import { Bookmark, BookOpen, BookOpenCheck, EyeOff } from 'lucide-svelte';
+	import BookOpen from 'lucide-svelte/icons/book-open';
+	import BookOpenCheck from 'lucide-svelte/icons/book-open-check';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
 	import type { HistoryEntry, Tag } from '../types';

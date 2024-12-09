@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Pencil, Trash } from 'lucide-svelte';
+	import Pencil from 'lucide-svelte/icons/pencil';
+	import Trash from 'lucide-svelte/icons/trash';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import ListItem from '$lib/components/list-item.svelte';

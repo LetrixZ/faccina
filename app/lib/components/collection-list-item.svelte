@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileQuestion } from 'lucide-svelte';
+	import FileQuestion from 'lucide-svelte/icons/file-question';
 	import type { Collection } from '../types';
 	import { cn } from '$lib/utils';
 

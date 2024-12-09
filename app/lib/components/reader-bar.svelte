@@ -1,11 +1,12 @@
 <script lang="ts">
 	import cookie from 'cookie';
 	import dayjs from 'dayjs';
-	import { ArrowLeft, MenuIcon } from 'lucide-svelte';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import ChevronFirst from 'lucide-svelte/icons/chevron-first';
 	import ChevronLast from 'lucide-svelte/icons/chevron-last';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Menu from 'lucide-svelte/icons/menu';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { ImageSize, TouchLayout } from '../models';
@@ -226,7 +227,7 @@
 				on:click={() => ($preferencesOpen = true)}
 				variant="link"
 			>
-				<MenuIcon class="size-5" />
+				<Menu class="size-5" />
 				<span class="sr-only">Open reader preferences</span>
 			</Button>
 		</div>

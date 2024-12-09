@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileText } from 'lucide-svelte';
+	import FileText from 'lucide-svelte/icons/file-text';
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';

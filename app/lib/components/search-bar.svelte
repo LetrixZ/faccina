@@ -1,6 +1,6 @@
 <script lang="ts">
+	import Search from 'lucide-svelte/icons/search';
 	import { createEventDispatcher } from 'svelte';
-	import { Search } from 'lucide-svelte';
 	import type { Tag } from '../types';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';

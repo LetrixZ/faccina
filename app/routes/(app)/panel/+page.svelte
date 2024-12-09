@@ -1,7 +1,13 @@
 <script lang="ts">
-	import { Bookmark, Clock, Heart, Settings, LogOut, LogIn, User } from 'lucide-svelte';
-	import { Button } from '$lib/components/ui/button';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Heart from 'lucide-svelte/icons/heart';
+	import LogIn from 'lucide-svelte/icons/log-in';
+	import LogOut from 'lucide-svelte/icons/log-out';
+	import Settings from 'lucide-svelte/icons/settings';
+	import User from 'lucide-svelte/icons/user';
 	import { Separator } from '$lib/components/ui/separator';
+	import { Button } from '$lib/components/ui/button';
 
 	export let data;
 </script>

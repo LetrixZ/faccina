@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { BookmarkPlus, Save } from 'lucide-svelte';
+	import BookmarkPlus from 'lucide-svelte/icons/bookmark-plus';
+	import Save from 'lucide-svelte/icons/save';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';

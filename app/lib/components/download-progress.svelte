@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Readable } from 'svelte/store';
-	import { Save } from 'lucide-svelte';
+	import Save from 'lucide-svelte/icons/save';
 	import Button from './ui/button/button.svelte';
 	import Progress from './ui/progress/progress.svelte';
 	import { cn } from '$lib/utils';

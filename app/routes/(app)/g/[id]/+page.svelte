@@ -1,17 +1,15 @@
 <script lang="ts">
 	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import {
-		Bookmark,
-		BookOpenText,
-		Download,
-		Eye,
-		EyeOff,
-		Heart,
-		Info,
-		Pencil,
-		Tag,
-		Trash2,
-	} from 'lucide-svelte';
+	import BookOpenText from 'lucide-svelte/icons/book-open-text';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import Download from 'lucide-svelte/icons/download';
+	import Eye from 'lucide-svelte/icons/eye';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import Heart from 'lucide-svelte/icons/heart';
+	import Info from 'lucide-svelte/icons/info';
+	import Pencil from 'lucide-svelte/icons/pencil';
+	import Tag from 'lucide-svelte/icons/tag';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import pMap from 'p-map';
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
