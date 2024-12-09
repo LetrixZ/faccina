@@ -672,3 +672,36 @@ export const pruneArchives = async () => {
 
 	await db.destroy();
 };
+
+export const pruneTags = async () => {
+	const db = (await import('../shared/db')).default;
+
+	const disconnectedTags = await db
+		.selectFrom('tags')
+		.select(['id', 'namespace', 'name'])
+		.where((eb) =>
+			eb.not(
+				eb.exists(
+					eb.selectFrom('archiveTags').select('id').whereRef('archiveTags.tagId', '=', 'tags.id')
+				)
+			)
+		)
+		.execute();
+
+	if (disconnectedTags.length) {
+		await db
+			.deleteFrom('tags')
+			.where(
+				'id',
+				'in',
+				disconnectedTags.map((tag) => tag.id)
+			)
+			.execute();
+
+		console.info(`Deleted ${chalk.bold(disconnectedTags.length)} tags`);
+	} else {
+		console.info('No tags were deleted');
+	}
+
+	await db.destroy();
+};

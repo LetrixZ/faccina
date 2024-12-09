@@ -44,6 +44,11 @@ program
 	.action(() => archive.pruneArchives());
 
 program
+	.command('prune:tags')
+	.description('Remove tags that are not related to any archive.')
+	.action(() => archive.pruneTags());
+
+program
 	.command('generate-images')
 	.description('Generate cover and thumbnail images.')
 	.option(

@@ -66,7 +66,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	}
 
 	if (data.general) {
-		archive.tags.push(...data.general.map((tag) => ({ namespace: 'general', name: tag })));
+		archive.tags.push(...data.general.map((tag) => ({ namespace: 'tag', name: tag })));
 	}
 
 	if (data.male) {

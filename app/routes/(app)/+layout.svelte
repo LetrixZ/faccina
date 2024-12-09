@@ -103,6 +103,8 @@
 						return (
 							`${namespace}:${name}`.toLowerCase().includes(value) ||
 							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
+							`${namespace}:${name.replaceAll(' ', '_')}`.toLowerCase().includes(value) ||
+							`${namespace}:"${name.replaceAll(' ', '_')}"`.toLowerCase().includes(value) ||
 							displayName?.toLowerCase().includes(value)
 						);
 					})
