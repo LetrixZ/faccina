@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import camelcaseKeys from 'camelcase-keys';
 import { parseTOML } from 'confbox';
 import { omit } from 'ramda';

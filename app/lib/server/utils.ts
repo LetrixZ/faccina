@@ -1,4 +1,4 @@
-import { appendFile } from 'fs/promises';
+import { appendFile } from 'node:fs/promises';
 import chalk from 'chalk';
 import dayjs from 'dayjs';
 import { omit } from 'ramda';

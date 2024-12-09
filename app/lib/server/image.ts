@@ -1,5 +1,5 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { extname, join } from 'path';
+import { extname, join } from 'node:path';
 import { dirname } from 'node:path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';

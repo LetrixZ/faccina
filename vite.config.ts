@@ -1,6 +1,6 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, Plugin } from 'vite';
 
