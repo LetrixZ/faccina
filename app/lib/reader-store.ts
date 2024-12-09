@@ -14,6 +14,10 @@ export const readerPage = writable<number | undefined>();
 export const prevPage = writable<number | undefined>();
 export const nextPage = writable<number | undefined>();
 
+export const presets = writable<Preset[]>([]);
+export const defaultPreset = writable<string | undefined>(undefined);
+export const allowOriginal = writable(true);
+
 export const prefs = writable<ReaderPreferences>(preferencesSchema.parse({}) as ReaderPreferences);
 
 export const readerTimeout = (() => {
@@ -30,7 +34,3 @@ export const readerTimeout = (() => {
 
 	return { reset, clear };
 })();
-
-export const presets = writable<Preset[]>([]);
-export const defaultPreset = writable<string | undefined>(undefined);
-export const allowOriginal = writable(true);

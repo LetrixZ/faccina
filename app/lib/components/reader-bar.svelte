@@ -286,8 +286,8 @@
 			<div class="grid grid-cols-2 gap-2">
 				{#if $allowOriginal}
 					<Button
-						on:click={() => ($prefs.preset = undefined)}
-						variant={!$prefs.preset ? 'secondary' : 'outline'}
+						on:click={() => ($prefs.preset = '[original]')}
+						variant={$prefs.preset === '[original]' ? 'secondary' : 'outline'}
 					>
 						Original
 					</Button>

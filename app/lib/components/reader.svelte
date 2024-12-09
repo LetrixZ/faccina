@@ -48,7 +48,7 @@
 			return '';
 		}
 
-		if (preset) {
+		if (preset && preset !== '[original]') {
 			return `/image/${gallery.hash}/${image.pageNumber}?type=${preset}`;
 		} else {
 			return `/image/${gallery.hash}/${image.pageNumber}`;

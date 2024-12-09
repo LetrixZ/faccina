@@ -23,26 +23,30 @@
 			if (cookiePerfs.reader) {
 				$prefs = JSON.parse(cookiePerfs.reader) as ReaderPreferences;
 			}
+		}
 
-			if ($prefs.touchLayout === undefined) {
-				$prefs.touchLayout = TouchLayout.LeftToRight;
+		if ($prefs.touchLayout === undefined) {
+			$prefs.touchLayout = TouchLayout.LeftToRight;
+		}
+
+		if ($prefs.preset === undefined) {
+			let preset = $defaultPreset;
+
+			if (preset === undefined) {
+				if (!$allowOriginal) {
+					preset = $presets[0].name;
+				} else {
+					preset = '[original]';
+				}
 			}
 
-			if ($prefs.preset === undefined) {
-				let preset = $defaultPreset;
-
-				if (preset === undefined && !$allowOriginal) {
-					preset = $presets[0].name;
-				}
-
-				$prefs.preset = preset;
-			} else {
-				if (!$presets.some((preset) => preset.name === $prefs.preset)) {
-					if (!$allowOriginal) {
-						$prefs.preset = $presets[0].name;
-					} else {
-						$prefs.preset = undefined;
-					}
+			$prefs.preset = preset;
+		} else {
+			if (!$presets.some((preset) => preset.name === $prefs.preset)) {
+				if (!$allowOriginal) {
+					$prefs.preset = $presets[0].name;
+				} else {
+					$prefs.preset = '[original]';
 				}
 			}
 		}
