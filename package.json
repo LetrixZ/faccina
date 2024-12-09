@@ -12,7 +12,8 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"kysely": "kysely",
-		"cli": "tsx ./cli/index.ts"
+		"cli": "tsx ./cli/index.ts",
+		"cluster": "node ./cluster.js"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
@@ -103,6 +104,7 @@
 		"p-map": "^7.0.3",
 		"p-queue": "^8.0.1",
 		"pg": "^8.13.1",
+		"polka": "^0.5.2",
 		"pretty-bytes": "^6.1.1",
 		"prompts": "^2.4.2",
 		"ramda": "^0.30.1",
