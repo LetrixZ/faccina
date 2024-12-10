@@ -12,7 +12,8 @@ import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { directorySize, exists, leadingZeros, readStream } from '../shared/utils';
+import { exists } from '../shared/server-utils';
+import { leadingZeros } from '../shared/utils';
 import {
 	addEmbeddedDirMetadata,
 	addEmbeddedZipMetadata,
@@ -21,7 +22,7 @@ import {
 	MetadataSchema,
 } from './metadata';
 import { parseFilename } from './metadata/utils';
-import { queryIdRanges } from './utilts';
+import { directorySize, queryIdRanges, readStream } from './utilts';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
 

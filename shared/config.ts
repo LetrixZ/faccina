@@ -3,7 +3,7 @@ import camelcaseKeys from 'camelcase-keys';
 import { parseTOML } from 'confbox';
 import { omit } from 'ramda';
 import { z } from 'zod';
-import { presetSchema, type Preset } from '../app/lib/image-presets';
+import { generatePresetHash, presetSchema, type Preset } from '../app/lib/image-presets';
 
 const camelize = <T extends Record<string, unknown> | ReadonlyArray<Record<string, unknown>>>(
 	val: T
@@ -41,8 +41,8 @@ const listingSchema = z
 	.transform((val) => ({
 		...val,
 		defaultPageLimit: val.defaultPageLimit
-			? (val.pageLimits.find((limit) => limit === val.defaultPageLimit) ?? val.pageLimits[0])
-			: val.pageLimits[0],
+			? (val.pageLimits.find((limit) => limit === val.defaultPageLimit) ?? val.pageLimits[0])!
+			: val.pageLimits[0]!,
 	}));
 
 const siteAdminSchema = z
@@ -178,6 +178,9 @@ const imageSchema = z
 		reader_presets: z.array(z.string()).default([]),
 		reader_default_preset: z.string().optional(),
 		reader_allow_original: z.boolean().default(true),
+		download_presets: z.array(z.string()).default([]),
+		download_default_preset: z.string().optional(),
+		download_allow_original: z.boolean().default(true),
 		caching: z
 			.union([z.boolean(), z.number(), cachingSchema])
 			.optional()
@@ -233,15 +236,15 @@ const imageSchema = z
 		preset: Object.entries(val.preset).reduce(
 			(acc, [name, preset]) => ({
 				...acc,
-				[name]: { ...preset, name, label: preset.label ?? name },
+				[name]: { ...preset, name, label: preset.label ?? name, hash: generatePresetHash(preset) },
 			}),
 			{} as { [key: string]: Preset }
 		),
 	}))
 	.transform((val) => ({
 		...val,
-		coverPreset: val.preset[val.coverPreset],
-		thumbnailPreset: val.preset[val.thumbnailPreset],
+		coverPreset: val.preset[val.coverPreset]!,
+		thumbnailPreset: val.preset[val.thumbnailPreset]!,
 		preset: (() => {
 			const labels = new Map<string, string[]>();
 
@@ -259,7 +262,7 @@ const imageSchema = z
 				.entries()
 				.filter(([_, presets]) => presets.length > 1)) {
 				for (const preset of presets) {
-					val.preset[preset].label = `${label} (${preset})`;
+					val.preset[preset]!.label = `${label} (${preset})`;
 				}
 			}
 
@@ -272,7 +275,10 @@ const imageSchema = z
 			return acc;
 		}, [] as Preset[]);
 
-		const readerPresets = presets
+		return { ...omit(['preset'], val), presets };
+	})
+	.transform((val) => {
+		const readerPresets = val.presets
 			.filter((preset) => val.readerPresets.includes(preset.name))
 			.sort((a, b) => {
 				const indexA = val.readerPresets.indexOf(a.name);
@@ -280,11 +286,15 @@ const imageSchema = z
 				return indexA - indexB;
 			});
 
-		return {
-			...omit(['preset'], val),
-			presets,
-			readerPresets,
-		};
+		const downloadPresets = val.presets
+			.filter((preset) => val.downloadPresets.includes(preset.name))
+			.sort((a, b) => {
+				const indexA = val.downloadPresets.indexOf(a.name);
+				const indexB = val.downloadPresets.indexOf(b.name);
+				return indexA - indexB;
+			});
+
+		return { ...val, readerPresets, downloadPresets };
 	})
 	.superRefine((val, ctx) => {
 		if (!val.readerAllowOriginal && !val.readerPresets.length) {
@@ -292,6 +302,14 @@ const imageSchema = z
 				code: 'custom',
 				path: ['images'],
 				message: `You need to specify images presets for the reader if original images aren't allowed in the reader`,
+			});
+		}
+
+		if (!val.downloadAllowOriginal && !val.downloadPresets.length) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['images'],
+				message: `You need to specify images presets for the downloads if original images aren't allowed for downloads`,
 			});
 		}
 
@@ -307,7 +325,29 @@ const imageSchema = z
 				message: `The default reader preset was not found in the reader presets array.`,
 			});
 		}
-	});
+
+		const downloadDefaultPreset = val.downloadDefaultPreset;
+
+		if (
+			downloadDefaultPreset !== undefined &&
+			!val.downloadPresets.some((preset) => preset.name.includes(downloadDefaultPreset))
+		) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['images'],
+				message: `The default download preset was not found in the download presets array.`,
+			});
+		}
+	})
+	.transform((val) => ({
+		...val,
+		readerDefaultPreset: val.readerDefaultPreset
+			? val.presets.find((preset) => preset.name === val.readerDefaultPreset)
+			: undefined,
+		downloadDefaultPreset: val.downloadDefaultPreset
+			? val.presets.find((preset) => preset.name === val.downloadDefaultPreset)
+			: undefined,
+	}));
 
 const mailerSchema = z.object({
 	host: z.string(),
@@ -330,5 +370,6 @@ const configSchema = z.object({
 
 const configFile = process.env.CONFIG_FILE ?? 'config.toml';
 const content = readFileSync(configFile, 'utf8');
+const config = configSchema.parse(parseTOML(content));
 
-export default configSchema.parse(parseTOML(content));
+export default config;

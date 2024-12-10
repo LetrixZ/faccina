@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import camelcaseKeys from 'camelcase-keys';
+import { z } from 'zod';
 
 const camelize = <T extends Record<string, unknown> | ReadonlyArray<Record<string, unknown>>>(
 	val: T
@@ -40,6 +40,31 @@ export const presetSchema = z
 		}),
 	])
 	.transform(camelize)
-	.and(z.object({ width: z.number(), label: z.string().max(30).optional() }));
+	.and(
+		z.object({
+			width: z.number(),
+			label: z.string().max(30).optional(),
+		})
+	);
 
-export type Preset = z.infer<typeof presetSchema> & { name: string; label: string };
+export type Preset = z.infer<typeof presetSchema> & {
+	name: string;
+	label: string;
+	hash: string;
+};
+
+export const generatePresetHash = (preset: Omit<Preset, 'name' | 'hash' | 'label'>) => {
+	const hasher = new Bun.CryptoHasher('sha256');
+
+	for (const [key, value] of Object.entries(preset)) {
+		if (['label'].includes(key)) {
+			continue;
+		}
+
+		if (value !== undefined) {
+			hasher.update(`${key}:${value}`);
+		}
+	}
+
+	return hasher.digest().toString('hex').substring(0, 8);
+};

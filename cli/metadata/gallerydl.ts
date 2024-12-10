@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { z } from 'zod';
 import config from '../../shared/config';
-import { ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../../shared/metadata';
 import { parseFilename } from './utils';
 
 const metadataSchema = z.object({
@@ -39,13 +39,17 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		for (const tag of data.tags) {
 			const [namespace, name] = tag.split(':');
 
+			if (!namespace) {
+				continue;
+			}
+
 			if (namespace === 'language') {
 				continue;
 			}
 
 			archive.tags.push({
 				namespace: name ? (namespace === 'other' ? 'misc' : namespace) : 'misc',
-				name,
+				name: name ?? namespace,
 			});
 		}
 	}

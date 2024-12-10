@@ -21,9 +21,7 @@ const hexLoader: Plugin = {
 };
 
 export default defineConfig({
-	server: { fs: { allow: ['app'] } },
+	server: { fs: { allow: ['app', 'shared/utils.ts'] } },
 	plugins: [hexLoader, sveltekit()],
-	define: {
-		PKG: pkg,
-	},
+	define: { PKG: pkg },
 });

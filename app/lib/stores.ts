@@ -1,6 +1,6 @@
-import { writable } from 'svelte/store';
 import type { User } from 'lucia';
-import type { Tag, SiteConfig, CollectionItem } from './types';
+import { writable } from 'svelte/store';
+import type { CollectionItem, SiteConfig, Tag } from './types';
 
 export const query = writable('');
 export const user = writable<User | null>();

@@ -9,8 +9,8 @@ import {
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
 import { defineConfig } from 'kysely-ctl';
 import { Pool } from 'pg';
-import type { DB } from '../shared/types';
 import connection from '../shared/db/connection';
+import type { DB } from '../shared/types';
 
 let dialect: Dialect | undefined = undefined;
 

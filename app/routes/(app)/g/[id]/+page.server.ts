@@ -66,7 +66,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		archive,
 		isFavorite,
 		readEntry,
-		presets: config.image.readerPresets,
+		presets: config.image.downloadPresets,
+		defaultPreset: config.image.readerDefaultPreset,
+		allowOriginal: config.image.downloadAllowOriginal,
 		editForm: archive
 			? await superValidate(
 					{

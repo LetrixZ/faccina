@@ -2,9 +2,9 @@ import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
-import db from '~shared/db';
-import config from '~shared/config';
 import { log } from '$lib/server/utils';
+import config from '~shared/config';
+import db from '~shared/db';
 
 export const DELETE = async ({ params, locals }) => {
 	const user = locals.user;

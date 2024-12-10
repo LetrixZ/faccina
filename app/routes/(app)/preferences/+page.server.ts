@@ -1,10 +1,10 @@
 import { gzipSync, strToU8 } from 'fflate';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
-import db from '~shared/db';
-import { now } from '~shared/db/helpers';
 import { getUserBlacklist, tagList } from '$lib/server/db/queries';
 import { decompressBlacklist } from '$lib/utils';
+import db from '~shared/db';
+import { now } from '~shared/db/helpers';
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
 	const tags = await tagList();

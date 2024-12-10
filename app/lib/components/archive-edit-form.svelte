@@ -179,18 +179,16 @@
 
 	<div>
 		<div class="flex flex-col gap-2">
-			{#each $formData.sources as _, i}
+			{#each $formData.sources as source, i}
+				{@const errors = $errors.sources?.[i]}
 				<div class="flex flex-col gap-1">
 					<div class="flex gap-2">
-						<GallerySource class="my-auto size-8 flex-shrink-0" source={$formData.sources[i]} />
+						<GallerySource class="my-auto size-8 flex-shrink-0" {source} />
 						<Input
-							bind:value={$formData.sources[i].name}
-							class={cn('h-9 w-32', $errors.sources?.[i]?.name && 'border-destructive')}
+							bind:value={source.name}
+							class={cn('h-9 w-32', errors?.name && 'border-destructive')}
 						/>
-						<Input
-							bind:value={$formData.sources[i].url}
-							class={cn('h-9', $errors.sources?.[i]?.url && 'border-destructive')}
-						/>
+						<Input bind:value={source.url} class={cn('h-9', errors?.url && 'border-destructive')} />
 						<Button
 							class="size-9 flex-shrink-0 p-2"
 							on:click={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
@@ -201,14 +199,14 @@
 					</div>
 
 					<div>
-						{#if $errors.sources?.[i]?.name}
+						{#if errors?.name}
 							<p class="text-sm font-medium text-destructive">
-								{$errors.sources?.[i]?.name}
+								{errors.name}
 							</p>
 						{/if}
-						{#if $errors.sources?.[i]?.url}
+						{#if errors?.url}
 							<p class="text-sm font-medium text-destructive">
-								{$errors.sources?.[i]?.url}
+								{errors.url}
 							</p>
 						{/if}
 					</div>

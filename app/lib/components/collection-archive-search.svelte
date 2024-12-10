@@ -34,7 +34,7 @@
 	} = {
 		query: '',
 		page: 1,
-		limit: $siteConfig.pageLimits[0],
+		limit: $siteConfig.pageLimits[0] ?? 24,
 		sort: $siteConfig.defaultSort,
 		order: $siteConfig.defaultOrder,
 		ids: [],

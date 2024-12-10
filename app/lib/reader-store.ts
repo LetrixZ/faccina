@@ -1,13 +1,12 @@
 import { writable } from 'svelte/store';
+import type { Preset } from './image-presets';
 import type { Gallery } from './types';
 import { preferencesSchema, type ReaderPreferences } from './utils';
-import type { Preset } from './image-presets';
 
 export const showBar = writable(true);
 
 export const currentArchive = writable<Gallery | undefined>();
 
-export const preferencesOpen = writable(false);
 export const previewLayout = writable(false);
 
 export const readerPage = writable<number | undefined>();
@@ -15,7 +14,7 @@ export const prevPage = writable<number | undefined>();
 export const nextPage = writable<number | undefined>();
 
 export const presets = writable<Preset[]>([]);
-export const defaultPreset = writable<string | undefined>(undefined);
+export const defaultPreset = writable<Preset | undefined>(undefined);
 export const allowOriginal = writable(true);
 
 export const prefs = writable<ReaderPreferences>(preferencesSchema.parse({}) as ReaderPreferences);

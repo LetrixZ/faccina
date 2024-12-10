@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { z } from 'zod';
 import config from '../../shared/config';
-import { ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../../shared/metadata';
 import { mapMultiField, multiTextField } from './schemas';
 import { parseFilename } from './utils';
 

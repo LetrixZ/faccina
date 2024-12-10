@@ -83,7 +83,7 @@ export const parseSearchParams = (
 	searchSchema
 		.transform((val) => {
 			if (!config.site.galleryListing.pageLimits.includes(val.limit)) {
-				val.limit = config.site.galleryListing.pageLimits[0];
+				val.limit = config.site.galleryListing.pageLimits[0]!;
 			}
 
 			return val;

@@ -231,7 +231,7 @@ const scrapeHenTag = async ({
 				filename,
 				results.map((res) => res.title),
 				{ scorer: partial_ratio, sortBySimilarity: true }
-			)[0][2];
+			)[0]?.[2];
 
 			if (interaction) {
 				const { value } = await prompts({
@@ -253,13 +253,26 @@ const scrapeHenTag = async ({
 					})),
 				});
 
-				result = results[value];
+				result = results[value]!;
 
 				process.stdout.moveCursor(0, -1);
 				process.stdout.clearLine(1);
 			} else {
-				result = results[bestResult];
+				if (bestResult) {
+					result = results[bestResult];
+				}
 			}
+		}
+
+		if (!result) {
+			multibar.log(
+				chalk.yellow(
+					`[HenTag] No results found for (ID: ${archive.id}) ${chalk.bold(archive.title)}, skipping\n`
+				)
+			);
+			count++;
+
+			continue;
 		}
 
 		const henTagId = result.locations

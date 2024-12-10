@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import arraySupport from 'dayjs/plugin/arraySupport';
 import { z } from 'zod';
 import config from '../../shared/config';
-import { ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../../shared/metadata';
 import { parseFilename } from './utils';
 
 dayjs.extend(arraySupport);
@@ -42,7 +42,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	if (data.upload_date && data.upload_date.filter((x) => x).length == 6) {
 		const [year, month, day, hour, min, sec] = data.upload_date;
 
-		archive.releasedAt = dayjs([year, month + 1, day, hour, min, sec]).toDate();
+		archive.releasedAt = dayjs([year, month ? month + 1 : undefined, day, hour, min, sec]).toDate();
 	}
 
 	if (data.tags) {

@@ -10,7 +10,8 @@ import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { exists, leadingZeros } from '~shared/utils';
+import { exists } from '~shared/server-utils';
+import { leadingZeros } from '~shared/utils';
 import type { ImageArchive } from '$lib/types';
 import { calculateDimensions, encodeImage } from '$lib/server/image';
 
@@ -80,8 +81,15 @@ const resampledImage = async (
 ): Promise<[Buffer | Uint8Array, string]> => {
 	let presetName: string | undefined = undefined;
 
+	const presets = config.image.presets;
+
 	const result = z
-		.enum(['cover', 'thumb', ...config.image.presets.map((preset) => preset.name)])
+		.enum([
+			'cover',
+			'thumb',
+			...presets.map((preset) => preset.name),
+			...presets.map((preset) => preset.hash),
+		])
 		.safeParse(type);
 
 	if (!result.data) {
@@ -101,12 +109,12 @@ const resampledImage = async (
 			allowAspectRatioSimilar = true;
 			return config.image.thumbnailPreset;
 		})
-		.otherwise((name) => config.image.presets.find((preset) => preset.name === name)!);
+		.otherwise((name) => presets.find((preset) => preset.name === name || preset.hash === name)!);
 
 	const imagePath = join(
 		config.directories.images,
 		archive.hash,
-		preset.name,
+		preset.hash,
 		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);
 

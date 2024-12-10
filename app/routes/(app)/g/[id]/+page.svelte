@@ -29,17 +29,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Separator } from '$lib/components/ui/separator';
+	import type { Preset } from '$lib/image-presets';
 	import { type Task } from '$lib/models';
 	import { siteConfig, userCollections } from '$lib/stores';
-	import {
-		cn,
-		dateTimeFormat,
-		generateFilename,
-		getMetadata,
-		humanFileSize,
-		isTag,
-		randomString,
-	} from '$lib/utils';
+	import { cn, dateTimeFormat, getMetadata, humanFileSize, isTag, randomString } from '$lib/utils';
+	import { generateFilename } from '~shared/utils';
 
 	export let data;
 
@@ -60,7 +54,9 @@
 	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
 	$: tags = gallery.tags.filter(isTag);
 
-	const startDownload = async (ev: MouseEvent) => {
+	$: defaultPresetName = data.defaultPreset?.name ?? data.presets[0]?.name ?? '[original]';
+
+	const startDownload = async (ev: MouseEvent, preset?: Preset) => {
 		if (!$siteConfig.clientSideDownloads) {
 			return;
 		} else {
@@ -80,7 +76,9 @@
 		const chunks: Uint8Array[] = [];
 
 		const promise = new Promise<void>((resolve, reject) => {
-			const fileStream = streamSaver.createWriteStream(`${generateFilename(gallery)}.cbz`);
+			const fileStream = streamSaver.createWriteStream(
+				`${generateFilename(gallery.title, gallery.tags)}.cbz`
+			);
 			const writer = fileStream.getWriter();
 
 			const zip = new Zip();
@@ -116,7 +114,15 @@
 				pMap(
 					gallery.images,
 					async (image) => {
-						const url = `/image/${gallery.hash}/${image.pageNumber}`;
+						let presetName = preset?.name ?? defaultPresetName;
+						let url: string;
+
+						if (presetName && presetName !== '[original]') {
+							url = `/image/${gallery.hash}/${image.pageNumber}?type=${presetName}`;
+						} else {
+							url = `/image/${gallery.hash}/${image.pageNumber}`;
+						}
+
 						const response = await fetch(url);
 
 						if (!response.ok) {
@@ -154,7 +160,9 @@
 			componentProps: {
 				task,
 				save: async () => {
-					const fileStream = streamSaver.createWriteStream(`${generateFilename(gallery)}.cbz`);
+					const fileStream = streamSaver.createWriteStream(
+						`${generateFilename(gallery.title, gallery.tags)}.cbz`
+					);
 					const writer = fileStream.getWriter();
 
 					for (const chunk of chunks) {
@@ -396,7 +404,7 @@
 			<InfoSection class="space-y-1">
 				<p class="text-lg font-semibold leading-6">{gallery.title}</p>
 				<p class="text-sm text-muted-foreground-light">
-					{generateFilename(gallery)}
+					{generateFilename(gallery.title, gallery.tags)}
 				</p>
 			</InfoSection>
 

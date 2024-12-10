@@ -3,8 +3,8 @@ import { generateIdFromEntropySize } from 'lucia';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import db from '~shared/db';
 import config from '~shared/config';
+import db from '~shared/db';
 import { lucia } from '$lib/server/auth';
 import { registerSchema } from '$lib/schemas';
 

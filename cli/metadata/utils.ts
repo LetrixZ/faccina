@@ -17,17 +17,17 @@ export function parseFilename(
 		}
 	}
 
-	if (captures.length > 1 && !captures[1].startsWith('[') && !captures[1].startsWith('(')) {
+	if (captures.length > 1 && !captures[1]?.startsWith('[') && !captures[1]?.startsWith('(')) {
 		return [
 			captures[1],
-			captures[0].split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
+			captures[0]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
 			undefined,
 		];
 	} else {
 		return [
 			captures.length > 2 ? captures[2] : undefined,
 			captures?.[1]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
-			captures[0].split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
+			captures[0]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
 		];
 	}
 }

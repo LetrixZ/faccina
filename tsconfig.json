@@ -17,7 +17,15 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false,
+		"noUncheckedIndexedAccess": true,
 		"types": ["@types/bun"]
 	},
-	"include": ["./app/**/*.js", "./app/**/*.ts", "./app/**/*.svelte", ".svelte-kit/ambient.d.ts"]
+	"include": [
+		"./app/**/*.js",
+		"./app/**/*.ts",
+		"./app/**/*.svelte",
+		".svelte-kit/ambient.d.ts",
+		"./cli/**/*.ts",
+		"./shared/**/*.ts"
+	]
 }

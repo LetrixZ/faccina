@@ -7,7 +7,8 @@ import StreamZip from 'node-stream-zip';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import config, { Preset } from '../shared/config';
+import type { Preset } from '../app/lib/image-presets';
+import config from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
 import { leadingZeros } from '../shared/utils';
@@ -17,6 +18,8 @@ type GenerateImagesOptions = {
 	ids?: string;
 	force: boolean;
 	reverse?: boolean;
+	skipReader?: boolean;
+	skipDownload?: boolean;
 };
 
 type ImageEncode = { filename: string; pageNumber: number; savePath: string; preset: Preset };
@@ -56,16 +59,16 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 		const images: ImageEncode[] = [];
 
 		for (const image of archive.images) {
-			const getPath = (preset: Preset) =>
+			const getSavePath = (preset: Preset) =>
 				join(
 					config.directories.images,
 					archive.hash,
-					preset.name,
+					preset.hash,
 					`${leadingZeros(image.pageNumber, archive.pages)}.${preset.format}`
 				);
 
 			if (image.pageNumber === archive.thumbnail) {
-				const savePath = getPath(coverPreset);
+				const savePath = getSavePath(coverPreset);
 
 				if (!options.force && (await Bun.file(savePath).exists())) {
 					skipped++;
@@ -80,7 +83,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				}
 			}
 
-			const savePath = getPath(thumbnailPreset);
+			const savePath = getSavePath(thumbnailPreset);
 
 			if (!options.force && (await Bun.file(savePath).exists())) {
 				skipped++;
@@ -92,6 +95,36 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					preset: thumbnailPreset,
 				});
 				imageCount++;
+			}
+
+			const presets = new Map<string, Preset>();
+
+			if (!options.skipReader) {
+				for (const preset of config.image.readerPresets) {
+					presets.set(preset.name, preset);
+				}
+			}
+
+			if (!options.skipDownload) {
+				for (const preset of config.image.downloadPresets) {
+					presets.set(preset.name, preset);
+				}
+			}
+
+			for (const preset of presets.values()) {
+				const savePath = getSavePath(preset);
+
+				if (!options.force && (await Bun.file(savePath).exists())) {
+					skipped++;
+				} else {
+					images.push({
+						filename: image.filename,
+						pageNumber: image.pageNumber,
+						savePath,
+						preset,
+					});
+					imageCount++;
+				}
 			}
 		}
 
@@ -185,7 +218,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				} catch (error) {
 					multibar.log(
 						chalk.red(
-							`Failed to generate image ${chalk.bold(image.savePath.split('/').slice(-2).join('/'))} for ${chalk.bold(archive.path)}: ${chalk.bold(error.message)}\n`
+							`Failed to generate image ${chalk.bold(image.savePath.split('/').slice(-2).join('/'))} for ${chalk.bold(archive.path)}: ${chalk.bold(error)}\n`
 						)
 					);
 				} finally {

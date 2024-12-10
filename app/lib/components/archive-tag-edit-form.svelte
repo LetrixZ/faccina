@@ -72,7 +72,7 @@
 						if (tag.split(':').length >= 2) {
 							const namespace = tag.split(':')[0];
 
-							if (!namespace.length) {
+							if (!namespace?.length) {
 								return {
 									namespace: 'tag',
 									name: tag,

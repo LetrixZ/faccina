@@ -1,5 +1,7 @@
-import { ExpressionWrapper, SelectQueryBuilder, SqlBool } from 'kysely';
-import { DB } from '../shared/types';
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { ExpressionWrapper, type SelectQueryBuilder, type SqlBool } from 'kysely';
+import type { DB } from '../shared/types';
 
 export const parseIdRanges = (str: string) => {
 	const idRanges = str.split(',');
@@ -9,6 +11,10 @@ export const parseIdRanges = (str: string) => {
 
 	for (const idRange of idRanges) {
 		const [start, end] = idRange.split('-').map((s) => s.trim());
+
+		if (!start) {
+			continue;
+		}
 
 		const startId = parseInt(start);
 
@@ -62,4 +68,39 @@ export const queryIdRanges = <O>(query: SelectQueryBuilder<DB, 'archives', O>, s
 	}
 
 	return query;
+};
+
+/**
+ * @see https://stackoverflow.com/a/75986922
+ */
+export const directorySize = async (path: string) => {
+	let size = 0;
+	const files = await readdir(path);
+
+	for (const file of files) {
+		const filePath = join(path, file);
+		const stats = await stat(filePath);
+
+		if (stats.isFile()) {
+			size += stats.size;
+		} else if (stats.isDirectory()) {
+			size += await directorySize(filePath);
+		}
+	}
+
+	return size;
+};
+
+export const readStream = async (stream: NodeJS.ReadableStream) => {
+	const chunks: Buffer[] = [];
+
+	for await (const chunk of stream) {
+		if (typeof chunk === 'string') {
+			continue;
+		}
+
+		chunks.push(chunk);
+	}
+
+	return Buffer.concat(chunks);
 };

@@ -10,17 +10,20 @@
 
 	$: groupedEntries = data.entries.reduce(
 		(acc, entry) => {
-			const dateKey = relativeDate(entry.lastReadAt);
+			const date = relativeDate(entry.lastReadAt);
 
-			if (!acc[dateKey]) {
-				acc[dateKey] = [];
+			let dateEntry = acc.find((entry) => entry.date === date);
+
+			if (!dateEntry) {
+				dateEntry = { date, entries: [] };
+				acc.push(dateEntry);
 			}
 
-			acc[dateKey].push(entry);
+			dateEntry.entries.push(entry);
 
 			return acc;
 		},
-		{} as { [key: string]: HistoryEntry[] }
+		[] as { date: string; entries: HistoryEntry[] }[]
 	);
 </script>
 
@@ -29,17 +32,17 @@
 
 	<Separator />
 
-	{#if Object.keys(groupedEntries).length}
+	{#if groupedEntries.length}
 		<div class="grid gap-2">
-			{#each Object.keys(groupedEntries) as group}
+			{#each groupedEntries as group}
 				<div class="flex flex-col gap-2">
-					<p class="font-medium">{group}</p>
+					<p class="font-medium">{group.date}</p>
 
 					<div
 						aria-label="Collection"
 						class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
 					>
-						{#each groupedEntries[group] as entry}
+						{#each group.entries as entry}
 							<div>
 								<ListItemHistory {entry} />
 							</div>

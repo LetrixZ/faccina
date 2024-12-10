@@ -95,47 +95,6 @@ export const encodeURL = (url: string) => {
 	return encodeURI(url).replace(/#/g, '%23').replaceAll(/\+/g, '%2B');
 };
 
-export const generateFilename = (archive: Gallery) => {
-	const artists = archive.tags.filter((tag) => tag.namespace === 'artist');
-	const circles = archive.tags.filter((tag) => tag.namespace === 'circle');
-	const magazines = archive.tags.filter((tag) => tag.namespace === 'magazine');
-
-	const splits: string[] = [];
-
-	if (!circles?.length) {
-		if (artists?.length === 1) {
-			splits.push(`[${artists[0].name}]`);
-		} else if (artists?.length === 2) {
-			splits.push(`[${artists[0].name} & ${artists[1].name}]`);
-		} else if (artists && artists.length > 2) {
-			splits.push(`[Various]`);
-		}
-	} else if (circles.length === 1) {
-		if (artists?.length === 1) {
-			splits.push(`[${circles[0].name} (${artists[0].name})]`);
-		} else if (artists?.length === 2) {
-			splits.push(`[${circles[0].name} (${artists[0].name} & ${artists[1].name})]`);
-		} else {
-			splits.push(`[${circles[0].name}]`);
-		}
-	} else {
-		splits.push(`[Various]`);
-	}
-
-	splits.push(archive.title);
-
-	if (magazines?.length === 1) {
-		splits.push(`(${magazines[0].name})`);
-	}
-
-	return splits
-		.join(' ')
-		.replace('\u{FF0A}', '*')
-		.replace('\u{FF1F}', '?')
-		.replace('\u{2044}', '/')
-		.replace('\u{A792}', ':');
-};
-
 export const isSpread = (image: Image) => {
 	if (image.width && image.height) {
 		return image.width > image.height;
@@ -277,8 +236,8 @@ export const shuffle = <T>(array: T[], seed: string) => {
 	while (0 !== currentIndex) {
 		randomIndex = Math.floor(random() * currentIndex);
 		currentIndex -= 1;
-		temporaryValue = array[currentIndex];
-		array[currentIndex] = array[randomIndex];
+		temporaryValue = array[currentIndex]!;
+		array[currentIndex] = array[randomIndex]!;
 		array[randomIndex] = temporaryValue;
 	}
 

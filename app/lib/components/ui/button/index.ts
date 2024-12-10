@@ -51,8 +51,8 @@ type Events = ButtonPrimitive.Events;
 export {
 	//
 	Root as Button,
-	Root,
 	buttonVariants,
+	Root,
 	type Events as ButtonEvents,
 	type Props as ButtonProps,
 	type Events,

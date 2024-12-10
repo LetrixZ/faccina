@@ -2,9 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { libraryItems, search } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
+import { randomString } from '$lib/utils';
 import config from '~shared/config';
 import db from '~shared/db';
-import { randomString } from '$lib/utils';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {

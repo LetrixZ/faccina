@@ -56,7 +56,7 @@ export default [
 		ignores: ['**/ui'],
 	},
 	{
-		files: ['migrations/**'],
+		files: ['shared/db/migrations/**'],
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'off',
 		},

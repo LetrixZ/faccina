@@ -16,6 +16,7 @@ declare global {
 		interface PageState {
 			page?: number;
 			searchOpen?: boolean;
+			readerPreferencesOpen?: boolean;
 		}
 
 		interface Locals {

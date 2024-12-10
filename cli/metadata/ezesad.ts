@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../../shared/metadata';
 import eze from './eze';
 
 const metadataSchema = z.object({

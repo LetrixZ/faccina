@@ -1,6 +1,6 @@
 import { type Kysely, sql } from 'kysely';
-import { id, now } from '../helpers';
 import config from '../../config';
+import { id, now } from '../helpers';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema

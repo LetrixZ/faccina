@@ -8,8 +8,8 @@ import {
 } from 'kysely';
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
 import { Pool } from 'pg';
-import type { DB } from '../types';
 import config from '../config';
+import type { DB } from '../types';
 import connection from './connection';
 import migrations from './migrations';
 

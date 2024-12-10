@@ -1,10 +1,12 @@
-import { cp, exists, mkdir } from 'node:fs/promises';
+import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { Glob } from 'bun';
+import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
+import cliProgress from 'cli-progress';
 import pg, { Client } from 'pg';
 import { z } from 'zod';
 import config from '../shared/config';
+import db from '../shared/db';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -167,4 +169,70 @@ export const migrateDatabase = async (dbUrl: string) => {
 	console.info(
 		`Migrated ${chalk.bold(count)} archives. Now make a force index to finish the migration.`
 	);
+};
+
+export const migratePresetHash = async () => {
+	const imageFolders = await readdir(config.directories.images);
+	const archives = (
+		await db.selectFrom('archives').select(['id', 'hash', 'path', 'title']).execute()
+	).filter((archive) => imageFolders.includes(archive.hash));
+
+	console.info(`Migrating generated images for ${archives.length} archives`);
+
+	const presets = config.image.presets;
+
+	const multibar = new cliProgress.MultiBar({
+		clearOnComplete: true,
+		format: ` {bar} - (ID: {id}) {title} - {value}/{total}`,
+		linewrap: true,
+	});
+	const progress = multibar.create(archives.length, 0);
+
+	let count = 0;
+
+	for (const archive of archives) {
+		progress.update(count, { id: archive.id, title: archive.title });
+
+		for (const preset of presets) {
+			const directoryOld = join(config.directories.images, archive.hash, preset.name);
+			const existsOld = await exists(directoryOld);
+
+			if (!existsOld) {
+				continue;
+			}
+
+			const directoryNew = join(config.directories.images, archive.hash, preset.hash);
+			const existsNew = await exists(directoryNew);
+
+			if (existsNew && (await readdir(directoryNew)).length) {
+				multibar.log(
+					chalk.yellow(
+						`New directory for preset ${chalk.bold(preset.name)} already exists as is not empty`
+					)
+				);
+				continue;
+			}
+
+			await mkdir(directoryNew, { recursive: true });
+
+			const oldFiles = await readdir(directoryOld);
+
+			for (const file of oldFiles) {
+				if (!file.match(/.(jpeg|jpg|png|webp|avif|jxl)$/i)) {
+					continue;
+				}
+
+				await rename(join(directoryOld, file), join(directoryNew, file));
+			}
+
+			await rm(directoryOld, { recursive: true });
+		}
+
+		count++;
+	}
+
+	await db.destroy();
+	await sleep(250);
+
+	multibar.stop();
 };

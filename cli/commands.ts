@@ -2,9 +2,9 @@ import chalk from 'chalk';
 import { Argument, Command, Option } from 'commander';
 import * as archive from './archive';
 import * as images from './images';
-import * as users from './users';
-import * as migrate from './migrate';
 import * as metadataCli from './metadata-cli';
+import * as migrate from './migrate';
+import * as users from './users';
 
 const program = new Command();
 
@@ -57,6 +57,8 @@ program
 	)
 	.option('--reverse', 'Reverse the archive list to generate.')
 	.option('-f --force', 'Do not check if the image already exists.')
+	.option('--skip-reader', 'Do not generate images for the reader presets.')
+	.option('--skip-download', 'Do not generate images for the download presets.')
 	.action((options) => images.generateImages(options));
 
 program
@@ -90,6 +92,11 @@ program
 	.description('Migrate archives from v1 PostgreSQL database to v2 SQLite.')
 	.requiredOption('--db-url <url>', 'Connection string for the v1 database.')
 	.action((opts) => migrate.migrateDatabase(opts.dbUrl));
+
+program
+	.command('migrate:preset-hash')
+	.description('Migrate generated images from the old naming format to the new naming format.')
+	.action(() => migrate.migratePresetHash());
 
 program
 	.command('metadata:scrape')

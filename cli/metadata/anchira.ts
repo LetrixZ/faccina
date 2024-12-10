@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import YAML from 'yaml';
 import { z } from 'zod';
-import { ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../../shared/metadata';
 import { stringOrNumberArray } from './schemas';
 
 const metadataSchema = z.object({

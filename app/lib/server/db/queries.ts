@@ -158,7 +158,7 @@ export const parseQuery = (query: string) => {
 	let pagesNumber: number | undefined = undefined;
 	let pagesExpression: string | undefined = undefined;
 
-	if (pagesMatch) {
+	if (pagesMatch?.[1] !== undefined && pagesMatch[2] !== undefined) {
 		pagesNumber = parseInt(pagesMatch[2]);
 		pagesExpression = pagesMatch[1];
 	}
@@ -168,7 +168,7 @@ export const parseQuery = (query: string) => {
 	let tagsQuantity: number | undefined = undefined;
 	let tagsQuantityExpression: string | undefined = undefined;
 
-	if (tagsQuantityMatch) {
+	if (tagsQuantityMatch?.[1] !== undefined && tagsQuantityMatch[2] !== undefined) {
 		tagsQuantity = parseInt(tagsQuantityMatch[2]);
 		tagsQuantityExpression = tagsQuantityMatch[1];
 	}
@@ -178,7 +178,7 @@ export const parseQuery = (query: string) => {
 	let sourcesQuantity: number | undefined = undefined;
 	let sourcesQuantityExpression: string | undefined = undefined;
 
-	if (sourcesQuantityMatch) {
+	if (sourcesQuantityMatch?.[1] !== undefined && sourcesQuantityMatch[2] !== undefined) {
 		sourcesQuantity = parseInt(sourcesQuantityMatch[2]);
 		sourcesQuantityExpression = sourcesQuantityMatch[1];
 	}
@@ -188,7 +188,7 @@ export const parseQuery = (query: string) => {
 	let sizeNumber: number | undefined = undefined;
 	let sizeExpression: string | undefined = undefined;
 
-	if (sizeMatch) {
+	if (sizeMatch?.[1] !== undefined && sizeMatch[2] !== undefined && sizeMatch[3] !== undefined) {
 		const parsedSize = parseInt(sizeMatch[2]);
 
 		switch (sizeMatch[3]?.toLowerCase()) {
@@ -219,6 +219,10 @@ export const parseQuery = (query: string) => {
 
 	if (tagNamespaceQuantityMatch.length) {
 		for (const match of tagNamespaceQuantityMatch) {
+			if (match[1] === undefined || match[2] === undefined || match[3] === undefined) {
+				continue;
+			}
+
 			const namespace = match[1];
 
 			if (['source', 'sources', 'url', 'language', 'size', 'tags'].includes(namespace)) {
@@ -256,7 +260,7 @@ export const parseQuery = (query: string) => {
 		tagNamespaceQuantity,
 		urlMatch,
 		sourceMatch,
-		languageMatch: languageMatch.map((match) => match?.[1]),
+		languageMatch: languageMatch.map((match) => match?.[1]).filter((match) => match !== undefined),
 	};
 
 	const tagMatches: TagMatch[] = [];
@@ -267,6 +271,10 @@ export const parseQuery = (query: string) => {
 
 	for (const match of tagQueryMatches) {
 		const split = [match.slice(0, match.indexOf(':')), match.slice(match.indexOf(':') + 1)];
+
+		if (split[0] === undefined || split[1] === undefined) {
+			continue;
+		}
 
 		let name = split[1].replaceAll('"', '');
 
@@ -352,15 +360,22 @@ export const search = async (
 
 	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'archives', undefined>;
 
-	if (options.tagBlacklist) {
-		tagMatches.push(
-			...options.tagBlacklist.map((tag) => ({
-				namespace: tag.split(':')[0],
-				name: tag.split(':').slice(1).join(':'),
+	if (options.tagBlacklist?.length) {
+		for (const tag of options.tagBlacklist) {
+			const namespace = tag.split(':')[0];
+			const name = tag.split(':').slice(1).join(':');
+
+			if (namespace === undefined || name === undefined) {
+				continue;
+			}
+
+			tagMatches.push({
+				namespace,
+				name,
 				negate: true,
 				or: false,
-			}))
-		);
+			});
+		}
 	}
 
 	const getTagIds = (name: string, namespace = 'tag') => {

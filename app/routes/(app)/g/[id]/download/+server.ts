@@ -1,9 +1,10 @@
 import { error } from '@sveltejs/kit';
 import contentDisposition from 'content-disposition';
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
-import { generateFilename, getMetadata } from '$lib/utils';
+import { getMetadata } from '$lib/utils';
 import { getGallery } from '$lib/server/db/queries';
 import config from '~shared/config';
+import { generateFilename } from '~shared/utils';
 
 export const GET = async ({ params, locals, fetch, setHeaders }) => {
 	if (!config.site.guestDownloads && !locals.user) {
@@ -24,7 +25,9 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 
 	setHeaders({
 		'Content-Type': 'application/zip',
-		'Content-Disposition': contentDisposition(generateFilename(gallery) + '.cbz'),
+		'Content-Disposition': contentDisposition(
+			generateFilename(gallery.title, gallery.tags) + '.cbz'
+		),
 	});
 
 	locals.analytics?.postMessage({

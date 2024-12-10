@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { z } from 'zod';
-import { ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../../shared/metadata';
 
 const metadataSchema = z.string().transform((val) =>
 	val
@@ -26,7 +26,11 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		const [releasedAt] = data.filter((tag) => /released:\d+/.test(tag));
 
 		if (releasedAt) {
-			archive.releasedAt = dayjs.unix(parseInt(releasedAt.split(':')[1])).toDate();
+			const date = releasedAt.split(':')[1];
+
+			if (date) {
+				archive.releasedAt = dayjs.unix(parseInt(date)).toDate();
+			}
 		}
 	}
 

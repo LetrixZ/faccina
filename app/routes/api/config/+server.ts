@@ -6,6 +6,7 @@ export const GET = () => {
 		reader: {
 			presets: config.image.readerPresets.map((preset) => ({
 				name: preset.name,
+				hash: preset.hash,
 				label: preset.label,
 			})),
 			defaultPreset: config.image.readerDefaultPreset,

@@ -30,24 +30,28 @@
 		}
 
 		if ($prefs.preset === undefined) {
-			let preset = $defaultPreset;
+			let preset = $defaultPreset?.hash;
 
 			if (preset === undefined) {
-				if (!$allowOriginal) {
-					preset = $presets[0].name;
-				} else {
+				if ($allowOriginal) {
 					preset = '[original]';
+				} else if ($presets[0]) {
+					preset = $presets[0].hash;
 				}
 			}
 
 			$prefs.preset = preset;
 		} else {
-			if (!$presets.some((preset) => preset.name === $prefs.preset)) {
-				if (!$allowOriginal) {
-					$prefs.preset = $presets[0].name;
-				} else {
-					$prefs.preset = '[original]';
-				}
+			const preset = $presets.find((p) => p.hash === $prefs.preset || p.name === $prefs.preset);
+
+			if (preset) {
+				$prefs.preset = preset.hash;
+			} else if ($defaultPreset) {
+				$prefs.preset = $defaultPreset.hash;
+			} else if ($allowOriginal) {
+				$prefs.preset = '[original]';
+			} else if ($presets[0]) {
+				$prefs.preset = $presets[0].hash;
 			}
 		}
 	});

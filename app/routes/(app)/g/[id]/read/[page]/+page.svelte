@@ -7,7 +7,7 @@
 
 	$: gallery = data.gallery;
 
-	$: currentPage = $page.state.page || parseInt($page.params.page);
+	$: currentPage = $page.state.page || parseInt($page.params.page ?? '1');
 </script>
 
 <svelte:head>

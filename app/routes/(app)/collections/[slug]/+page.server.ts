@@ -1,10 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { libraryItems, search } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
+import { randomString } from '$lib/utils';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom } from '~shared/db/helpers';
-import { randomString } from '$lib/utils';
 
 export const load = async ({ params, url, locals }) => {
 	if (!locals.user || !config.site.enableCollections) {

@@ -6,8 +6,8 @@ import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
 import type { ArchiveMetadata } from '../../shared/metadata';
-import { escapeGlob, readStream } from '../../shared/utils';
-import { IndexScan, MetadataScan } from '../archive';
+import { escapeGlob } from '../../shared/utils';
+import type { IndexScan, MetadataScan } from '../archive';
 import anchira from './anchira';
 import booru from './booru';
 import ccdc06 from './ccdc06';
@@ -266,8 +266,7 @@ export const addEmbeddedZipMetadata = async (zip: StreamZipAsync, archive: Archi
 			continue;
 		}
 
-		const stream = await zip.stream(entry);
-		const buffer = await readStream(stream);
+		const buffer = await zip.entryData(entry);
 		const content = strFromU8(buffer);
 
 		return handleMetadataFormat(content, entry.name, metadataFormat(entry.name), archive);

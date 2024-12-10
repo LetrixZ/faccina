@@ -10,7 +10,6 @@
 	import {
 		currentArchive,
 		nextPage,
-		preferencesOpen,
 		prefs,
 		presets,
 		prevPage,
@@ -33,7 +32,7 @@
 		state: 'idle',
 	}));
 
-	$: currentPage = $page.state.page ?? parseInt($page.params.page);
+	$: currentPage = $page.state.page ?? parseInt($page.params.page ?? '1');
 	$: image = gallery.images.find((image) => image?.pageNumber === currentPage);
 
 	$: {
@@ -65,7 +64,7 @@
 		}
 
 		if (preset) {
-			const presetItem = $presets.find((p) => p.name === preset);
+			const presetItem = $presets.find((p) => p.hash === preset);
 
 			if (presetItem) {
 				const width = presetItem.width;
@@ -221,7 +220,7 @@
 
 <svelte:window
 	on:keydown={(event) => {
-		if ($preferencesOpen) {
+		if ($page.state.readerPreferencesOpen === true) {
 			return;
 		}
 

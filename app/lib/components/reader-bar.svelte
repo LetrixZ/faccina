@@ -12,6 +12,7 @@
 	import { ImageSize, TouchLayout } from '../models';
 	import type { Gallery } from '../types';
 	import { browser } from '$app/environment';
+	import { pushState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -24,7 +25,6 @@
 	import {
 		allowOriginal,
 		nextPage,
-		preferencesOpen,
 		prefs,
 		presets,
 		previewLayout,
@@ -37,7 +37,7 @@
 
 	export let gallery: Gallery;
 
-	$: currentPage = $page.state.page || parseInt($page.params.page);
+	$: currentPage = $page.state.page || parseInt($page.params.page ?? '1');
 	$: validPage = !isNaN(currentPage) && currentPage > 0 && gallery.images.length >= currentPage;
 	$: total = gallery.images.length;
 
@@ -64,7 +64,7 @@
 	}
 
 	$: {
-		if ($preferencesOpen) {
+		if ($page.state.readerPreferencesOpen === true) {
 			$showBar = true;
 			readerTimeout.clear();
 		} else {
@@ -224,7 +224,8 @@
 			<Button
 				class="inline-flex h-full items-center justify-center p-0 text-sm font-medium text-muted-foreground-light underline-offset-4 hover:underline"
 				draggable="false"
-				on:click={() => ($preferencesOpen = true)}
+				on:click={() => pushState('', { readerPreferencesOpen: true })}
+				title="Open reader preferences"
 				variant="link"
 			>
 				<Menu class="size-5" />
@@ -234,7 +235,14 @@
 	</div>
 {/if}
 
-<Dialog.Root bind:open={$preferencesOpen}>
+<Dialog.Root
+	onOpenChange={(open) => {
+		if (!open) {
+			history.back();
+		}
+	}}
+	open={$page.state.readerPreferencesOpen === true}
+>
 	<Dialog.Content
 		class={cn($previewLayout && 'bg-opacity-70')}
 		overlayClass={cn($previewLayout && 'backdrop-blur-none bg-background/20')}
@@ -296,9 +304,9 @@
 
 				{#each $presets as preset}
 					<Button
-						on:click={() => ($prefs.preset = preset.name)}
-						value={preset.name}
-						variant={$prefs.preset === preset.name ? 'secondary' : 'outline'}
+						on:click={() => ($prefs.preset = preset.hash)}
+						value={preset.hash}
+						variant={$prefs.preset === preset.hash ? 'secondary' : 'outline'}
 					>
 						{preset.label}
 					</Button>
