@@ -1,11 +1,5 @@
 import chalk from 'chalk';
-import {
-	type Expression,
-	ExpressionWrapper,
-	type OrderByExpression,
-	sql,
-	type SqlBool,
-} from 'kysely';
+import { type Expression, type OrderByExpression, sql, type SqlBool } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
 import { handleTags, log, type SearchParams } from '../utils';
@@ -483,59 +477,53 @@ export const search = async (
 	}
 
 	if (titleMatch.length) {
+		const splits = titleMatch.join(' ').split(' ');
+
+		const andQueries = splits.filter((s) => !s.startsWith('~') && !s.startsWith('-'));
+		const orQueries = splits.filter((s) => s.startsWith('~')).map((s) => s.substring(1));
+		const notQueries = splits.filter((s) => s.startsWith('-')).map((s) => s.substring(1));
+
+		let or = ``;
+		let not = ``;
+
 		if (config.database.vendor === 'postgresql') {
-			query = query.where(
-				'archives.fts',
-				'@@',
-				sql<string>`websearch_to_tsquery('simple', ${titleMatch.join(' ').replaceAll('- ', '\\- ')})`
-			);
-		} else {
-			for (let split of titleMatch) {
-				split = split.trim();
+			const and = andQueries.join(' & ');
 
-				if (!split.length) {
-					continue;
-				}
-
-				const negate = split.startsWith('-');
-
-				split = negate ? split.slice(1) : split;
-
-				query = query.where(({ eb, and, or, not, exists, selectFrom }) => {
-					const conditions: ExpressionWrapper<DB, 'archives', SqlBool>[] = [];
-
-					if (negate) {
-						conditions.push(
-							or([
-								not(eb('title', like(), `%${split}%`)),
-								not(eb('description', like(), `%${split}%`)),
-							])
-						);
-					} else {
-						conditions.push(
-							eb('title', like(), `%${split}%`),
-							eb('description', like(), `%${split}%`)
-						);
-					}
-
-					const buildTagQuery = () => {
-						return exists(
-							selectFrom('archiveTags')
-								.innerJoin('tags', 'id', 'tagId')
-								.select('id')
-								.where((eb) =>
-									eb('name', like(), `${split}%`).or('displayName', like(), `${split}%`)
-								)
-								.where('namespace', 'in', ['artist', 'circle'])
-								.whereRef('archiveId', '=', 'archives.id')
-						);
-					};
-
-					conditions.push(negate ? not(buildTagQuery()) : buildTagQuery());
-
-					return negate ? and(conditions) : or(conditions);
-				});
+			if (orQueries.length) {
+				or = `(${orQueries.join(' | ')})`;
 			}
+
+			if (notQueries.length) {
+				not = `!(${notQueries.join(' & ')})`;
+			}
+
+			if (and.length && or.length) {
+				or = `& ${or}`;
+			}
+
+			if ((and.length || or.length) && not.length) {
+				not = `& ${not}`;
+			}
+
+			query = query.where('archives.fts', '@@', `${`${and} ${or} ${not}`}`);
+		} else {
+			const and = andQueries.join(' AND ');
+
+			if (orQueries.length) {
+				or = `(${orQueries.join(' OR ')})`;
+			}
+
+			if (notQueries.length) {
+				not = `NOT (${notQueries.join(' AND ')})`;
+			}
+
+			if (and.length && or.length) {
+				or = `AND ${or}`;
+			}
+
+			query = query
+				.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id')
+				.where((eb) => sql`${eb.table('archivesFts')} = ${`${and} ${or} ${not}`}`);
 		}
 	}
 

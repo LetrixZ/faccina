@@ -13,6 +13,7 @@ import * as _1730697231324_fix_fts from './migrations/1730697231324_fix_fts';
 import * as _1730742720695_user_history from './migrations/1730742720695_user-history';
 import * as _1732508069512_fts_v2 from './migrations/1732508069512_fts-v2';
 import * as _1732766393840_fts_v3 from './migrations/1732766393840_fts-v3';
+import * as _1733882129483_sqlite_fts5 from './migrations/1733882129483_sqlite-fts5';
 
 export default {
 	'1725745590227_init': _1725745590227_init,
@@ -30,4 +31,5 @@ export default {
 	'1730742720695_user-history': _1730742720695_user_history,
 	'1732508069512_fts-v2': _1732508069512_fts_v2,
 	'1732766393840_fts-v3': _1732766393840_fts_v3,
+	'1733882129483_sqlite-fts5': _1733882129483_sqlite_fts5,
 };

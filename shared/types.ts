@@ -126,9 +126,16 @@ export interface UserSessions {
 	userId: string;
 }
 
+export interface ArchivesFts {
+	rowid: number;
+	title: string;
+	tags: string;
+}
+
 export interface DB {
 	archiveImages: ArchiveImages;
 	archives: Archives;
+	archivesFts: ArchivesFts;
 	archiveSources: ArchiveSources;
 	archiveTags: ArchiveTags;
 	collection: Collection;
