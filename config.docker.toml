@@ -1,0 +1,14 @@
+[site]
+site_name = 'Faccina'
+
+[directories]
+content = "/content"
+images = "/images"
+
+[database]
+vendor = 'postgres'
+database = 'faccina'
+user = 'faccina'
+password = 'facicna'
+host = 'postgres'
+port = 5432

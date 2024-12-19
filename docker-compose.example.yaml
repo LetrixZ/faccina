@@ -4,7 +4,17 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./config.toml:/app/config.toml:r
-      - ./data:/app/data:rw # Directory containing the SQLite file
+      - ./config.docker.toml:/app/config.toml:r
       - ./content:/content:r
       - ./images:/images:rw
+  postgres:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=faccina
+      - POSTGRES_USER=faccina
+      - POSTGRES_DB=faccina
+
+volumes:
+  postgres_data:
