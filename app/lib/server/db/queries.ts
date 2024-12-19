@@ -478,10 +478,17 @@ export const search = async (
 
 	if (titleMatch.length) {
 		const splits = titleMatch.join(' ').split(' ');
-
-		const andQueries = splits.filter((s) => !s.startsWith('~') && !s.startsWith('-'));
-		const orQueries = splits.filter((s) => s.startsWith('~')).map((s) => s.substring(1));
-		const notQueries = splits.filter((s) => s.startsWith('-')).map((s) => s.substring(1));
+		const andQueries = splits
+			.filter((s) => !s.startsWith('~') && !s.startsWith('-'))
+			.map((s) => (/\w+-\w+/.test(s) ? `"${s}"` : s));
+		const orQueries = splits
+			.filter((s) => s.startsWith('~'))
+			.map((s) => s.substring(1))
+			.map((s) => (/\w+-\w+/.test(s) ? `"${s}"` : s));
+		const notQueries = splits
+			.filter((s) => s.startsWith('-'))
+			.map((s) => s.substring(1))
+			.map((s) => (/\w+-\w+/.test(s) ? `"${s}"` : s));
 
 		let or = ``;
 		let not = ``;
