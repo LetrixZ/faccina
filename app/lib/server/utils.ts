@@ -13,20 +13,7 @@ export const handleTags = (archive: GalleryListItem): GalleryListItem => {
 
 	const filteredTags = archive.tags.filter((tag) => {
 		return !tagExclude.some(({ ignoreCase, name, namespace }) => {
-			const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
-			const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
-
-			if (namespace) {
-				return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
-			} else {
-				return normalizedNames.includes(normalizedTagName);
-			}
-		});
-	});
-
-	const sortedTags = filteredTags.sort((a, b) => {
-		const getWeight = (tag: Tag) => {
-			const matchTag = tagWeight.find(({ ignoreCase, name, namespace }) => {
+			if (name) {
 				const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
 				const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
 
@@ -34,6 +21,27 @@ export const handleTags = (archive: GalleryListItem): GalleryListItem => {
 					return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
 				} else {
 					return normalizedNames.includes(normalizedTagName);
+				}
+			} else if (namespace) {
+				return namespace === tag.namespace;
+			}
+		});
+	});
+
+	const sortedTags = filteredTags.sort((a, b) => {
+		const getWeight = (tag: Tag) => {
+			const matchTag = tagWeight.find(({ ignoreCase, name, namespace }) => {
+				if (name) {
+					const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
+					const normalizedNames = ignoreCase ? name.map((t) => t.toLowerCase()) : name;
+
+					if (namespace) {
+						return namespace === tag.namespace && normalizedNames.includes(normalizedTagName);
+					} else {
+						return normalizedNames.includes(normalizedTagName);
+					}
+				} else if (namespace) {
+					return namespace === tag.namespace;
 				}
 			});
 

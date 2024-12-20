@@ -77,6 +77,7 @@
 										componentProps: {
 											gallery: archive,
 											bookmarked: detail,
+											collection: defaultCollection.slug,
 											onChange: () => {
 												bookmarkGallery = archive;
 												collectionsOpen = true;

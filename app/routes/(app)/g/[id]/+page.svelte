@@ -406,7 +406,7 @@
 				<InfoSection name="Artists">
 					<div class="flex flex-wrap gap-2">
 						{#each artists as artist}
-							<Chip tag={artist} type="artist" />
+							<Chip tag={artist} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -416,7 +416,7 @@
 				<InfoSection name="Circles">
 					<div class="flex flex-wrap gap-2">
 						{#each circles as circle}
-							<Chip tag={circle} type="circle" />
+							<Chip tag={circle} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -426,7 +426,7 @@
 				<InfoSection name="Magazines">
 					<div class="flex flex-wrap gap-2">
 						{#each magazines as magazine}
-							<Chip tag={magazine} type="magazine" />
+							<Chip tag={magazine} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -436,7 +436,7 @@
 				<InfoSection name="Events">
 					<div class="flex flex-wrap gap-2">
 						{#each events as event}
-							<Chip tag={event} type="event" />
+							<Chip tag={event} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -446,7 +446,7 @@
 				<InfoSection name="Publishers">
 					<div class="flex flex-wrap gap-2">
 						{#each publishers as publisher}
-							<Chip tag={publisher} type="publisher" />
+							<Chip tag={publisher} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -456,7 +456,7 @@
 				<InfoSection name="Parodies">
 					<div class="flex flex-wrap gap-2">
 						{#each parodies as parody}
-							<Chip tag={parody} type="parody" />
+							<Chip tag={parody} />
 						{/each}
 					</div>
 				</InfoSection>
@@ -466,7 +466,7 @@
 				<InfoSection name="Tags">
 					<div class="flex flex-wrap gap-2">
 						{#each tags as tag}
-							<Chip {tag} type="tag" />
+							<Chip {tag} />
 						{/each}
 					</div>
 				</InfoSection>

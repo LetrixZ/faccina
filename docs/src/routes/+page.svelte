@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	const { data } = $props();
+	const { Content, metadata } = $derived(data);
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<p>
-	Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation
-</p>
+<svelte:head>
+	<title>Faccina</title>
+</svelte:head>
 
-<Button variant="secondary">ASD</Button>
+<div class="all-prose min-w-full">
+	<Content />
+</div>

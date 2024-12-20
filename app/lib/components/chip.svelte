@@ -1,14 +1,13 @@
 <script lang="ts">
-	import type { Tag, TagNamespace } from '../types';
+	import type { Tag } from '../types';
 	import { Button } from './ui/button';
 	import { cn, encodeURL } from '$lib/utils';
 
 	export let tag: Tag;
-	export let type: TagNamespace;
 	export let newTab = false;
 
 	const classes = (() => {
-		switch (type) {
+		switch (tag.namespace) {
 			case 'artist':
 				return 'bg-red-700 hover:bg-red-700/80';
 			case 'circle':

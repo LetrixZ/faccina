@@ -9,7 +9,7 @@
 	import type { HistoryEntry, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import Button from './ui/button/button.svelte';
-	import { cn, isTag, relativeDate } from '$lib/utils';
+	import { cn, relativeDate } from '$lib/utils';
 	import { page } from '$app/stores';
 
 	export let entry: HistoryEntry;
@@ -25,12 +25,7 @@
 	$: [reducedTags, moreCount] = (() => {
 		const maxWidth = 290;
 
-		const tags = [
-			...gallery.tags.filter((tag) => tag.namespace === 'artist'),
-			...gallery.tags.filter((tag) => tag.namespace === 'circle'),
-			...gallery.tags.filter((tag) => tag.namespace === 'parody'),
-			...gallery.tags.filter((tag) => isTag(tag)),
-		];
+		const tags = gallery.tags;
 
 		let tagCount = tags.length;
 		let width = 0;
@@ -58,10 +53,7 @@
 		return [reduced, tagCount];
 	})();
 
-	$: artists = reducedTags.filter((tag) => tag.namespace === 'artist');
-	$: circles = reducedTags.filter((tag) => tag.namespace === 'circle');
-	$: parodies = reducedTags.filter((tag) => tag.namespace === 'parody');
-	$: tags = reducedTags.filter((tag) => isTag(tag));
+	$: tags = reducedTags;
 </script>
 
 <div class="group relative flex justify-between gap-2 rounded bg-background/70 pe-6">
@@ -128,20 +120,8 @@
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
-			{#each artists as artist}
-				<Chip {newTab} tag={artist} type="artist" />
-			{/each}
-
-			{#each circles as circle}
-				<Chip {newTab} tag={circle} type="circle" />
-			{/each}
-
-			{#each parodies as parody}
-				<Chip {newTab} tag={parody} type="parody" />
-			{/each}
-
 			{#each tags as tag}
-				<Chip {newTab} {tag} type="tag" />
+				<Chip {newTab} {tag} />
 			{/each}
 
 			{#if moreCount}

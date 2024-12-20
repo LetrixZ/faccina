@@ -6,7 +6,7 @@
 	import type { GalleryListItem, ListPageType, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { cn, isTag } from '$lib/utils';
+	import { cn } from '$lib/utils';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 
@@ -20,14 +20,9 @@
 	const dispatch = createEventDispatcher<{ bookmark: boolean }>();
 
 	$: [reducedTags, moreCount] = (() => {
-		const maxWidth = 290;
+		const tags = gallery.tags;
 
-		const tags = [
-			...gallery.tags.filter((tag) => tag.namespace === 'artist'),
-			...gallery.tags.filter((tag) => tag.namespace === 'circle'),
-			...gallery.tags.filter((tag) => tag.namespace === 'parody'),
-			...gallery.tags.filter((tag) => isTag(tag)),
-		];
+		const maxWidth = 290;
 
 		let tagCount = tags.length;
 		let width = 0;
@@ -55,10 +50,7 @@
 		return [reduced, tagCount];
 	})();
 
-	$: artists = reducedTags.filter((tag) => tag.namespace === 'artist');
-	$: circles = reducedTags.filter((tag) => tag.namespace === 'circle');
-	$: parodies = reducedTags.filter((tag) => tag.namespace === 'parody');
-	$: tags = reducedTags.filter((tag) => isTag(tag));
+	$: tags = reducedTags;
 </script>
 
 <div class="group h-auto w-auto space-y-2">
@@ -130,20 +122,8 @@
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
-			{#each artists as artist}
-				<Chip {newTab} tag={artist} type="artist" />
-			{/each}
-
-			{#each circles as circle}
-				<Chip {newTab} tag={circle} type="circle" />
-			{/each}
-
-			{#each parodies as parody}
-				<Chip {newTab} tag={parody} type="parody" />
-			{/each}
-
 			{#each tags as tag}
-				<Chip {newTab} {tag} type="tag" />
+				<Chip {newTab} {tag} />
 			{/each}
 
 			{#if moreCount}

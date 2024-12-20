@@ -15,7 +15,7 @@ const stringOrStringArray = z
 
 const tagWeightSchema = z
 	.object({
-		name: stringOrStringArray,
+		name: stringOrStringArray.optional(),
 		namespace: z.string().optional(),
 		weight: z.number(),
 		ignore_case: z.boolean().default(false).optional(),
@@ -24,7 +24,7 @@ const tagWeightSchema = z
 
 const tagExcludeSchema = z
 	.object({
-		name: stringOrStringArray,
+		name: stringOrStringArray.optional(),
 		namespace: z.string().optional(),
 		ignore_case: z.boolean().default(false).optional(),
 	})
@@ -32,8 +32,14 @@ const tagExcludeSchema = z
 
 const listingSchema = z
 	.object({
-		tag_weight: z.array(tagWeightSchema).default([]),
-		tag_exclude: z.array(tagExcludeSchema).default([]),
+		tag_weight: z.array(tagWeightSchema).default([
+			{ namespace: 'artist', weight: 1000 },
+			{ namespace: 'circle', weight: 999 },
+			{ namespace: 'parody', weight: 998 },
+		]),
+		tag_exclude: z
+			.array(tagExcludeSchema)
+			.default([{ namespace: 'magazine' }, { namespace: 'event' }, { namespace: 'publisher' }]),
 		page_limits: z.array(z.number().int()).min(1).catch([24]),
 		default_page_limit: z.number().int().optional(),
 	})
@@ -67,7 +73,7 @@ const siteSchema = z
 		client_side_downloads: z.boolean().default(true),
 		gallery_listing: listingSchema.default({}),
 		search_placeholder: z.string().default(''),
-		store_og_images: z.boolean().default(true),
+		store_og_images: z.boolean().default(false),
 		secure_session_cookie: z.boolean().default(true),
 		admin: siteAdminSchema.default({}),
 	})

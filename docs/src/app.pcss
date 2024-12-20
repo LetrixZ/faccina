@@ -114,7 +114,20 @@ main {
 }
 
 .all-prose {
-	@apply prose prose-sm prose-invert prose-headings:mt-1 prose-h1:mb-2 prose-h1:mt-0 prose-h1:font-semibold prose-h2:mb-1 prose-h2:font-medium prose-h2:text-neutral-200 prose-h3:text-base prose-h3:font-medium prose-h3:text-neutral-200 prose-p:text-sm;
+	@apply prose prose-sm prose-invert prose-headings:mt-1 prose-h1:mb-2 prose-h1:mt-0 prose-h1:font-semibold prose-h2:mb-2 prose-h2:font-medium prose-h2:text-neutral-200 prose-h3:text-base prose-h3:font-medium prose-h3:text-neutral-200 prose-p:text-sm prose-code:before:hidden prose-code:after:hidden;
+
+	h1,
+	h2,
+	h3 {
+		a {
+			text-decoration: none;
+
+			&:hover {
+				text-decoration: underline;
+				text-underline-offset: 4px;
+			}
+		}
+	}
 }
 
 pre[class^='language-'] > code[class^='language-'] {
