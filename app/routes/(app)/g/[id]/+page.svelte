@@ -54,7 +54,8 @@
 	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
 	$: tags = gallery.tags.filter(isTag);
 
-	$: defaultPresetName = data.defaultPreset?.name ?? data.presets[0]?.name ?? '[original]';
+	$: defaultPresetName =
+		data.defaultPreset?.name ?? (data.allowOriginal ? '[original]' : data.presets[0]?.name);
 
 	const startDownload = async (ev: MouseEvent, preset?: Preset) => {
 		if (!$siteConfig.clientSideDownloads) {
@@ -62,9 +63,6 @@
 		} else {
 			ev.preventDefault();
 		}
-
-		const streamSaver = await import('streamsaver');
-		streamSaver.default.mitm = '/ss-mitm.html';
 
 		const task = writable<Task>({
 			gallery: gallery,
@@ -75,33 +73,36 @@
 
 		const chunks: Uint8Array[] = [];
 
-		const promise = new Promise<void>((resolve, reject) => {
-			const fileStream = streamSaver.createWriteStream(
-				`${generateFilename(gallery.title, gallery.tags)}.cbz`
-			);
-			const writer = fileStream.getWriter();
+		const save = (blob: Blob) => {
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement('a');
+			anchor.href = url;
+			anchor.download = `${generateFilename(gallery.title, gallery.tags)}.cbz`;
+			anchor.click();
+			URL.revokeObjectURL(url);
+		};
 
+		const promise = new Promise<void>((resolve, reject) => {
 			const zip = new Zip();
+
+			const beforeUnloadHandler = (event: Event) => {
+				event.preventDefault();
+				return 'There are downloads in progress. Are you sure you want to leave?';
+			};
+			window.addEventListener('beforeunload', beforeUnloadHandler);
 
 			zip.ondata = async (err, chunk, final) => {
 				if (!err) {
 					chunks.push(chunk);
-					writer.write(chunk);
 
 					if (final) {
-						writer.close();
+						save(new Blob(chunks, { type: 'application/zip' }));
+						window.removeEventListener('beforeunload', beforeUnloadHandler);
 					}
 				} else {
-					writer.abort();
 					reject(err);
 				}
 			};
-
-			const beforeUnloadHandler = () => writer.abort();
-			window.addEventListener('beforeunload', beforeUnloadHandler);
-			writer.closed
-				.then(() => window.removeEventListener('beforeunload', beforeUnloadHandler))
-				.catch(() => {});
 
 			try {
 				const metadataFile = new ZipPassThrough('info.json');
@@ -142,14 +143,12 @@
 					{ concurrency: 3 }
 				).then(() => {
 					zip.end();
-
 					task.update((task) => ({ ...task, complete: true }));
-
 					resolve();
 				});
 			} catch (e) {
 				console.error(e);
-				writer.abort().then(() => reject(e));
+				zip.terminate();
 			}
 		});
 
@@ -159,18 +158,7 @@
 			id,
 			componentProps: {
 				task,
-				save: async () => {
-					const fileStream = streamSaver.createWriteStream(
-						`${generateFilename(gallery.title, gallery.tags)}.cbz`
-					);
-					const writer = fileStream.getWriter();
-
-					for (const chunk of chunks) {
-						await writer.write(chunk);
-					}
-
-					writer.close();
-				},
+				save: () => save(new Blob(chunks, { type: 'application/zip' })),
 			},
 			loading: DownloadProgress,
 			success: () => DownloadProgress,

@@ -30,7 +30,6 @@
 		"@types/pg": "^8.11.10",
 		"@types/prompts": "^2.4.9",
 		"@types/ramda": "^0.30.2",
-		"@types/streamsaver": "^2.0.5",
 		"@types/string-pixel-width": "^1.10.3",
 		"@types/xml2js": "^0.4.14",
 		"autoprefixer": "^10.4.20",

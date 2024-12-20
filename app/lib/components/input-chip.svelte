@@ -19,7 +19,6 @@
 
 	const removeChip = (chip: string) => {
 		chips = chips.filter((_chip) => _chip !== chip);
-
 		dispatch('update', chips);
 	};
 
@@ -35,10 +34,6 @@
 		}
 
 		let aux = input;
-
-		if (aux.split(':').length === 1) {
-			aux = `tag:${aux}`;
-		}
 
 		chips = [...chips, aux];
 		popoverOpen = false;
