@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { page } from '$app/state';
 	import { cn } from '$lib/utils';
 	import '../app.pcss';
@@ -8,7 +9,7 @@
 
 <div class="container mx-auto flex w-full gap-3 space-y-3 p-3 ps-44">
 	<aside class="fixed start-4 w-40 flex-col space-y-3">
-		<a href="/" class="text-xl font-semibold">Faccina</a>
+		<a href="{base}/" class="text-xl font-semibold">Faccina</a>
 
 		<div class="flex flex-col gap-y-4 text-nowrap rounded">
 			{#each data.sections as section}

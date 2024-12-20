@@ -1,3 +1,4 @@
+import { base } from '$app/paths';
 import type { Component } from 'svelte';
 
 type Page = {
@@ -36,7 +37,7 @@ export const load = () => {
 			order: metadata.order,
 			slug: pageSlug,
 			name: metadata.title,
-			url: `/${section.slug}/${pageSlug}`,
+			url: `${base}/${section.slug}/${pageSlug}`,
 			subpages: []
 		};
 		section.pages.push(page);
