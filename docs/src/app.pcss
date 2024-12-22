@@ -24,6 +24,7 @@
 		--border: 0 0% 14.9%;
 		--input: 0 0% 14.9%;
 		--ring: 0 72.2% 30.6%;
+		--radius: 0.5rem;
 		--shadow: 0 0 10%;
 
 		font-family: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
@@ -34,11 +35,6 @@
 @layer base {
 	* {
 		@apply border-border;
-	}
-
-	html {
-		overflow-y: auto;
-		scrollbar-gutter: stable;
 	}
 
 	body {
@@ -114,7 +110,7 @@ main {
 }
 
 .all-prose {
-	@apply prose prose-sm prose-invert prose-headings:mt-1 prose-h1:mb-2 prose-h1:mt-0 prose-h1:font-semibold prose-h2:mb-2 prose-h2:font-medium prose-h2:text-neutral-200 prose-h3:text-base prose-h3:font-medium prose-h3:text-neutral-200 prose-p:text-sm prose-code:before:hidden prose-code:after:hidden;
+	@apply prose prose-sm prose-stone prose-invert prose-headings:mt-1 prose-h1:mb-2 prose-h1:mt-0 prose-h1:font-semibold prose-h2:mb-2 prose-h2:font-medium prose-h2:text-neutral-200 prose-h3:text-base prose-h3:font-medium prose-h3:text-neutral-200 prose-p:text-sm prose-code:before:hidden prose-code:after:hidden prose-hr:my-5 prose-hr:border-secondary;
 
 	h1,
 	h2,
@@ -130,29 +126,6 @@ main {
 	}
 }
 
-pre[class^='language-'] > code[class^='language-'] {
-	font-size: 0.875rem;
-
-	&.language-toml {
-		.comment {
-			@apply text-green-600 text-opacity-80;
-		}
-
-		.string {
-			color: hsl(17deg 47% 64%);
-		}
-
-		.number {
-			color: hsl(99deg 28% 73%);
-		}
-
-		.punctuation {
-			color: hsl(51deg 100% 50%);
-		}
-
-		.key.property,
-		.table.class-name {
-			color: hsl(200deg 94% 80%);
-		}
-	}
+pre[data-theme='tokyo-night'] > code[data-theme='tokyo-night'] {
+	@apply text-sm;
 }

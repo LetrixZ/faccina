@@ -1,9 +1,4 @@
-import camelcaseKeys from 'camelcase-keys';
 import { z } from 'zod';
-
-const camelize = <T extends Record<string, unknown> | ReadonlyArray<Record<string, unknown>>>(
-	val: T
-) => camelcaseKeys(val);
 
 export const presetSchema = z
 	.discriminatedUnion('format', [
@@ -39,7 +34,6 @@ export const presetSchema = z
 			effort: z.number().min(0).max(9).optional(),
 		}),
 	])
-	.transform(camelize)
 	.and(
 		z.object({
 			width: z.number(),

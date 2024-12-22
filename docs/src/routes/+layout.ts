@@ -6,9 +6,19 @@ type Page = {
 	slug: string;
 	name: string;
 	url: string;
+	headers: Header[];
 };
 
 type MainPage = Page & { subpages: Page[] };
+
+type Header = {
+	id: string;
+	name: string;
+	depth: number;
+	subHeaders: Header[];
+};
+
+type Metadata = { order: number; title: string; headers: Header[] };
 
 export const load = () => {
 	const sections: {
@@ -28,7 +38,7 @@ export const load = () => {
 	for (const [path, { metadata }] of Object.entries(
 		import.meta.glob<{
 			default: Component;
-			metadata: { order: number; title: string };
+			metadata: Metadata;
 		}>('../../pages/*/*.md', { eager: true })
 	)) {
 		const [_, sectionSlug, pageSlug] = path.match(/\/pages\/(.*)\/(.*).md/)!;
@@ -38,6 +48,7 @@ export const load = () => {
 			slug: pageSlug,
 			name: metadata.title,
 			url: `${base}/${section.slug}/${pageSlug}`,
+			headers: metadata.headers,
 			subpages: []
 		};
 		section.pages.push(page);
@@ -45,7 +56,7 @@ export const load = () => {
 		for (const [path, { metadata }] of Object.entries(
 			import.meta.glob<{
 				default: Component;
-				metadata: { order: number; title: string };
+				metadata: Metadata;
 			}>(`../../pages/*/*/*.md`, { eager: true })
 		)) {
 			const match = path.match(/\/pages\/.*\/(.*)\/(.*).md/)!;
@@ -55,7 +66,8 @@ export const load = () => {
 					order: metadata.order,
 					name: metadata.title,
 					slug: match[2],
-					url: `${page.url}/${match[2]}`
+					url: `${page.url}/${match[2]}`,
+					headers: metadata.headers
 				});
 			}
 		}

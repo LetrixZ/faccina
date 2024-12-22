@@ -118,16 +118,6 @@ This might present problems when users are involved in the equation. Registratio
 [database]
 vendor = 'sqlite'
 path = '/path/to/db.sqlite3'
-apply_optimizations = true # default
-```
-
-`apply_optimizations` will run these queries when initializing a SQLite connection:
-
-```sql
-PRAGMA journal_mode = wal;
-PRAGMA synchronous = normal;
-PRAGMA busy_timeout = 5000;
-PRAGMA foreign_keys = true;
 ```
 
 #### PostgreSQL

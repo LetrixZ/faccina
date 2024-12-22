@@ -12,14 +12,10 @@ const connection = match(config.database)
 	.with({ vendor: 'sqlite' }, (data) => {
 		const db = new Database(data.path);
 		db.run('PRAGMA case_sensitive_like = off');
-
-		if (data.applyOptimizations) {
-			db.run('PRAGMA journal_mode = wal');
-			db.run('PRAGMA synchronous = normal');
-			db.run('PRAGMA busy_timeout = 5000');
-			db.run('PRAGMA foreign_keys = true');
-		}
-
+		db.run('PRAGMA journal_mode = wal');
+		db.run('PRAGMA synchronous = normal');
+		db.run('PRAGMA busy_timeout = 5000');
+		db.run('PRAGMA foreign_keys = true');
 		return db;
 	})
 	.exhaustive();

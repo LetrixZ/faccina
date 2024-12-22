@@ -1,9 +1,6 @@
-[site]
-site_name = 'Faccina'
-
 [directories]
-content = "./content"
-images = "./images"
+content = './content'
+images = './images'
 
 [database]
 vendor = 'sqlite'

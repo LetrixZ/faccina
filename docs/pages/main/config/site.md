@@ -7,8 +7,6 @@ title: Site
 
 Defined by the table header `[site]`.
 
-## Contents
-
 ## General configuration
 
 ```toml

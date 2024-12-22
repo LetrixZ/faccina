@@ -5,6 +5,7 @@ title: Installation
 
 <script context="module">
   import { base } from "$app/paths";
+  import CodeBlock from '$lib/components/CodeBlock.svelte'
 </script>
 
 # {title}
@@ -28,12 +29,9 @@ Open a terminal in the root of the repository, where the `package.json` file is 
 Now, make a copy of the example configuration file and name it `config.toml`. This includes the basics for the app to work. For a more in-depth explanation of the configuration, check [this page]({base}/main/config).
 
 ```toml
-[site]
-site_name = 'Faccina'
-
 [directories]
-content = "./content"
-images = "./images"
+content = './content'
+images = './images'
 
 [database]
 vendor = 'sqlite'
