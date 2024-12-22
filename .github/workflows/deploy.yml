@@ -14,7 +14,10 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Install dependencies
+      - name: Install app dependencies
+        run: bun install
+
+      - name: Install docs dependencies
         run: bun install
         working-directory: ./docs
 
