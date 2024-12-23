@@ -7,7 +7,7 @@
 	let { children, data } = $props();
 </script>
 
-<div class="mx-auto flex w-full max-w-screen-lg gap-3 space-y-3 px-3 pt-12">
+<div class="mx-auto flex w-full max-w-screen-lg gap-3 space-y-3 px-3 pb-4 pt-12">
 	<aside class="fixed w-52 flex-col space-y-3 overflow-hidden">
 		<a href="{base}/" class="text-xl font-semibold">Faccina</a>
 

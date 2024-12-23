@@ -93,17 +93,28 @@ const siteAdminSchema = z.object({
 	delete_require_confirmation: z.boolean().default(true),
 });
 
+export const sortTypes = ['released_at', 'created_at', 'title', 'pages', 'random'] as const;
+export const orderTypes = ['asc', 'desc'] as const;
+
+const usernameSchema = z
+	.string()
+	.trim()
+	.min(4, 'Username must contain at least 4 characters')
+	.max(32, 'Username cannot contain more than 32 characters')
+	.regex(/^[a-z0+-9_-]+$/, 'Username must be lowercase and can contain only letters and numbers');
+
 export const siteSchema = z.object({
 	site_name: z.string().default('Faccina'),
-	url: z.string().optional(),
+	url: z
+		.string()
+		.transform((val) => (val.length ? val : undefined))
+		.optional(),
 	enable_users: z.boolean().default(true),
 	enable_collections: z.boolean().default(true),
 	enable_read_history: z.boolean().default(true),
-	admin_users: z.array(z.string()).default([]),
-	default_sort: z
-		.enum(['released_at', 'created_at', 'title', 'pages', 'random'])
-		.default('released_at'),
-	default_order: z.enum(['asc', 'desc']).default('desc'),
+	admin_users: z.array(usernameSchema).default([]),
+	default_sort: z.enum(sortTypes).default('released_at'),
+	default_order: z.enum(orderTypes).default('desc'),
 	guest_downloads: z.boolean().default(true),
 	client_side_downloads: z.boolean().default(true),
 	gallery_listing: listingSchema.default({}),
@@ -112,6 +123,22 @@ export const siteSchema = z.object({
 	secure_session_cookie: z.boolean().default(true),
 	admin: siteAdminSchema.default({}),
 });
+
+export type SortType = z.infer<typeof siteSchema>['default_sort'];
+export type OrderType = z.infer<typeof siteSchema>['default_order'];
+
+export const sortOptions: { value: SortType; label: string }[] = [
+	{ value: 'released_at', label: 'Date released' },
+	{ value: 'created_at', label: 'Date added' },
+	{ value: 'title', label: 'Title' },
+	{ value: 'pages', label: 'Pages' },
+	{ value: 'random', label: 'Random' },
+];
+
+export const orderOptions: { value: OrderType; label: string }[] = [
+	{ value: 'desc', label: 'Descending' },
+	{ value: 'asc', label: 'Ascending' },
+];
 
 const tagMappingSchema = z.object({
 	match: stringOrStringArray,
