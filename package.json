@@ -124,7 +124,8 @@
 		"@ethercorps/sveltekit-og@3.0.0": "patches/@ethercorps%2Fsveltekit-og@3.0.0.patch",
 		"xml2js@0.6.2": "patches/xml2js@0.6.2.patch",
 		"@types/xml2js@0.4.14": "patches/@types%2Fxml2js@0.4.14.patch",
-		"kysely@0.27.5": "patches/kysely@0.27.5.patch"
+		"kysely@0.27.5": "patches/kysely@0.27.5.patch",
+		"sharp@0.33.5": "patches/sharp@0.33.5.patch"
 	},
 	"trustedDependencies": [
 		"@sveltejs/kit",

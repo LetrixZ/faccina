@@ -1,9 +1,12 @@
+import cluster from 'node:cluster';
+import { cpus } from 'node:os';
 import { extname } from 'path';
-import { BunFile, ServeOptions } from 'bun';
 import { Option } from 'commander';
+import { BunFile, ServeOptions } from 'bun';
 import { build_options, env, handler_default } from './build/handler';
 import program from './cli/commands';
 import clientRoutes from './compile/client-routes';
+import './compile/sharp';
 
 const mimes = {
 	gz: 'application/gzip',
@@ -89,7 +92,7 @@ const mimes = {
 	yml: 'text/yaml',
 };
 
-const serve = async (hostname: string, port: number) => {
+const serve = async (hostname: string | undefined, port: number | undefined) => {
 	const { httpserver } = handler_default(build_options.assets ?? true);
 
 	const serverOptions = {
@@ -133,12 +136,17 @@ const serve = async (hostname: string, port: number) => {
 
 program
 	.command('serve', { isDefault: true })
+	.addOption(new Option('--cluster'))
 	.addOption(new Option('-H --hostname <HOST>', 'Web server hostname').default('0.0.0.0'))
 	.addOption(new Option('-P --port <PORT>', 'Web server port').default(3000))
-	.action((args: { hostname: string; port: string }) => {
-		const hostname = args.hostname;
-		const port = parseInt(args.port);
-		serve(hostname, port);
+	.action((args?: { hostname: string; port: string; cluster: boolean }) => {
+		if (args?.cluster && cluster.isPrimary) {
+			for (let i = 0; i < cpus().length; i++) {
+				cluster.fork();
+			}
+		} else {
+			serve(args?.hostname, args?.port ? parseInt(args.port) : undefined);
+		}
 	});
 
 program.parse();

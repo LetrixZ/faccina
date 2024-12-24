@@ -108,7 +108,7 @@ export const log = (message: string) => {
 		return;
 	}
 
-	message = `${message} - ${chalk.cyan(`${dayjs().format('YYYY-MM-DD HH:mm:ss')}`)}`;
+	message = `${message} - ${chalk.cyan(`${dayjs().format('YYYY-MM-DD HH:mm:ss')}`)} ${chalk.gray(`[PID: ${process.pid}]`)}`;
 	console.debug(message);
 
 	if (typeof config.server.logging === 'string') {

@@ -1,0 +1,24 @@
+diff --git a/lib/sharp.js b/lib/sharp.js
+index 3428c5fefae5c7fc02f18a6a9026ac6a7df190e4..fd8dbff27768dae8242f77eeeb53f4dc910fd0c3 100644
+--- a/lib/sharp.js
++++ b/lib/sharp.js
+@@ -6,6 +6,7 @@
+ // Inspects the runtime environment and exports the relevant sharp.node binary
+ 
+ const { familySync, versionSync } = require('detect-libc');
++const { join } = require('node:path');
+ 
+ const { runtimePlatformArch, isUnsupportedNodeRuntime, prebuiltPlatforms, minimumLibvipsVersion } = require('./libvips');
+ const runtimePlatform = runtimePlatformArch();
+@@ -29,6 +30,11 @@ for (const path of paths) {
+   }
+ }
+ 
++if (!sharp && Bun.embeddedFiles.length) {
++  const sharpModule = Bun.embeddedFiles.find(file => /sharp-(.*).node$/.test(file.name))
++  sharp = require(join(import.meta.dirname, sharpModule.name));
++}
++
+ /* istanbul ignore next */
+ if (sharp) {
+   module.exports = sharp;
