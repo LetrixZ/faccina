@@ -1,4 +1,5 @@
-import { basename, dirname, extname, parse } from 'node:path';
+import { readdirSync } from 'node:fs';
+import { basename, dirname, extname, join, parse } from 'node:path';
 import { Glob } from 'bun';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
@@ -6,7 +7,6 @@ import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
 import type { ArchiveMetadata } from '../../shared/metadata';
-import { escapeGlob } from '../../shared/utils';
 import type { IndexScan, MetadataScan } from '../archive';
 import anchira from './anchira';
 import booru from './booru';
@@ -231,13 +231,10 @@ const metadataFormat = (filename: string) => {
 export const addExternalMetadata = async (scan: IndexScan, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
-	const normalized =
-		scan.type === 'archive' ? escapeGlob(parse(scan.path).name) : escapeGlob(basename(scan.path));
-	const glob = new Glob(`${normalized}.{json,yaml,yml,xml,booru.txt}`);
-
-	const paths: string[] = Array.from(
-		glob.scanSync({ cwd: dirname(scan.path), absolute: true, followSymlinks: true })
-	);
+	const normalized = scan.type === 'archive' ? parse(scan.path).name : basename(scan.path);
+	const paths = readdirSync(dirname(scan.path))
+		.filter((path) => path.startsWith(normalized) && /^.*(json|yml|yaml|xml|booru.txt)/.test(path))
+		.map((path) => join(dirname(scan.path), path));
 
 	for (const path of paths) {
 		try {
