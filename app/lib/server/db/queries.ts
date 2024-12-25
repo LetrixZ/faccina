@@ -118,6 +118,8 @@ type TagMatch = {
 };
 
 export const parseQuery = (query: string) => {
+	query = query.replaceAll('$', '');
+
 	const tagQueryMatches = query.match(/[-|~]?(\w+):(".*?"|[^\s]+)/g);
 
 	const titleMatch = query
@@ -512,7 +514,11 @@ export const search = async (
 				not = `& ${not}`;
 			}
 
-			query = query.where('archives.fts', '@@', `${`${and} ${or} ${not}`}`);
+			query = query.where(
+				'archives.fts',
+				'@@',
+				`${`${and.toLowerCase()} ${or.toLowerCase()} ${not.toLowerCase()}`}`
+			);
 		} else {
 			const and = andQueries.join(' AND ');
 
@@ -530,7 +536,10 @@ export const search = async (
 
 			query = query
 				.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id')
-				.where((eb) => sql`${eb.table('archivesFts')} = ${`${and} ${or} ${not}`}`);
+				.where(
+					(eb) =>
+						sql`${eb.table('archivesFts')} = ${`${and.toLowerCase()} ${or.toLowerCase()} ${not.toLowerCase()}`}`
+				);
 		}
 	}
 
