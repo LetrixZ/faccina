@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-alpha.51",
+	"version": "2.0.0-beta",
 	"private": true,
 	"scripts": {
 		"prepare": "svelte-kit sync",

@@ -187,6 +187,4 @@ config.toml
 docker-compose.yaml
 
 compile
-faccina
-faccina.tar.gz
-faccina.zip
+faccina*

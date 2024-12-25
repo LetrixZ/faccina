@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { Argument, Command, Option } from 'commander';
+import { version } from '../package.json';
 import * as archive from './archive';
 import * as images from './images';
 import * as metadataCli from './metadata-cli';
@@ -7,6 +8,8 @@ import * as migrate from './migrate';
 import * as users from './users';
 
 const program = new Command();
+
+program.version(version);
 
 program
 	.command('index')
