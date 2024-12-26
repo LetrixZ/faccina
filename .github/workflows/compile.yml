@@ -10,6 +10,7 @@ jobs:
     runs-on: [self-hosted, Linux]
     outputs:
       date: ${{ steps.vars.outputs.date }}
+      hash: ${{ steps.vars.outputs.hash }}
       version: ${{ steps.vars.outputs.version }}
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +18,7 @@ jobs:
         id: vars
         run: |
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "version=`(jq -r '.version' package.json)`" >> $GITHUB_OUTPUT
 
   linux-amd64:
@@ -26,9 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Faccina
         run: ./build.sh
-      - name: Package binary
-        run: tar -czf faccina-linux-amd64.tar.gz faccina
       - uses: actions/upload-artifact@v4
         with:
-          name: faccina-linux-amd64-${{ needs.get-info.outputs.version }}-${{ needs.get-info.outputs.date }}
-          path: faccina-linux-amd64.tar.gz
+          name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
+          path: faccina
