@@ -8,6 +8,7 @@ jobs:
   linux-amd64:
     runs-on: [self-hosted, Linux, X64]
     steps:
+      - uses: actions/checkout@v4
       - name: Build Faccina
         run: ./build.sh
       - name: Package binary
