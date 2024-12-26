@@ -21,8 +21,20 @@ jobs:
           echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "version=`(jq -r '.version' package.json)`" >> $GITHUB_OUTPUT
 
-  linux-amd64:
-    runs-on: [self-hosted, Linux, X64]
+  # linux-amd64:
+  #   runs-on: [self-hosted, Linux, X64]
+  #   needs: get-info
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Compile Faccina
+  #       run: ./build.sh
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
+  #         path: faccina
+
+  linux-arm64:
+    runs-on: [self-hosted, Linux, AR64]
     needs: get-info
     steps:
       - uses: actions/checkout@v4
@@ -30,17 +42,17 @@ jobs:
         run: ./build.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
+          name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
           path: faccina
 
-  darwin-arm64:
-    runs-on: [self-hosted, macOS, ARM64]
-    needs: get-info
-    steps:
-      - uses: actions/checkout@v4
-      - name: Compile Faccina
-        run: ./build.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
-          path: faccina
+  # darwin-arm64:
+  #   runs-on: [self-hosted, macOS, ARM64]
+  #   needs: get-info
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Compile Faccina
+  #       run: ./build.sh
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
+  #         path: faccina
