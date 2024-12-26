@@ -34,7 +34,7 @@ jobs:
   #         path: faccina
 
   linux-arm64:
-    runs-on: [self-hosted, Linux, AR64]
+    runs-on: [self-hosted, Linux, ARM64]
     needs: get-info
     steps:
       - uses: actions/checkout@v4
