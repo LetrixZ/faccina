@@ -1,0 +1,26 @@
+name: Compile to binary
+
+on:
+  push:
+    branches: 'compile-action'
+
+jobs:
+  linux-amd64:
+    env:
+      ARTIFACT_NAME: ''
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build libvips from source
+        run: ./.github/linux-libvips.sh
+      - uses: oven-sh/setup-bun@v2
+      - name: Build Faccina
+        run: ./build.sh
+      - name: Set artifact name
+        run: echo "ARTIFACT_NAME=faccina-linux-`(uname -m)`" >> $GITHUB_ENV
+      - name: Package binary
+        run: tar -czf "${ARTIFACT_NAME}.tar.gz" faccina
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}.tar.gz

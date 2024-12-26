@@ -1,4 +1,5 @@
-bun install && bun run build &&
+bun install &&
+CONFIG_FILE=config.example.toml bun run build &&
 rm -rf compile && mkdir compile &&
 bunx make-vfs --dir ./build/client --content-format import-bunfile --outfile compile/client-routes.ts && 
 bun ./embed-sharp.ts &&
