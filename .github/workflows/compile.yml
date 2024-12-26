@@ -5,8 +5,23 @@ on:
     branches: 'compile-action'
 
 jobs:
+  # https://github.com/shadps4-emu/shadPS4/blob/main/.github/workflows/build.yml
+  get-info:
+    runs-on: [self-hosted, Linux]
+    outputs:
+      date: ${{ steps.vars.outputs.date }}
+      version: ${{ steps.vars.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get date and git hash
+        id: vars
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "PKG_VERSION=`(jq -r '.version' package.json)`" >> $GITHUB_OUTPUT
+
   linux-amd64:
     runs-on: [self-hosted, Linux, X64]
+    needs: get-info
     steps:
       - uses: actions/checkout@v4
       - name: Build Faccina
@@ -15,5 +30,5 @@ jobs:
         run: tar -czf faccina-linux-amd64.tar.gz faccina
       - uses: actions/upload-artifact@v4
         with:
-          name: faccina-linux-amd64
+          name: faccina-linux-amd64-${{ needs.get-info.outputs.version }}-${{ needs.get-info.outputs.date }}
           path: faccina-linux-amd64.tar.gz
