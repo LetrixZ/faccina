@@ -479,18 +479,30 @@ export const search = async (
 	}
 
 	if (titleMatch.length) {
-		const splits = titleMatch.join(' ').split(' ');
+		let splits = titleMatch.join(' ').split(' ');
+
+		if (config.database.vendor === 'postgresql') {
+			splits = splits
+				.map((s) =>
+					s
+						.replace(/<->|\||&|\(\)|!|#/g, '')
+						.replaceAll("'", '<->')
+						.trim()
+				)
+				.filter((s) => s.length && !['-', '~', '!', '(', ')', '()'].includes(s));
+		}
+
 		const andQueries = splits
 			.filter((s) => !s.startsWith('~') && !s.startsWith('-'))
-			.map((s) => (/\w+-\w+/.test(s) ? `"${s}"` : s));
+			.map((s) => s.toLowerCase());
 		const orQueries = splits
 			.filter((s) => s.startsWith('~'))
 			.map((s) => s.substring(1))
-			.map((s) => (/\w+-\w+/.test(s) ? `"${s}"` : s));
+			.map((s) => s.toLowerCase());
 		const notQueries = splits
 			.filter((s) => s.startsWith('-'))
 			.map((s) => s.substring(1))
-			.map((s) => (/\w+-\w+/.test(s) ? `"${s}"` : s));
+			.map((s) => s.toLowerCase());
 
 		let or = ``;
 		let not = ``;
@@ -514,20 +526,16 @@ export const search = async (
 				not = `& ${not}`;
 			}
 
-			query = query.where(
-				'archives.fts',
-				'@@',
-				`${`${and.toLowerCase()} ${or.toLowerCase()} ${not.toLowerCase()}`}`
-			);
+			query = query.where('archives.fts', '@@', `${`${and} ${or} ${not}`}`);
 		} else {
-			const and = andQueries.join(' AND ');
+			const and = andQueries.map((s) => `"${s}"`).join(' AND ');
 
 			if (orQueries.length) {
-				or = `(${orQueries.join(' OR ')})`;
+				or = `(${orQueries.map((s) => `"${s}"`).join(' OR ')})`;
 			}
 
 			if (notQueries.length) {
-				not = `NOT (${notQueries.join(' AND ')})`;
+				not = `NOT (${notQueries.map((s) => `"${s}"`).join(' AND ')})`;
 			}
 
 			if (and.length && or.length) {
@@ -536,10 +544,7 @@ export const search = async (
 
 			query = query
 				.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id')
-				.where(
-					(eb) =>
-						sql`${eb.table('archivesFts')} = ${`${and.toLowerCase()} ${or.toLowerCase()} ${not.toLowerCase()}`}`
-				);
+				.where((eb) => sql`${eb.table('archivesFts')} = ${`${and} ${or} ${not}`}`);
 		}
 	}
 
