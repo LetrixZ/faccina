@@ -7,7 +7,7 @@ on:
 
 jobs:
   get-info:
-    runs-on: ubuntu
+    runs-on: [self-hosted]
     outputs:
       date: ${{ steps.vars.outputs.date }}
       hash: ${{ steps.vars.outputs.hash }}
@@ -22,19 +22,18 @@ jobs:
           echo "version=`(jq -r '.version' package.json)`" >> $GITHUB_OUTPUT
 
   compile:
-    runs-on: ubuntu
-    # runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     needs: get-info
-    # strategy:
-    #   matrix:
-    #     os: [self-hosted, Linux, X64, self-hosted, Linux, ARM64, self-hosted, macOS, ARM64]
-    #     include:
-    #       - os: [self-hosted, Linux, X64]
-    #         artifact_name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
-    #       - os: [self-hosted, Linux, ARM64]
-    #         artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
-    #       - os: [self-hosted, macOS, ARM64]
-    #         artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
+    strategy:
+      matrix:
+        os: [self-hosted, Linux, macOS, X64, ARM64]
+        include:
+          # - os: [self-hosted, Linux, X64]
+          #   artifact_name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
+          # - os: [self-hosted, Linux, ARM64]
+          #   artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
+          - os: [self-hosted, macOS, ARM64]
+            artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v27
@@ -44,6 +43,5 @@ jobs:
         run: nix develop --command ./build.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
-          # name: ${{ matrix.artifact_name }}
+          name: ${{ matrix.artifact_name }}
           path: faccina
