@@ -1,5 +1,6 @@
 #!/bin/sh
 
+rm -rf node_modules &&
 SHARP_FORCE_GLOBAL_LIBVIPS=true bun install &&
 bun run build &&
 mkdir -p compile &&

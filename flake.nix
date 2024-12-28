@@ -9,17 +9,14 @@
     inputs.utils.lib.eachSystem
       [
         "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
         "aarch64-darwin"
       ]
       (
         system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in
-        {
-          devShell = pkgs.mkShell {
-            buildInputs = [
-              pkgs.nodejs_22
+        let pkgs = nixpkgs.legacyPackages.${system};
+        commonBuildInputs = [
               pkgs.bun
               pkgs.pkg-config
               pkgs.python313
@@ -30,6 +27,10 @@
               pkgs.glib
               pkgs.vips
             ];
+        in
+        {
+          devShell = pkgs.mkShell {
+            buildInputs = commonBuildInputs;
           };
         }
       );
