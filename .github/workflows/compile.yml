@@ -26,13 +26,17 @@ jobs:
     needs: get-info
     strategy:
       matrix:
-        os: [self-hosted, Linux, macOS, X64, ARM64]
+        # platform: ['linux-amd64', 'linux-arm64', 'darwin-arm64']
+        platform: ['darwin-arm64']
         include:
-          # - os: [self-hosted, Linux, X64]
-          #   artifact_name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
-          # - os: [self-hosted, Linux, ARM64]
-          #   artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
-          - os: [self-hosted, macOS, ARM64]
+          - platform: linux-arm64
+            os: [self-hosted, Linux, X64]
+            artifact_name: faccina-linux-amd64-${{ needs.get-info.outputs.hash }}
+          - platform: linux-arm64
+            os: [self-hosted, Linux, ARM64]
+            artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
+          - platform: darwin-arm64
+            os: [self-hosted, macOS, ARM64]
             artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
     steps:
       - uses: actions/checkout@v4
