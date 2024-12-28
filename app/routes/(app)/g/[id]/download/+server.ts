@@ -1,8 +1,7 @@
 import { error } from '@sveltejs/kit';
-import contentDisposition from 'content-disposition';
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
-import { getMetadata } from '$lib/utils';
 import { getGallery } from '$lib/server/db/queries';
+import { getMetadata } from '$lib/utils';
 import config from '~shared/config';
 import { generateFilename } from '~shared/utils';
 
@@ -25,9 +24,7 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 
 	setHeaders({
 		'Content-Type': 'application/zip',
-		'Content-Disposition': contentDisposition(
-			generateFilename(gallery.title, gallery.tags) + '.cbz'
-		),
+		'Content-Disposition': `attachment;filename*=UTF-8''${encodeURIComponent(generateFilename(gallery.title, gallery.tags) + '.cbz')}`,
 	});
 
 	locals.analytics?.postMessage({
