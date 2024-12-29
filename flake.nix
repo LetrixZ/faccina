@@ -29,7 +29,6 @@
               pkgs.pkg-config
               pkgs.glib
               pkgs.vips
-              pkgs.xz
             ];
           };
         }
