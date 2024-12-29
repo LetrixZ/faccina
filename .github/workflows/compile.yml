@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install xz
         if: contains(${{ matrix.os }}, 'linux')
-        run: sudo apt install -y xz
+        run: sudo apt install -y xz-utils
       - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
