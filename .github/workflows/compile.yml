@@ -40,6 +40,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compile Faccina
         run: nix develop --command ./build.sh
+      - name: Patch ELF binary
+        if: runner.os == 'Linux'
+        run: patchelf --set-interpreter /usr/lib64/ld-linux-x86-64.so.2 faccina
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
