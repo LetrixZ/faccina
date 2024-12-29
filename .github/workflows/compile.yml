@@ -41,9 +41,7 @@ jobs:
       - name: Install xz
         if: runner.os == 'Linux'
         run: sudo apt-get install -y xz-utils
-      - uses: cachix/install-nix-action@v27
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: DeterminateSystems/nix-installer-action@main
       - name: Compile Faccina
         run: nix develop --command ./build.sh
       - uses: actions/upload-artifact@v4
