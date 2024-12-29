@@ -96,7 +96,5 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		pageNumber: i + 1,
 	}));
 
-	console.log(archive.sources);
-
 	return archive;
 };
