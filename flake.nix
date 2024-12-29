@@ -16,7 +16,10 @@
       (
         system:
         let pkgs = nixpkgs.legacyPackages.${system};
-        commonBuildInputs = [
+        in
+        {
+          devShell = pkgs.mkShell {
+            buildInputs = [
               pkgs.bun
               pkgs.pkg-config
               pkgs.python313
@@ -28,10 +31,6 @@
               pkgs.vips
               pkgs.xz
             ];
-        in
-        {
-          devShell = pkgs.mkShell {
-            buildInputs = commonBuildInputs;
           };
         }
       );
