@@ -1,6 +1,5 @@
 import { rm } from 'node:fs/promises';
 import { Glob } from 'bun';
-import chalk from 'chalk';
 import { sql } from 'kysely';
 import db from '../shared/db';
 import config from './config';
@@ -12,7 +11,7 @@ import { leadingZeros } from './utils';
  * @param id Archive ID
  * @param archive new archive data
  */
-export const upsertSources = async (id: number, metadataSources: Source[], verbose = false) => {
+export const upsertSources = async (id: number, metadataSources: Source[]) => {
 	metadataSources = metadataSources.map((source) => {
 		const mapping = config.metadata.sourceMapping.findLast(({ match, ignoreCase }) => {
 			const normalizedMatch = ignoreCase ? match.toLowerCase() : match;
@@ -41,54 +40,16 @@ export const upsertSources = async (id: number, metadataSources: Source[], verbo
 		};
 	});
 
-	const archiveSources = await db
-		.selectFrom('archiveSources')
-		.select(['name', 'url'])
-		.where('archiveId', '=', id)
-		.execute();
+	await db.deleteFrom('archiveSources').where('archiveId', '=', id).execute();
 
-	const relationDelete = archiveSources.filter(
-		(relation) =>
-			!metadataSources.some(
-				(source) => source.name === relation.name && source.url === relation.url
-			)
-	);
-
-	for (const relation of relationDelete) {
-		await db
-			.deleteFrom('archiveSources')
-			.where('name', '=', relation.name)
-			.where('url', '=', relation.url)
-			.execute();
-	}
-
-	const relationInsert = metadataSources.filter(
-		(source) =>
-			!archiveSources.some(
-				(relation) => relation.name === source.name && relation.url === source.url
-			)
-	);
-
-	for (const source of relationInsert) {
+	for (const source of metadataSources) {
 		if (!source.name) {
-			if (verbose) {
-				console.info(
-					chalk.yellow(
-						`${chalk.bold(`[ID: ${id}]`)} Couldn't get a name for the source with URL ${chalk.bold(source.url)}\n`
-					)
-				);
-			}
-
 			continue;
 		}
 
 		await db
 			.insertInto('archiveSources')
-			.values({
-				name: source.name,
-				url: source.url,
-				archiveId: id,
-			})
+			.values({ name: source.name, url: source.url, archiveId: id })
 			.execute();
 	}
 };

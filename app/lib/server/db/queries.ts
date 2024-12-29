@@ -18,7 +18,7 @@ export type QueryOptions = {
 	tagBlacklist?: string[];
 };
 
-export const getGallery = (id: number, options: QueryOptions): Promise<Gallery | undefined> => {
+export const getGallery = (id: number, options: Pick<QueryOptions, 'showHidden'>): Promise<Gallery | undefined> => {
 	let query = db
 		.selectFrom('archives')
 		.select((eb) => [

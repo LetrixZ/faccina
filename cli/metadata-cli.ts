@@ -1,6 +1,8 @@
-import chalk from 'chalk';
+import { dirname, join, parse } from 'node:path';
 import cliProgress from 'cli-progress';
+import { strToU8, zipSync, type Zippable } from 'fflate';
 import { extract, partial_ratio } from 'fuzzball';
+import chalk from 'chalk';
 import prompts from 'prompts';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -8,8 +10,11 @@ import { upsertSources, upsertTags } from '../shared/archive';
 import db from '../shared/db';
 import { jsonArrayFrom, now } from '../shared/db/helpers';
 import { generateFilename } from '../shared/utils';
+import { metadataSchema } from './metadata/faccina';
 import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
 import { queryIdRanges } from './utilts';
+import config from '~shared/config';
+import { getArchive } from '$lib/server/db/queries';
 
 const henTagUrl = `https://hentag.com/api/v1/search/vault`;
 
@@ -330,4 +335,50 @@ const scrapeHenTag = async ({
 	await Bun.sleep(250);
 
 	multibar.stop();
+};
+
+type ExportOptions = {
+	excludeImages?: boolean;
+};
+
+export const exportMetadata = async (path: string, opts?: ExportOptions) => {
+	const archives = await db.selectFrom('archives').select(['id', 'path']).execute();
+	const filtered = archives.filter(({ path }) => path.startsWith(config.directories.content));
+
+	const start = performance.now();
+	console.info(`Exporting ${chalk.bold(filtered.length)} archives`);
+
+	if (archives.length !== filtered.length) {
+		console.warn(
+			`Only archives that are inside the content directory will be included in the export`
+		);
+	}
+
+	const files: Zippable = {};
+
+	for (const { id, path } of archives) {
+		if (!path.startsWith(config.directories.content)) {
+			continue;
+		}
+
+		const archive = (await getArchive(id))!;
+		const relativePath = path.replace(config.directories.content, '');
+		const filepath = join(dirname(relativePath), `${parse(relativePath).name}.faccina.json`);
+		const parsed = metadataSchema.parse(archive);
+
+		if (opts?.excludeImages) {
+			delete parsed.images;
+		}
+
+		files[filepath] = strToU8(JSON.stringify(parsed, null, 2));
+	}
+
+	await Bun.write(path, zipSync(files));
+	const end = performance.now();
+
+	await db.destroy();
+
+	console.info(
+		`Finished exporting ${chalk.bold(filtered.length)} archives in ${((end - start) / 1000).toFixed(2)} seconds`
+	);
 };

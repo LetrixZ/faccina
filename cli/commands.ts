@@ -102,6 +102,15 @@ program
 	.action(() => migrate.migratePresetHash());
 
 program
+	.command('metadata:export')
+	.description(
+		'Export archive metadata to a ZIP file keeping the original content structure.\nOnly archives present in the content directory will be included.'
+	)
+	.addArgument(new Argument('<path>', 'Path to save the ZIP file'))
+	.addOption(new Option('--exclude-images', 'Exclude images from the export.'))
+	.action((path, { excludeImages }) => metadataCli.exportMetadata(path, { excludeImages }));
+
+program
 	.command('metadata:scrape')
 	.description('Scrape metadata from specified site.')
 	.addArgument(new Argument('<site>', 'Site to scrape metadata from.').choices(['hentag']))

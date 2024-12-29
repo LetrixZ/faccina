@@ -31,7 +31,6 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	archive = structuredClone(archive);
 
 	archive.title = data.Title;
-	archive.title = data.Title;
 	archive.description = data.Description;
 	archive.thumbnail = data.Thumbnail;
 	archive.releasedAt = data.Released ? dayjs.unix(data.Released).toDate() : undefined;

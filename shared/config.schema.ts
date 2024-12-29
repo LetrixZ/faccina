@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import camelcaseKeys from 'camelcase-keys';
 import { omit } from 'ramda';
 import type { CamelCase } from 'type-fest';
@@ -27,8 +28,8 @@ export const camelizeSchema = <T extends z.ZodTypeAny>(
 	zod.transform((val) => camelcaseKeys(val, { deep: true }) as CamelCasedPropertiesDeep<T>);
 
 export const directoriesSchema = z.object({
-	content: z.string(),
-	images: z.string(),
+	content: z.string().transform((path) => resolve(path)),
+	images: z.string().transform((path) => resolve(path)),
 });
 
 export const databaseSchema = z.discriminatedUnion('vendor', [

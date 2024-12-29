@@ -16,6 +16,8 @@ const parseSourceId = (name: string, id: MultiIdField) => {
 			return `https://hentainexus.com/view/${id}`;
 		case 'koharu':
 			return `https://koharu.to${id}`;
+		case 'schale':
+			return `https://schale.network${id}`;
 	}
 };
 
@@ -93,6 +95,8 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		filename,
 		pageNumber: i + 1,
 	}));
+
+	console.log(archive.sources);
 
 	return archive;
 };

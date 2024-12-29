@@ -1,6 +1,8 @@
 import { readdirSync } from 'node:fs';
 import { basename, dirname, extname, join, parse } from 'node:path';
 import { Glob } from 'bun';
+import chalk from 'chalk';
+import cliProgress from 'cli-progress';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
 import { match } from 'ts-pattern';
@@ -14,6 +16,7 @@ import ccdc06 from './ccdc06';
 import comicinfo from './comicinfo';
 import eze from './eze';
 import ezesad from './ezesad';
+import faccina from './faccina';
 import gallerydl from './gallerydl';
 import hentag from './hentag';
 import hentainexus from './hentainexus';
@@ -39,6 +42,7 @@ export enum MetadataSchema {
 	GalleryDL = 'Gallery-DL',
 	Booru = 'Booru',
 	ComicInfo = 'ComicInfo',
+	Faccina = 'Faccina',
 }
 
 export const getYamlSchema = (content: string) => {
@@ -118,8 +122,10 @@ export const getJsonSchema = (content: string) => {
 		minified.match(/"tags":{.*?(artist|group|parody|character|language|female|male|misc)(.*?)},/)
 	) {
 		return MetadataSchema.Eze;
-	} else if (minified.match(/"tags":\[.*?(artist|group|parody|character|language)(.*?)\],/)) {
+	} else if (minified.match(/"tags":\[.*?(artist|group|parody|character|language):(.*?)\],/)) {
 		return MetadataSchema.GalleryDL;
+	} else if (minified.match(/"tags":\[.*?"namespace".*?\]/)) {
+		return MetadataSchema.Faccina;
 	}
 
 	throw new Error('Failed to determine JSON metadata schema');
@@ -166,6 +172,11 @@ const handleMetadataFormat = async (
 		}
 
 		case MetadataFormat.JSON: {
+			if (filename.endsWith('faccina.json')) {
+				archive = await faccina(content, archive);
+				return [archive, [MetadataSchema.Faccina, MetadataFormat.JSON]];
+			}
+
 			const schemaType = getJsonSchema(content);
 
 			switch (schemaType) {
@@ -184,6 +195,9 @@ const handleMetadataFormat = async (
 				case MetadataSchema.Koromo:
 					archive = await koromo(content, archive);
 					break;
+				case MetadataSchema.Faccina:
+					archive = await faccina(content, archive);
+					break;
 			}
 
 			return [archive, [schemaType, MetadataFormat.JSON]];
@@ -192,7 +206,6 @@ const handleMetadataFormat = async (
 		case MetadataFormat.TXT: {
 			if (filename.endsWith('booru.txt')) {
 				archive = await booru(content, archive);
-
 				return [archive, [MetadataSchema.Booru, MetadataFormat.TXT]];
 			}
 
@@ -228,51 +241,79 @@ const metadataFormat = (filename: string) => {
 		});
 };
 
-export const addExternalMetadata = async (scan: IndexScan, archive: ArchiveMetadata) => {
+type Logger = cliProgress.MultiBar | null;
+
+export const addExternalMetadata = async (
+	scan: IndexScan,
+	archive: ArchiveMetadata,
+	pb: Logger
+) => {
 	archive = structuredClone(archive);
 
 	const normalized = scan.type === 'archive' ? parse(scan.path).name : basename(scan.path);
 	const paths = readdirSync(dirname(scan.path))
-		.filter((path) => path.startsWith(normalized) && /^.*(json|yml|yaml|xml|booru.txt)/.test(path))
-		.map((path) => join(dirname(scan.path), path));
+		.filter(
+			(path) =>
+				path.startsWith(normalized) && /^.*(json|yml|yaml|xml|booru.txt|faccina.json)$/.test(path)
+		)
+		.map((path) => join(dirname(scan.path), path))
+		.sort((a, b) => (a.endsWith('faccina.json') ? -1 : b.endsWith('faccina.json') ? 1 : 0));
 
 	for (const path of paths) {
 		try {
 			const content = await Bun.file(path).text();
-			return handleMetadataFormat(content, basename(path), metadataFormat(basename(path)), archive);
-		} catch {
-			/* empty */
+			return await handleMetadataFormat(
+				content,
+				basename(path),
+				metadataFormat(basename(path)),
+				archive
+			);
+		} catch (error) {
+			if (pb) {
+				pb.log(chalk.yellow(`Failed to add external metadata ${chalk.bold(path)}: ${error}\n`));
+			}
 		}
 	}
 
 	throw new Error('No external metadata file found');
 };
 
-export const addEmbeddedZipMetadata = async (zip: StreamZipAsync, archive: ArchiveMetadata) => {
+export const addEmbeddedZipMetadata = async (
+	zip: StreamZipAsync,
+	archive: ArchiveMetadata,
+	pb: Logger
+) => {
 	archive = structuredClone(archive);
 
-	const entries = [
-		await zip.entry('info.yaml'),
-		await zip.entry('info.yml'),
-		await zip.entry('info.json'),
-		await zip.entry('ComicInfo.xml'),
-	];
+	const paths = ['info.yaml', 'info.yml', 'info.json', 'ComicInfo.xml'];
 
-	for (const entry of entries) {
-		if (!entry) {
-			continue;
+	for (const path of paths) {
+		try {
+			const entry = await zip.entry(path);
+
+			if (!entry) {
+				continue;
+			}
+
+			const buffer = await zip.entryData(entry);
+			const content = strFromU8(buffer);
+
+			return await handleMetadataFormat(content, entry.name, metadataFormat(entry.name), archive);
+		} catch (error) {
+			if (pb) {
+				pb.log(`Failed to add embedded ZIP metadata ${chalk.bold(path)}: ${error}\n`);
+			}
 		}
-
-		const buffer = await zip.entryData(entry);
-		const content = strFromU8(buffer);
-
-		return handleMetadataFormat(content, entry.name, metadataFormat(entry.name), archive);
 	}
 
 	throw new Error('No embedded ZIP metadata file found');
 };
 
-export const addEmbeddedDirMetadata = async (scan: MetadataScan, archive: ArchiveMetadata) => {
+export const addEmbeddedDirMetadata = async (
+	scan: MetadataScan,
+	archive: ArchiveMetadata,
+	pb: Logger
+) => {
 	archive = structuredClone(archive);
 
 	if (scan.metadata) {
@@ -292,14 +333,16 @@ export const addEmbeddedDirMetadata = async (scan: MetadataScan, archive: Archiv
 		for (const path of paths) {
 			try {
 				const content = await Bun.file(path).text();
-				return handleMetadataFormat(
+				return await handleMetadataFormat(
 					content,
 					basename(path),
 					metadataFormat(basename(path)),
 					archive
 				);
-			} catch {
-				/* empty */
+			} catch (error) {
+				if (pb) {
+					pb.log(`Failed to add embedded directory metadata ${chalk.bold(path)}: ${error}\n`);
+				}
 			}
 		}
 	}

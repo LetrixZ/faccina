@@ -303,7 +303,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 		const filename = parse(scan.path).name;
 
 		try {
-			const externalResult = await addExternalMetadata(scan, archive).catch((error) => {
+			const externalResult = await addExternalMetadata(
+				scan,
+				archive,
+				opts.verbose ? multibar : null
+			).catch((error) => {
 				if (opts.verbose) {
 					multibar.log(
 						chalk.yellow(
@@ -327,7 +331,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 				if (scan.type === 'archive') {
 					const zip = new StreamZip.async({ file: scan.path });
 
-					const embeddedResult = await addEmbeddedZipMetadata(zip, archive).catch((error) => {
+					const embeddedResult = await addEmbeddedZipMetadata(
+						zip,
+						archive,
+						opts.verbose ? multibar : null
+					).catch((error) => {
 						if (opts.verbose) {
 							multibar.log(
 								chalk.yellow(
@@ -349,7 +357,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 						}
 					}
 				} else {
-					const embeddedResult = await addEmbeddedDirMetadata(scan, archive).catch((error) => {
+					const embeddedResult = await addEmbeddedDirMetadata(
+						scan,
+						archive,
+						opts.verbose ? multibar : null
+					).catch((error) => {
 						if (opts.verbose) {
 							multibar.log(
 								chalk.yellow(
@@ -566,7 +578,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				}
 
 				if (archive.sources) {
-					await upsertSources(id, archive.sources, opts.verbose);
+					await upsertSources(id, archive.sources);
 				}
 			}
 

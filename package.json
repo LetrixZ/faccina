@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-beta.4",
+	"version": "2.0.0-beta.5",
 	"private": true,
 	"scripts": {
 		"prepare": "svelte-kit sync",
@@ -14,7 +14,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"kysely": "bunx --bun kysely",
-		"cli": "bun ./cli/index.ts"
+		"cli": "NODE_ENV=production bun ./cli/index.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",
