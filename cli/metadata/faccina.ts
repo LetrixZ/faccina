@@ -58,10 +58,13 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	archive.releasedAt =
 		data.released_at != null ? (dayjs(data.released_at).toDate() ?? undefined) : data.released_at;
 	archive.tags = data.tags?.map((tag) => ({ namespace: tag.namespace, name: tag.name }));
-	archive.imageOrder = data.images?.map((image) => ({
-		filename: image.filename,
-		pageNumber: image.pageNumber,
-	}));
+	archive.imageOrder = data.images
+		?.sort((a, b) => {
+			const indexA = data.images!.find((image) => image.filename === a.filename)!;
+			const indexB = data.images!.find((image) => image.filename === b.filename)!;
+			return indexA.pageNumber - indexB.pageNumber;
+		})
+		.map((image) => ({ filename: image.filename, pageNumber: image.pageNumber }));
 	archive.sources = data.sources?.map((source) => ({
 		name: source.name,
 		url: source.url ?? undefined,

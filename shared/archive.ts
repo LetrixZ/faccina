@@ -72,10 +72,7 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 		const newImage = images.find((_image) => _image.pageNumber === image.pageNumber);
 
 		if (newImage && newImage.filename !== image.filename) {
-			diff.push({
-				filename: image.filename,
-				pageNumber: image.pageNumber,
-			});
+			diff.push({ filename: image.filename, pageNumber: image.pageNumber });
 		}
 	}
 
