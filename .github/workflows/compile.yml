@@ -30,9 +30,9 @@ jobs:
           - platform: linux-x86_64
             os: [self-hosted, Linux, X64]
             artifact_name: faccina-linux-x86_64-${{ needs.get-info.outputs.hash }}
-          - platform: linux-arm64
-            os: [self-hosted, Linux, ARM64]
-            artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
+          # - platform: linux-arm64
+          #   os: [self-hosted, Linux, ARM64]
+          #   artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
           - platform: darwin-arm64
             os: [self-hosted, macOS, ARM64]
             artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
