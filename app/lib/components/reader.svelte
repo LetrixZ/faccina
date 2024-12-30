@@ -15,8 +15,8 @@
 		prevPage,
 		readerPage,
 	} from '$lib/reader-store';
-	import { user } from '$lib/stores';
 	import { type ReaderPreferences } from '$lib/utils';
+	import { siteConfig, user } from '$lib/stores';
 
 	export let gallery: Gallery;
 
@@ -84,21 +84,19 @@
 	};
 
 	const readStat = (page: number) => {
-		if (!$user) {
-			return;
+		if ($siteConfig.enableReadHistory && $user) {
+			fetch('/stats/read-page', {
+				method: 'POST',
+				body: JSON.stringify({
+					pageNumber: page,
+					isLastPage: gallery.images.length === page,
+					archiveId: gallery.id,
+				} satisfies ReadState),
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
 		}
-
-		fetch('/stats/read-page', {
-			method: 'POST',
-			body: JSON.stringify({
-				pageNumber: page,
-				isLastPage: gallery.images.length === page,
-				archiveId: gallery.id,
-			} satisfies ReadState),
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
 	};
 
 	const changePage = (page?: number) => {
