@@ -45,7 +45,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	return json({
 		archives,
-		page: 1,
+		page: searchParams.page,
 		limit: searchParams.limit,
 		total,
 	});
