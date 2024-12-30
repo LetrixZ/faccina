@@ -28,7 +28,7 @@ export const GET = async ({ params, locals }) => {
 				eb
 					.selectFrom('archiveTags')
 					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name', 'displayName'])
+					.select(['id', 'namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),

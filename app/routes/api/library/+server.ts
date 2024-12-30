@@ -24,13 +24,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			'id',
 			'hash',
 			'title',
+			'description',
 			'pages',
 			'thumbnail',
+			'language',
+			'size',
+			'createdAt',
+			'releasedAt',
 			jsonArrayFrom(
 				eb
 					.selectFrom('archiveTags')
 					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name', 'displayName'])
+					.select(['id', 'namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),

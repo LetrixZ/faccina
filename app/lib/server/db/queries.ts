@@ -18,7 +18,10 @@ export type QueryOptions = {
 	tagBlacklist?: string[];
 };
 
-export const getGallery = (id: number, options: Pick<QueryOptions, 'showHidden'>): Promise<Gallery | undefined> => {
+export const getGallery = (
+	id: number,
+	options: Pick<QueryOptions, 'showHidden'>
+): Promise<Gallery | undefined> => {
 	let query = db
 		.selectFrom('archives')
 		.select((eb) => [
@@ -494,15 +497,34 @@ export const search = async (
 
 		const andQueries = splits
 			.filter((s) => !s.startsWith('~') && !s.startsWith('-'))
-			.map((s) => s.toLowerCase());
+			.map((s) =>
+				s
+					.toLowerCase()
+					.replace(/[^ -~]/g, '')
+					.trim()
+			)
+			.filter((s) => s.length);
 		const orQueries = splits
 			.filter((s) => s.startsWith('~'))
-			.map((s) => s.substring(1))
-			.map((s) => s.toLowerCase());
+			.map((s) =>
+				s
+					.substring(1)
+					.toLowerCase()
+					.replace(/[^ -~]/g, '')
+					.trim()
+			)
+			.filter((s) => s.length);
+
 		const notQueries = splits
 			.filter((s) => s.startsWith('-'))
-			.map((s) => s.substring(1))
-			.map((s) => s.toLowerCase());
+			.map((s) =>
+				s
+					.substring(1)
+					.toLowerCase()
+					.replace(/[^ -~]/g, '')
+					.trim()
+			)
+			.filter((s) => s.length);
 
 		let or = ``;
 		let not = ``;
