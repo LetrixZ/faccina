@@ -15,6 +15,7 @@
 		prevPage,
 		readerPage,
 	} from '$lib/reader-store';
+	import { user } from '$lib/stores';
 	import { type ReaderPreferences } from '$lib/utils';
 
 	export let gallery: Gallery;
@@ -83,6 +84,10 @@
 	};
 
 	const readStat = (page: number) => {
+		if (!$user) {
+			return;
+		}
+
 		fetch('/stats/read-page', {
 			method: 'POST',
 			body: JSON.stringify({
