@@ -24,7 +24,7 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 
 	setHeaders({
 		'Content-Type': 'application/zip',
-		'Content-Disposition': `attachment;filename*=UTF-8''${encodeURIComponent(generateFilename(gallery.title, gallery.tags) + '.cbz')}`,
+		'Content-Disposition': `attachment;filename=${encodeURIComponent(generateFilename(gallery.title, gallery.tags))}.cbz`,
 	});
 
 	locals.analytics?.postMessage({
