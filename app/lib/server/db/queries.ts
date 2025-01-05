@@ -679,8 +679,12 @@ export const search = async (
 		);
 	}
 
-	if (options.matchIds?.length) {
-		query = query.where('archives.id', 'in', options.matchIds);
+	if (options.matchIds) {
+		if (options.matchIds.length) {
+			query = query.where('archives.id', 'in', options.matchIds);
+		} else {
+			return { ids: [], total: 0 };
+		}
 	}
 
 	if (!options.showHidden) {
