@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-beta.6",
+	"version": "2.0.0-beta.7",
 	"private": true,
 	"scripts": {
 		"prepare": "svelte-kit sync",
@@ -14,7 +14,8 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"kysely": "bunx --bun kysely",
-		"cli": "NODE_ENV=production bun ./cli/index.ts"
+		"cli": "NODE_ENV=production bun ./cli/index.ts",
+		"migration-list": "bunx make-vfs --dir ./shared/db/migrations --content-format import-star --outfile shared/db/migration-list.ts && prettier --write shared/db/migration-list.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.3.1",

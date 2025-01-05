@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { siteConfig, tagList } from '../stores';
+	import GalleryListItemC from './gallery-list-item.svelte';
 	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
-	import ListItem from '$lib/components/list-item.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SearchBar from '$lib/components/search-bar.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
@@ -12,14 +12,13 @@
 	import { type Order, type Sort } from '$lib/schemas';
 	import type { GalleryListItem, LibraryResponse } from '$lib/types';
 
-	export let selectedGalleries: number[] = [];
+	export let selected: GalleryListItem[] = [];
+	export let onSelect: (gallery: GalleryListItem) => void;
 
-	const dispatch = createEventDispatcher<{
-		bookmark: { gallery: GalleryListItem; bookmark: boolean };
-	}>();
+	$: selectedIds = selected.map((gallery) => gallery.id);
 
 	let isMounted = false;
-	let showSelected = false;
+	let filterSelected = false;
 
 	let library: LibraryResponse | null = null;
 
@@ -55,7 +54,7 @@
 			params.set('seed', seed);
 		}
 
-		if (showSelected) {
+		if (filterSelected) {
 			params.set('ids', ids.join(','));
 		}
 
@@ -75,7 +74,7 @@
 	};
 
 	$: {
-		searchQuery.ids = showSelected ? selectedGalleries : [];
+		searchQuery.ids = filterSelected ? selectedIds : [];
 
 		if (isMounted) {
 			search();
@@ -85,6 +84,12 @@
 	onMount(() => {
 		isMounted = true;
 	});
+
+	$: {
+		if (!selected.length) {
+			filterSelected = false;
+		}
+	}
 </script>
 
 <div class="flex gap-2">
@@ -132,7 +137,8 @@
 
 		<div class="flex items-center gap-2 py-1 max-xs:w-full">
 			<Switch
-				bind:checked={showSelected}
+				bind:checked={filterSelected}
+				disabled={!selected.length}
 				id="show-selected"
 				on:click={() => (searchQuery.page = 1)}
 			/>
@@ -161,15 +167,7 @@
 			class="grid flex-1 grid-cols-2 gap-2 overflow-auto pb-2 pe-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
 		>
 			{#each library.archives as gallery (gallery.id)}
-				<ListItem
-					bookmarked={selectedGalleries.includes(gallery.id)}
-					enableBookmark
-					{gallery}
-					imageBookmark
-					newTab
-					onBookmark={(bookmarked) => dispatch('bookmark', { gallery, bookmark: bookmarked })}
-					type="collection"
-				/>
+				<GalleryListItemC {gallery} {onSelect} selected={selectedIds.includes(gallery.id)} />
 			{/each}
 		</div>
 	{:else}

@@ -105,6 +105,7 @@ export const sortSchema = z.enum([
 	'random',
 	'saved_at',
 	'collection_order',
+	'series_order',
 ]);
 
 export type Sort = z.infer<typeof sortSchema>;
@@ -152,3 +153,13 @@ export const userEditSchema = z
 export const userDeleteSchema = z.object({
 	currentPassword: z.string(),
 });
+
+export const createSeriesSchema = z.object({
+	title: z.string().min(1, { message: 'A title for the series is required' }).max(1000),
+	description: z.string().max(5000),
+	mainGallery: z.number().optional(),
+	coverPage: z.coerce.number().min(1).optional(),
+	chapters: z.array(z.number()),
+});
+
+export type CreateSeriesSchema = typeof createSeriesSchema;

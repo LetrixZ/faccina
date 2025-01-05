@@ -14,6 +14,7 @@ import * as _1730742720695_user_history from './migrations/1730742720695_user-hi
 import * as _1732508069512_fts_v2 from './migrations/1732508069512_fts-v2';
 import * as _1732766393840_fts_v3 from './migrations/1732766393840_fts-v3';
 import * as _1733882129483_sqlite_fts5 from './migrations/1733882129483_sqlite-fts5';
+import * as _1735711099148_series from './migrations/1735711099148_series';
 
 export default {
 	'1725745590227_init': _1725745590227_init,
@@ -32,4 +33,5 @@ export default {
 	'1732508069512_fts-v2': _1732508069512_fts_v2,
 	'1732766393840_fts-v3': _1732766393840_fts_v3,
 	'1733882129483_sqlite-fts5': _1733882129483_sqlite_fts5,
+	'1735711099148_series': _1735711099148_series,
 };

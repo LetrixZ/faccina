@@ -27,6 +27,19 @@
 				return 'saved_at';
 			case 'collection':
 				return 'collection_order';
+			case 'series':
+				return 'series_order';
+		}
+	})();
+
+	$: defaultOrderType = (() => {
+		switch (type) {
+			case 'main':
+				return defaultOrder;
+			case 'favorites':
+			case 'collection':
+			case 'series':
+				return 'asc';
 		}
 	})();
 
@@ -38,6 +51,7 @@
 		{ label: 'Random', value: 'random' },
 		...(type === 'favorites' ? [{ label: 'Favorited on', value: 'saved_at' as Sort }] : []),
 		...(type === 'collection' ? [{ label: 'Order', value: 'collection_order' as Sort }] : []),
+		...(type === 'series' ? [{ label: 'Order', value: 'series_order' as Sort }] : []),
 	];
 
 	$: sortValue = (() => {
@@ -47,12 +61,13 @@
 
 		return ($page.url.searchParams.get('sort') as Sort) ?? defaultSortType;
 	})();
+
 	$: orderValue = (() => {
 		if (order) {
 			return order;
 		}
 
-		return ($page.url.searchParams.get('order') as Order) ?? defaultOrder;
+		return ($page.url.searchParams.get('order') as Order) ?? defaultOrderType;
 	})();
 
 	$: sortOption = sortValue && sortOptions.find((option) => option.value === sortValue);

@@ -9,7 +9,7 @@ const metadataSchema = z.object({
 	Title: z.string(),
 	Description: z.string().nullable().optional(),
 	Source: z.string().nullable().optional(),
-	URL: z.string().nullable().optional(),
+	URL: multiTextField.nullable().optional(),
 	Artists: multiTextField.nullable().optional(),
 	Artist: multiTextField.nullable().optional(),
 	Circle: multiTextField.nullable().optional(),
@@ -101,8 +101,10 @@ export default async (content: string, archive: ArchiveMetadata) => {
 
 	archive.sources = [];
 
-	if (data.URL) {
-		archive.sources.push({ url: data.URL });
+	if (data.URL?.length) {
+		for (const url of mapMultiField(data.URL)) {
+			archive.sources.push({ url });
+		}
 	}
 
 	if (data.Source) {

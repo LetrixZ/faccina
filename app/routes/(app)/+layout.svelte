@@ -10,6 +10,7 @@
 	import Settings from 'lucide-svelte/icons/settings';
 	import User from 'lucide-svelte/icons/user';
 	import UserCircle from 'lucide-svelte/icons/user-round';
+	import Book from 'lucide-svelte/icons/book';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import LoginForm from '$lib/components/login-form.svelte';
@@ -208,6 +209,18 @@
 	>
 		<Home class="size-6" />
 	</Button>
+
+	{#if false}
+		<Button
+			class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+			href="/series"
+			on:click={() => ($query = '')}
+			title="Series"
+			variant="ghost"
+		>
+			<Book class="size-6" />
+		</Button>
+	{/if}
 
 	<div class="h-12 w-full flex-1 p-2">
 		<Popover.Root

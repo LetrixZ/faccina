@@ -38,7 +38,7 @@ export interface Archives {
 
 export interface ArchiveSources {
 	archiveId: number;
-	createdAt: string | null;
+	createdAt: Generated<string>;
 	name: string;
 	url: string | null;
 }
@@ -66,6 +66,24 @@ export interface CollectionArchive {
 	collectionId: number;
 	createdAt: Generated<string>;
 	order: number;
+	updatedAt: Generated<string>;
+}
+
+export interface SeriesArchive {
+	archiveId: number;
+	createdAt: Generated<string>;
+	order: number;
+	seriesId: number;
+	updatedAt: Generated<string>;
+}
+
+export interface Series {
+	createdAt: Generated<string>;
+	description: string | null;
+	id: Generated<number>;
+	mainArchiveCoverPage: number | null;
+	mainArchiveId: number | null;
+	title: string;
 	updatedAt: Generated<string>;
 }
 
@@ -140,6 +158,8 @@ export interface DB {
 	archiveTags: ArchiveTags;
 	collection: Collection;
 	collectionArchive: CollectionArchive;
+	seriesArchive: SeriesArchive;
+	series: Series;
 	tags: Tags;
 	userBlacklist: UserBlacklist;
 	userCodes: UserCodes;

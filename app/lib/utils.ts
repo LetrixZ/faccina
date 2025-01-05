@@ -145,6 +145,7 @@ export const getMetadata = (gallery: Gallery, origin: string) => {
 		Pages: gallery.pages,
 		Tags: tags,
 		Source: `${origin}/g/${gallery.id}`,
+		URL: gallery.sources.map((source) => source.url),
 		Released:
 			gallery.releasedAt !== null ? new Date(gallery.releasedAt).getTime() / 1000 : undefined,
 		Thumbnail: gallery.thumbnail - 1,
