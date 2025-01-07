@@ -2,7 +2,7 @@ name: Compile to binary
 
 on:
   push:
-    branches: ['main', 'compile']
+    branches: ['main']
     paths-ignore: ['docs/**']
 
 jobs:
