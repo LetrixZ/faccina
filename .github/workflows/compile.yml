@@ -45,7 +45,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
+        if: runner.os != 'Windows'
         run: SHARP_IGNORE_GLOBAL_LIBVIPS=1 bun install --frozen-lockfile
+      - name: Install dependencies
+        if: runner.os == 'Windows'
+        run: pwsh -Command { $env:SHARP_IGNORE_GLOBAL_LIBVIPS="1"; bun install --frozen-lockfile }
       - name: Compile Faccina
         if: runner.os != 'Windows'
         run: CONFIG_FILE=config.example.toml ./build.sh
