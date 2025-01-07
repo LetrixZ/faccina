@@ -140,33 +140,58 @@ const serve = async (hostname: string | undefined, port: number | undefined) => 
 if (Bun.embeddedFiles.length) {
 	const runtimePlatform = runtimePlatformArch();
 
-	const libvipsLib = Bun.embeddedFiles.find((file) => /libvips-cpp.*/g.test(file.name));
-	const sharpLib = Bun.embeddedFiles.find((file) => /sharp-.*\.node/g.test(file.name));
+	if (runtimePlatform.includes('win32')) {
+		const sharpLibs = Bun.embeddedFiles.filter((file) =>
+			/^(sharp|libvips).*(node|dll)$/.test(file.name)
+		);
 
-	if (!libvipsLib || !sharpLib) {
-		throw new Error('Necessary embedded files not found');
+		if (!sharpLibs.length) {
+			throw new Error('Necessary embedded files not found');
+		}
+
+		tmp.setGracefulCleanup();
+		const tmpobj = tmp.dirSync();
+
+		const sharpDir = join(tmpobj.name, `sharp-${runtimePlatform}`, 'lib');
+		await mkdir(sharpDir, { recursive: true });
+
+		for (const file of sharpLibs) {
+			const path = join(sharpDir, `${parse(file.name).name.slice(0, -9)}${parse(file.name).ext}`);
+			await Bun.write(path, await file.bytes());
+
+			if (file.name.startsWith('sharp-')) {
+				global.sharpPath = path;
+			}
+		}
+	} else {
+		const libvipsLib = Bun.embeddedFiles.find((file) => /libvips-cpp.*/g.test(file.name));
+		const sharpLib = Bun.embeddedFiles.find((file) => /sharp-.*\.node/g.test(file.name));
+
+		if (!libvipsLib || !sharpLib) {
+			throw new Error('Necessary embedded files not found');
+		}
+
+		tmp.setGracefulCleanup();
+		const tmpobj = tmp.dirSync();
+
+		const libvipsDir = join(tmpobj.name, `sharp-libvips-${runtimePlatform}`, 'lib');
+		await mkdir(libvipsDir, { recursive: true });
+		const libvipsPath = join(
+			libvipsDir,
+			`${parse(libvipsLib.name).name.slice(0, -9)}${parse(libvipsLib.name).ext}`
+		);
+		await Bun.write(libvipsPath, await libvipsLib.bytes());
+
+		const sharpDir = join(tmpobj.name, `sharp-${runtimePlatform}`, 'lib');
+		await mkdir(sharpDir, { recursive: true });
+		const sharpPath = join(
+			sharpDir,
+			`${parse(sharpLib.name).name.slice(0, -9)}${parse(sharpLib.name).ext}`
+		);
+		await Bun.write(sharpPath, await sharpLib.bytes());
+
+		global.sharpPath = sharpPath;
 	}
-
-	tmp.setGracefulCleanup();
-	const tmpobj = tmp.dirSync();
-
-	const libvipsDir = join(tmpobj.name, `sharp-libvips-${runtimePlatform}`, 'lib');
-	await mkdir(libvipsDir, { recursive: true });
-	const libvipsPath = join(
-		libvipsDir,
-		`${parse(libvipsLib.name).name.slice(0, -9)}${parse(libvipsLib.name).ext}`
-	);
-	await Bun.write(libvipsPath, await libvipsLib.bytes());
-
-	const sharpDir = join(tmpobj.name, `sharp-${runtimePlatform}`, 'lib');
-	await mkdir(sharpDir, { recursive: true });
-	const sharpPath = join(
-		sharpDir,
-		`${parse(sharpLib.name).name.slice(0, -9)}${parse(sharpLib.name).ext}`
-	);
-	await Bun.write(sharpPath, await sharpLib.bytes());
-
-	global.sharpPath = sharpPath;
 }
 
 import('./cli/commands').then(({ default: program }) => {

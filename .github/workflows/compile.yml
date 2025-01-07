@@ -27,24 +27,31 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: linux-x86_64
-            os: [self-hosted, Linux, X64]
-            artifact_name: faccina-linux-x86_64-${{ needs.get-info.outputs.hash }}
-          - platform: linux-arm64
-            os: [self-hosted, Linux, ARM64]
-            artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
-          - platform: darwin-x86_64
-            os: [self-hosted, macOS, X64]
-            artifact_name: faccina-darwin-x86_64-${{ needs.get-info.outputs.hash }}
-          - platform: darwin-arm64
-            os: [self-hosted, macOS, ARM64]
-            artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
+          # - platform: linux-x86_64
+          #   os: [self-hosted, Linux, X64]
+          #   artifact_name: faccina-linux-x86_64-${{ needs.get-info.outputs.hash }}
+          # - platform: linux-arm64
+          #   os: [self-hosted, Linux, ARM64]
+          #   artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
+          # - platform: darwin-x86_64
+          #   os: [self-hosted, macOS, X64]
+          #   artifact_name: faccina-darwin-x86_64-${{ needs.get-info.outputs.hash }}
+          # - platform: darwin-arm64
+          #   os: [self-hosted, macOS, ARM64]
+          #   artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
+          - platform: windows-x86_64
+            os: [self-hosted, Windows, X64]
+            artifact_name: faccina-windows-x86_64-${{ needs.get-info.outputs.hash }}
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: SHARP_IGNORE_GLOBAL_LIBVIPS=1 bun install --frozen-lockfile
       - name: Compile Faccina
+        if: runner.os != 'Windows'
         run: CONFIG_FILE=config.example.toml ./build.sh
+      - name: Compile Faccina
+        if: runner.os == 'Windows'
+        run: pwsh -Command { $env:CONFIG_FILE="config.example.toml"; .\build.ps1 }
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
