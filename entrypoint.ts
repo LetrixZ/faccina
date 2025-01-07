@@ -147,6 +147,7 @@ if (Bun.embeddedFiles.length) {
 		throw new Error('Necessary embedded files not found');
 	}
 
+	tmp.setGracefulCleanup();
 	const tmpobj = tmp.dirSync();
 
 	const libvipsDir = join(tmpobj.name, `sharp-libvips-${runtimePlatform}`, 'lib');

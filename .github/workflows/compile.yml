@@ -1,0 +1,48 @@
+name: Compile to binary
+
+on:
+  push:
+    branches: ['main', 'compile']
+    paths-ignore: ['docs/**']
+
+jobs:
+  get-info:
+    runs-on: [self-hosted]
+    outputs:
+      date: ${{ steps.vars.outputs.date }}
+      hash: ${{ steps.vars.outputs.hash }}
+      version: ${{ steps.vars.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get date and git hash
+        id: vars
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "version=`(jq -r '.version' package.json)`" >> $GITHUB_OUTPUT
+
+  compile:
+    runs-on: ${{ matrix.os }}
+    needs: get-info
+    strategy:
+      matrix:
+        include:
+          - platform: linux-x86_64
+            os: [self-hosted, Linux, X64]
+            artifact_name: faccina-linux-x86_64-${{ needs.get-info.outputs.hash }}
+          # - platform: linux-arm64
+          #   os: [self-hosted, Linux, ARM64]
+          #   artifact_name: faccina-linux-arm64-${{ needs.get-info.outputs.hash }}
+          # - platform: darwin-arm64
+          #   os: [self-hosted, macOS, ARM64]
+          #   artifact_name: faccina-darwin-arm64-${{ needs.get-info.outputs.hash }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: SHARP_IGNORE_GLOBAL_LIBVIPS=1 bun install --frozen-lockfile
+      - name: Compile Faccina
+        run: CONFIG_FILE=config.example.toml ./build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: faccina
