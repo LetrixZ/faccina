@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		if (!ids.length) {
 			return json({
-				data: [],
+				series: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
 				total,
@@ -56,7 +56,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.execute();
 
 		return json({
-			data: series,
+			series,
 			page: searchParams.page,
 			limit: searchParams.limit,
 			total,
@@ -66,7 +66,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		if (!ids.length) {
 			return json({
-				data: [],
+				archives: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
 				total,
@@ -99,7 +99,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.execute();
 
 		return json({
-			data: archives,
+			archives,
 			page: searchParams.page,
 			limit: searchParams.limit,
 			total,
