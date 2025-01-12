@@ -1,7 +1,7 @@
 import { json, redirect } from '@sveltejs/kit';
 import { getUserBlacklist, libraryItems, search } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
-import type { LibraryResponse } from '$lib/types';
+import type { GalleryLibraryResponse } from '$lib/types';
 import { decompressBlacklist, randomString } from '$lib/utils';
 
 export const GET = async ({ url, cookies, locals }) => {
@@ -35,10 +35,10 @@ export const GET = async ({ url, cookies, locals }) => {
 	});
 
 	return json({
-		archives: await libraryItems(ids),
+		data: await libraryItems(ids),
 		page: searchParams.page,
 		limit: searchParams.limit,
 		total,
 		seed: searchParams.seed,
-	} as LibraryResponse);
+	} as GalleryLibraryResponse);
 };

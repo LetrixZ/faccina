@@ -482,6 +482,21 @@
 				</InfoSection>
 			{/if}
 
+			{#if gallery.series.length}
+				<InfoSection name="Series">
+					{#each gallery.series as series}
+						<p class="text-sm">
+							• <a
+								class="font-medium hover:underline hover:underline-offset-4"
+								href="/series/{series.id}"
+							>
+								{series.title}
+							</a>
+						</p>
+					{/each}
+				</InfoSection>
+			{/if}
+
 			<InfoSection name="Length">
 				<p class="text-sm">{gallery.pages} pages</p>
 			</InfoSection>

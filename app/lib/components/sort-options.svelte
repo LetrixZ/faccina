@@ -16,6 +16,39 @@
 	export let defaultOrder: Order = 'desc';
 	export let sort: Sort | undefined = undefined;
 	export let order: Order | undefined = undefined;
+	export let sortOptions: Sort[] = (() => {
+		const options: Sort[] = [];
+
+		switch (type) {
+			case 'favorites':
+				options.push('saved_at');
+				break;
+			case 'collection':
+				options.push('collection_order');
+				break;
+			case 'series':
+				options.push('series_order');
+				break;
+		}
+
+		switch (type) {
+			case 'main':
+			case 'favorites':
+			case 'collection':
+			case 'series':
+				options.push(
+					...[
+						'released_at' as const,
+						'created_at' as const,
+						'title' as const,
+						'pages' as const,
+						'random' as const,
+					]
+				);
+		}
+
+		return options;
+	})();
 
 	const dispatch = createEventDispatcher<{ sort: { sort: Sort; seed?: string }; order: Order }>();
 
@@ -43,16 +76,25 @@
 		}
 	})();
 
-	const sortOptions: { label: string; value: Sort }[] = [
-		{ label: 'Date released', value: 'released_at' },
-		{ label: 'Date added', value: 'created_at' },
-		{ label: 'Title', value: 'title' },
-		{ label: 'Pages', value: 'pages' },
-		{ label: 'Random', value: 'random' },
-		...(type === 'favorites' ? [{ label: 'Favorited on', value: 'saved_at' as Sort }] : []),
-		...(type === 'collection' ? [{ label: 'Order', value: 'collection_order' as Sort }] : []),
-		...(type === 'series' ? [{ label: 'Order', value: 'series_order' as Sort }] : []),
-	];
+	const selectSortOptions: { label: string; value: Sort }[] = (() => {
+		const options = [
+			{ label: 'Date released', value: 'released_at' as const },
+			{ label: 'Date added', value: 'created_at' as const },
+			{ label: 'Date updated', value: 'updated_at' as const },
+			{ label: 'Title', value: 'title' as const },
+			{ label: 'Pages', value: 'pages' as const },
+			{ label: 'Random', value: 'random' as const },
+			{ label: 'Favorited on', value: 'saved_at' as const },
+			{ label: 'Order', value: 'collection_order' as const },
+			{ label: 'Order', value: 'series_order' as const },
+		].filter((option) => (sortOptions ? sortOptions?.includes(option.value) : true));
+
+		if (sortOptions) {
+			options.sort((a, b) => sortOptions.indexOf(a.value) - sortOptions.indexOf(b.value));
+		}
+
+		return options;
+	})();
 
 	$: sortValue = (() => {
 		if (sort) {
@@ -70,7 +112,7 @@
 		return ($page.url.searchParams.get('order') as Order) ?? defaultOrderType;
 	})();
 
-	$: sortOption = sortValue && sortOptions.find((option) => option.value === sortValue);
+	$: sortOption = sortValue && selectSortOptions.find((option) => option.value === sortValue);
 
 	const newOrderQuery = () => {
 		const query = new URLSearchParams($page.url.searchParams.toString());
@@ -83,7 +125,7 @@
 	<div class="w-full space-y-0.5 md:w-fit">
 		<Label>Sort by</Label>
 		<Select.Root
-			items={sortOptions}
+			items={selectSortOptions}
 			onSelectedChange={(option) => {
 				const newSort = option?.value ?? defaultSortType;
 				if (
@@ -116,7 +158,7 @@
 				<Select.Value class="text-muted-foreground-light" />
 			</Select.Trigger>
 			<Select.Content>
-				{#each sortOptions as option}
+				{#each selectSortOptions as option}
 					<Select.Item value={option.value}>{option.label}</Select.Item>
 				{/each}
 			</Select.Content>

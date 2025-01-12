@@ -35,7 +35,7 @@ export const load = async ({ locals, cookies, url }) => {
 
 	return {
 		library: {
-			archives: await libraryItems(ids),
+			data: await libraryItems(ids),
 			page: searchParams.page,
 			limit: searchParams.limit,
 			total,

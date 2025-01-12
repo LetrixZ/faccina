@@ -50,6 +50,6 @@
 				save();
 			}}
 			tags={data.tags.map((tag) => `${tag.namespace}:${tag.name}`)}
-		/>x1
+		/>
 	</div>
 </main>

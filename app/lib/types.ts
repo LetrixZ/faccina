@@ -37,6 +37,11 @@ export type Source = {
 	url: string | null;
 };
 
+export type Series = {
+	id: number;
+	title: string;
+};
+
 export type Gallery = {
 	id: number;
 	hash: string;
@@ -52,6 +57,7 @@ export type Gallery = {
 	tags: Tag[];
 	images: Image[];
 	sources: Source[];
+	series: Series[];
 };
 
 export type Archive = {
@@ -251,13 +257,15 @@ export type HistoryEntry = {
 	archive: Pick<Archive, 'id' | 'title' | 'hash' | 'pages' | 'thumbnail' | 'deletedAt' | 'tags'>;
 };
 
-export type LibraryResponse = {
-	archives: GalleryListItem[];
+export type LibraryResponse<T> = {
+	data: T[];
 	page: number;
 	limit: number;
 	total: number;
 	seed?: string;
 };
+
+export type GalleryLibraryResponse = LibraryResponse<GalleryListItem>;
 
 export type SiteConfig = {
 	name: string;

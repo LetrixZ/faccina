@@ -66,7 +66,7 @@ export const load = async ({ params, url, locals }) => {
 	return {
 		series,
 		libraryPage: {
-			archives,
+			data: archives,
 			page: searchParams.page,
 			limit: searchParams.limit,
 			total,

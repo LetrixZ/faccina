@@ -62,7 +62,7 @@ export const load = async ({ params, url, locals }) => {
 	return {
 		collection,
 		libraryPage: {
-			archives: await libraryItems(ids, {
+			data: await libraryItems(ids, {
 				sortingIds:
 					sort === 'collection_order'
 						? collection.archives.map((archive) => archive.archiveId)

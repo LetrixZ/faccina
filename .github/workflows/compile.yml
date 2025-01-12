@@ -1,9 +1,7 @@
 name: Compile to binary
 
 on:
-  push:
-    branches: ['main']
-    paths-ignore: ['docs/**']
+  workflow_dispatch:
 
 jobs:
   get-info:

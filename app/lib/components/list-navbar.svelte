@@ -2,11 +2,14 @@
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
+	import type { Sort } from '$lib/schemas';
 	import { siteConfig } from '$lib/stores';
 	import type { LibraryResponse, ListPageType } from '$lib/types';
 
-	export let library: LibraryResponse;
-	export let type: ListPageType;
+	export let library: LibraryResponse<unknown>;
+	export let type: ListPageType = 'main';
+	export let sortOptions: Sort[] | undefined = undefined;
+	export let defaultSort: Sort | undefined = undefined;
 </script>
 
 <div class="flex w-full gap-2">
@@ -14,7 +17,8 @@
 	<SortOptions
 		class="w-full"
 		defaultOrder={$siteConfig.defaultOrder}
-		defaultSort={$siteConfig.defaultSort}
+		defaultSort={defaultSort ?? $siteConfig.defaultSort}
+		{sortOptions}
 		{type}
 	/>
 </div>

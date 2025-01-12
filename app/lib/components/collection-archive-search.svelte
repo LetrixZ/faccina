@@ -10,7 +10,7 @@
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
-	import type { GalleryListItem, LibraryResponse } from '$lib/types';
+	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
 
 	export let selectedGalleries: number[] = [];
 
@@ -21,7 +21,7 @@
 	let isMounted = false;
 	let showSelected = false;
 
-	let library: LibraryResponse | null = null;
+	let library: GalleryLibraryResponse | null = null;
 
 	let searchQuery: {
 		query: string;
@@ -67,7 +67,7 @@
 
 		if (res.ok) {
 			const data = await res.json();
-			library = data as LibraryResponse;
+			library = data as GalleryLibraryResponse;
 			searchQuery.seed = library.seed;
 		} else {
 			toast.error('Failed to load galleries');
@@ -156,11 +156,11 @@
 </div>
 
 {#if library}
-	{#if library.archives.length}
+	{#if library.data.length}
 		<div
 			class="grid flex-1 grid-cols-2 gap-2 overflow-auto pb-2 pe-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
 		>
-			{#each library.archives as gallery (gallery.id)}
+			{#each library.data as gallery (gallery.id)}
 				<ListItem
 					bookmarked={selectedGalleries.includes(gallery.id)}
 					enableBookmark

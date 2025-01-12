@@ -23,9 +23,9 @@
 
 	<Separator />
 
-	{#if library.archives.length}
+	{#if library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each library.archives as archive (archive.id)}
+			{#each library.data as archive (archive.id)}
 				<ListItem enableBookmark={!!data.user} gallery={archive} type="main" />
 			{/each}
 		</div>

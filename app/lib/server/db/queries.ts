@@ -59,6 +59,13 @@ export const getGallery = (
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveSources.createdAt asc')
 			).as('sources'),
+			jsonArrayFrom(
+				eb
+					.selectFrom('seriesArchive')
+					.innerJoin('series', 'series.id', 'seriesArchive.seriesId')
+					.select(['series.id', 'series.title'])
+					.whereRef('archives.id', '=', 'archiveId')
+			).as('series'),
 		])
 		.where('id', '=', id);
 
@@ -823,3 +830,75 @@ export const userCollections = (userId: string): Promise<Collection[]> =>
 		.groupBy('collection.id')
 		.orderBy('createdAt asc')
 		.execute();
+
+export const searchSeries = async (
+	params: SearchParams,
+	options: QueryOptions
+): Promise<{ ids: number[]; total: number }> => {
+	const { titleMatch } = parseQuery(params.query);
+
+	const sortQuery = (sort: Sort, order: Order) => {
+		switch (sort) {
+			case 'title':
+				return config.database.vendor === 'postgresql'
+					? `series.title ${order}`
+					: sql`series.title collate nocase ${sql.raw(order)}`;
+			case 'created_at':
+				return `series.createdAt ${order}`;
+			default:
+				return `series.updatedAt ${order}`;
+		}
+	};
+
+	const sort = params.sort ?? 'updated_at';
+	const order = params.order ?? 'desc';
+
+	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'series', undefined>;
+
+	let query = db.selectFrom('series').select(['series.id', 'series.title']);
+
+	if (titleMatch.length) {
+		const str = titleMatch.join(' ');
+		query = query.where('series.title', like(), str);
+	}
+
+	if (options.matchIds) {
+		if (options.matchIds.length) {
+			query = query.where('series.id', 'in', options.matchIds);
+		} else {
+			return { ids: [], total: 0 };
+		}
+	}
+
+	query = query.orderBy([orderBy]);
+
+	let filteredResults = await query.execute();
+
+	if (config.database.vendor === 'sqlite' && sort === 'title') {
+		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
+			naturalCompare(a.title.toLowerCase(), b.title.toLowerCase())
+		);
+
+		if (order === 'desc') {
+			filteredResults = filteredResults.toReversed();
+		}
+	}
+
+	let allIds = filteredResults.map(({ id }) => id);
+
+	if (!allIds.length) {
+		return {
+			ids: [],
+			total: allIds.length,
+		};
+	}
+
+	if (sort === 'random' && params.seed) {
+		allIds = shuffle(allIds, params.seed);
+	}
+
+	return {
+		ids: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
+		total: allIds.length,
+	};
+};

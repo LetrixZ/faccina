@@ -67,6 +67,10 @@ export const searchSchema = z
 		order: orderSchema.optional(),
 		limit: z.coerce.number().int().catch(24),
 		seed: z.string().optional(),
+		series: z
+			.string()
+			.optional()
+			.transform((val) => (val === 'true' || val === '1' ? true : false)),
 		ids: z
 			.string()
 			.transform((str) =>

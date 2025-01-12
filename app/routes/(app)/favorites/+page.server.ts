@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!favorites.length) {
 		return {
 			libraryPage: {
-				archives: [],
+				data: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
 				total: 0,
@@ -58,7 +58,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	return {
 		libraryPage: {
-			archives: await libraryItems(ids, {
+			data: await libraryItems(ids, {
 				sortingIds: sort === 'saved_at' ? favorites : undefined,
 			}),
 			page: searchParams.page,

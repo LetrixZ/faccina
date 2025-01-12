@@ -100,6 +100,7 @@ export type EditTagsSchema = typeof editTagsSchema;
 export const sortSchema = z.enum([
 	'released_at',
 	'created_at',
+	'updated_at',
 	'title',
 	'pages',
 	'random',
