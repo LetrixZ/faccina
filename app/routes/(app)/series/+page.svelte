@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
+	import SeriesListItem from '$lib/components/series-list-item.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 
@@ -13,11 +13,13 @@
 
 <main class="container relative flex flex-auto flex-col gap-y-2">
 	<PageTitle>
-		Series
+		Series ({library.total})
 
-		<Button class="ms-auto h-fit w-fit p-2" href="/series/new" variant="link">
-			Create a new series
-		</Button>
+		{#if data.user?.admin}
+			<Button class="ms-auto h-fit w-fit p-2" href="/series/new" variant="link">
+				Create a new series
+			</Button>
+		{/if}
 	</PageTitle>
 
 	<div class="grid items-end gap-2 md:flex">
@@ -33,40 +35,7 @@
 	{#if library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
 			{#each library.data as series (series.id)}
-				<div class="group h-auto w-auto space-y-2 text-center">
-					<a href={`/series/${series.id}${$page.url.search}`} tabindex="-1">
-						<div class="relative aspect-[45/64] overflow-clip rounded-md bg-neutral-800 shadow">
-							{#if series.thumbnail}
-								<img
-									alt={`'${series.title}' cover`}
-									class="aspect-[45/64] bg-neutral-800 object-contain"
-									height={910}
-									loading="eager"
-									src="/image/{series.hash}/{series.thumbnail}?type=cover"
-									width={640}
-								/>
-							{/if}
-						</div>
-					</a>
-
-					<div class="h-fit">
-						<a
-							class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
-							href={`/series/${series.id}${$page.url.search}`}
-							title={series.title}
-						>
-							{series.title}
-						</a>
-
-						{#if series.chapterCount > 1}
-							<p class="text-sm text-neutral-300">{series.chapterCount} chapters</p>
-						{:else if series.chapterCount === 1}
-							<p class="text-sm text-neutral-300">1 chapter</p>
-						{:else}
-							<p class="text-sm text-neutral-300">No chapters</p>
-						{/if}
-					</div>
-				</div>
+				<SeriesListItem {series} />
 			{/each}
 		</div>
 	{:else}

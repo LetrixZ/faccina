@@ -89,6 +89,15 @@ export type GalleryListItem = {
 	deletedAt: string | null;
 };
 
+export type SeriesListItem = {
+	id: number;
+	title: string;
+	hash: string | null;
+	thumbnail: number | null;
+	chapterCount: number;
+	tags: Tag[];
+};
+
 export const messageSchema = z.discriminatedUnion('action', [
 	z.object({
 		action: z.literal('search_main'),

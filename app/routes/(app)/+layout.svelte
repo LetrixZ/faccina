@@ -32,6 +32,8 @@
 		switch ($page.route.id) {
 			case '/(app)/favorites':
 			case '/(app)/collections/[slug]':
+			case '/(app)/series':
+			case '/(app)/series/[id]':
 				return $page.url.pathname;
 			default:
 				return '/';
@@ -51,6 +53,8 @@
 	$: {
 		$query = $page.url.searchParams.get('q') ?? '';
 	}
+
+	$: shouldAutocomplete = $page.route.id === '/(app)/series' ? false : true;
 
 	let selectPosition = -1;
 	let highligtedIndex = -1;
@@ -224,7 +228,7 @@
 		<Popover.Root
 			disableFocusTrap={true}
 			onOpenChange={(open) => (popoverOpen = open)}
-			open={!!filteredTags.length && popoverOpen}
+			open={shouldAutocomplete && !!filteredTags.length && popoverOpen}
 			openFocus={inputEl}
 			portal={formEl}
 		>

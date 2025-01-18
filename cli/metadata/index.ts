@@ -250,11 +250,13 @@ export const addExternalMetadata = async (
 ) => {
 	archive = structuredClone(archive);
 
-	const normalized = scan.type === 'archive' ? parse(scan.path).name : basename(scan.path);
+	const normalized = scan.type === 'archive' ? parse(scan.path).name : parse(scan.path).name;
+
 	const paths = readdirSync(dirname(scan.path))
 		.filter(
 			(path) =>
-				path.startsWith(normalized) && /^.*(json|yml|yaml|xml|booru.txt|faccina.json)$/.test(path)
+				parse(path).name === normalized &&
+				/^.*(json|yml|yaml|xml|booru.txt|faccina.json)$/.test(path)
 		)
 		.map((path) => join(dirname(scan.path), path))
 		.sort((a, b) => (a.endsWith('faccina.json') ? -1 : b.endsWith('faccina.json') ? 1 : 0));

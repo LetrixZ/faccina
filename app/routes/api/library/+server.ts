@@ -10,7 +10,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams);
 
 	if (searchParams.series) {
-		const { ids, total } = await searchSeries(searchParams, { skipPagination: true });
+		const { ids, total } = await searchSeries(searchParams, {});
 
 		if (!ids.length) {
 			return json({
@@ -29,8 +29,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.innerJoin('archives', 'archives.id', 'seriesArchive.archiveId')
 			.select((eb) => [
 				'series.id',
-				'archives.hash',
 				'series.title',
+				'archives.hash',
 				'archives.thumbnail',
 				'series.createdAt',
 				jsonArrayFrom(
@@ -50,6 +50,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				).as('chapters'),
 			])
 			.groupBy('series.id')
+			.where('series.id', 'in', ids)
 			.execute();
 
 		const seriesList = [];
