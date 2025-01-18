@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { handleTags } from '$lib/server/utils';
+import { sortArchiveTags } from '$lib/server/utils';
 import type { HistoryEntry } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
@@ -46,7 +46,7 @@ export const load = async ({ locals }) => {
 			.where('userId', '=', locals.user.id)
 			.orderBy('lastReadAt desc')
 			.execute()
-	).map((entry) => ({ ...entry, archive: handleTags(entry.archive) }));
+	).map((entry) => ({ ...entry, archive: sortArchiveTags(entry.archive) }));
 
 	return {
 		entries: historyEntries,

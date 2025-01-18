@@ -1,29 +1,28 @@
 import { json } from '@sveltejs/kit';
 import { sql } from 'kysely';
+import { libraryItems } from '$lib/server/db/queries.js';
+import db from '~shared/db';
 import { jsonArrayFrom } from '~shared/db/helpers';
-import db from '~shared/db/index.js';
+import { handleTags } from '$lib/server/utils.js';
 
 export const GET = async ({ params }) => {
 	const id = parseInt(params.id);
 
 	if (isNaN(id)) {
-		return json({ error: 'Invalid ID' }, { status: 404004 });
+		return json({ error: 'Invalid ID' }, { status: 404 });
 	}
 
 	const series = await db
 		.selectFrom('series')
 		.innerJoin('seriesArchive', (join) =>
-			join
-				.onRef('seriesArchive.seriesId', '=', 'series.id')
-				.onRef('seriesArchive.archiveId', '=', 'series.mainArchiveId')
+			join.onRef('seriesArchive.seriesId', '=', 'series.id').on('seriesArchive.order', '=', 0)
 		)
 		.innerJoin('archives', 'archives.id', 'seriesArchive.archiveId')
 		.select((eb) => [
 			'series.id',
 			'archives.hash',
 			'series.title',
-			'series.description',
-			'mainArchiveCoverPage as thumbnail',
+			'archives.thumbnail',
 			'series.createdAt',
 			jsonArrayFrom(
 				eb
@@ -35,7 +34,7 @@ export const GET = async ({ params }) => {
 						'archives.title',
 						sql<number>`${eb.ref('seriesArchive.order')} + 1`.as('number'),
 						'archives.pages',
-						'archives.createdAt',
+						'archives.releasedAt',
 					])
 					.orderBy('seriesArchive.order asc')
 					.whereRef('seriesArchive.seriesId', '=', 'series.id')
@@ -49,5 +48,18 @@ export const GET = async ({ params }) => {
 		return json({ error: 'Not found' }, { status: 404 });
 	}
 
-	return json(series);
+	const galleries = await libraryItems(series.chapters.map((chapter) => chapter.id));
+	const uniqueTags = new Map();
+
+	for (const gallery of galleries) {
+		for (const tag of gallery.tags) {
+			uniqueTags.set(tag.id, tag);
+		}
+	}
+
+	return json({
+		...series,
+		pages: series.chapters.reduce((acc, chapter) => acc + chapter.pages, 0),
+		tags: handleTags(Array.from(uniqueTags.values())),
+	});
 };

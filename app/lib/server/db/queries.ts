@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { type Expression, type OrderByExpression, sql, type SqlBool } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
-import { handleTags, log, type SearchParams } from '../utils';
+import { sortArchiveTags, log, type SearchParams } from '../utils';
 import { type Order, type Sort } from '$lib/schemas';
 import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
 import { shuffle } from '$lib/utils';
@@ -16,6 +16,7 @@ export type QueryOptions = {
 	matchIds?: number[];
 	sortingIds?: number[];
 	tagBlacklist?: string[];
+	skipPagination?: boolean;
 };
 
 export const getGallery = (
@@ -316,6 +317,95 @@ export const parseQuery = (query: string) => {
 	return { ...matches, tagMatches };
 };
 
+const parseTitleQuery = (titleMatch: string[]) => {
+	if (titleMatch.length) {
+		let splits = titleMatch.join(' ').split(' ');
+
+		if (config.database.vendor === 'postgresql') {
+			splits = splits
+				.map((s) =>
+					s
+						.replace(/<->|\||&|\(\)|!|#/g, '')
+						.replaceAll("'", '<->')
+						.trim()
+				)
+				.filter((s) => s.length && !['-', '~', '!', '(', ')', '()'].includes(s));
+		}
+
+		const andQueries = splits
+			.filter((s) => !s.startsWith('~') && !s.startsWith('-'))
+			.map((s) =>
+				s
+					.toLowerCase()
+					.replace(/[^ -~]/g, '')
+					.trim()
+			)
+			.filter((s) => s.length);
+		const orQueries = splits
+			.filter((s) => s.startsWith('~'))
+			.map((s) =>
+				s
+					.substring(1)
+					.toLowerCase()
+					.replace(/[^ -~]/g, '')
+					.trim()
+			)
+			.filter((s) => s.length);
+
+		const notQueries = splits
+			.filter((s) => s.startsWith('-'))
+			.map((s) =>
+				s
+					.substring(1)
+					.toLowerCase()
+					.replace(/[^ -~]/g, '')
+					.trim()
+			)
+			.filter((s) => s.length);
+
+		let or = ``;
+		let not = ``;
+
+		if (config.database.vendor === 'postgresql') {
+			const and = andQueries.join(' & ');
+
+			if (orQueries.length) {
+				or = `(${orQueries.join(' | ')})`;
+			}
+
+			if (notQueries.length) {
+				not = `!(${notQueries.join(' & ')})`;
+			}
+
+			if (and.length && or.length) {
+				or = `& ${or}`;
+			}
+
+			if ((and.length || or.length) && not.length) {
+				not = `& ${not}`;
+			}
+
+			return { and, or, not };
+		} else {
+			const and = andQueries.map((s) => `"${s}"`).join(' AND ');
+
+			if (orQueries.length) {
+				or = `(${orQueries.map((s) => `"${s}"`).join(' OR ')})`;
+			}
+
+			if (notQueries.length) {
+				not = `NOT (${notQueries.map((s) => `"${s}"`).join(' AND ')})`;
+			}
+
+			if (and.length && or.length) {
+				or = `AND ${or}`;
+			}
+
+			return { and, or, not };
+		}
+	}
+};
+
 export const search = async (
 	params: SearchParams,
 	options: QueryOptions
@@ -577,6 +667,20 @@ export const search = async (
 		}
 	}
 
+	const parsedTitlteQuery = parseTitleQuery(titleMatch);
+
+	if (parsedTitlteQuery) {
+		const { and, or, not } = parsedTitlteQuery;
+
+		if (config.database.vendor === 'postgresql') {
+			query = query.where('archives.fts', '@@', `${`${and} ${or} ${not}`}`);
+		} else {
+			query = query
+				.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id')
+				.where((eb) => sql`${eb.table('archivesFts')} = ${`${and} ${or} ${not}`}`);
+		}
+	}
+
 	if (pagesMatch.expression && pagesMatch.number) {
 		const { data } = z.enum(['>', '<', '=', '>=', '<=']).safeParse(pagesMatch.expression);
 
@@ -743,7 +847,9 @@ export const search = async (
 	}
 
 	return {
-		ids: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
+		ids: options.skipPagination
+			? allIds
+			: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
 		total: allIds.length,
 	};
 };
@@ -777,7 +883,7 @@ export const libraryItems = async (
 		.where('archives.id', 'in', ids)
 		.execute()) satisfies GalleryListItem[];
 
-	archives = archives.map((archive) => handleTags(archive));
+	archives = archives.map((archive) => sortArchiveTags(archive));
 
 	if (options?.sortingIds) {
 		const ids = options.sortingIds;
@@ -857,9 +963,18 @@ export const searchSeries = async (
 
 	let query = db.selectFrom('series').select(['series.id', 'series.title']);
 
-	if (titleMatch.length) {
-		const str = titleMatch.join(' ');
-		query = query.where('series.title', like(), str);
+	const parsedTitlteQuery = parseTitleQuery(titleMatch);
+
+	if (parsedTitlteQuery) {
+		const { and, or, not } = parsedTitlteQuery;
+
+		if (config.database.vendor === 'postgresql') {
+			query = query.where('series.fts', '@@', `${`${and} ${or} ${not}`}`);
+		} else {
+			query = query
+				.innerJoin('seriesFts', `seriesFts.rowid`, 'series.id')
+				.where((eb) => sql`${eb.table('seriesFts')} = ${`${and} ${or} ${not}`}`);
+		}
 	}
 
 	if (options.matchIds) {
@@ -898,7 +1013,9 @@ export const searchSeries = async (
 	}
 
 	return {
-		ids: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
+		ids: options.skipPagination
+			? allIds
+			: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
 		total: allIds.length,
 	};
 };

@@ -157,9 +157,6 @@ export const userDeleteSchema = z.object({
 
 export const createSeriesSchema = z.object({
 	title: z.string().min(1, { message: 'A title for the series is required' }).max(1000),
-	description: z.string().max(5000),
-	mainGallery: z.number().optional(),
-	coverPage: z.coerce.number().min(1).optional(),
 	chapters: z.array(z.number()),
 });
 

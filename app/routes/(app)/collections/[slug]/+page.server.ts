@@ -77,18 +77,8 @@ export const load = async ({ params, url, locals }) => {
 
 export const actions = {
 	remove: async ({ params, locals }) => {
-		if (!locals.user) {
-			return fail(400, {
-				message: 'You are not logged in',
-				type: 'error',
-			});
-		}
-
-		if (!config.site.enableCollections) {
-			return fail(400, {
-				message: 'Collections are not enabled',
-				type: 'error',
-			});
+		if (!locals.user?.admin) {
+			return fail(403, { message: 'You are not allowed to perform this action', type: 'error' });
 		}
 
 		const slug = params.slug;

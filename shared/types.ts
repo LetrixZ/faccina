@@ -79,12 +79,15 @@ export interface SeriesArchive {
 
 export interface Series {
 	createdAt: Generated<string>;
-	description: string | null;
+	fts: string | null;
 	id: Generated<number>;
-	mainArchiveCoverPage: number | null;
-	mainArchiveId: number | null;
 	title: string;
 	updatedAt: Generated<string>;
+}
+
+export interface SeriesFts {
+	rowid: number;
+	title: string;
 }
 
 export interface Tags {
@@ -160,6 +163,7 @@ export interface DB {
 	collectionArchive: CollectionArchive;
 	seriesArchive: SeriesArchive;
 	series: Series;
+	seriesFts: SeriesFts;
 	tags: Tags;
 	userBlacklist: UserBlacklist;
 	userCodes: UserCodes;

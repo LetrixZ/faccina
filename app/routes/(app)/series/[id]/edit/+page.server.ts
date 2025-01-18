@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
-import { fail, message, superValidate } from 'sveltekit-superforms';
+import { fail, message, setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { handleTags } from '$lib/server/utils.js';
+import { sortArchiveTags } from '$lib/server/utils.js';
 import { createSeriesSchema } from '$lib/schemas';
 import db from '~shared/db';
 import { jsonArrayFrom, now } from '~shared/db/helpers';
@@ -22,9 +22,6 @@ export const load = async ({ params, locals }) => {
 		.select((eb) => [
 			'id',
 			'title',
-			'description',
-			'mainArchiveId',
-			'mainArchiveCoverPage',
 			jsonArrayFrom(
 				eb
 					.selectFrom('seriesArchive')
@@ -56,16 +53,13 @@ export const load = async ({ params, locals }) => {
 		error(404, { message: 'Series not found' });
 	}
 
-	series.chapters = series.chapters.map(handleTags);
+	series.chapters = series.chapters.map(sortArchiveTags);
 
 	return {
 		series,
 		form: await superValidate(
 			{
 				title: series.title,
-				description: series.description ?? undefined,
-				mainGallery: series.mainArchiveId ?? undefined,
-				coverPage: series.mainArchiveCoverPage ?? undefined,
 				chapters: series.chapters.map((chapter) => chapter.id),
 			},
 			zod(createSeriesSchema)
@@ -95,18 +89,24 @@ export const actions = {
 			return fail(404, { message: 'This series does not exists' });
 		}
 
-		const { title, description, mainGallery, coverPage, chapters } = form.data;
+		const { title, chapters } = form.data;
+
+		const existant = await db
+			.selectFrom('series')
+			.select('id')
+			.where('title', '=', title)
+			.where('id', '!=', series.id)
+			.limit(1)
+			.executeTakeFirst();
+
+		if (existant) {
+			return setError(form, 'title', 'A series with the same title already exists');
+		}
 
 		await db.transaction().execute(async (trx) => {
 			await trx
 				.updateTable('series')
-				.set({
-					title,
-					description,
-					mainArchiveId: mainGallery,
-					mainArchiveCoverPage: coverPage,
-					updatedAt: now(),
-				})
+				.set({ title, updatedAt: now() })
 				.where('id', '=', series.id)
 				.execute();
 

@@ -8,10 +8,10 @@ import type { GalleryListItem, Tag } from '../types';
 import config from '~shared/config';
 import { orderSchema, sortSchema, type Order, type Sort } from '$lib/schemas';
 
-export const handleTags = (archive: GalleryListItem): GalleryListItem => {
+export const handleTags = (tags: Tag[]): Tag[] => {
 	const { tagExclude, tagWeight } = config.site.galleryListing;
 
-	const filteredTags = archive.tags.filter((tag) => {
+	const filteredTags = tags.filter((tag) => {
 		return !tagExclude.some(({ ignoreCase, name, namespace }) => {
 			if (name) {
 				const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
@@ -54,8 +54,11 @@ export const handleTags = (archive: GalleryListItem): GalleryListItem => {
 		return aWeight === bWeight ? a.name.localeCompare(b.name) : bWeight - aWeight;
 	});
 
-	archive.tags = sortedTags;
+	return sortedTags;
+};
 
+export const sortArchiveTags = (archive: GalleryListItem): GalleryListItem => {
+	archive.tags = handleTags(archive.tags);
 	return archive;
 };
 

@@ -1,4 +1,4 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { libraryItems, search } from '$lib/server/db/queries.js';
 import { parseSearchParams } from '$lib/server/utils.js';
 import { randomString } from '$lib/utils';
@@ -37,14 +37,7 @@ export const load = async ({ params, url, locals }) => {
 				archiveQuery = archiveQuery.orderBy(order === 'asc' ? 'order asc' : 'order desc');
 			}
 
-			return [
-				'id',
-				'title',
-				'description',
-				'mainArchiveId',
-				'mainArchiveCoverPage',
-				jsonArrayFrom(archiveQuery).as('chapters'),
-			];
+			return ['id', 'title', jsonArrayFrom(archiveQuery).as('chapters')];
 		})
 		.where('id', '=', id)
 		.executeTakeFirst();
@@ -72,4 +65,29 @@ export const load = async ({ params, url, locals }) => {
 			total,
 		},
 	};
+};
+
+export const actions = {
+	remove: async ({ params, locals }) => {
+		if (!locals.user?.admin) {
+			return fail(403, { message: 'You are not allowed to perform this action', type: 'error' });
+		}
+
+		const series = await db
+			.selectFrom('series')
+			.select('id')
+			.where('id', '=', parseInt(params.id))
+			.executeTakeFirst();
+
+		if (!series) {
+			return fail(404, {
+				message: 'This series does not exists',
+				type: 'error',
+			});
+		}
+
+		await db.deleteFrom('series').where('id', '=', series.id).execute();
+
+		redirect(301, '/series');
+	},
 };

@@ -1,5 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
-import { fail, message, superValidate } from 'sveltekit-superforms';
+import { fail, message, setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { createSeriesSchema } from '$lib/schemas';
 import db from '~shared/db';
@@ -26,17 +26,23 @@ export const actions = {
 			return fail(400, { form });
 		}
 
-		const { title, description, mainGallery, coverPage, chapters } = form.data;
+		const { title, chapters } = form.data;
+
+		const existant = await db
+			.selectFrom('series')
+			.select('id')
+			.where('title', '=', title)
+			.limit(1)
+			.executeTakeFirst();
+
+		if (existant) {
+			return setError(form, 'title', 'A series with the same title already exists.');
+		}
 
 		const seriesId = await db.transaction().execute(async (trx) => {
 			const { id } = await trx
 				.insertInto('series')
-				.values({
-					title,
-					description,
-					mainArchiveId: mainGallery,
-					mainArchiveCoverPage: coverPage,
-				})
+				.values({ title })
 				.returning('id')
 				.executeTakeFirstOrThrow();
 

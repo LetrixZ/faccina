@@ -39,11 +39,8 @@
 	})[] = [];
 
 	$: searchOpen = !!$page.state.searchOpen;
-	$: mainGallery = selected.find((gallery) => gallery.id === $formData.mainGallery);
-	$: cover =
-		mainGallery && $formData.coverPage
-			? `/image/${mainGallery.hash}/${$formData.coverPage}?type=cover`
-			: null;
+	$: mainGallery = selected[0];
+	$: cover = mainGallery ? `/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover` : null;
 
 	$: {
 		$formData.chapters = selected.map((selected) => selected.id);
@@ -58,23 +55,8 @@
 	const onSelect = (gallery: GalleryListItem) => {
 		if (selected.find((g) => g.id === gallery.id)) {
 			selected = selected.filter((g) => g.id !== gallery.id);
-
-			if (mainGallery?.id === gallery.id) {
-				if (selected[0]) {
-					$formData.mainGallery = selected[0].id;
-					$formData.coverPage = selected[0]?.thumbnail ?? undefined;
-				} else {
-					$formData.mainGallery = -1;
-					$formData.coverPage = undefined;
-				}
-			}
 		} else {
 			selected = [...selected, gallery];
-
-			if (selected.length === 1 && selected[0]) {
-				$formData.mainGallery = selected[0].id;
-				$formData.coverPage = selected[0]?.thumbnail ?? undefined;
-			}
 		}
 	};
 </script>
@@ -103,7 +85,7 @@
 				<OctagonAlert class="absolute inset-0 m-auto size-20 text-neutral-600" />
 			{/if}
 		</div>
-		<SeriesForm {form} {selected} />
+		<SeriesForm {form} />
 	</div>
 
 	<div class="relative flex flex-auto flex-col gap-2">

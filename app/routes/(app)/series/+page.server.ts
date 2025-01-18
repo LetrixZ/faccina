@@ -1,17 +1,13 @@
-import { error, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import { sql, type OrderByExpression } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
-import { parseSearchParams } from '$lib/server/utils.js';
-import db from '~shared/db/index.js';
 import { randomString, shuffle } from '$lib/utils.js';
+import { parseSearchParams } from '$lib/server/utils.js';
 import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 import type { DB } from '~shared/types.js';
 
-export const load = async ({ locals, url }) => {
-	if (!locals.user?.admin) {
-		error(403, { message: 'Not allowed', status: 403 });
-	}
-
+export const load = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams, {
 		sort: 'updated_at',
 		order: 'desc',
@@ -38,11 +34,19 @@ export const load = async ({ locals, url }) => {
 		}
 	};
 
-	let filteredResults = await db
+	let query = db
 		.selectFrom('series')
 		.select(['series.id', 'series.title'])
-		.orderBy([sortQuery() as OrderByExpression<DB, 'series', undefined>])
-		.execute();
+		.orderBy([sortQuery() as OrderByExpression<DB, 'series', undefined>]);
+
+	if (!locals.user?.admin) {
+		query = query
+			.innerJoin('seriesArchive', 'seriesArchive.seriesId', 'series.id')
+			.having((eb) => sql<boolean>`count(${eb.ref('seriesArchive.archiveId')}) > 0`)
+			.groupBy('series.id');
+	}
+
+	let filteredResults = await query.execute();
 
 	if (config.database.vendor === 'sqlite' && sort === 'title') {
 		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
@@ -82,16 +86,14 @@ export const load = async ({ locals, url }) => {
 			join.onRef('seriesArchiveCount.seriesId', '=', 'series.id')
 		)
 		.leftJoin('seriesArchive', (join) =>
-			join
-				.onRef('seriesArchive.seriesId', '=', 'series.id')
-				.onRef('seriesArchive.archiveId', '=', 'series.mainArchiveId')
+			join.onRef('seriesArchive.seriesId', '=', 'series.id').on('seriesArchive.order', '=', 0)
 		)
 		.leftJoin('archives', 'archives.id', 'seriesArchive.archiveId')
 		.select((eb) => [
 			'series.id',
 			'series.title',
 			'archives.hash',
-			'mainArchiveCoverPage as thumbnail',
+			'archives.thumbnail',
 			eb.fn.count<number>('seriesArchiveCount.archiveId').as('chapterCount'),
 		])
 		.groupBy('series.id')

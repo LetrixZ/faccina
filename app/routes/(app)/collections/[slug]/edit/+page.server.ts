@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { handleTags } from '$lib/server/utils';
+import { sortArchiveTags } from '$lib/server/utils';
 import { createCollectionSchema } from '$lib/schemas';
 import config from '~shared/config';
 import db from '~shared/db';
@@ -59,7 +59,7 @@ export const load = async ({ params, locals }) => {
 		});
 	}
 
-	collection.archives = collection.archives.map(handleTags);
+	collection.archives = collection.archives.map(sortArchiveTags);
 
 	return {
 		collection,

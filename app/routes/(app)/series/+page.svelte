@@ -35,15 +35,17 @@
 			{#each library.data as series (series.id)}
 				<div class="group h-auto w-auto space-y-2 text-center">
 					<a href={`/series/${series.id}${$page.url.search}`} tabindex="-1">
-						<div class="relative overflow-clip rounded-md shadow">
-							<img
-								alt={`'${series.title}' cover`}
-								class="aspect-[45/64] bg-neutral-800 object-contain"
-								height={910}
-								loading="eager"
-								src="/image/{series.hash}/{series.thumbnail}?type=cover"
-								width={640}
-							/>
+						<div class="relative aspect-[45/64] overflow-clip rounded-md bg-neutral-800 shadow">
+							{#if series.thumbnail}
+								<img
+									alt={`'${series.title}' cover`}
+									class="aspect-[45/64] bg-neutral-800 object-contain"
+									height={910}
+									loading="eager"
+									src="/image/{series.hash}/{series.thumbnail}?type=cover"
+									width={640}
+								/>
+							{/if}
 						</div>
 					</a>
 
