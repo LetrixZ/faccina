@@ -1,10 +1,72 @@
 import { sql, type Kysely } from 'kysely';
+import { id, now } from '../helpers';
 import config from '~shared/config';
 
 export async function up(db: Kysely<any>): Promise<void> {
-	await db.schema.alterTable('series').dropColumn('description').execute();
-	await db.schema.alterTable('series').dropColumn('main_archive_id').execute();
-	await db.schema.alterTable('series').dropColumn('main_archive_cover_page').execute();
+	await db.schema.alterTable('series').renameTo('series_old').execute();
+	await db.schema.alterTable('series_archive').renameTo('series_archive_old').execute();
+
+	await id(db.schema, 'series')
+		.addColumn('title', 'varchar(1024)', (col) => col.notNull())
+		.addColumn('created_at', 'timestamp', (col) => col.notNull().defaultTo(now()))
+		.addColumn('updated_at', 'timestamp', (col) => col.notNull().defaultTo(now()))
+		.execute();
+
+	const oldSeries = await db
+		.selectFrom('series_old')
+		.select(['id', 'title', 'created_at', 'updated_at'])
+		.execute();
+
+	if (oldSeries.length) {
+		await db
+			.insertInto('series')
+			.values(
+				oldSeries.map((series) => ({
+					id: series.id,
+					title: series.title,
+					created_at: series.created_at,
+					updated_at: series.updated_at,
+				}))
+			)
+			.execute();
+	}
+
+	await db.schema
+		.createTable('series_archive')
+		.addColumn('series_id', 'integer', (col) =>
+			col.notNull().references('series.id').onDelete('cascade')
+		)
+		.addColumn('archive_id', 'integer', (col) =>
+			col.notNull().references('archives.id').onDelete('cascade')
+		)
+		.addColumn('order', 'integer', (col) => col.notNull())
+		.addColumn('created_at', 'timestamp', (col) => col.notNull().defaultTo(now()))
+		.addColumn('updated_at', 'timestamp', (col) => col.notNull().defaultTo(now()))
+		.addPrimaryKeyConstraint('series_archive_pkey', ['series_id', 'archive_id'])
+		.execute();
+
+	const oldSeriesArchives = await db
+		.selectFrom('series_archive_old')
+		.select(['series_id', 'archive_id', 'order', 'created_at', 'updated_at'])
+		.execute();
+
+	if (oldSeriesArchives.length) {
+		await db
+			.insertInto('series_archive')
+			.values(
+				oldSeriesArchives.map((seriesArchive) => ({
+					series_id: seriesArchive.series_id,
+					archive_id: seriesArchive.archive_id,
+					order: seriesArchive.order,
+					created_at: seriesArchive.created_at,
+					updated_at: seriesArchive.updated_at,
+				}))
+			)
+			.execute();
+	}
+
+	await db.schema.dropTable('series_archive_old').execute();
+	await db.schema.dropTable('series_old').execute();
 
 	if (config.database.vendor === 'postgresql') {
 		await sql`ALTER TABLE series ADD COLUMN fts TSVECTOR;`.execute(db);
