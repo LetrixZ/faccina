@@ -8,7 +8,7 @@ import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
 import slugify from 'slugify';
-import { upsertImages, upsertSources, upsertTags } from '../shared/archive';
+import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
@@ -578,6 +578,10 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 				if (archive.sources) {
 					await upsertSources(id, archive.sources);
+				}
+
+				if (archive.series) {
+					await upsertSeries(id, archive.series);
 				}
 			}
 

@@ -13,6 +13,11 @@ export type Tag = {
 	name: string;
 };
 
+export type Series = {
+	title: string;
+	order: number;
+};
+
 export type ArchiveMetadata = {
 	title?: string;
 	description?: string | null;
@@ -22,4 +27,5 @@ export type ArchiveMetadata = {
 	tags?: Tag[];
 	sources?: Source[];
 	imageOrder?: Image[];
+	series?: Series[];
 };

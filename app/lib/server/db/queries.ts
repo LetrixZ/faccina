@@ -90,10 +90,10 @@ export const getArchive = (id: number): Promise<Archive | undefined> => {
 			'thumbnail',
 			'language',
 			'size',
+			'protected',
 			'createdAt',
 			'releasedAt',
 			'deletedAt',
-			'protected',
 			jsonArrayFrom(
 				eb
 					.selectFrom('archiveTags')
@@ -116,6 +116,13 @@ export const getArchive = (id: number): Promise<Archive | undefined> => {
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveSources.createdAt asc')
 			).as('sources'),
+			jsonArrayFrom(
+				eb
+					.selectFrom('seriesArchive')
+					.innerJoin('series', 'series.id', 'seriesArchive.seriesId')
+					.select(['series.title', 'seriesArchive.order'])
+					.whereRef('seriesArchive.archiveId', '=', 'archives.id')
+			).as('series'),
 		])
 		.where('id', '=', id)
 		.executeTakeFirst();

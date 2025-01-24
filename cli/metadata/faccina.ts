@@ -13,6 +13,7 @@ export const metadataSchema = z.object({
 	thumbnail: z.number().optional(),
 	language: z.string().nullish(),
 	size: z.number().optional(),
+	protected: z.boolean().optional(),
 	created_at: z.string().optional(),
 	released_at: z.string().nullish(),
 	deleted_at: z.string().nullish(),
@@ -36,7 +37,18 @@ export const metadataSchema = z.object({
 		.array(
 			z.object({
 				name: z.string(),
-				url: z.string().nullish(),
+				url: z
+					.string()
+					.nullish()
+					.transform((val) => (val === null ? undefined : val)),
+			})
+		)
+		.optional(),
+	series: z
+		.array(
+			z.object({
+				title: z.string(),
+				order: z.number(),
 			})
 		)
 		.optional(),
@@ -69,6 +81,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		name: source.name,
 		url: source.url ?? undefined,
 	}));
+	archive.series = data.series;
 
 	return archive;
 };

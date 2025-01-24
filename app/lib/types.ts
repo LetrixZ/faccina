@@ -37,11 +37,6 @@ export type Source = {
 	url: string | null;
 };
 
-export type Series = {
-	id: number;
-	title: string;
-};
-
 export type Gallery = {
 	id: number;
 	hash: string;
@@ -57,7 +52,10 @@ export type Gallery = {
 	tags: Tag[];
 	images: Image[];
 	sources: Source[];
-	series: Series[];
+	series: {
+		id: number;
+		title: string;
+	}[];
 };
 
 export type Archive = {
@@ -70,13 +68,14 @@ export type Archive = {
 	thumbnail: number;
 	language: string | null;
 	size: number;
+	protected: boolean;
 	createdAt: string;
 	releasedAt: string | null;
 	deletedAt: string | null;
-	protected: boolean;
 	tags: Tag[];
 	images: Image[];
 	sources: Source[];
+	series: { title: string; order: number }[];
 };
 
 export type GalleryListItem = {

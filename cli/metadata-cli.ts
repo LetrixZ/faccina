@@ -1,12 +1,12 @@
 import { dirname, join, parse } from 'node:path';
 import cliProgress from 'cli-progress';
-import { strToU8, zipSync, type Zippable } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { extract, partial_ratio } from 'fuzzball';
 import chalk from 'chalk';
 import prompts from 'prompts';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
-import { upsertSources, upsertTags } from '../shared/archive';
+import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import db from '../shared/db';
 import { jsonArrayFrom, now } from '../shared/db/helpers';
 import { generateFilename } from '../shared/utils';
@@ -364,7 +364,13 @@ export const exportMetadata = async (path: string, opts?: ExportOptions) => {
 		const archive = (await getArchive(id))!;
 		const relativePath = path.replace(config.directories.content, '');
 		const filepath = join(dirname(relativePath), `${parse(relativePath).name}.faccina.json`);
-		const parsed = metadataSchema.parse(archive);
+		const parsed = metadataSchema.parse({
+			...archive,
+			protected: !!archive.protected,
+			created_at: archive.createdAt,
+			released_at: archive.releasedAt,
+			deleted_at: archive.deletedAt,
+		});
 
 		if (opts?.excludeImages) {
 			delete parsed.images;
@@ -380,5 +386,163 @@ export const exportMetadata = async (path: string, opts?: ExportOptions) => {
 
 	console.info(
 		`Finished exporting ${chalk.bold(filtered.length)} archives in ${((end - start) / 1000).toFixed(2)} seconds`
+	);
+};
+
+type RestoreOptions = {
+	clean: boolean;
+	metadataOnly: boolean;
+};
+
+export const importMetadata = async (path: string, opts: RestoreOptions) => {
+	let interrupt = false;
+
+	if (opts.clean) {
+		const exists = await db.selectFrom('archives').select('id').limit(1).executeTakeFirst();
+
+		if (exists) {
+			console.info(chalk.bold.red(`THIS WILL REMOVE ALL ARCHIVES FROM THE DATABASE!`));
+			interrupt = true;
+		}
+	}
+
+	if (interrupt) {
+		console.log('Press "Enter" to continue');
+
+		for await (const _ of console) {
+			break;
+		}
+	}
+
+	if (opts.clean) {
+		console.info(chalk.blue(`Cleaning database`));
+		await db.deleteFrom('archives').execute();
+	}
+
+	const zip = await Bun.file(path).bytes();
+	const metadataFiles = unzipSync(zip, { filter: (file) => file.name.endsWith('.faccina.json') });
+
+	console.info(chalk.blue(`Importing ${chalk.bold(Object.keys(metadataFiles).length)} archives`));
+
+	const start = performance.now();
+
+	for (const file of Object.values(metadataFiles)) {
+		const data = metadataSchema.parse(JSON.parse(strFromU8(file)));
+
+		if (
+			data.id === undefined ||
+			data.hash === undefined ||
+			data.path === undefined ||
+			data.pages === undefined ||
+			data.size === undefined
+		) {
+			continue;
+		}
+
+		let id: number;
+
+		if (opts.metadataOnly) {
+			const row = await db
+				.insertInto('archives')
+				.values({
+					title: data.title,
+					hash: data.hash,
+					path: data.path,
+					description: data.description,
+					pages: data.pages,
+					thumbnail: data.thumbnail,
+					language: data.language ?? config.metadata.defaultLanguage,
+					size: data.size,
+					protected: data.protected,
+					createdAt: data.created_at,
+					releasedAt: data.released_at,
+					deletedAt: data.deleted_at,
+				})
+				.onConflict((oc) =>
+					oc.column('id').doUpdateSet((eb) => ({
+						title: eb.ref('excluded.title'),
+						description: eb.ref('excluded.description'),
+						pages: eb.ref('excluded.pages'),
+						thumbnail: eb.ref('excluded.thumbnail'),
+						language: eb.ref('excluded.language'),
+						protected: eb.ref('excluded.protected'),
+						releasedAt: eb.ref('excluded.releasedAt'),
+						deletedAt: eb.ref('excluded.deletedAt'),
+					}))
+				)
+				.returning('id')
+				.executeTakeFirstOrThrow();
+
+			id = row.id;
+		} else {
+			await db
+				.insertInto('archives')
+				.values({
+					id: data.id,
+					title: data.title,
+					hash: data.hash,
+					path: data.path,
+					description: data.description,
+					pages: data.pages,
+					thumbnail: data.thumbnail,
+					language: data.language ?? config.metadata.defaultLanguage,
+					size: data.size,
+					protected: data.protected,
+					createdAt: data.created_at,
+					releasedAt: data.released_at,
+					deletedAt: data.deleted_at,
+				})
+				.onConflict((oc) =>
+					oc.column('id').doUpdateSet((eb) => ({
+						title: eb.ref('excluded.title'),
+						hash: eb.ref('excluded.hash'),
+						path: eb.ref('excluded.path'),
+						description: eb.ref('excluded.description'),
+						pages: eb.ref('excluded.pages'),
+						thumbnail: eb.ref('excluded.thumbnail'),
+						language: eb.ref('excluded.language'),
+						size: eb.ref('excluded.size'),
+						protected: eb.ref('excluded.protected'),
+						createdAt: eb.ref('excluded.createdAt'),
+						releasedAt: eb.ref('excluded.releasedAt'),
+						deletedAt: eb.ref('excluded.deletedAt'),
+					}))
+				)
+				.execute();
+
+			id = data.id;
+		}
+
+		const updated = await db
+			.selectFrom('archives')
+			.select(['id', 'hash'])
+			.where('id', '=', id)
+			.executeTakeFirstOrThrow();
+
+		if (!data.protected) {
+			if (data.tags) {
+				await upsertTags(updated.id, data.tags);
+			}
+
+			if (data.sources) {
+				await upsertSources(updated.id, data.sources);
+			}
+
+			if (data.series) {
+				await upsertSeries(id, data.series);
+			}
+		}
+
+		if (data.images) {
+			await upsertImages(updated.id, data.images, updated.hash);
+		}
+	}
+
+	const end = performance.now();
+
+	await db.destroy();
+
+	console.info(
+		`Finished importing ${chalk.bold(Object.values(metadataFiles).length)} archives in ${((end - start) / 1000).toFixed(2)} seconds`
 	);
 };

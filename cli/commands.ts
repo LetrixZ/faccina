@@ -106,9 +106,26 @@ program
 	.description(
 		'Export archive metadata to a ZIP file keeping the original content structure.\nOnly archives present in the content directory will be included.'
 	)
-	.addArgument(new Argument('<path>', 'Path to save the ZIP file'))
+	.addArgument(new Argument('<path>', 'Path to save the ZIP file.'))
 	.addOption(new Option('--exclude-images', 'Exclude images from the export.'))
 	.action((path, { excludeImages }) => metadataCli.exportMetadata(path, { excludeImages }));
+
+program
+	.command('metadata:import')
+	.description('Import the metadata from the export ZIP file. Archives will be updated by ID.')
+	.addArgument(new Argument('<path>', 'Path to the export ZIP file.'))
+	.addOption(
+		new Option('--clean', 'Remove all archive entries from the database before importing.')
+	)
+	.addOption(
+		new Option(
+			'--metadata-only',
+			'Limit to only importing metadata. This will skip importing the ID and updating hash, path, file size and creation date.'
+		)
+	)
+	.action((path, { clean, metadataOnly }) =>
+		metadataCli.importMetadata(path, { clean, metadataOnly })
+	);
 
 program
 	.command('metadata:scrape')
