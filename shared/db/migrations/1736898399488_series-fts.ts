@@ -14,7 +14,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 
 	const oldSeries = await db
 		.selectFrom('series_old')
-		.select(['id', 'title', 'created_at', 'updated_at'])
+		.select(['id', 'title', 'createdAt', 'updatedAt'])
 		.execute();
 
 	if (oldSeries.length) {
@@ -24,8 +24,8 @@ export async function up(db: Kysely<any>): Promise<void> {
 				oldSeries.map((series) => ({
 					id: series.id,
 					title: series.title,
-					created_at: series.created_at,
-					updated_at: series.updated_at,
+					createdAt: series.createdAt,
+					updatedAt: series.updatedAt,
 				}))
 			)
 			.execute();
@@ -47,21 +47,19 @@ export async function up(db: Kysely<any>): Promise<void> {
 
 	const oldSeriesArchives = await db
 		.selectFrom('series_archive_old')
-		.select(['series_id', 'archive_id', 'order', 'created_at', 'updated_at'])
+		.select(['seriesId', 'archiveId', 'order', 'createdAt', 'updatedAt'])
 		.execute();
 
-	if (oldSeriesArchives.length) {
+	for (const seriesArchive of oldSeriesArchives) {
 		await db
 			.insertInto('series_archive')
-			.values(
-				oldSeriesArchives.map((seriesArchive) => ({
-					series_id: seriesArchive.series_id,
-					archive_id: seriesArchive.archive_id,
-					order: seriesArchive.order,
-					created_at: seriesArchive.created_at,
-					updated_at: seriesArchive.updated_at,
-				}))
-			)
+			.values({
+				seriesId: seriesArchive.seriesId,
+				archiveId: seriesArchive.archiveId,
+				order: seriesArchive.order,
+				createdAt: seriesArchive.createdAt,
+				updatedAt: seriesArchive.updatedAt,
+			})
 			.execute();
 	}
 
