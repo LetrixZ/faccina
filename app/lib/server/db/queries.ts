@@ -879,29 +879,68 @@ export const searchSeries = async (
 
 	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'series', undefined>;
 
+	let ids: number[] = [];
+
+	if (params.query.length) {
+		const archives = await search(params, {
+			...options,
+			skipPagination: true,
+			showHidden: true,
+		});
+
+		ids = archives.ids;
+	}
+
 	let query = db.selectFrom('series').select(['series.id', 'series.title']);
+
+	if (options.matchIds && !options.matchIds.length) {
+		return { ids: [], total: 0 };
+	}
 
 	const parsedTitlteQuery = parseTitleQuery(titleMatch);
 
-	if (parsedTitlteQuery) {
-		const { and, or, not } = parsedTitlteQuery;
-
-		if (config.database.vendor === 'postgresql') {
-			query = query.where('series.fts', '@@', `${`${and} ${or} ${not}`}`);
-		} else {
-			query = query
-				.innerJoin('seriesFts', `seriesFts.rowid`, 'series.id')
-				.where((eb) => sql`${eb.table('seriesFts')} = ${`${and} ${or} ${not}`}`);
-		}
+	if (parsedTitlteQuery && config.database.vendor === 'sqlite') {
+		query = query.innerJoin('seriesFts', `seriesFts.rowid`, 'series.id');
 	}
 
-	if (options.matchIds) {
-		if (options.matchIds.length) {
-			query = query.where('series.id', 'in', options.matchIds);
-		} else {
-			return { ids: [], total: 0 };
+	query = query.where((eb) => {
+		const expressions: Expression<SqlBool>[] = [];
+
+		if (parsedTitlteQuery) {
+			const { and, or, not } = parsedTitlteQuery;
+
+			if (config.database.vendor === 'postgresql') {
+				expressions.push(eb('series.fts', '@@', `${`${and} ${or} ${not}`}`));
+			} else {
+				// @ts-expect-error works
+				expressions.push(sql`${eb.table('seriesFts')} = ${`${and} ${or} ${not}`}`);
+			}
 		}
-	}
+
+		if (options.matchIds) {
+			if (options.matchIds.length) {
+				expressions.push(eb('series.id', 'in', options.matchIds));
+			}
+		}
+
+		if (ids.length) {
+			const expression: Expression<SqlBool> = eb.exists(
+				eb
+					.selectFrom('seriesArchive')
+					.select('seriesArchive.seriesId')
+					.whereRef('seriesArchive.seriesId', '=', 'series.id')
+					.where('seriesArchive.archiveId', 'in', ids)
+			);
+
+			if (expressions.length) {
+				return eb.and(expressions).or(expression);
+			} else {
+				return eb.and([expression]);
+			}
+		} else {
+			return eb.and(expressions);
+		}
+	});
 
 	query = query.orderBy([orderBy]);
 
