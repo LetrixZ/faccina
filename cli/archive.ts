@@ -79,9 +79,9 @@ export const indexArchives = async (opts: IndexOptions) => {
 			}
 
 			if (info.isDirectory()) {
-				indexScans.push({ type: 'metadata', path: archive.path });
+				indexScans = [...indexScans, { type: 'metadata', path: archive.path }];
 			} else if (info.isFile()) {
-				indexScans.push({ type: 'archive', path: archive.path });
+				indexScans = [...indexScans, { type: 'archive', path: archive.path }];
 			}
 		}
 	} else {
@@ -120,7 +120,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				const archiveMatches: ArchiveScan[] = Array.from(
 					glob.scanSync({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
 				).map((path) => ({ type: 'archive', path }));
-				indexScans.push(...archiveMatches);
+				indexScans = [...indexScans, ...archiveMatches];
 
 				// Match metadata files
 				const metadataGlob = new Glob(
@@ -137,7 +137,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				)
 					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
 					.map((path) => ({ type: 'metadata', path: dirname(path), metadata: path }));
-				indexScans.push(...metadataMatches);
+				indexScans = [...indexScans, ...metadataMatches];
 
 				const rootMetadataMatches = Array.from(
 					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`).scanSync({
@@ -147,16 +147,17 @@ export const indexArchives = async (opts: IndexOptions) => {
 					})
 				);
 
-				indexScans.push(
+				indexScans = [
+					...indexScans,
 					...rootMetadataMatches
 						.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
 						.map(
 							(path) =>
 								({ type: 'metadata', path: dirname(path), metadata: path }) satisfies MetadataScan
-						)
-				);
+						),
+				];
 			} else if (info.isFile()) {
-				indexScans.push({ type: 'archive', path });
+				indexScans = [...indexScans, { type: 'archive', path }];
 			}
 		}
 
