@@ -79,9 +79,9 @@ export const indexArchives = async (opts: IndexOptions) => {
 			}
 
 			if (info.isDirectory()) {
-				indexScans = [...indexScans, { type: 'metadata', path: archive.path }];
+				indexScans = indexScans.concat({ type: 'metadata', path: archive.path });
 			} else if (info.isFile()) {
-				indexScans = [...indexScans, { type: 'archive', path: archive.path }];
+				indexScans = indexScans.concat({ type: 'archive', path: archive.path });
 			}
 		}
 	} else {
@@ -120,7 +120,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				const archiveMatches: ArchiveScan[] = Array.from(
 					glob.scanSync({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
 				).map((path) => ({ type: 'archive', path }));
-				indexScans = [...indexScans, ...archiveMatches];
+				indexScans = indexScans.concat(archiveMatches);
 
 				// Match metadata files
 				const metadataGlob = new Glob(
@@ -137,7 +137,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				)
 					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
 					.map((path) => ({ type: 'metadata', path: dirname(path), metadata: path }));
-				indexScans = [...indexScans, ...metadataMatches];
+				indexScans = indexScans.concat(metadataMatches);
 
 				const rootMetadataMatches = Array.from(
 					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`).scanSync({
@@ -147,17 +147,16 @@ export const indexArchives = async (opts: IndexOptions) => {
 					})
 				);
 
-				indexScans = [
-					...indexScans,
-					...rootMetadataMatches
+				indexScans = indexScans.concat(
+					rootMetadataMatches
 						.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
 						.map(
 							(path) =>
 								({ type: 'metadata', path: dirname(path), metadata: path }) satisfies MetadataScan
-						),
-				];
+						)
+				);
 			} else if (info.isFile()) {
-				indexScans = [...indexScans, { type: 'archive', path }];
+				indexScans = indexScans.concat({ type: 'archive', path });
 			}
 		}
 
