@@ -36,7 +36,7 @@ export const presetSchema = z
 	])
 	.and(
 		z.object({
-			width: z.number(),
+			width: z.number().optional(),
 			label: z.string().max(30).optional(),
 		})
 	);

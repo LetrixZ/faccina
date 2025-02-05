@@ -392,24 +392,26 @@ export const indexArchives = async (opts: IndexOptions) => {
 					if (title) {
 						archive.title = title ?? filename;
 
-						archive.tags = [];
+						if (!archive.tags) {
+							archive.tags = [];
 
-						if (artists) {
-							archive.tags.push(
-								...artists.map((tag) => ({
-									namespace: 'artist',
-									name: tag,
-								}))
-							);
-						}
+							if (artists) {
+								archive.tags.push(
+									...artists.map((tag) => ({
+										namespace: 'artist',
+										name: tag,
+									}))
+								);
+							}
 
-						if (circles) {
-							archive.tags.push(
-								...circles.map((tag) => ({
-									namespace: 'circle',
-									name: tag,
-								}))
-							);
+							if (circles) {
+								archive.tags.push(
+									...circles.map((tag) => ({
+										namespace: 'circle',
+										name: tag,
+									}))
+								);
+							}
 						}
 					}
 				} else {

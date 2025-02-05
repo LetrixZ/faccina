@@ -10,6 +10,7 @@ import XML2JS from 'xml2js';
 import YAML from 'yaml';
 import type { ArchiveMetadata } from '../../shared/metadata';
 import type { IndexScan, MetadataScan } from '../archive';
+import { basenames } from '../utilts';
 import anchira from './anchira';
 import booru from './booru';
 import ccdc06 from './ccdc06';
@@ -243,6 +244,9 @@ const metadataFormat = (filename: string) => {
 
 type Logger = cliProgress.MultiBar | null;
 
+const metadataFilenames = ['info.json', 'info.yaml', 'info.yml', 'ComicInfo.xml'];
+const metadataExtensions = ['.json', '.yaml', '.yml', '.xml', '.booru.txt', '.faccina.json'];
+
 export const addExternalMetadata = async (
 	scan: IndexScan,
 	archive: ArchiveMetadata,
@@ -250,14 +254,16 @@ export const addExternalMetadata = async (
 ) => {
 	archive = structuredClone(archive);
 
-	const normalized = scan.type === 'archive' ? parse(scan.path).name : parse(scan.path).name;
+	const normalized =
+		scan.type === 'archive' ? basenames(scan.path, '.cbz', '.zip') : parse(scan.path).name;
 
 	const paths = readdirSync(dirname(scan.path))
-		.filter(
-			(path) =>
-				parse(path).name === normalized &&
+		.filter((path) => {
+			return (
+				basenames(path, ...metadataExtensions) === normalized &&
 				/^.*(json|yml|yaml|xml|booru.txt|faccina.json)$/.test(path)
-		)
+			);
+		})
 		.map((path) => join(dirname(scan.path), path))
 		.sort((a, b) => (a.endsWith('faccina.json') ? -1 : b.endsWith('faccina.json') ? 1 : 0));
 
@@ -287,9 +293,7 @@ export const addEmbeddedZipMetadata = async (
 ) => {
 	archive = structuredClone(archive);
 
-	const paths = ['info.yaml', 'info.yml', 'info.json', 'ComicInfo.xml'];
-
-	for (const path of paths) {
+	for (const path of metadataFilenames) {
 		try {
 			const entry = await zip.entry(path);
 

@@ -1,6 +1,6 @@
 {
 	"name": "faccina",
-	"version": "2.0.0-beta.10",
+	"version": "2.0.0-beta.11",
 	"private": true,
 	"scripts": {
 		"prepare": "svelte-kit sync",
@@ -83,6 +83,7 @@
 		"fflate": "^0.8.2",
 		"formsnap": "^1.0.1",
 		"fuzzball": "^2.1.3",
+		"image-size": "^1.2.0",
 		"kysely": "^0.27.5",
 		"kysely-bun-sqlite": "^0.3.2",
 		"lucia": "^3.2.2",

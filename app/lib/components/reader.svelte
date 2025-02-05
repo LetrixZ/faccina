@@ -68,7 +68,7 @@
 			const presetItem = $presets.find((p) => p.hash === preset);
 
 			if (presetItem) {
-				const width = presetItem.width;
+				const width = presetItem.width ?? image.width;
 
 				return {
 					width: Math.round(width),
