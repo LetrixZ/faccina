@@ -19,13 +19,6 @@ export const POST = async ({ locals, cookies, url }) => {
 		secure: config.site.secureSessionCookie,
 	});
 
-	locals.analytics?.postMessage({
-		action: 'user_logout',
-		payload: {
-			userId: user.id,
-		},
-	});
-
 	const to = url.searchParams.get('to');
 
 	if (to) {

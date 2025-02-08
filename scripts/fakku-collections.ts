@@ -28,7 +28,7 @@ const getPage = async (page: number) => {
 	if (values.ignoreCache === true && (await file.exists())) {
 		return file.text();
 	} else {
-		console.log(`Fetching collection page ${page}`);
+		console.info(`Fetching collection page ${page}`);
 		const response = await fetchPage(`https://www.fakku.net/collections/page/${page}`);
 		const html = await response.text();
 		await Bun.write(filename, html);
@@ -56,7 +56,7 @@ const getCollectionPage = async (slug: string, page: number) => {
 	if (values.ignoreCache === true && (await file.exists())) {
 		html = await file.text();
 	} else {
-		console.log(`Fetching "${slug}" page ${page}`);
+		console.info(`Fetching "${slug}" page ${page}`);
 		const url = `https://www.fakku.net/collections/${slug}/page/${page}`;
 		const response = await fetchPage(url);
 

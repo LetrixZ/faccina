@@ -70,6 +70,7 @@
 			case 'main':
 				return defaultOrder;
 			case 'favorites':
+				return 'desc';
 			case 'collection':
 			case 'series':
 				return 'asc';

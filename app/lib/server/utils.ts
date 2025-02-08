@@ -119,6 +119,38 @@ export const log = (message: string) => {
 	console.debug(message);
 
 	if (typeof config.server.logging === 'string') {
-		appendFile(config.server.logging, stripAnsi(message) + '\n');
+		try {
+			appendFile(config.server.logging, stripAnsi(message) + '\n');
+		} catch {
+			/* empty */
+		}
 	}
+};
+
+export const readReadableStream = async (stream: NodeJS.ReadableStream, size?: number) => {
+	stream.read(size);
+	return new Promise<Buffer>((resolve, reject) => {
+		stream.once('readable', () => {
+			const data = stream.read(size) as Buffer | null;
+
+			if (data) {
+				resolve(data);
+			}
+		});
+		stream.on('error', (err) => reject(err));
+	});
+};
+
+export const readStream = async (stream: NodeJS.ReadableStream) => {
+	const chunks: Buffer[] = [];
+
+	for await (const chunk of stream) {
+		if (typeof chunk === 'string') {
+			continue;
+		}
+
+		chunks.push(chunk);
+	}
+
+	return Buffer.concat(chunks);
 };

@@ -189,20 +189,23 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 							multibar.log(chalk.red(`Failed to save image dimensions: ${error.message}\n`))
 						);
 
-					let newHeight: number | undefined = undefined;
+					if (image.preset.width !== undefined) {
+						let newHeight: number | undefined = undefined;
 
-					if (config.image.aspectRatioSimilar) {
-						const aspectRatio = width! / height!;
+						if (config.image.aspectRatioSimilar) {
+							const aspectRatio = width! / height!;
 
-						if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {
-							newHeight = image.preset.width * (64 / 45);
+							if (aspectRatio >= 0.65 && aspectRatio <= 0.75) {
+								newHeight = image.preset.width * (64 / 45);
+							}
 						}
+
+						pipeline = pipeline.resize({
+							width: Math.round(image.preset.width),
+							height: newHeight ? Math.round(newHeight) : undefined,
+						});
 					}
 
-					pipeline = pipeline.resize({
-						width: Math.floor(image.preset.width),
-						height: newHeight ? Math.floor(newHeight) : undefined,
-					});
 					pipeline = match(image.preset)
 						.with({ format: 'webp' }, (data) => pipeline.webp(data))
 						.with({ format: 'jpeg' }, (data) => pipeline.jpeg(data))
@@ -225,6 +228,8 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					progress.increment();
 				}
 			}
+
+			await zip?.close();
 		},
 		{ concurrency: navigator.hardwareConcurrency }
 	);

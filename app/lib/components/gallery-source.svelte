@@ -1,16 +1,16 @@
 <script lang="ts">
 	import type { HTMLAnchorAttributes } from 'svelte/elements';
 	import { cn } from '../utils';
-	import Anchira from '$assets/anchira.webp';
-	import ExHentai from '$assets/exhentai.ico';
-	import Fakku from '$assets/fakku.svg';
-	import HenTag from '$assets/hentag.webp';
-	import HentaiNexus from '$assets/hentainexus.webp';
-	import Irodori from '$assets/irodori.webp';
-	import Koharu from '$assets/koharu.png';
-	import Patreon from '$assets/patreon.webp';
-	import Pixiv from '$assets/pixiv.webp';
-	import ProjectHentai from '$assets/project-hentai.webp';
+	import Anchira from '../../assets/anchira.webp';
+	import ExHentai from '../../assets/exhentai.ico';
+	import Fakku from '../../assets/fakku.svg';
+	import HenTag from '../../assets/hentag.webp';
+	import HentaiNexus from '../../assets/hentainexus.webp';
+	import Irodori from '../../assets/irodori.webp';
+	import Koharu from '../../assets/koharu.png';
+	import Patreon from '../../assets/patreon.webp';
+	import Pixiv from '../../assets/pixiv.webp';
+	import ProjectHentai from '../../assets/project-hentai.webp';
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 

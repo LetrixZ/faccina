@@ -1,18 +1,29 @@
+import { redirect } from '@sveltejs/kit';
 import { libraryItems, searchSeries } from '$lib/server/db/queries';
 import { handleTags } from '$lib/server/utils';
 import { parseSearchParams } from '$lib/server/utils.js';
 import type { SeriesListItem } from '$lib/types.js';
 import { randomString } from '$lib/utils.js';
-import { redirect } from '@sveltejs/kit';
-import { sql } from 'kysely';
-import { jsonArrayFrom } from '~shared/db/helpers';
+import config from '~shared/config';
+import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers';
 import db from '~shared/db/index.js';
 
-export const load = async ({ url }) => {
+export const load = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams, {
 		sort: 'updated_at',
 		order: 'desc',
 	});
+
+	if (!locals.user && !config.site.guestAccess) {
+		return {
+			libraryPage: {
+				data: [],
+				page: searchParams.page,
+				limit: searchParams.limit,
+				total: 0,
+			},
+		};
+	}
 
 	if (searchParams.sort === 'random' && !searchParams.seed) {
 		url.searchParams.set('seed', randomString());
@@ -23,24 +34,30 @@ export const load = async ({ url }) => {
 
 	const rows = await db
 		.selectFrom('series')
-		.leftJoin('seriesArchive', (join) =>
-			join.onRef('seriesArchive.seriesId', '=', 'series.id').on('seriesArchive.order', '=', 0)
-		)
-		.leftJoin('archives as _archives', '_archives.id', 'seriesArchive.archiveId')
 		.select((eb) => [
 			'series.id',
 			'series.title',
-			'_archives.hash',
-			'_archives.thumbnail',
+			jsonObjectFrom(
+				eb
+					.selectFrom('archives')
+					.innerJoin('seriesArchive', (join) =>
+						join
+							.onRef('seriesArchive.seriesId', '=', 'series.id')
+							.onRef('seriesArchive.archiveId', '=', 'archives.id')
+					)
+					.select(['hash', 'thumbnail'])
+					.whereRef('archives.id', '=', 'seriesArchive.archiveId')
+					.orderBy('seriesArchive.order asc')
+					.limit(1)
+			).as('main'),
 			jsonArrayFrom(
 				eb
 					.selectFrom('archives')
 					.innerJoin('seriesArchive', 'seriesArchive.archiveId', 'archives.id')
-					.select((eb) => [
+					.select([
 						'archives.id',
 						'archives.hash',
 						'archives.title',
-						sql<number>`${eb.ref('seriesArchive.order')} + 1`.as('number'),
 						'archives.pages',
 						'archives.releasedAt',
 					])
@@ -50,7 +67,16 @@ export const load = async ({ url }) => {
 		])
 		.groupBy('series.id')
 		.where('series.id', 'in', ids)
-		.execute();
+		.execute()
+		.then((rows) =>
+			rows.map((row) => ({
+				id: row.id,
+				title: row.title,
+				hash: row.main!.hash,
+				thumbnail: row.main!.thumbnail,
+				chapters: row.chapters,
+			}))
+		);
 
 	rows.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 
@@ -74,7 +100,7 @@ export const load = async ({ url }) => {
 
 		for (const gallery of galleries) {
 			for (const tag of gallery.tags) {
-				uniqueTags.set(tag.id, tag);
+				uniqueTags.set(`${tag.namespace}:${tag.name}`, tag);
 			}
 		}
 

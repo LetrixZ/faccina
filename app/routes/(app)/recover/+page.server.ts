@@ -37,13 +37,6 @@ export const actions: Actions = {
 	default: async (event) => {
 		const form = await superValidate(event, zod(recoverSchema));
 
-		if (!config.site.enableUsers) {
-			return fail(400, {
-				message: 'Users are disabled.',
-				form,
-			});
-		}
-
 		if (!config.mailer) {
 			return fail(400, {
 				message: 'Contact the administrator for a recovery code.',
@@ -58,13 +51,6 @@ export const actions: Actions = {
 		}
 
 		const username = form.data.username;
-
-		event.locals.analytics?.postMessage({
-			action: 'user_account_recovery_start',
-			payload: {
-				username,
-			},
-		});
 
 		recoverAccess(username);
 

@@ -45,7 +45,7 @@
 			</Button>
 		{/if}
 
-		{#if data.site.enableCollections}
+		{#if data.site.enableReadHistory}
 			<Button
 				class="flex w-full items-center justify-between gap-2 text-neutral-200"
 				href="/read-history"

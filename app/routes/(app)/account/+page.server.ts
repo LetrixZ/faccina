@@ -97,11 +97,6 @@ export const actions = {
 			.where('id', '=', user.id)
 			.execute();
 
-		event.locals.analytics?.postMessage({
-			action: 'user_account_update',
-			payload: { userId: user.id },
-		});
-
 		return {
 			form,
 		};

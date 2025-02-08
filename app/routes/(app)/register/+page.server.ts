@@ -93,13 +93,6 @@ export const actions: Actions = {
 			})
 			.execute();
 
-		event.locals.analytics?.postMessage({
-			action: 'user_register',
-			payload: {
-				userId,
-			},
-		});
-
 		const redirectTo = event.url.searchParams.get('to');
 
 		if (redirectTo) {

@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { sql } from 'kysely';
 import type { RequestHandler } from './$types';
-import { libraryItems, search, searchSeries } from '$lib/server/db/queries';
+import { libraryItems, searchArchives, searchSeries } from '$lib/server/db/queries';
 import { handleTags, parseSearchParams } from '$lib/server/utils';
+import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom } from '~shared/db/helpers';
 
@@ -10,6 +11,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams);
 
 	if (searchParams.series) {
+		if (!locals.user && !config.site.guestAccess) {
+			return json({
+				series: [],
+				page: searchParams.page,
+				limit: searchParams.limit,
+				total: 0,
+			});
+		}
+
 		const { ids, total } = await searchSeries(searchParams, {});
 
 		if (!ids.length) {
@@ -56,12 +66,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		const seriesList = [];
 
 		for (const series of rows) {
-			const galleries = await libraryItems(series.chapters.map((chapter) => chapter.id));
+			const galleries = await libraryItems(
+				series.chapters.map((chapter) => chapter.id),
+				{ skipHandlingTags: true }
+			);
 			const uniqueTags = new Map();
 
 			for (const gallery of galleries) {
 				for (const tag of gallery.tags) {
-					uniqueTags.set(tag.id, tag);
+					uniqueTags.set(`${tag.namespace}:${tag.name}`, tag);
 				}
 			}
 
@@ -79,7 +92,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			total,
 		});
 	} else {
-		const { ids, total } = await search(searchParams, { showHidden: !!locals.user?.admin });
+		if (!locals.user && !config.site.guestAccess) {
+			return json({
+				archives: [],
+				page: searchParams.page,
+				limit: searchParams.limit,
+				total: 0,
+			});
+		}
+
+		const { ids, total } = await searchArchives(searchParams, {
+			showHidden: !!locals.user?.admin,
+		});
 
 		if (!ids.length) {
 			return json({
@@ -107,7 +131,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 					eb
 						.selectFrom('archiveTags')
 						.innerJoin('tags', 'id', 'tagId')
-						.select(['id', 'namespace', 'name'])
+						.select(['namespace', 'name'])
 						.whereRef('archives.id', '=', 'archiveId')
 						.orderBy('archiveTags.createdAt asc')
 				).as('tags'),

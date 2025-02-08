@@ -1,12 +1,5 @@
 import { z } from 'zod';
-import {
-	createCollectionSchema,
-	editArchiveSchema,
-	editTagsSchema,
-	type Order,
-	type Sort,
-} from './schemas';
-import { searchSchema } from './server/utils';
+import { type Order, type Sort } from './schemas';
 
 export type TagNamespace =
 	| 'artist'
@@ -19,10 +12,8 @@ export type TagNamespace =
 	| string;
 
 export type Tag = {
-	id: number;
 	namespace: TagNamespace;
 	name: string;
-	displayName: string | null;
 };
 
 export type Image = {
@@ -97,149 +88,6 @@ export type SeriesListItem = {
 	tags: Tag[];
 };
 
-export const messageSchema = z.discriminatedUnion('action', [
-	z.object({
-		action: z.literal('search_main'),
-		payload: z.object({
-			data: searchSchema,
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('search_favorites'),
-		payload: z.object({
-			data: searchSchema,
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_view'),
-		payload: z.object({
-			archiveId: z.number(),
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_download_server'),
-		payload: z.object({
-			archiveId: z.number(),
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_start_read'),
-		payload: z.object({
-			archiveId: z.number(),
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_read_page'),
-		payload: z.object({
-			pageNumber: z.number(),
-			isLastPage: z.boolean(),
-			archiveId: z.number(),
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_finish_read'),
-		payload: z.object({
-			archiveId: z.number(),
-			userId: z.string().optional(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_update_info'),
-		payload: z.object({
-			archiveId: z.number(),
-			data: editArchiveSchema,
-			userId: z.string(),
-		}),
-	}),
-	z.object({
-		action: z.literal('gallery_update_tags'),
-		payload: z.object({
-			archiveId: z.number(),
-			data: editTagsSchema,
-			userId: z.string(),
-		}),
-	}),
-	z.object({
-		action: z.literal('user_login'),
-		payload: z.object({ userId: z.string() }),
-	}),
-	z.object({
-		action: z.literal('user_logout'),
-		payload: z.object({ userId: z.string() }),
-	}),
-	z.object({
-		action: z.literal('user_register'),
-		payload: z.object({ userId: z.string() }),
-	}),
-	z.object({
-		action: z.literal('user_account_recovery_start'),
-		payload: z.object({ username: z.string() }),
-	}),
-	z.object({
-		action: z.literal('user_account_recovery_complete'),
-		payload: z.object({ userId: z.string() }),
-	}),
-	z.object({
-		action: z.literal('user_blacklist_update'),
-		payload: z.object({
-			blacklist: z.array(z.string()),
-			userId: z.string(),
-		}),
-	}),
-	z.object({
-		action: z.literal('user_account_update'),
-		payload: z.object({ userId: z.string() }),
-	}),
-	z.object({
-		action: z.literal('user_account_delete'),
-		payload: z.object({ userId: z.string() }),
-	}),
-	z.object({
-		action: z.literal('collection_create'),
-		payload: z.object({
-			data: createCollectionSchema,
-			userId: z.string(),
-		}),
-	}),
-	z.object({
-		action: z.literal('collection_update'),
-		payload: z.object({
-			data: createCollectionSchema,
-			userId: z.string(),
-		}),
-	}),
-	z.object({
-		action: z.literal('app_navigation'),
-		payload: z
-			.object({
-				from: z
-					.object({
-						params: z.record(z.string(), z.string()).nullable(),
-						route: z.record(z.string().nullable()),
-						url: z.unknown(),
-					})
-					.nullable(),
-				to: z
-					.object({
-						params: z.record(z.string(), z.string()).nullable(),
-						route: z.record(z.string().nullable()),
-						url: z.unknown(),
-					})
-					.nullable(),
-			})
-			.nullable()
-			.catch(null),
-	}),
-]);
-
-export type Message = z.infer<typeof messageSchema>;
-
 export type Collection = {
 	id: number;
 	name: string;
@@ -285,6 +133,7 @@ export type SiteConfig = {
 	defaultSort: Sort;
 	defaultOrder: Order;
 	guestDownloads: boolean;
+	guestAccess: boolean;
 	searchPlaceholder: string;
 	defaultPageLimit: number;
 	pageLimits: number[];
@@ -300,7 +149,7 @@ export const readStatSchema = z.object({
 	pageNumber: z.number(),
 });
 
-export type ReadState = z.infer<typeof readStatSchema>;
+export type ReadStat = z.infer<typeof readStatSchema>;
 
 export type ListPageType = 'main' | 'favorites' | 'collection' | 'series';
 

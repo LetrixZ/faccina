@@ -8,7 +8,9 @@ import config from '~shared/config';
 import db from '~shared/db';
 
 export const load = async ({ locals }) => {
-	if (!locals.user || !config.site.enableCollections) {
+	if (!locals.user) {
+		redirect(301, '/login?to=/collections/new');
+	} else if (!config.site.enableCollections) {
 		redirect(301, '/');
 	}
 
@@ -85,14 +87,6 @@ export const actions = {
 				)
 				.execute();
 		}
-
-		event.locals.analytics?.postMessage({
-			action: 'collection_create',
-			payload: {
-				data: form.data,
-				userId: event.locals.user.id,
-			},
-		});
 
 		redirect(300, `/collections/${slug}`);
 	},

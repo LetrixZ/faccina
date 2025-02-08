@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { rm } from 'node:fs/promises';
 import { error, fail } from '@sveltejs/kit';
 import dayjs from 'dayjs';
 import { superValidate } from 'sveltekit-superforms';
@@ -11,8 +13,13 @@ import { upsertSources, upsertTags } from '~shared/archive';
 import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
+import { leadingZeros } from '~shared/utils';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.user && !config.site.guestAccess) {
+		throw error(404, { message: 'Not found', status: 404 });
+	}
+
 	const id = parseInt(params.id);
 
 	if (isNaN(id)) {
@@ -41,14 +48,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	if (locals.user?.admin) {
 		archive = await getArchive(id);
 	}
-
-	locals.analytics?.postMessage({
-		action: 'gallery_view',
-		payload: {
-			archiveId: gallery.id,
-			userId: locals.user?.id,
-		},
-	});
 
 	let readEntry: Omit<HistoryEntry, 'archive'> | undefined = undefined;
 
@@ -284,7 +283,7 @@ export const actions = {
 
 		const archive = await db
 			.selectFrom('archives')
-			.select('id')
+			.select(['id', 'hash', 'thumbnail', 'pages'])
 			.where('id', '=', parseInt(id))
 			.executeTakeFirst();
 
@@ -322,21 +321,25 @@ export const actions = {
 				updatedAt: now(),
 			})
 			.where('id', '=', archive.id)
-			.execute();
+			.executeTakeFirst();
 
 		await upsertSources(
 			parseInt(id),
 			sources.map((source) => ({ name: source.name, url: source.url ?? undefined }))
 		);
 
-		event.locals.analytics?.postMessage({
-			action: 'gallery_update_info',
-			payload: {
-				archiveId: archive.id,
-				data: form.data,
-				userId: user.id,
-			},
-		});
+		try {
+			const imagePath = join(
+				config.directories.images,
+				archive.hash,
+				'_meta',
+				`${leadingZeros(archive.thumbnail, archive.pages)}.png`
+			);
+
+			await rm(imagePath, { force: true });
+		} catch {
+			/* empty */
+		}
 
 		return {
 			form,
@@ -353,7 +356,7 @@ export const actions = {
 
 		const archive = await db
 			.selectFrom('archives')
-			.select('id')
+			.select(['id', 'hash', 'thumbnail', 'pages'])
 			.where('id', '=', parseInt(id))
 			.executeTakeFirst();
 
@@ -373,14 +376,18 @@ export const actions = {
 
 		await upsertTags(archive.id, tags);
 
-		event.locals.analytics?.postMessage({
-			action: 'gallery_update_tags',
-			payload: {
-				archiveId: archive.id,
-				data: form.data,
-				userId: user.id,
-			},
-		});
+		try {
+			const imagePath = join(
+				config.directories.images,
+				archive.hash,
+				'_meta',
+				`${leadingZeros(archive.thumbnail, archive.pages)}.png`
+			);
+
+			await rm(imagePath, { force: true });
+		} catch {
+			/* empty */
+		}
 
 		return {
 			form,

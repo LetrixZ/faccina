@@ -14,11 +14,11 @@ First you will need to clone the repository or get an [archive](https://github.c
 
 Run this command to clone the repository with `git`:
 
-````bash
+```bash
 git clone https://github.com/LetrixZ/faccina
-````
+```
 
-Now you will need to install Bun if you don't have it already. You can get it from here: https://bun.sh
+Now you will need to install Bun if you don't have it already. You can get it from here: <https://bun.sh>
 
 Once installed, go to the folder where the source code is and install the dependencies using Bun:
 
@@ -82,7 +82,7 @@ The content can also be structured in folders with it's pages inside.
 
 Here's an example of a valid structure that the content directory can have:
 
-```
+```text
 ─ content
   ├── Assisted Love Series
   │   ├── Assisted Love 3.cbz
@@ -118,7 +118,7 @@ These by default includes covers and thumbnails for the pages. Pages can also be
 
 Here is an example of a typical structure for the images directory:
 
-```
+```text
 ─ images
   ├── 05c3b7b1bd4540c3
   │   ├── 2b35e7e8
@@ -302,7 +302,7 @@ weight = 0
 ignore_case = false
 ```
 
-- Name is the name of the tag. You can pass one or an array to affect multiple tags at the same time. 
+- Name is the name of the tag. You can pass one or an array to affect multiple tags at the same time.
 - Namespace is the type/category of a tag, what it makes reference to. By default, Faccina supports 'artist', 'circle', 'magazine', 'event', 'publisher' and 'parody'. Other namespaces can be used but the will be grouped with tags that don't define any namespace: 'tag'.
 - Weight is an integer number that indicates how much importance this definition has.
 - Ignore case will make it so comparisons for the tag name ignore any casing. 'Comedy' would be treated the same as 'comedy' and 'COMEDY', etc.

@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { rename, stat } from 'node:fs/promises';
+import { rename, rm, stat } from 'node:fs/promises';
 import { dirname, extname, join, parse } from 'node:path';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
@@ -12,7 +12,7 @@ import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { exists } from '../shared/server-utils';
+import { exists } from '../shared/server.utils';
 import { leadingZeros } from '../shared/utils';
 import {
 	addEmbeddedDirMetadata,
@@ -22,7 +22,8 @@ import {
 	MetadataSchema,
 } from './metadata';
 import { parseFilename } from './metadata/utils';
-import { directorySize, queryIdRanges, readStream } from './utilts';
+import { directorySize, queryIdRanges } from './utilts';
+import { readStream } from '$lib/server/utils';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -125,14 +126,15 @@ export const indexArchives = async (opts: IndexOptions) => {
 				// Match metadata files
 				const metadataGlob = new Glob(
 					opts.recursive
-						? '**/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}'
-						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}'
+						? '**/{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}'
+						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}'
 				);
 				const metadataMatches: MetadataScan[] = Array.from(
 					metadataGlob.scanSync({
 						cwd: path,
 						absolute: true,
 						followSymlinks: true,
+						dot: true,
 					})
 				)
 					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
@@ -140,10 +142,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 				indexScans = indexScans.concat(metadataMatches);
 
 				const rootMetadataMatches = Array.from(
-					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt}`).scanSync({
+					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}`).scanSync({
 						cwd: path,
 						absolute: true,
 						followSymlinks: true,
+						dot: true,
 					})
 				);
 
@@ -347,6 +350,8 @@ export const indexArchives = async (opts: IndexOptions) => {
 						return null;
 					});
 
+					await zip.close();
+
 					if (embeddedResult) {
 						[archive, [metadataSchema, metadataFormat]] = embeddedResult;
 
@@ -430,6 +435,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						filename,
 						pageNumber: i + 1,
 					}));
+				await zip.close();
 			} else {
 				images = Array.from(imageGlob.scanSync({ cwd: scan.path, followSymlinks: true }))
 					.sort(naturalCompare)
@@ -514,6 +520,21 @@ export const indexArchives = async (opts: IndexOptions) => {
 						.executeTakeFirstOrThrow();
 
 					id = update.id;
+				}
+
+				if (archive.thumbnail !== undefined) {
+					try {
+						const imagePath = join(
+							config.directories.images,
+							hash,
+							'_meta',
+							`${leadingZeros(archive.thumbnail, images.length)}.png`
+						);
+
+						await rm(imagePath, { force: true });
+					} catch {
+						/* empty */
+					}
 				}
 
 				const moveImages = async () => {
@@ -608,11 +629,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 						`${leadingZeros(image.pageNumber, images.length)}${extname(image.filename)}`
 					);
 
-					let data: Buffer;
+					const data = await zip.entryData(image.filename);
+
+					await zip.close();
 
 					if (await exists(imagePath)) {
-						data = await zip.entryData(image.filename);
-
 						const hasher = new Bun.CryptoHasher('sha256');
 						const newImageHash = hasher.update(data).digest('hex').substring(0, 16);
 
@@ -627,8 +648,6 @@ export const indexArchives = async (opts: IndexOptions) => {
 							skipped++;
 							continue;
 						}
-					} else {
-						data = await zip.entryData(image.filename);
 					}
 
 					await Bun.write(imagePath, data);

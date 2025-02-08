@@ -18,7 +18,6 @@ const config = {
 			reusePort: true,
 		}),
 		alias: {
-			$assets: './app/assets',
 			'~shared': './shared/',
 		},
 		csrf: false,

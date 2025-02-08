@@ -1,9 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { libraryItems, search } from '$lib/server/db/queries';
+import { libraryItems, searchArchives } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
 import { randomString } from '$lib/utils';
-import config from '~shared/config';
 import db from '~shared/db';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -21,7 +20,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 
 	const sort = searchParams.sort ?? 'saved_at';
-	const order = searchParams.order ?? config.site.defaultOrder;
+	const order = searchParams.order ?? 'desc';
 
 	const favorites = (
 		await db
@@ -43,17 +42,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		};
 	}
 
-	const { ids, total } = await search(searchParams, {
+	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
 		matchIds: favorites,
-	});
-
-	locals.analytics?.postMessage({
-		action: 'search_favorites',
-		payload: {
-			data: searchParams,
-			userId: locals.user?.id,
-		},
 	});
 
 	return {

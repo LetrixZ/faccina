@@ -1,11 +1,16 @@
 import { json } from '@sveltejs/kit';
 import { sql } from 'kysely';
 import { libraryItems } from '$lib/server/db/queries.js';
+import { handleTags } from '$lib/server/utils.js';
+import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom } from '~shared/db/helpers';
-import { handleTags } from '$lib/server/utils.js';
 
-export const GET = async ({ params }) => {
+export const GET = async ({ params, locals }) => {
+	if (!locals.user && !config.site.guestAccess) {
+		return new Response(null, { status: 404 });
+	}
+
 	const id = parseInt(params.id);
 
 	if (isNaN(id)) {
@@ -53,7 +58,7 @@ export const GET = async ({ params }) => {
 
 	for (const gallery of galleries) {
 		for (const tag of gallery.tags) {
-			uniqueTags.set(tag.id, tag);
+			uniqueTags.set(`${tag.namespace}:${tag.name}`, tag);
 		}
 	}
 
