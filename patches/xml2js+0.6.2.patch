@@ -1,7 +1,7 @@
-diff --git a/lib/parser.js b/lib/parser.js
-index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..98ecae91eb9f8114ca96a9892f34d40edbfcdff2 100644
---- a/lib/parser.js
-+++ b/lib/parser.js
+diff --git a/node_modules/xml2js/lib/parser.js b/node_modules/xml2js/lib/parser.js
+index 7fa2fc5..9f888d5 100644
+--- a/node_modules/xml2js/lib/parser.js
++++ b/node_modules/xml2js/lib/parser.js
 @@ -46,6 +46,7 @@
  
      function Parser(opts) {
@@ -32,7 +32,7 @@ index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..98ecae91eb9f8114ca96a9892f34d40e
      Parser.prototype.parseStringPromise = function(str) {
        return new Promise((function(_this) {
          return function(resolve, reject) {
-@@ -383,6 +399,15 @@
+@@ -383,6 +399,16 @@
      return parser.parseString(str, cb);
    };
  
@@ -45,13 +45,14 @@ index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..98ecae91eb9f8114ca96a9892f34d40e
 +    return parser.parseStringSync(str);
 +  };
 +
++
    exports.parseStringPromise = function(str, a) {
      var options, parser;
      if (typeof a === 'object') {
-diff --git a/lib/xml2js.js b/lib/xml2js.js
-index 24b6e699ddcab4c7e8fdd91bfff43f51d1c559b0..fe856df18198ce8309cd0e535e7cd1839bbbd66f 100644
---- a/lib/xml2js.js
-+++ b/lib/xml2js.js
+diff --git a/node_modules/xml2js/lib/xml2js.js b/node_modules/xml2js/lib/xml2js.js
+index 24b6e69..fe856df 100644
+--- a/node_modules/xml2js/lib/xml2js.js
++++ b/node_modules/xml2js/lib/xml2js.js
 @@ -34,6 +34,8 @@
  
    exports.parseString = parser.parseString;

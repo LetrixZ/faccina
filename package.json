@@ -15,7 +15,8 @@
 		"format": "prettier --write .",
 		"kysely": "bunx --bun kysely",
 		"cli": "NODE_ENV=production bun ./cli/index.ts",
-		"migration-list": "bunx make-vfs --dir ./shared/db/migrations --content-format import-star --outfile shared/db/migration-list.ts && prettier --write shared/db/migration-list.ts"
+		"migration-list": "bunx make-vfs --dir ./shared/db/migrations --content-format import-star --outfile shared/db/migration-list.ts && prettier --write shared/db/migration-list.ts",
+		"postinstall": "patch-package"
 	},
 	"devDependencies": {
 		"@sveltejs/kit": "2.11",
@@ -45,6 +46,7 @@
 		"kysely-ctl": "^0.9.0",
 		"make-vfs": "^1.0.15",
 		"p-limit": "^6.1.0",
+		"patch-package": "^8.0.0",
 		"postcss": "^8.4.49",
 		"prettier": "^3.4.2",
 		"prettier-plugin-organize-imports": "^4.1.0",
@@ -143,12 +145,5 @@
 		"sharp",
 		"svelte-adapter-bun",
 		"svelte-preprocess"
-	],
-	"pnpm": {
-		"patchedDependencies": {
-			"@ethercorps/sveltekit-og": "patches/@ethercorps__sveltekit-og.patch",
-			"xml2js": "patches/xml2js.patch",
-			"@types/xml2js": "patches/@types__xml2js.patch"
-		}
-	}
+	]
 }

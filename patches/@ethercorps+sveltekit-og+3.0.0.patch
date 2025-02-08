@@ -1,0 +1,15 @@
+diff --git a/node_modules/@ethercorps/sveltekit-og/dist/index.d.ts b/node_modules/@ethercorps/sveltekit-og/dist/index.d.ts
+index cfae85a..c17779c 100644
+--- a/node_modules/@ethercorps/sveltekit-og/dist/index.d.ts
++++ b/node_modules/@ethercorps/sveltekit-og/dist/index.d.ts
+@@ -1,2 +1,2 @@
+-export { ImageResponse } from "./api.js";
++export { ImageResponse, og } from "./api.js";
+ export type { ImageResponseOptions } from "./types.js";
+diff --git a/node_modules/@ethercorps/sveltekit-og/dist/index.js b/node_modules/@ethercorps/sveltekit-og/dist/index.js
+index 4602ace..9181a9f 100644
+--- a/node_modules/@ethercorps/sveltekit-og/dist/index.js
++++ b/node_modules/@ethercorps/sveltekit-og/dist/index.js
+@@ -1 +1 @@
+-export { ImageResponse } from "./api.js";
++export { ImageResponse, og } from "./api.js";

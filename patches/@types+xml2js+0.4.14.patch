@@ -1,7 +1,7 @@
-diff --git a/index.d.ts b/index.d.ts
-index 4efb418321d999e66c33020c9915f69f8522ffa9..41a957feb72060b3c219317049a0773aeccb2a75 100644
---- a/index.d.ts
-+++ b/index.d.ts
+diff --git a/node_modules/@types/xml2js/index.d.ts b/node_modules/@types/xml2js/index.d.ts
+index 4efb418..41a957f 100644
+--- a/node_modules/@types/xml2js/index.d.ts
++++ b/node_modules/@types/xml2js/index.d.ts
 @@ -8,6 +8,7 @@ export function parseString(
      options: ParserOptions,
      callback: (err: Error | null, result: any) => void,
