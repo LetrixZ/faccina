@@ -21,7 +21,7 @@ export const reverseLayouts = ['none', 'vertical', 'horizontal', 'both'] as cons
 export type ReverseLayout = (typeof reverseLayouts)[number];
 
 const readerSettingsSchema = z.object({
-	preset: z.string().nullable().catch(null),
+	preset: z.string().nullish().catch(undefined),
 	readingMode: z.enum(readingModes).catch('paged'),
 	verticalGap: z.number().catch(0),
 	scaling: z.enum(scalings).catch('original'),

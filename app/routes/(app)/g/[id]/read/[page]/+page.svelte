@@ -20,6 +20,8 @@
 	let toolbarVisible = true;
 	let isMouted = false;
 
+	$: readerAllowOriginal = data.readerAllowOriginal;
+
 	$: currentPage = $page.state.page || parseInt($page.params.page!);
 	$: currentImage = data.gallery.images[currentPage - 1]!;
 
@@ -228,6 +230,7 @@
 	}}
 	open={settingsOpen}
 	presets={data.presets}
+	{readerAllowOriginal}
 	{scrollContainer}
 />
 

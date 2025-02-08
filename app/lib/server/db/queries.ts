@@ -1,8 +1,6 @@
 import chalk from 'chalk';
 import {
 	type Expression,
-	type ExpressionBuilder,
-	JoinBuilder,
 	type OrderByExpression,
 	type SelectQueryBuilder,
 	sql,

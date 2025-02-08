@@ -21,6 +21,7 @@
 
 	export let open = false;
 	export let onOpenChange: (value: boolean) => void;
+	export let readerAllowOriginal: boolean;
 
 	export let previewLayout = false;
 
@@ -55,7 +56,7 @@
 						class={cn('relative pe-8', preset.hash === selectedPreset && 'ring ring-primary')}
 						on:click={() =>
 							selectedPreset === preset.hash
-								? readerStore.setImagePreset(null)
+								? readerAllowOriginal && readerStore.setImagePreset(null)
 								: readerStore.setImagePreset(preset)}
 						variant="outline"
 					>
