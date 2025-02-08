@@ -1,5 +1,6 @@
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import adapter from 'svelte-adapter-bun';
+import nodeAdapter from '@sveltejs/adapter-node';
+import bunAdapter from 'svelte-adapter-bun';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -14,9 +15,10 @@ const config = {
 				server: 'app/hooks.server.ts',
 			},
 		},
-		adapter: adapter({
-			reusePort: true,
-		}),
+		adapter:
+			typeof Bun !== 'undefined'
+				? bunAdapter({ reusePort: true })
+				: nodeAdapter({ reusePort: true }),
 		alias: {
 			'~shared': './shared/',
 		},

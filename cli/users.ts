@@ -4,6 +4,7 @@ import { generateIdFromEntropySize } from 'lucia';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import { recoveryCode, sendRecoveryEmail } from '../shared/users';
+import { hashPassword } from '~shared/server.utils';
 
 export const generateLoginLink = async (username: string) => {
 	const db = (await import('../shared/db')).default;
@@ -23,7 +24,7 @@ export const generateLoginLink = async (username: string) => {
 				.values({
 					id: generateIdFromEntropySize(10),
 					username,
-					passwordHash: Bun.password.hashSync(randomBytes(24).toString('hex')),
+					passwordHash: await hashPassword(randomBytes(24).toString('hex')),
 				})
 				.returning('id')
 				.executeTakeFirstOrThrow();

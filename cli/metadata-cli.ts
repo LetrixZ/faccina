@@ -15,6 +15,7 @@ import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
 import { queryIdRanges } from './utilts';
 import config from '~shared/config';
 import { getArchive } from '$lib/server/db/queries';
+import { openFile, sleep, writeFile } from '~shared/server.utils';
 
 const henTagUrl = `https://hentag.com/api/v1/search/vault`;
 
@@ -52,7 +53,7 @@ export const scrape = async (
 
 const scrapeHenTag = async ({
 	idRanges,
-	sleep,
+	sleep: sleepTime,
 	interaction,
 	verbose,
 }: {
@@ -152,12 +153,12 @@ const scrapeHenTag = async ({
 				if (verbose) {
 					multibar.log(
 						chalk.gray(
-							`[HenTag] Rate limited - Sleeping for ${chalk.bold(`${sleep}ms before retrying`)}\n`
+							`[HenTag] Rate limited - Sleeping for ${chalk.bold(`${sleepTime}ms before retrying`)}\n`
 						)
 					);
 				}
 
-				await Bun.sleep(sleep);
+				await sleep(sleepTime);
 
 				retries++;
 				res = await fetch(`${henTagUrl}/${type}`, { method: 'POST', body: JSON.stringify(body) });
@@ -327,12 +328,12 @@ const scrapeHenTag = async ({
 
 		if (archives.length > 1 && i !== archives.length - 1 && sleep) {
 			multibar.log(chalk.gray(`--- Sleeping for ${sleep}ms ---\n`));
-			await Bun.sleep(sleep);
+			await sleep(sleepTime);
 		}
 	}
 
 	await db.destroy();
-	await Bun.sleep(250);
+	await sleep(250);
 
 	multibar.stop();
 };
@@ -379,7 +380,7 @@ export const exportMetadata = async (path: string, opts?: ExportOptions) => {
 		files[filepath] = strToU8(JSON.stringify(parsed, null, 2));
 	}
 
-	await Bun.write(path, zipSync(files));
+	await writeFile(path, zipSync(files));
 	const end = performance.now();
 
 	await db.destroy();
@@ -419,7 +420,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 		await db.deleteFrom('archives').execute();
 	}
 
-	const zip = await Bun.file(path).bytes();
+	const zip = await openFile(path);
 	const metadataFiles = unzipSync(zip, { filter: (file) => file.name.endsWith('.faccina.json') });
 
 	console.info(chalk.blue(`Importing ${chalk.bold(Object.keys(metadataFiles).length)} archives`));

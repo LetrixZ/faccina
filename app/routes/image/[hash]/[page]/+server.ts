@@ -11,7 +11,7 @@ import { calculateDimensions, encodeImage } from '$lib/server/image';
 import type { ImageArchive } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { exists } from '~shared/server.utils';
+import { exists, openFile, writeFile } from '~shared/server.utils';
 import { leadingZeros } from '~shared/utils';
 
 const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Array, string]> => {
@@ -25,7 +25,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 	let extension: string;
 
 	try {
-		data = await Bun.file(imagePath).bytes();
+		data = await openFile(imagePath);
 		extension = extname(imagePath);
 	} catch {
 		if (!exists(archive.path)) {
@@ -48,10 +48,10 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 			extension = extname(archive.filename);
 
 			if (config.server.autoUnpack) {
-				Bun.write(imagePath, data);
+				await writeFile(imagePath, data);
 			}
 		} else {
-			data = await Bun.file(join(archive.path, archive.filename)).bytes();
+			data = await openFile(join(archive.path, archive.filename));
 			extension = extname(archive.filename);
 		}
 	}
@@ -116,31 +116,29 @@ const resampledImage = async (
 		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);
 
-	const file = Bun.file(imagePath);
-
-	if (await file.exists()) {
-		return [await file.bytes(), extname(imagePath)];
-	}
-
 	try {
-		const encodedImage = await encodeImage({
-			archive,
-			page: archive.pageNumber,
-			savePath: imagePath,
-			preset,
-			allowAspectRatioSimilar,
-		});
+		return [await openFile(imagePath), extname(imagePath)];
+	} catch {
+		try {
+			const encodedImage = await encodeImage({
+				archive,
+				page: archive.pageNumber,
+				savePath: imagePath,
+				preset,
+				allowAspectRatioSimilar,
+			});
 
-		return [encodedImage, extname(imagePath)];
-	} catch (err) {
-		console.error(
-			chalk.red(
-				`[${new Date().toISOString()}] ${chalk.blue`resampledImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - Failed to encode image`
-			),
-			err
-		);
+			return [encodedImage, extname(imagePath)];
+		} catch (err) {
+			console.error(
+				chalk.red(
+					`[${new Date().toISOString()}] ${chalk.blue`resampledImage`} ${chalk.magenta(`[ID ${archive.id}]`)} Page number ${chalk.bold(archive.pageNumber)} - Failed to encode image`
+				),
+				err
+			);
 
-		throw new Error('Failed to encode image');
+			throw new Error('Failed to encode image');
+		}
 	}
 };
 

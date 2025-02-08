@@ -7,6 +7,7 @@ import config from '~shared/config';
 import db from '~shared/db';
 import { lucia } from '$lib/server/auth';
 import { registerSchema } from '$lib/schemas';
+import { hashPassword } from '~shared/server.utils';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
@@ -44,8 +45,7 @@ export const actions: Actions = {
 		const email = form.data.email;
 
 		const userId = generateIdFromEntropySize(10);
-		const passwordHash = await Bun.password.hash(password, {
-			algorithm: 'argon2id',
+		const passwordHash = await hashPassword(password, {
 			memoryCost: 19456,
 			timeCost: 2,
 		});

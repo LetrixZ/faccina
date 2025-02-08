@@ -180,6 +180,12 @@
 	}
 
 	$: {
+		if (selectedScaling || selectedPreset) {
+			scrollContainer?.scrollTo({ top: 0, behavior: 'instant' });
+		}
+	}
+
+	$: {
 		if (clientWidth !== undefined) {
 			hasWidth = true;
 		}

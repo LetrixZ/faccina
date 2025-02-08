@@ -1,12 +1,8 @@
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
-import { BunSQLiteAdapter } from '@lucia-auth/adapter-sqlite';
-import { Database } from 'bun:sqlite';
+import { BunSQLiteAdapter, LibSQLAdapter } from '@lucia-auth/adapter-sqlite';
 import { Lucia } from 'lucia';
-import type { Pool } from 'pg';
-import { match } from 'ts-pattern';
 import { dev } from '$app/environment';
 import config from '~shared/config';
-import { databaseType } from '~shared/db';
 import connection from '~shared/db/connection';
 
 let _lucia: Lucia<
@@ -19,24 +15,25 @@ let _lucia: Lucia<
 
 export const lucia = (): Lucia => {
 	if (!_lucia) {
-		const adapter = match(databaseType)
-			.with(
-				'postgresql',
-				() =>
-					new NodePostgresAdapter(connection as Pool, {
+		const adapter = (() => {
+			switch (connection.type) {
+				case 'bun:sqlite':
+					return new BunSQLiteAdapter(connection.connection, {
 						user: 'users',
 						session: 'user_sessions',
-					})
-			)
-			.with(
-				'sqlite',
-				() =>
-					new BunSQLiteAdapter(connection as Database, {
+					});
+				case 'libsql':
+					return new LibSQLAdapter(connection.connection, {
 						user: 'users',
 						session: 'user_sessions',
-					})
-			)
-			.exhaustive();
+					});
+				case 'pg':
+					return new NodePostgresAdapter(connection.connection, {
+						user: 'users',
+						session: 'user_sessions',
+					});
+			}
+		})();
 
 		_lucia = new Lucia(adapter, {
 			sessionCookie: {

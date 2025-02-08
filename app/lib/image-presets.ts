@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createHasher } from '~shared/server.utils';
 
 export const presetSchema = z
 	.discriminatedUnion('format', [
@@ -48,7 +49,7 @@ export type Preset = z.infer<typeof presetSchema> & {
 };
 
 export const generatePresetHash = (preset: Omit<Preset, 'name' | 'hash' | 'label'>) => {
-	const hasher = new Bun.CryptoHasher('sha256');
+	const hasher = createHasher();
 
 	for (const [key, value] of Object.entries(preset)) {
 		if (['label'].includes(key)) {
@@ -60,5 +61,5 @@ export const generatePresetHash = (preset: Omit<Preset, 'name' | 'hash' | 'label
 		}
 	}
 
-	return hasher.digest().toString('hex').substring(0, 8);
+	return hasher.digest().toString().substring(0, 8);
 };

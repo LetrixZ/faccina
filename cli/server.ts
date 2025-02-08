@@ -1,3 +1,5 @@
+import { writeFile } from '~shared/server.utils';
+
 export const heapSnapshot = async ({ hostname, port }: { hostname: string; port: string }) => {
 	const res = await fetch(`http://${hostname ?? '127.0.0.1'}:${port || 55884}/heap-snapshot`);
 
@@ -8,7 +10,7 @@ export const heapSnapshot = async ({ hostname, port }: { hostname: string; port:
 	}
 
 	const heap = await res.text();
-	await Bun.write(`heap-snapshot.${new Date().toISOString()}.json`, heap);
+	await writeFile(`heap-snapshot.${new Date().toISOString()}.json`, heap);
 };
 
 export const heapStats = async ({ hostname, port }: { hostname: string; port: string }) => {
@@ -21,7 +23,7 @@ export const heapStats = async ({ hostname, port }: { hostname: string; port: st
 	}
 
 	const heap = await res.text();
-	await Bun.write(`heap-stats.${new Date().toISOString()}.json`, heap);
+	await writeFile(`heap-stats.${new Date().toISOString()}.json`, heap);
 };
 
 export const runGC = async ({

@@ -12,7 +12,7 @@ import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { exists } from '../shared/server.utils';
+import { createHasher, exists, writeFile } from '../shared/server.utils';
 import { leadingZeros } from '../shared/utils';
 import {
 	addEmbeddedDirMetadata,
@@ -248,22 +248,22 @@ export const indexArchives = async (opts: IndexOptions) => {
 				continue;
 			}
 
-			const hasher = new Bun.CryptoHasher('sha256');
+			const hasher = createHasher();
 			hasher.update(buffer);
-			hash = hasher.digest('hex').substring(0, 16);
+			hash = hasher.digest().substring(0, 16);
 		} else {
 			const images = Array.from(
 				imageGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
 			);
 			const readEnd = images.length > 10 ? 1024 : 4096;
-			const hasher = new Bun.CryptoHasher('sha256');
+			const hasher = createHasher();
 
 			for (const image of images) {
 				const buffer = await readStream(createReadStream(image, { start: 0, end: readEnd }));
 				hasher.update(buffer);
 			}
 
-			hash = hasher.digest('hex').substring(0, 16);
+			hash = hasher.digest().substring(0, 16);
 		}
 
 		const existingHash = await db
@@ -634,11 +634,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 					await zip.close();
 
 					if (await exists(imagePath)) {
-						const hasher = new Bun.CryptoHasher('sha256');
-						const newImageHash = hasher.update(data).digest('hex').substring(0, 16);
+						const hasher = createHasher();
+						const newImageHash = hasher.update(data).digest().substring(0, 16);
 
 						const buffer = await readStream(createReadStream(imagePath));
-						const oldImageHash = hasher.update(buffer).digest('hex').substring(0, 16);
+						const oldImageHash = hasher.update(buffer).digest().substring(0, 16);
 
 						if (newImageHash === oldImageHash) {
 							if (opts.verbose) {
@@ -650,7 +650,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						}
 					}
 
-					await Bun.write(imagePath, data);
+					await writeFile(imagePath, data);
 
 					unpacked++;
 				}

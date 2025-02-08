@@ -3,6 +3,7 @@ import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { userDeleteSchema } from '$lib/schemas';
 import db from '~shared/db';
+import { verifyPassword } from '~shared/server.utils';
 
 export const actions = {
 	default: async (event) => {
@@ -23,7 +24,7 @@ export const actions = {
 			.where('id', '=', user.id)
 			.executeTakeFirstOrThrow();
 
-		const validPassword = await Bun.password.verify(currentPassword, passwordHash, 'argon2id');
+		const validPassword = verifyPassword(currentPassword, passwordHash);
 
 		if (!validPassword) {
 			return setError(form, 'currentPassword', 'The current password is invalid.');

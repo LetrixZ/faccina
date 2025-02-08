@@ -7,6 +7,7 @@ import pg, { Client } from 'pg';
 import { z } from 'zod';
 import config from '../shared/config';
 import db from '../shared/db';
+import { writeFile } from '~shared/server.utils';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -139,7 +140,7 @@ export const migrateDatabase = async (dbUrl: string) => {
 
 	if (count !== rows.length) {
 		const timestamp = new Date().getTime();
-		Bun.write(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
+		writeFile(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
 
 		console.info(
 			`Due to duplicated paths, only ${chalk.bold(count)} archives will be migrated.\nA list containing ${chalk.bold(lostArchives.length)} will be saved at ${chalk.bold(`lost_${timestamp}.json`)}.`

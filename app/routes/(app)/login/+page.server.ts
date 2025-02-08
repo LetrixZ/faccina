@@ -6,6 +6,7 @@ import { loginSchema } from '$lib/schemas';
 import { lucia } from '$lib/server/auth';
 import config from '~shared/config';
 import db from '~shared/db';
+import { verifyPassword } from '~shared/server.utils';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
@@ -47,7 +48,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const validPassword = await Bun.password.verify(password, user.passwordHash, 'argon2id');
+		const validPassword = await verifyPassword(password, user.passwordHash);
 
 		if (!validPassword) {
 			return fail(400, {

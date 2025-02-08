@@ -10,6 +10,7 @@ import type { Preset } from '$lib/image-presets';
 import config from '~shared/config';
 import db from '~shared/db';
 import { leadingZeros } from '~shared/utils';
+import { openFile, writeFile } from '~shared/server.utils';
 
 export type ImageEncodingArgs = {
 	archive: ImageArchive;
@@ -96,7 +97,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	);
 
 	try {
-		data = await Bun.file(originalImagePath).bytes();
+		data = await openFile(originalImagePath);
 	} catch {
 		const info = await stat(args.archive.path);
 
@@ -106,10 +107,10 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 			await zip.close();
 
 			if (config.server.autoUnpack) {
-				Bun.write(originalImagePath, data);
+				await writeFile(originalImagePath, data);
 			}
 		} else {
-			data = await Bun.file(join(args.archive.path, args.archive.filename)).bytes();
+			data = await openFile(join(args.archive.path, args.archive.filename));
 		}
 	}
 
@@ -155,7 +156,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	const newImage = await pipeline.toBuffer();
 
 	try {
-		await Bun.write(args.savePath, newImage);
+		await writeFile(args.savePath, newImage);
 	} catch (err) {
 		console.error(
 			chalk.red(

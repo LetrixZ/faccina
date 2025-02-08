@@ -13,6 +13,7 @@ import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
 import { leadingZeros } from '../shared/utils';
 import { queryIdRanges } from './utilts';
+import { exists, openFile, writeFile } from '~shared/server.utils';
 
 type GenerateImagesOptions = {
 	ids?: string;
@@ -70,7 +71,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 			if (image.pageNumber === archive.thumbnail) {
 				const savePath = getSavePath(coverPreset);
 
-				if (!options.force && (await Bun.file(savePath).exists())) {
+				if (!options.force && (await exists(savePath))) {
 					skipped++;
 				} else {
 					images.push({
@@ -85,7 +86,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 
 			const savePath = getSavePath(thumbnailPreset);
 
-			if (!options.force && (await Bun.file(savePath).exists())) {
+			if (!options.force && (await exists(savePath))) {
 				skipped++;
 			} else {
 				images.push({
@@ -114,7 +115,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 			for (const preset of presets.values()) {
 				const savePath = getSavePath(preset);
 
-				if (!options.force && (await Bun.file(savePath).exists())) {
+				if (!options.force && (await exists(savePath))) {
 					skipped++;
 				} else {
 					images.push({
@@ -167,7 +168,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 				if (zip) {
 					return zip.entryData(filename);
 				} else {
-					return Bun.file(join(archive.path, filename)).bytes();
+					return openFile(join(archive.path, filename));
 				}
 			};
 
@@ -215,7 +216,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						.exhaustive();
 
 					const newImage = await pipeline.toBuffer();
-					await Bun.write(image.savePath, newImage);
+					await writeFile(image.savePath, newImage);
 
 					generatedCount++;
 				} catch (error) {

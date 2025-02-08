@@ -6,6 +6,7 @@ import { resetSchema } from '$lib/schemas';
 import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
+import { hashPassword } from '~shared/server.utils';
 
 export const load: PageServerLoad = async ({ url }) => {
 	if (!config.site.enableUsers) {
@@ -50,8 +51,7 @@ export const actions: Actions = {
 
 		await db.updateTable('userCodes').set({ consumedAt: now() }).where('code', '=', code).execute();
 
-		const hash = await Bun.password.hash(password, {
-			algorithm: 'argon2id',
+		const hash = await hashPassword(password, {
 			memoryCost: 19456,
 			timeCost: 2,
 		});

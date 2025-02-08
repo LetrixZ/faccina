@@ -1,4 +1,3 @@
-import { Database } from 'bun:sqlite';
 import {
 	CamelCasePlugin,
 	type Dialect,
@@ -7,20 +6,26 @@ import {
 	PostgresDialect,
 } from 'kysely';
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
-import { Pool } from 'pg';
+import { LibsqlDialect } from 'kysely-libsql';
 import config from '../config';
-import type { DB } from './types';
 import connection from './connection';
 import migrations from './migrations';
+import type { DB } from './types';
 
 export const databaseType = config.database.vendor;
 
 let dialect: Dialect | undefined = undefined;
 
-if (connection instanceof Pool) {
-	dialect = new PostgresDialect({ pool: connection });
-} else if (connection instanceof Database) {
-	dialect = new BunSqliteDialect({ database: connection });
+switch (connection.type) {
+	case 'bun:sqlite':
+		dialect = new BunSqliteDialect({ database: connection.connection });
+		break;
+	case 'libsql':
+		dialect = new LibsqlDialect({ client: connection.connection });
+		break;
+	case 'pg':
+		dialect = new PostgresDialect({ pool: connection.connection });
+		break;
 }
 
 if (!dialect) {

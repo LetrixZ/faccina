@@ -1,5 +1,13 @@
 import chalk from 'chalk';
-import { type Expression, type OrderByExpression, sql, type SqlBool } from 'kysely';
+import {
+	type Expression,
+	type ExpressionBuilder,
+	JoinBuilder,
+	type OrderByExpression,
+	type SelectQueryBuilder,
+	sql,
+	type SqlBool,
+} from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
 import { log, type SearchParams, sortArchiveTags } from '../utils';
@@ -996,4 +1004,260 @@ export const searchSeries = async (
 			: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
 		total: allIds.length,
 	};
+};
+
+export const searchContent = async (params: URLSearchParams) => {
+	const version = params.get('v') ?? '1';
+	const search = params.get('q') ?? '';
+	const matches = search.match(/[-~+]?['"][^"]+['"]|\S+:['"][^'"]+['"]|\S+:\S+|\S+/g);
+
+	const discarded: string[] = [];
+	const fts: { value: string; type: string }[] = [];
+	const tags: { namespace: string; name: string[]; type: string }[] = [];
+
+	if (matches) {
+		for (const match of matches) {
+			const submatches = match.match(/([-~+])?(\S+:)?(['"].*?['"]|\S+)/);
+
+			if (!submatches) {
+				continue;
+			}
+
+			const type = submatches[1];
+			let namespace = submatches[2];
+			namespace = namespace?.substring(0, namespace.length - 1);
+
+			if (namespace && /^[-~+]/.test(namespace)) {
+				discarded.push(match);
+				continue;
+			}
+
+			let name = submatches[3];
+
+			if (!name || /^[-~+]/.test(name)) {
+				discarded.push(match);
+				continue;
+			}
+
+			name = name.replace(/['"]/g, '');
+
+			if (namespace?.length) {
+				tags.push({ namespace, name: name.split('|'), type: type || '+' });
+			} else {
+				fts.push({ value: name, type: type || '+' });
+			}
+		}
+	}
+
+	let query;
+
+	if (config.database.vendor === 'sqlite') {
+		query = db
+			.selectFrom('archives')
+			.innerJoin('archivesFts', 'archivesFts.rowid', 'archives.id')
+			.select(['archives.id', 'archives.title']);
+	} else {
+		query = db.selectFrom('archives').select(['archives.id', 'archives.title']);
+	}
+
+	if (version === '1') {
+		query = query.where((eb) => {
+			const andExpr: Expression<SqlBool>[] = [];
+			const orExpr: Expression<SqlBool>[] = [];
+
+			for (const tag of tags) {
+				if (tag.name.length > 1) {
+					const expr = eb
+						.selectFrom('archiveTags')
+						.innerJoin('tags', 'tags.id', 'archiveTags.tagId')
+						.select('id')
+						.whereRef('archiveTags.archiveId', '=', 'archives.id')
+						.where((eb) => {
+							const expr = eb.or(tag.name.map((name) => eb('tags.name', like(), name)));
+
+							if (tag.namespace !== 'tag') {
+								return expr.and('tags.namespace', '=', tag.namespace);
+							}
+
+							return expr;
+						});
+
+					switch (tag.type) {
+						case '+':
+							andExpr.push(eb.exists(expr));
+							break;
+						case '-':
+							andExpr.push(eb.not(eb.exists(expr)));
+							break;
+						case '~':
+							orExpr.push(eb.exists(expr));
+							break;
+					}
+				} else if (tag.name[0]) {
+					let expr = eb
+						.selectFrom('archiveTags')
+						.innerJoin('tags', 'tags.id', 'archiveTags.tagId')
+						.select('id')
+						.whereRef('archiveTags.archiveId', '=', 'archives.id')
+						.where('tags.name', like(), tag.name[0]);
+
+					if (tag.namespace !== 'tag') {
+						expr = expr.where('tags.namespace', '=', tag.namespace);
+					}
+
+					switch (tag.type) {
+						case '+':
+							andExpr.push(eb.exists(expr));
+							break;
+						case '-':
+							andExpr.push(eb.not(eb.exists(expr)));
+							break;
+						case '~':
+							orExpr.push(eb.exists(expr));
+							break;
+					}
+				}
+			}
+
+			return eb.and([eb.or(orExpr), ...andExpr]);
+		});
+	} else if (version === '2') {
+		const notTags: { name: string; namespace: string }[] = [];
+		const orTags: { name: string; namespace: string }[] = [];
+
+		for (const [i, tag] of tags.entries()) {
+			if (tag.type === '+') {
+				if (tag.name.length > 1) {
+					// @ts-expect-error works
+					query = query.innerJoin(
+						(eb) => {
+							const expr = eb
+								.selectFrom('archiveTags')
+								.select('archiveId')
+								.innerJoin('tags', 'tags.id', 'tagId')
+								.where((eb) => eb.or(tag.name.map((name) => eb('name', like(), name))));
+
+							if (tag.namespace !== 'tag') {
+								return expr.where('namespace', '=', tag.namespace).as(`inc${i}`);
+							}
+
+							return expr.as(`inc${i}`);
+						},
+						(join) => join.onRef(sql.raw(`inc${i}.archive_id`), '=', 'archives.id')
+					);
+				} else if (tag.name[0]) {
+					// @ts-expect-error works
+					query = query.innerJoin(
+						(eb) => {
+							const expr = eb
+								.selectFrom('archiveTags')
+								.select('archiveId')
+								.innerJoin('tags', 'tags.id', 'tagId')
+								.where('name', like(), tag.name[0]!);
+
+							if (tag.namespace !== 'tag') {
+								return expr.where('namespace', '=', tag.namespace).as(`inc${i}`);
+							}
+
+							return expr.as(`inc${i}`);
+						},
+						(join) => join.onRef(sql.raw(`inc${i}.archive_id`), '=', 'archives.id')
+					);
+				}
+			} else if (tag.type === '-') {
+				for (const name of tag.name) {
+					notTags.push({ name, namespace: tag.namespace });
+				}
+			} else if (tag.type === '~') {
+				for (const name of tag.name) {
+					orTags.push({ name, namespace: tag.namespace });
+				}
+			}
+		}
+
+		const getNotExpr = <T>(query: T) =>
+			// @ts-expect-error works
+			query.leftJoin(
+				(eb: ExpressionBuilder<DB, 'archives'>) => {
+					const expr = eb
+						.selectFrom('archiveTags')
+						.select('archiveId')
+						.innerJoin('tags', 'tags.id', 'tagId')
+						.where((eb) =>
+							eb.or(
+								notTags.map(({ name, namespace }) =>
+									namespace === 'tag'
+										? eb('name', like(), name)
+										: eb('name', like(), name).and('namespace', '=', namespace)
+								)
+							)
+						);
+
+					return expr.as(`excl`);
+				},
+				(join: JoinBuilder<DB & { excl: { archiveId: number } }, 'archives' | 'excl'>) =>
+					join.onRef('excl.archiveId', '=', 'archives.id')
+			);
+
+		const getOrExpr = <T>(query: T) =>
+			// @ts-expect-error works
+			query.innerJoin(
+				(eb: ExpressionBuilder<DB, 'archives'>) => {
+					const expr = eb
+						.selectFrom('archiveTags')
+						.select('archiveId')
+						.innerJoin('tags', 'tags.id', 'tagId')
+						.where((eb) =>
+							eb.or(
+								orTags.map(({ name, namespace }) =>
+									namespace === 'tag'
+										? eb('name', like(), name)
+										: eb('name', like(), name).and('namespace', '=', namespace)
+								)
+							)
+						);
+
+					return expr.as(`opt`);
+				},
+				(join: JoinBuilder<DB & { opt: { archiveId: number } }, 'archives' | 'opt'>) =>
+					join.onRef('opt.archiveId', '=', 'archives.id')
+			);
+
+		if (notTags.length && orTags.length) {
+			if (notTags.length > orTags.length) {
+				query = getOrExpr(query);
+				query = getNotExpr(query);
+			} else {
+				query = getNotExpr(query);
+				query = getOrExpr(query);
+			}
+		} else if (notTags.length) {
+			query = getNotExpr(query);
+		} else if (orTags.length) {
+			query = getOrExpr(query);
+		}
+
+		if (notTags.length) {
+			query = query.where('excl.archiveId', 'is', null).groupBy('archives.id');
+		}
+	}
+
+	const compiled = query.compile();
+
+	log(
+		chalk.blue(
+			`• Compiled query: ${chalk.gray(compiled.sql)}\n  Parameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${search.length ? ` - ${search}` : ''}`
+		)
+	);
+
+	const start = performance.now();
+
+	const results = await query.execute();
+
+	log(
+		chalk.blue(`• Query exceuted in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}`)
+	);
+
+	return results;
+	// return libraryItems(results.map((r) => r.id));
 };

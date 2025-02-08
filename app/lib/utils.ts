@@ -16,7 +16,6 @@ import { z } from 'zod';
 import { ImageSize, TouchLayout } from './models';
 import type { Gallery, Image, Tag } from './types';
 import type { ReaderPreset } from '~shared/config/image.schema';
-import { presetSchema } from '$lib/image-presets';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -153,15 +152,6 @@ export const getMetadata = (gallery: Gallery, origin: string) => {
 	};
 };
 
-export const preferencesSchema = z.object({
-	imageSize: z.nativeEnum(ImageSize).catch(ImageSize.Original),
-	touchLayout: z.nativeEnum(TouchLayout).catch(TouchLayout.LeftToRight),
-	minWidth: z.number().optional(),
-	maxWidth: z.number().optional().default(1280),
-	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
-	preset: presetSchema.and(z.object({ name: z.string() })).optional(),
-});
-
 export interface ReaderPreferences {
 	imageSize: ImageSize;
 	touchLayout: TouchLayout;
@@ -188,40 +178,6 @@ export const randomInt = (min: number, max: number) => {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-export const handleFetchError = async <T>(res: Response) => {
-	if (!res.ok) {
-		const { message } = await res.json();
-		error(res.status, { status: res.status, message });
-	} else {
-		return res.json() as T;
-	}
-};
-
-export const processTags = (tags: Tag[]) => {
-	const tagNamespaces = tags.map((tag) => `${tag.namespace}:${tag.name}`);
-
-	const frequencyMap = tagNamespaces.reduce(
-		(acc, item) => {
-			const afterColon = item.split(':').slice(1).join(':');
-			acc[afterColon] = (acc[afterColon] || 0) + 1;
-			return acc;
-		},
-		{} as { [key: string]: number }
-	);
-
-	const result = tagNamespaces.map((item) => {
-		const afterColon = item.split(':').slice(1).join(':');
-
-		if (frequencyMap[afterColon] === 1) {
-			return afterColon;
-		} else {
-			return item;
-		}
-	});
-
-	return tags.map((tag, i) => ({ ...tag, name: result[i] }));
-};
-
 export const shuffle = <T>(array: T[], seed: string) => {
 	let currentIndex = array.length;
 	let temporaryValue: T;
@@ -244,26 +200,6 @@ export const shuffle = <T>(array: T[], seed: string) => {
 	}
 
 	return array;
-};
-
-export const cleanNested = <T>(obj: T) => {
-	const clonned = structuredClone(obj);
-
-	for (const key in clonned) {
-		const value = clonned[key];
-		if (
-			clonned[key] === null ||
-			clonned[key] === undefined ||
-			clonned[key] === '' ||
-			(Array.isArray(value) && !value.length)
-		) {
-			delete clonned[key];
-		} else if (typeof clonned[key] === 'object') {
-			cleanNested(clonned[key]);
-		}
-	}
-
-	return clonned;
 };
 
 export const slugify = (str: string) => {

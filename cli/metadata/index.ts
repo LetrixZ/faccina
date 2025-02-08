@@ -23,6 +23,7 @@ import hentag from './hentag';
 import hentainexus from './hentainexus';
 import koharu from './koharu';
 import koromo from './koromo';
+import { openFile } from '~shared/server.utils';
 
 export enum MetadataFormat {
 	JSON = 'JSON',
@@ -269,7 +270,7 @@ export const addExternalMetadata = async (
 
 	for (const path of paths) {
 		try {
-			const content = await Bun.file(path).text();
+			const content = await openFile(path, 'text');
 			return await handleMetadataFormat(
 				content,
 				basename(path),
@@ -323,7 +324,7 @@ export const addEmbeddedDirMetadata = async (
 	archive = structuredClone(archive);
 
 	if (scan.metadata) {
-		const content = await Bun.file(scan.metadata).text();
+		const content = await openFile(scan.metadata, 'text');
 		return handleMetadataFormat(
 			content,
 			basename(scan.metadata),
@@ -338,7 +339,7 @@ export const addEmbeddedDirMetadata = async (
 
 		for (const path of paths) {
 			try {
-				const content = await Bun.file(path).text();
+				const content = await openFile(path, 'text');
 				return await handleMetadataFormat(
 					content,
 					basename(path),

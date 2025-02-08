@@ -4,6 +4,7 @@ import { zod } from 'sveltekit-superforms/adapters';
 import { userDeleteSchema, userEditSchema } from '$lib/schemas';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
+import { hashPassword, verifyPassword } from '~shared/server.utils';
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {
@@ -73,14 +74,13 @@ export const actions = {
 				.where('id', '=', user.id)
 				.executeTakeFirstOrThrow();
 
-			const validPassword = await Bun.password.verify(currentPassword, passwordHash, 'argon2id');
+			const validPassword = await verifyPassword(currentPassword, passwordHash);
 
 			if (!validPassword) {
 				return setError(form, 'currentPassword', 'The current password is invalid.');
 			}
 
-			const newPasswordHash = await Bun.password.hash(newPassword, {
-				algorithm: 'argon2id',
+			const newPasswordHash = await hashPassword(newPassword, {
 				memoryCost: 19456,
 				timeCost: 2,
 			});

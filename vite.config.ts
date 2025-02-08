@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { readFile } from 'fs/promises';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin } from 'vite';
 
@@ -20,9 +21,8 @@ const hexLoader: Plugin = {
 			return null;
 		}
 
-		const data = await Bun.file(path).bytes();
-		// @ts-expect-error works
-		const hex = data.toHex();
+		const data = await readFile(path);
+		const hex = data.toString('hex');
 
 		return `export default '${hex}';`;
 	},
@@ -32,4 +32,7 @@ export default defineConfig({
 	server: { fs: { allow: ['app', 'shared/utils.ts', 'shared/config'] } },
 	plugins: [hexLoader, sveltekit()],
 	define: { PKG: pkg },
+	build: {
+		rollupOptions: { external: ['@resvg/resvg-js', 'css-tree'], },
+	},
 });

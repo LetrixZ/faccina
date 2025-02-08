@@ -4,8 +4,9 @@ import sharp from 'sharp';
 import interBold from '../../../../../assets/Inter-Bold.ttf?raw-hex';
 import interRegular from '../../../../../assets/Inter-Regular.ttf?raw-hex';
 import GalleryPreview from './gallery-preview.svelte';
-import { leadingZeros } from '~shared/utils';
 import config from '~shared/config';
+import { openFile, writeFile } from '~shared/server.utils';
+import { leadingZeros } from '~shared/utils';
 import { getGallery } from '$lib/server/db/queries';
 
 export const GET = async ({ fetch, locals, params }) => {
@@ -29,14 +30,12 @@ export const GET = async ({ fetch, locals, params }) => {
 	);
 
 	if (config.site.storeOgImages) {
-		const file = Bun.file(imagePath);
-
-		if (await file.exists()) {
-			return new Response(await file.bytes(), {
-				headers: {
-					'content-type': 'image/png',
-				},
+		try {
+			return new Response(await openFile(imagePath), {
+				headers: { 'content-type': 'image/png' },
 			});
+		} catch {
+			// empty
 		}
 	}
 
@@ -77,7 +76,7 @@ export const GET = async ({ fetch, locals, params }) => {
 	);
 
 	if (config.site.storeOgImages) {
-		await Bun.write(imagePath, metaImage);
+		await writeFile(imagePath, metaImage);
 	}
 
 	return new Response(metaImage, {
