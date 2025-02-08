@@ -53,7 +53,7 @@
 				<ChevronLeft />
 			</button>
 			<button
-				class="relative w-24 px-2 text-sm font-medium underline-offset-4 hover:underline md:px-8"
+				class="relative w-36 px-1 text-sm font-medium underline-offset-4 hover:underline md:px-8"
 				on:click={() => pageSelect.showPicker()}
 			>
 				{currentPage} / {pages}
