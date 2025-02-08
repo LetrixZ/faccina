@@ -102,7 +102,7 @@ export const load = async ({ params, locals, cookies }) => {
 	}
 
 	try {
-		const prefs: { preset?: string | null } = JSON.parse(cookies.get('reader') || 'null');
+		const prefs: { preset?: string | null } = JSON.parse(cookies.get('reader') || '{}');
 
 		if (prefs.preset === undefined) {
 			if (config.image.readerDefaultPreset) {
@@ -135,7 +135,11 @@ export const load = async ({ params, locals, cookies }) => {
 			httpOnly: false,
 		});
 	} catch {
-		/* empty */
+		cookies.set('reader', '{}', {
+			path: '/',
+			expires: dayjs().add(1, 'year').toDate(),
+			httpOnly: false,
+		});
 	}
 
 	return {
