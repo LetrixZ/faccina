@@ -469,6 +469,13 @@ export const indexArchives = async (opts: IndexOptions) => {
 					.toSorted((a, b) => {
 						const indexA = archive.imageOrder!.findIndex((image) => image.filename === a.filename);
 						const indexB = archive.imageOrder!.findIndex((image) => image.filename === b.filename);
+
+						if (indexA === -1) {
+							return 1;
+						} else if (indexB === -1) {
+							return -1;
+						}
+
 						return indexA - indexB;
 					})
 					.map((image, i) => ({ filename: image.filename, pageNumber: i + 1 }));
