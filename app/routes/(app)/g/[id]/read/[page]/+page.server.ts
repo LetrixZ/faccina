@@ -5,7 +5,7 @@ import { error, redirect } from '@sveltejs/kit';
 import imageSize from 'image-size';
 import StreamZip from 'node-stream-zip';
 import { z } from 'zod';
-import { readReadableStream, readStream } from '$lib/server/utils';
+import { readStream } from '$lib/server/utils';
 import { getGallery } from '$lib/server/db/queries';
 import config from '~shared/config.js';
 import db from '~shared/db';
@@ -51,7 +51,7 @@ export const load = async ({ params, locals }) => {
 				const zip = new StreamZip.async({ file: archive.path });
 
 				for (const image of filteredImages) {
-					const data = await readReadableStream(await zip.stream(image.filename), 64 * 1024);
+					const data = await zip.entryData(image.filename);
 
 					const { width, height } = imageSize(data);
 
