@@ -1,5 +1,11 @@
 import chalk from 'chalk';
-import { type Expression, type OrderByExpression, sql, type SqlBool } from 'kysely';
+import {
+	type Expression,
+	type OrderByExpression,
+	type SelectQueryBuilder,
+	sql,
+	type SqlBool,
+} from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
 import { log, type SearchParams, sortArchiveTags } from '../utils';

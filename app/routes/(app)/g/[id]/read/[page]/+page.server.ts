@@ -5,12 +5,13 @@ import { error, redirect } from '@sveltejs/kit';
 import imageSize from 'image-size';
 import StreamZip from 'node-stream-zip';
 import { z } from 'zod';
+import dayjs from 'dayjs';
 import { readStream } from '$lib/server/utils';
 import { getGallery } from '$lib/server/db/queries';
 import config from '~shared/config.js';
 import db from '~shared/db';
 
-export const load = async ({ params, locals }) => {
+export const load = async ({ params, locals, cookies }) => {
 	if (!locals.user && !config.site.guestAccess) {
 		throw error(404, { message: 'Not found', status: 404 });
 	}
@@ -100,8 +101,43 @@ export const load = async ({ params, locals }) => {
 		}
 	}
 
+	try {
+		const prefs = JSON.parse(cookies.get('reader') || 'null');
+
+		if (prefs['preset'] === undefined) {
+			if (config.image.readerDefaultPreset) {
+				prefs['preset'] = config.image.readerDefaultPreset.hash;
+			} else if (config.image.readerPresets[0] && !config.image.readerAllowOriginal) {
+				prefs['preset'] = config.image.readerPresets[0].hash;
+			}
+		} else if (prefs['preset'] !== null && !config.image.readerPresets.includes(prefs['preset'])) {
+			if (config.image.readerDefaultPreset) {
+				prefs['preset'] = config.image.readerDefaultPreset.hash;
+			} else if (config.image.readerPresets[0] && !config.image.readerAllowOriginal) {
+				prefs['preset'] = config.image.readerPresets[0].hash;
+			} else {
+				prefs['preset'] = null;
+			}
+		} else if (prefs['preset'] === null && !config.image.readerAllowOriginal) {
+			if (config.image.readerDefaultPreset) {
+				prefs['preset'] = config.image.readerDefaultPreset.hash;
+			} else if (config.image.readerPresets[0]) {
+				prefs['preset'] = config.image.readerPresets[0].hash;
+			}
+		}
+
+		cookies.set('reader', JSON.stringify(prefs), {
+			path: '/',
+			expires: dayjs().add(1, 'year').toDate(),
+			httpOnly: false,
+		});
+	} catch {
+		/* empty */
+	}
+
 	return {
 		gallery,
 		presets: config.image.readerPresets,
+		readerAllowOriginal: config.image.readerAllowOriginal,
 	};
 };
