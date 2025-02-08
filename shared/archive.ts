@@ -1,10 +1,10 @@
 import { rm } from 'node:fs/promises';
-import { Glob } from 'bun';
 import { sql } from 'kysely';
 import db from '../shared/db';
 import config from './config';
 import type { Image, Series, Source, Tag } from './metadata';
 import { leadingZeros } from './utils';
+import { glob } from './server.utils';
 
 /**
  * Upserts archive sources
@@ -80,12 +80,10 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 		const filenames = diff.reduce(
 			(acc, image) => [
 				...acc,
-				...Array.from(
-					new Glob(`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`).scanSync({
-						cwd: config.directories.images,
-						absolute: true,
-					})
-				),
+				...glob(`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`, {
+					cwd: config.directories.images,
+					absolute: true,
+				}),
 			],
 			[] as string[]
 		);

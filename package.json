@@ -87,6 +87,7 @@
 		"fflate": "^0.8.2",
 		"formsnap": "^1.0.1",
 		"fuzzball": "^2.1.3",
+		"glob": "^11.0.1",
 		"image-size": "^1.2.0",
 		"kysely": "^0.27.5",
 		"kysely-bun-sqlite": "^0.3.2",
@@ -145,7 +146,9 @@
 	],
 	"pnpm": {
 		"patchedDependencies": {
-			"@ethercorps/sveltekit-og": "patches/@ethercorps__sveltekit-og.patch"
+			"@ethercorps/sveltekit-og": "patches/@ethercorps__sveltekit-og.patch",
+			"xml2js": "patches/xml2js.patch",
+			"@types/xml2js": "patches/@types__xml2js.patch"
 		}
 	}
 }

@@ -1,0 +1,63 @@
+diff --git a/lib/parser.js b/lib/parser.js
+index 7fa2fc5813450bcc5ff3199e2bfd613409a6087b..98ecae91eb9f8114ca96a9892f34d40edbfcdff2 100644
+--- a/lib/parser.js
++++ b/lib/parser.js
+@@ -46,6 +46,7 @@
+ 
+     function Parser(opts) {
+       this.parseStringPromise = bind(this.parseStringPromise, this);
++      this.parseStringSync = bind(this.parseStringSync, this);
+       this.parseString = bind(this.parseString, this);
+       this.reset = bind(this.reset, this);
+       this.assignOrPush = bind(this.assignOrPush, this);
+@@ -346,6 +347,21 @@
+       }
+     };
+ 
++    Parser.prototype.parseStringSync = function (str) {
++      var cb, err, result;
++      result = void 0;
++      err = void 0;
++      cb = function (_err, _result) {
++        result = _result;
++        return (err = _err);
++      };
++      this.parseString(str, cb);
++      if (err) {
++        throw err;
++      }
++      return result;
++    };
++
+     Parser.prototype.parseStringPromise = function(str) {
+       return new Promise((function(_this) {
+         return function(resolve, reject) {
+@@ -383,6 +399,15 @@
+     return parser.parseString(str, cb);
+   };
+ 
++  exports.parseStringSync = function(str, a) {
++    var options, parser;
++    if (typeof a === 'object') {
++      options = a;
++    }
++    parser = new exports.Parser(options);
++    return parser.parseStringSync(str);
++  };
++
+   exports.parseStringPromise = function(str, a) {
+     var options, parser;
+     if (typeof a === 'object') {
+diff --git a/lib/xml2js.js b/lib/xml2js.js
+index 24b6e699ddcab4c7e8fdd91bfff43f51d1c559b0..fe856df18198ce8309cd0e535e7cd1839bbbd66f 100644
+--- a/lib/xml2js.js
++++ b/lib/xml2js.js
+@@ -34,6 +34,8 @@
+ 
+   exports.parseString = parser.parseString;
+ 
++  exports.parseStringSync = parser.parseStringSync;
++
+   exports.parseStringPromise = parser.parseStringPromise;
+ 
+ }).call(this);

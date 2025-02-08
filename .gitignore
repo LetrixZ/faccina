@@ -187,3 +187,5 @@ config.toml
 docker-compose.yaml
 
 compile
+heap-stats.*.json
+heap-snapshot.*.json

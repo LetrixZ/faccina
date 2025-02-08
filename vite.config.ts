@@ -33,6 +33,6 @@ export default defineConfig({
 	plugins: [hexLoader, sveltekit()],
 	define: { PKG: pkg },
 	build: {
-		rollupOptions: { external: ['@resvg/resvg-js', 'css-tree'], },
+		rollupOptions: { external: ['@resvg/resvg-js', 'css-tree', 'bun:sqlite'] },
 	},
 });

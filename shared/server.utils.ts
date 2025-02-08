@@ -2,6 +2,7 @@ import { createHash, Hash } from 'node:crypto';
 import { access, mkdir, readFile, writeFile as writeFileNode } from 'node:fs/promises';
 import { parse } from 'node:path';
 import type { CryptoHasher } from 'bun';
+import { glob as nodeGlob } from 'glob';
 
 export const exists = async (path: string) => {
 	if (typeof Bun !== 'undefined') {
@@ -100,3 +101,34 @@ class Hasher {
 export const createHasher = () => new Hasher();
 
 export const sleep = (time: number) => new Promise((r) => setTimeout(r, time));
+
+export const glob = (
+	pattern: string,
+	options?: {
+		cwd?: string;
+		absolute?: boolean;
+		dot?: boolean;
+		followSymlinks?: boolean;
+		onlyFiles?: boolean;
+	}
+) => {
+	if (typeof Bun !== 'undefined') {
+		return Array.from(
+			new Bun.Glob(pattern).scanSync({
+				cwd: options?.cwd,
+				absolute: options?.absolute,
+				dot: options?.dot,
+				followSymlinks: options?.followSymlinks,
+				onlyFiles: options?.onlyFiles,
+			})
+		);
+	} else {
+		return nodeGlob.sync(pattern, {
+			cwd: options?.cwd,
+			absolute: options?.absolute,
+			dot: options?.dot,
+			follow: options?.followSymlinks,
+			nodir: options?.onlyFiles !== undefined ? options.onlyFiles : true,
+		});
+	}
+};

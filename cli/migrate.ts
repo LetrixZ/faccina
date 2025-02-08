@@ -1,13 +1,12 @@
 import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import pg, { Client } from 'pg';
 import { z } from 'zod';
 import config from '../shared/config';
 import db from '../shared/db';
-import { writeFile } from '~shared/server.utils';
+import { glob, sleep, writeFile } from '~shared/server.utils';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -63,8 +62,7 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 		await mkdir(join(newDirname, 'cover'), { recursive: true });
 		await mkdir(join(newDirname, 'thumbnail'), { recursive: true });
 
-		const glob = new Glob(`*.${format}`);
-		const files = Array.from(glob.scanSync({ cwd: dirname, absolute: true }));
+		const files = glob(`*.${format}`, { cwd: dirname, absolute: true });
 
 		for (const filepath of files.filter((filename) => filename.includes('.c.'))) {
 			await cp(filepath, join(newDirname, 'cover', basename(filepath.replace('.c', ''))));

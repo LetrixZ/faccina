@@ -1,7 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { rename, rm, stat } from 'node:fs/promises';
 import { dirname, extname, join, parse } from 'node:path';
-import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
@@ -12,7 +11,7 @@ import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { createHasher, exists, writeFile } from '../shared/server.utils';
+import { createHasher, exists, glob, sleep, writeFile } from '../shared/server.utils';
 import { leadingZeros } from '../shared/utils';
 import {
 	addEmbeddedDirMetadata,
@@ -26,8 +25,6 @@ import { directorySize, queryIdRanges } from './utilts';
 import { readStream } from '$lib/server/utils';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
-
-const imageGlob = new Glob('**/*.{jpeg,jpg,png,webp,avif,jxl}');
 
 interface IndexOptions {
 	paths?: string[];
@@ -117,42 +114,50 @@ export const indexArchives = async (opts: IndexOptions) => {
 			}
 
 			if (info.isDirectory()) {
-				const glob = new Glob(opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}');
-				const archiveMatches: ArchiveScan[] = Array.from(
-					glob.scanSync({ cwd: path, absolute: true, followSymlinks: true, onlyFiles: true })
+				const archiveMatches: ArchiveScan[] = glob(
+					opts.recursive ? '**/*.{cbz,zip}' : '*.{cbz,zip}',
+					{
+						cwd: path,
+						absolute: true,
+						followSymlinks: true,
+						onlyFiles: true,
+					}
 				).map((path) => ({ type: 'archive', path }));
 				indexScans = indexScans.concat(archiveMatches);
 
 				// Match metadata files
-				const metadataGlob = new Glob(
+				const metadataMatches: MetadataScan[] = glob(
 					opts.recursive
 						? '**/{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}'
-						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}'
-				);
-				const metadataMatches: MetadataScan[] = Array.from(
-					metadataGlob.scanSync({
+						: '*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}',
+					{
 						cwd: path,
 						absolute: true,
 						followSymlinks: true,
 						dot: true,
-					})
+					}
 				)
-					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+					.filter(
+						(path) => glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', { cwd: dirname(path) }).length
+					)
 					.map((path) => ({ type: 'metadata', path: dirname(path), metadata: path }));
 				indexScans = indexScans.concat(metadataMatches);
 
-				const rootMetadataMatches = Array.from(
-					new Glob(`{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}`).scanSync({
+				const rootMetadataMatches = glob(
+					`{info.{json,yml,yaml},ComicInfo.xml,booru.txt,.faccina}`,
+					{
 						cwd: path,
 						absolute: true,
 						followSymlinks: true,
 						dot: true,
-					})
+					}
 				);
 
 				indexScans = indexScans.concat(
 					rootMetadataMatches
-						.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
+						.filter(
+							(path) => glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', { cwd: dirname(path) }).length
+						)
 						.map(
 							(path) =>
 								({ type: 'metadata', path: dirname(path), metadata: path }) satisfies MetadataScan
@@ -252,9 +257,11 @@ export const indexArchives = async (opts: IndexOptions) => {
 			hasher.update(buffer);
 			hash = hasher.digest().substring(0, 16);
 		} else {
-			const images = Array.from(
-				imageGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
-			);
+			const images = glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', {
+				cwd: scan.path,
+				absolute: true,
+				followSymlinks: true,
+			});
 			const readEnd = images.length > 10 ? 1024 : 4096;
 			const hasher = createHasher();
 
@@ -437,7 +444,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					}));
 				await zip.close();
 			} else {
-				images = Array.from(imageGlob.scanSync({ cwd: scan.path, followSymlinks: true }))
+				images = glob('**/*.{jpeg,jpg,png,webp,avif,jxl}', { cwd: scan.path, followSymlinks: true })
 					.sort(naturalCompare)
 					.map((path, i) => ({
 						filename: path,

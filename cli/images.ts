@@ -1,6 +1,5 @@
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import StreamZip from 'node-stream-zip';
@@ -14,6 +13,7 @@ import { jsonArrayFrom } from '../shared/db/helpers';
 import { leadingZeros } from '../shared/utils';
 import { queryIdRanges } from './utilts';
 import { exists, openFile, writeFile } from '~shared/server.utils';
+import { sleep } from '../shared/server.utils';
 
 type GenerateImagesOptions = {
 	ids?: string;

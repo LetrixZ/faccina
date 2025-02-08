@@ -1,6 +1,5 @@
 import { readdirSync } from 'node:fs';
 import { basename, dirname, extname, join, parse } from 'node:path';
-import { Glob } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { strFromU8 } from 'fflate';
@@ -23,7 +22,7 @@ import hentag from './hentag';
 import hentainexus from './hentainexus';
 import koharu from './koharu';
 import koromo from './koromo';
-import { openFile } from '~shared/server.utils';
+import { glob, openFile } from '~shared/server.utils';
 
 export enum MetadataFormat {
 	JSON = 'JSON',
@@ -332,10 +331,11 @@ export const addEmbeddedDirMetadata = async (
 			archive
 		);
 	} else {
-		const metadataGlob = new Glob('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}');
-		const paths = Array.from(
-			metadataGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
-		);
+		const paths = glob('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}', {
+			cwd: scan.path,
+			absolute: true,
+			followSymlinks: true,
+		});
 
 		for (const path of paths) {
 			try {
