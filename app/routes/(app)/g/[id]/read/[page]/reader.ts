@@ -34,7 +34,7 @@ const readerSettingsSchema = z.object({
 
 export type ReaderSettings = z.infer<typeof readerSettingsSchema>;
 
-export type ScalingOption = { value: Scaling; label: string; style: string; previewStyle: string };
+export type ScalingOption = { value: Scaling; label: string; style: string };
 
 export const readingModeOptions = [
 	{
@@ -48,18 +48,16 @@ export const readingModeOptions = [
 ] satisfies { value: ReadingMode; label: string }[];
 
 export const scalingOptions: ScalingOption[] = [
-	{ value: 'original', label: 'Original', style: '', previewStyle: 'width: 70%;' },
+	{ value: 'original', label: 'Original', style: '' },
 	{
 		value: 'fill-width',
 		label: 'Fill screen width',
 		style: 'width: 100%;',
-		previewStyle: 'width: 100%;',
 	},
 	{
 		value: 'fill-height',
 		label: 'Fill screen height',
 		style: 'height: 100%; width: auto;',
-		previewStyle: 'height: 100%;',
 	},
 ];
 

@@ -232,6 +232,7 @@
 	presets={data.presets}
 	{readerAllowOriginal}
 	{scrollContainer}
+	{selectedPreset}
 />
 
 <noscript>

@@ -102,27 +102,30 @@ export const load = async ({ params, locals, cookies }) => {
 	}
 
 	try {
-		const prefs = JSON.parse(cookies.get('reader') || 'null');
+		const prefs: { preset?: string | null } = JSON.parse(cookies.get('reader') || 'null');
 
-		if (prefs['preset'] === undefined) {
+		if (prefs.preset === undefined) {
 			if (config.image.readerDefaultPreset) {
-				prefs['preset'] = config.image.readerDefaultPreset.hash;
+				prefs.preset = config.image.readerDefaultPreset.hash;
 			} else if (config.image.readerPresets[0] && !config.image.readerAllowOriginal) {
-				prefs['preset'] = config.image.readerPresets[0].hash;
+				prefs.preset = config.image.readerPresets[0].hash;
 			}
-		} else if (prefs['preset'] !== null && !config.image.readerPresets.includes(prefs['preset'])) {
+		} else if (
+			prefs.preset !== null &&
+			!config.image.readerPresets.some((preset) => preset.hash === prefs.preset)
+		) {
 			if (config.image.readerDefaultPreset) {
-				prefs['preset'] = config.image.readerDefaultPreset.hash;
+				prefs.preset = config.image.readerDefaultPreset.hash;
 			} else if (config.image.readerPresets[0] && !config.image.readerAllowOriginal) {
-				prefs['preset'] = config.image.readerPresets[0].hash;
+				prefs.preset = config.image.readerPresets[0].hash;
 			} else {
-				prefs['preset'] = null;
+				prefs.preset = null;
 			}
-		} else if (prefs['preset'] === null && !config.image.readerAllowOriginal) {
+		} else if (prefs.preset === null && !config.image.readerAllowOriginal) {
 			if (config.image.readerDefaultPreset) {
-				prefs['preset'] = config.image.readerDefaultPreset.hash;
+				prefs.preset = config.image.readerDefaultPreset.hash;
 			} else if (config.image.readerPresets[0]) {
-				prefs['preset'] = config.image.readerPresets[0].hash;
+				prefs.preset = config.image.readerPresets[0].hash;
 			}
 		}
 

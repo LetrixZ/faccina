@@ -7,6 +7,7 @@
 		reverseLayoutOptions,
 		scalingOptions,
 		touchLayoutOptions,
+		type Scaling,
 	} from './reader';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -16,7 +17,7 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { type Gallery, type Image as GalleryImage } from '$lib/types';
-	import { cn, formatLabel } from '$lib/utils';
+	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let open = false;
@@ -34,16 +35,51 @@
 
 	export let presets: ReaderPreset[];
 
-	$: selectedPreset = $readerStore?.preset;
+	export let selectedPreset: ReaderPreset | undefined;
+
+	let containers: HTMLButtonElement[] = [];
+
 	$: selectedReadingMode = $readerStore?.readingMode;
 
 	function calculateHeight(width: number) {
 		return Math.round((width * currentImage.height!) / currentImage.width!);
 	}
+
+	function getStyle(
+		image: GalleryImage,
+		preset: ReaderPreset | undefined,
+		scaling: Scaling,
+		container: HTMLButtonElement | undefined
+	) {
+		if (!scaling || !container) {
+			return '';
+		}
+
+		const { width, height } = getImageDimensions(image, preset);
+
+		switch (scaling) {
+			case 'original': {
+				const ratio = width / height;
+
+				if (ratio < 1) {
+					return `width: 70%; margin: 0 auto;`;
+				} else {
+					return `height: ${container.clientHeight}px; width: auto;`;
+				}
+			}
+			case 'fill-width':
+				return '';
+			case 'fill-height':
+				return `height: ${container.clientHeight}px; width: auto;`;
+		}
+	}
 </script>
 
 <Dialog.Root {onOpenChange} {open}>
-	<Dialog.Content class="h-fit max-h-[90dvh] overflow-y-auto md:max-w-2xl">
+	<Dialog.Content
+		class="h-fit max-h-[90dvh] overflow-y-auto bg-background/95 md:max-w-2xl"
+		overlayClass="bg-background/70"
+	>
 		{#if presets.length}
 			<p class="title">Image resampling</p>
 
@@ -53,9 +89,9 @@
 			>
 				{#each presets as preset}
 					<Button
-						class={cn('relative pe-8', preset.hash === selectedPreset && 'ring ring-primary')}
+						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring ring-primary')}
 						on:click={() =>
-							selectedPreset === preset.hash
+							selectedPreset?.hash === preset.hash
 								? readerAllowOriginal && readerStore.setImagePreset(null)
 								: readerStore.setImagePreset(preset)}
 						variant="outline"
@@ -107,20 +143,22 @@
 		<p class="title">Page scaling</p>
 
 		<div class="grid grid-cols-3 gap-4">
-			{#each scalingOptions as option}
+			{#each scalingOptions as option, i}
 				<div class="scaling-preview">
 					<button
+						bind:this={containers[i]}
 						class:selected={$readerStore?.scaling === option.value}
 						on:click={() => {
 							readerStore.setScaling(option.value);
 							scrollContainer?.scrollTo({ top: 0, behavior: 'instant' });
 						}}
 					>
-						<div style={option.previewStyle}>
+						<div>
 							<img
 								alt="{gallery.title} page {currentPage}"
 								height={currentImage.height}
-								src="/image/{gallery.hash}/{currentPage}"
+								src={getImageUrl(currentPage, gallery, selectedPreset)}
+								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								width={currentImage.width}
 							/>
 						</div>
@@ -260,17 +298,26 @@
 		align-self: flex-start;
 		justify-content: center;
 		overflow: hidden;
+		width: 100%;
 	}
 
 	.scaling-preview > button.selected {
 		@apply ring ring-primary;
 	}
 
-	.scaling-preview > button > div {
-		aspect-ratio: 17/24;
-	}
-
 	.scaling-preview img {
 		filter: brightness(0.75);
+	}
+
+	.scaling-preview .original {
+		width: 70%;
+	}
+
+	.scaling-preview .fill-width {
+		width: 100%;
+	}
+
+	.scaling-preview .fill-height {
+		height: 100%;
 	}
 </style>
