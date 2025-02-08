@@ -142,7 +142,7 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
  */
 export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 	metadataTags = metadataTags.map(({ namespace, name }) => ({
-		namespace: namespace.length ? namespace : 'tag',
+		namespace: namespace.length ? namespace.toLowerCase() : 'tag',
 		name,
 	}));
 
@@ -159,7 +159,9 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 		});
 
 		return {
-			namespace: mapping?.namespace?.length ? mapping.namespace : tag.namespace,
+			namespace: mapping?.namespace?.length
+				? mapping.namespace.toLowerCase()
+				: tag.namespace.toLowerCase(),
 			name: mapping?.name ?? tag.name,
 		};
 	});

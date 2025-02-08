@@ -31,11 +31,6 @@ export const actions = {
 
 		await db.deleteFrom('users').where('id', '=', user.id).execute();
 
-		event.locals.analytics?.postMessage({
-			action: 'user_account_delete',
-			payload: { userId: user.id },
-		});
-
 		redirect(301, '/');
 	},
 };

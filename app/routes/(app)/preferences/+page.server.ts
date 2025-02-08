@@ -42,14 +42,6 @@ export const actions: Actions = {
 					}))
 				)
 				.execute();
-
-			locals.analytics?.postMessage({
-				action: 'user_blacklist_update',
-				payload: {
-					blacklist,
-					userId: locals.user.id,
-				},
-			});
 		} else {
 			cookies.set(
 				'blacklist',

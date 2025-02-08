@@ -25,13 +25,6 @@ export const actions: Actions = {
 	default: async (event) => {
 		const form = await superValidate(event, zod(resetSchema));
 
-		if (!config.site.enableUsers) {
-			return fail(400, {
-				message: 'Users are disabled.',
-				form,
-			});
-		}
-
 		if (!form.valid) {
 			return fail(400, {
 				form,
@@ -70,13 +63,6 @@ export const actions: Actions = {
 			})
 			.where('id', '=', user.userId)
 			.execute();
-
-		event.locals.analytics?.postMessage({
-			action: 'user_account_recovery_complete',
-			payload: {
-				userId: user.userId,
-			},
-		});
 
 		return {
 			form,

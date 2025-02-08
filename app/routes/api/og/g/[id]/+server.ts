@@ -1,21 +1,24 @@
 import { join } from 'node:path';
 import { og } from '@ethercorps/sveltekit-og';
-import { error } from '@sveltejs/kit';
 import sharp from 'sharp';
+import interBold from '../../../../../assets/Inter-Bold.ttf?raw-hex';
+import interRegular from '../../../../../assets/Inter-Regular.ttf?raw-hex';
 import GalleryPreview from './gallery-preview.svelte';
-import interBold from '$assets/Inter-Bold.ttf?raw-hex';
-import interRegular from '$assets/Inter-Regular.ttf?raw-hex';
-import { getGallery } from '$lib/server/db/queries';
-import config from '~shared/config';
 import { leadingZeros } from '~shared/utils';
+import config from '~shared/config';
+import { getGallery } from '$lib/server/db/queries';
 
-export const GET = async ({ fetch, params }) => {
+export const GET = async ({ fetch, locals, params }) => {
+	if (!locals.user && !config.site.guestAccess) {
+		return new Response(null, { status: 404 });
+	}
+
 	const { id } = params;
 
 	const gallery = await getGallery(parseInt(id), { showHidden: false });
 
 	if (!gallery) {
-		error(404);
+		return new Response(null, { status: 404 });
 	}
 
 	const imagePath = join(

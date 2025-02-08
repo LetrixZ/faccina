@@ -1,4 +1,5 @@
 <script lang="ts">
+	// @ts-nocheck
 	import { Calendar as CalendarPrimitive } from 'bits-ui';
 	import * as Calendar from './index.js';
 	import { cn } from '$lib/utils.js';

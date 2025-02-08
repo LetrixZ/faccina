@@ -6,6 +6,7 @@ import * as images from './images';
 import * as metadataCli from './metadata-cli';
 import * as migrate from './migrate';
 import * as users from './users';
+import * as server from './server';
 
 const program = new Command();
 
@@ -147,5 +148,33 @@ program
 	.action((site, { ids, sleep, interaction, verbose }) =>
 		metadataCli.scrape(site, { idRanges: ids, sleep: parseInt(sleep), interaction, verbose })
 	);
+
+program
+	.command('server:heap-snapshot')
+	.description('Takes a heap snapshot from the current running server.')
+	.option('--hostname -h <hostname>', 'Indicate internal server hostname')
+	.option('--port -p <port>', 'Indicate internal server port')
+	.action(({ hostname, port }) => {
+		server.heapSnapshot({ hostname, port });
+	});
+
+program
+	.command('server:heap-stats')
+	.description('Get heap stats from the current running server.')
+	.option('--hostname -h <hostname>', 'Indicate internal server hostname')
+	.option('--port -p <port>', 'Indicate internal server port')
+	.action(({ hostname, port }) => {
+		server.heapStats({ hostname, port });
+	});
+
+program
+	.command('server:run-gc')
+	.description("Trigger Bun's garbage collector on the current running server.")
+	.option('--sync', 'Use this to wait for the garbage collector to finish')
+	.option('--hostname -h <hostname>', 'Indicate internal server hostname')
+	.option('--port -p <port>', 'Indicate internal server port')
+	.action(({ sync, hostname, port }) => {
+		server.runGC({ sync, hostname, port });
+	});
 
 export default program;

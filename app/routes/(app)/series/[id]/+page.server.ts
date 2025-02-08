@@ -1,5 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { libraryItems, search } from '$lib/server/db/queries.js';
+import { libraryItems, searchArchives } from '$lib/server/db/queries.js';
 import { parseSearchParams } from '$lib/server/utils.js';
 import { randomString } from '$lib/utils';
 import { jsonArrayFrom } from '~shared/db/helpers.js';
@@ -46,7 +46,7 @@ export const load = async ({ params, url, locals }) => {
 		error(404, { message: 'Series not found' });
 	}
 
-	const { ids, total } = await search(searchParams, {
+	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
 		matchIds: series.chapters.map((archive) => archive.archiveId),
 	});

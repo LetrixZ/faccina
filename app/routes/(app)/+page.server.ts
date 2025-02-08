@@ -1,10 +1,22 @@
 import { redirect } from '@sveltejs/kit';
-import { getUserBlacklist, libraryItems, search } from '$lib/server/db/queries';
+import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
 import { decompressBlacklist, randomString } from '$lib/utils';
+import config from '~shared/config.js';
 
 export const load = async ({ locals, cookies, url }) => {
 	const searchParams = parseSearchParams(url.searchParams);
+
+	if (!locals.user && !config.site.guestAccess) {
+		return {
+			library: {
+				data: [],
+				page: searchParams.page,
+				limit: searchParams.limit,
+				total: 0,
+			},
+		};
+	}
 
 	if (searchParams.sort === 'random' && !searchParams.seed) {
 		url.searchParams.set('seed', randomString());
@@ -19,18 +31,10 @@ export const load = async ({ locals, cookies, url }) => {
 		}
 	})();
 
-	const { ids, total } = await search(searchParams, {
+	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
 		tagBlacklist: blacklist,
 		matchIds: searchParams.ids,
-	});
-
-	locals.analytics?.postMessage({
-		action: 'search_main',
-		payload: {
-			data: searchParams,
-			userId: locals.user?.id,
-		},
 	});
 
 	return {

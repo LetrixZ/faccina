@@ -25,13 +25,6 @@ export const actions: Actions = {
 	default: async (event) => {
 		const form = await superValidate(event, zod(loginSchema));
 
-		if (!config.site.enableUsers) {
-			return fail(400, {
-				message: 'Users are disabled',
-				form,
-			});
-		}
-
 		if (!form.valid) {
 			return fail(400, {
 				form,
@@ -70,13 +63,6 @@ export const actions: Actions = {
 			path: '.',
 			...sessionCookie.attributes,
 			secure: config.site.secureSessionCookie,
-		});
-
-		event.locals.analytics?.postMessage({
-			action: 'user_login',
-			payload: {
-				userId: user.id,
-			},
 		});
 
 		const redirectTo = event.url.searchParams.get('to');

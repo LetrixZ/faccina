@@ -14,6 +14,7 @@ export const load = ({ locals }) => {
 			defaultSort: config.site.defaultSort,
 			defaultOrder: config.site.defaultOrder,
 			guestDownloads: config.site.guestDownloads,
+			guestAccess: config.site.guestAccess,
 			clientSideDownloads: config.site.clientSideDownloads,
 			searchPlaceholder: config.site.searchPlaceholder,
 			pageLimits: config.site.galleryListing.pageLimits,

@@ -1,11 +1,5 @@
 import 'svelte/elements';
 
-import type { Message } from '$lib/types';
-
-export interface AnalyticsWorker extends Worker {
-	postMessage(message: Message): void;
-}
-
 declare global {
 	namespace App {
 		interface Error {
@@ -17,12 +11,12 @@ declare global {
 			page?: number;
 			searchOpen?: boolean;
 			readerPreferencesOpen?: boolean;
+			settingsOpen?: boolean;
 		}
 
 		interface Locals {
 			user: import('lucia').User | null;
 			session: import('lucia').Session | null;
-			analytics?: AnalyticsWorker;
 		}
 	}
 

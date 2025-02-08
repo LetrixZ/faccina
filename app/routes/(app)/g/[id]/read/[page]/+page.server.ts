@@ -1,0 +1,107 @@
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { error, redirect } from '@sveltejs/kit';
+import imageSize from 'image-size';
+import StreamZip from 'node-stream-zip';
+import { z } from 'zod';
+import { readReadableStream, readStream } from '$lib/server/utils';
+import { getGallery } from '$lib/server/db/queries';
+import config from '~shared/config.js';
+import db from '~shared/db';
+
+export const load = async ({ params, locals }) => {
+	if (!locals.user && !config.site.guestAccess) {
+		throw error(404, { message: 'Not found', status: 404 });
+	}
+
+	const { success, data: pageNumber } = z.coerce.number().int().safeParse(params.page);
+
+	if (!success) {
+		redirect(301, `/g/${params.id}/read/1`);
+	}
+
+	const gallery = await getGallery(+params.id, { showHidden: locals.user?.admin });
+
+	if (!gallery) {
+		error(404, { message: 'Not found', status: 404 });
+	}
+
+	if (pageNumber < 1) {
+		redirect(301, `/g/${params.id}/read/1`);
+	} else if (pageNumber > gallery.pages) {
+		redirect(301, `/g/${params.id}/read/${gallery.pages}`);
+	}
+
+	if (gallery.images.length) {
+		const filteredImages = gallery.images.filter(
+			(image) => image.width === null || image.height === null
+		);
+
+		if (filteredImages.length) {
+			const archive = await db
+				.selectFrom('archives')
+				.select('path')
+				.where('id', '=', gallery.id)
+				.executeTakeFirstOrThrow();
+
+			const info = await stat(archive.path);
+
+			if (info.isFile()) {
+				const zip = new StreamZip.async({ file: archive.path });
+
+				for (const image of filteredImages) {
+					const data = await readReadableStream(await zip.stream(image.filename), 64 * 1024);
+
+					const { width, height } = imageSize(data);
+
+					if (width !== undefined && height !== undefined) {
+						image.width = width;
+						image.height = height;
+
+						await db
+							.updateTable('archiveImages')
+							.set({ width, height })
+							.where('archiveId', '=', gallery.id)
+							.where('pageNumber', '=', image.pageNumber)
+							.execute();
+					}
+				}
+
+				await zip.close();
+			} else {
+				for (const image of gallery.images) {
+					if (image.width !== null && image.height !== null) {
+						continue;
+					}
+
+					const stream = createReadStream(join(archive.path, image.filename), {
+						start: 0,
+						end: 128 * 1024,
+					});
+
+					const data = await readStream(stream);
+
+					const { width, height } = imageSize(data);
+
+					if (width !== undefined && height !== undefined) {
+						image.width = width;
+						image.height = height;
+
+						await db
+							.updateTable('archiveImages')
+							.set({ width, height })
+							.where('archiveId', '=', gallery.id)
+							.where('pageNumber', '=', image.pageNumber)
+							.execute();
+					}
+				}
+			}
+		}
+	}
+
+	return {
+		gallery,
+		presets: config.image.readerPresets,
+	};
+};

@@ -1,6 +1,5 @@
 import { stat } from 'fs/promises';
 import { extname, join } from 'node:path';
-import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
@@ -8,12 +7,12 @@ import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
+import { calculateDimensions, encodeImage } from '$lib/server/image';
+import type { ImageArchive } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { exists } from '~shared/server-utils';
+import { exists } from '~shared/server.utils';
 import { leadingZeros } from '~shared/utils';
-import type { ImageArchive } from '$lib/types';
-import { calculateDimensions, encodeImage } from '$lib/server/image';
 
 const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Array, string]> => {
 	const imagePath = join(
@@ -36,10 +35,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 				)
 			);
 
-			error(404, {
-				message: 'Archive file not found',
-				status: 404,
-			});
+			throw new Error('Archive file not found');
 		}
 
 		const info = await stat(archive.path);
@@ -47,6 +43,8 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 		if (info.isFile()) {
 			const zip = new StreamZip.async({ file: archive.path });
 			data = await zip.entryData(archive.filename);
+			await zip.close();
+
 			extension = extname(archive.filename);
 
 			if (config.server.autoUnpack) {
@@ -142,22 +140,20 @@ const resampledImage = async (
 			err
 		);
 
-		error(500, {
-			message: 'Failed to encode image',
-			status: 500,
-		});
+		throw new Error('Failed to encode image');
 	}
 };
 
-export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
+export const GET: RequestHandler = async ({ params, url, locals, setHeaders }) => {
+	if (!locals.user && !config.site.guestAccess) {
+		return new Response(null, { status: 404 });
+	}
+
 	const hash = params.hash;
 	const page = parseInt(params.page);
 
 	if (isNaN(page)) {
-		error(400, {
-			message: `The requested page "${params.page}" is not a number`,
-			status: 400,
-		});
+		return new Response(null, { status: 400 });
 	}
 
 	const archive = await db
@@ -170,10 +166,7 @@ export const GET: RequestHandler = async ({ params, url, setHeaders }) => {
 		.executeTakeFirst();
 
 	if (!archive) {
-		error(404, {
-			message: 'Gallery not found',
-			status: 404,
-		});
+		return new Response(null, { status: 404 });
 	}
 
 	const imageType = url.searchParams.get('type');

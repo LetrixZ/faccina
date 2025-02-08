@@ -21,8 +21,6 @@
 		"types": ["@types/bun"],
 		"rootDirs": ["./", "./.svelte-kit/types"],
 		"paths": {
-			"$assets": ["./app/assets"],
-			"$assets/*": ["./app/assets/*"],
 			"~shared": ["./shared"],
 			"~shared/*": ["./shared/*"],
 			"$lib": ["./app/lib"],
@@ -53,7 +51,8 @@
 		"./tests/**/*.js",
 		"./tests/**/*.ts",
 		"./tests/**/*.svelte",
-		"./scripts/*.ts"
+		"./scripts/*.ts",
+		"./serve.ts"
 	],
 	"exclude": [
 		"./node_modules/**",

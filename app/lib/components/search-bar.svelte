@@ -65,11 +65,10 @@
 				}
 
 				return tags
-					.filter(({ namespace, name, displayName }) => {
+					.filter(({ namespace, name }) => {
 						return (
 							`${namespace}:${name}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
-							displayName?.toLowerCase().includes(value)
+							`${namespace}:"${name}"`.toLowerCase().includes(value)
 						);
 					})
 					.slice(0, 5);

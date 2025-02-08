@@ -54,7 +54,7 @@
 		$query = $page.url.searchParams.get('q') ?? '';
 	}
 
-	$: shouldAutocomplete = $page.route.id === '/(app)/series' ? false : true;
+	$: shouldAutocomplete = true;
 
 	let selectPosition = -1;
 	let highligtedIndex = -1;
@@ -102,13 +102,12 @@
 				const tagMap = new Map();
 
 				$tagList
-					.filter(({ namespace, name, displayName }) => {
+					.filter(({ namespace, name }) => {
 						return (
 							`${namespace}:${name}`.toLowerCase().includes(value) ||
 							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
 							`${namespace}:${name.replaceAll(' ', '_')}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name.replaceAll(' ', '_')}"`.toLowerCase().includes(value) ||
-							displayName?.toLowerCase().includes(value)
+							`${namespace}:"${name.replaceAll(' ', '_')}"`.toLowerCase().includes(value)
 						);
 					})
 					.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));

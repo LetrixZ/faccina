@@ -5,7 +5,9 @@ import config from '~shared/config';
 import db from '~shared/db';
 
 export const load = async ({ locals }) => {
-	if (!locals.user || !config.site.enableCollections) {
+	if (!locals.user) {
+		redirect(301, '/login?to=/collections');
+	} else if (!config.site.enableCollections) {
 		redirect(301, '/');
 	}
 

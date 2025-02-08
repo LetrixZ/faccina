@@ -2,14 +2,14 @@ import chalk from 'chalk';
 import { type Expression, type OrderByExpression, sql, type SqlBool } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
 import { z } from 'zod';
-import { sortArchiveTags, log, type SearchParams } from '../utils';
+import { log, type SearchParams, sortArchiveTags } from '../utils';
 import { type Order, type Sort } from '$lib/schemas';
 import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
 import { shuffle } from '$lib/utils';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, like } from '~shared/db/helpers';
-import type { DB } from '~shared/types';
+import type { DB } from '~shared/db/types';
 
 export type QueryOptions = {
 	showHidden?: boolean;
@@ -17,6 +17,7 @@ export type QueryOptions = {
 	sortingIds?: number[];
 	tagBlacklist?: string[];
 	skipPagination?: boolean;
+	skipHandlingTags?: boolean;
 };
 
 export const getGallery = (
@@ -41,7 +42,7 @@ export const getGallery = (
 				eb
 					.selectFrom('archiveTags')
 					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name', 'displayName'])
+					.select(['namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),
@@ -98,7 +99,7 @@ export const getArchive = (id: number): Promise<Archive | undefined> => {
 				eb
 					.selectFrom('archiveTags')
 					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name', 'displayName'])
+					.select(['namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),
@@ -413,7 +414,7 @@ const parseTitleQuery = (titleMatch: string[]) => {
 	}
 };
 
-export const search = async (
+export const searchArchives = async (
 	params: SearchParams,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
@@ -488,7 +489,7 @@ export const search = async (
 			query = query.where('namespace', '=', namespace);
 		}
 
-		return query.where((eb) => eb('name', like(), name).or('displayName', like(), name)).execute();
+		return query.where((eb) => eb('name', like(), name)).execute();
 	};
 
 	const excludeTags = (
@@ -548,7 +549,7 @@ export const search = async (
 		} else {
 			return db.selectFrom('archives').select(['archives.id']);
 		}
-	})();
+	})() as SelectQueryBuilder<DB, 'archives' | 'archivesFts', { id: number; title: string }>;
 
 	const inclusiveTags = tagMatches.filter((tag) => !tag.or && !tag.negate);
 
@@ -566,7 +567,7 @@ export const search = async (
 							.whereRef('archives.id', '=', 'archiveId')
 							.where((eb) =>
 								tag.namespace === 'tag'
-									? eb('name', like(), tag.name).or('displayName', like(), tag.name)
+									? eb('name', like(), tag.name)
 									: eb('name', like(), tag.name).and('namespace', '=', tag.namespace)
 							)
 					)
@@ -593,9 +594,27 @@ export const search = async (
 		if (config.database.vendor === 'postgresql') {
 			query = query.where('archives.fts', '@@', `${`${and} ${or} ${not}`}`);
 		} else {
-			query = query
-				.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id')
-				.where((eb) => sql`${eb.table('archivesFts')} = ${`${and} ${or} ${not}`}`);
+			query = query.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id');
+
+			if (!and.length && not.length) {
+				if (or.length) {
+					query = query.where((eb) => sql`${eb.table('archivesFts')} = ${or}`);
+				}
+
+				query = query.where((eb) =>
+					eb(
+						'archives.id',
+						'not in',
+						eb
+							.selectFrom('archives')
+							.innerJoin('archivesFts', `archivesFts.rowid`, 'archives.id')
+							.select('id')
+							.where((eb) => sql`${eb.table('archivesFts')} = ${not.replace('NOT', '')}`)
+					)
+				);
+			} else {
+				query = query.where((eb) => sql`${eb.table('archivesFts')} = ${`${and} ${or} ${not}`}`);
+			}
 		}
 	}
 
@@ -793,7 +812,7 @@ export const libraryItems = async (
 				eb
 					.selectFrom('archiveTags')
 					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name', 'displayName'])
+					.select(['namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),
@@ -801,7 +820,9 @@ export const libraryItems = async (
 		.where('archives.id', 'in', ids)
 		.execute()) satisfies GalleryListItem[];
 
-	archives = archives.map((archive) => sortArchiveTags(archive));
+	if (!options?.skipHandlingTags) {
+		archives = archives.map((archive) => sortArchiveTags(archive));
+	}
 
 	if (options?.sortingIds) {
 		const ids = options.sortingIds;
@@ -813,7 +834,7 @@ export const libraryItems = async (
 };
 
 export const tagList = (): Promise<Tag[]> =>
-	db.selectFrom('tags').select(['id', 'namespace', 'name', 'displayName']).execute();
+	db.selectFrom('tags').select(['namespace', 'name']).execute();
 
 export const getUserBlacklist = async (userId: string) => {
 	const row = await db
@@ -882,7 +903,7 @@ export const searchSeries = async (
 	let ids: number[] = [];
 
 	if (params.query.length) {
-		const archives = await search(params, {
+		const archives = await searchArchives(params, {
 			...options,
 			skipPagination: true,
 			showHidden: true,

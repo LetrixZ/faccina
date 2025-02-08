@@ -9,7 +9,7 @@ import {
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
 import { Pool } from 'pg';
 import config from '../config';
-import type { DB } from '../types';
+import type { DB } from './types';
 import connection from './connection';
 import migrations from './migrations';
 

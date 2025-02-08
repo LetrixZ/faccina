@@ -101,7 +101,7 @@ const scrapeHenTag = async ({
 				eb
 					.selectFrom('archiveTags')
 					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name', 'displayName'])
+					.select(['id', 'namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
 			).as('tags'),
@@ -407,7 +407,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 	}
 
 	if (interrupt) {
-		console.log('Press "Enter" to continue');
+		console.info('Press "Enter" to continue');
 
 		for await (const _ of console) {
 			break;

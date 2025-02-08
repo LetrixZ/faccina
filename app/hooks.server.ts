@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit';
+import { type Handle } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { lucia } from '$lib/server/auth';
 import { log } from '$lib/server/utils';

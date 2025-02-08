@@ -33,9 +33,9 @@
 
 	$: label = (() => {
 		if (namespace) {
-			return `${namespace}:${tag.displayName ?? tag.name}`;
+			return `${namespace}:${tag.name}`;
 		} else {
-			return tag.displayName ?? tag.name;
+			return tag.name;
 		}
 	})();
 
