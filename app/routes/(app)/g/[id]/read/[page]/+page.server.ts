@@ -133,12 +133,15 @@ export const load = async ({ params, locals, cookies }) => {
 			path: '/',
 			expires: dayjs().add(1, 'year').toDate(),
 			httpOnly: false,
+			secure: false,
 		});
-	} catch {
+	} catch (error) {
+		console.error(error);
 		cookies.set('reader', '{}', {
 			path: '/',
 			expires: dayjs().add(1, 'year').toDate(),
 			httpOnly: false,
+			secure: false,
 		});
 	}
 
