@@ -147,7 +147,5 @@ export const load = async ({ params, locals, cookies }) => {
 
 	return {
 		gallery,
-		presets: config.image.readerPresets,
-		readerAllowOriginal: config.image.readerAllowOriginal,
 	};
 };
