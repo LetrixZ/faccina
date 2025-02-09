@@ -69,9 +69,14 @@ export const reverseLayoutOptions = [
 ] satisfies { value: ReverseLayout; label: string }[];
 
 function createReaderStore() {
+	let initialized = false;
 	const store = writable<ReaderSettings | undefined>();
 
-	function init() {
+	function init(defaultPreset: ReaderPreset | null | undefined) {
+		if (initialized) {
+			return;
+		}
+
 		let settings: ReaderSettings | undefined = undefined;
 
 		if (browser) {
@@ -83,6 +88,8 @@ function createReaderStore() {
 				} catch {
 					/* empty */
 				}
+			} else {
+				settings = readerSettingsSchema.parse({ preset: defaultPreset?.hash });
 			}
 
 			if (!settings) {
@@ -91,6 +98,7 @@ function createReaderStore() {
 		}
 
 		store.set(settings);
+		initialized = true;
 	}
 
 	function updateCookie(settings: ReaderSettings) {
@@ -206,10 +214,9 @@ function createReaderStore() {
 		});
 	}
 
-	init();
-
 	return {
 		subscribe: store.subscribe,
+		init,
 		setImagePreset,
 		setReadingMode,
 		setVerticalGap,
