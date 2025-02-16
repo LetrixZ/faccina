@@ -266,7 +266,11 @@ func getConfig() Config {
 		checkErr(err)
 		config.Database.Config = postgresConfig
 	default:
-		panic(fmt.Errorf("Unknown database vendor '%s'", config.Database.Vendor))
+		panic(fmt.Errorf("unknown database vendor '%s'", config.Database.Vendor))
+	}
+
+	if config.Image.Preset == nil {
+		config.Image.Preset = make(map[string]Preset)
 	}
 
 	if _, exists := config.Image.Preset["cover"]; !exists {
