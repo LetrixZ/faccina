@@ -16,6 +16,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { siteConfig } from '$lib/stores';
 	import { type Gallery, type Image as GalleryImage } from '$lib/types';
 	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
 	import type { ReaderPreset } from '~shared/config/image.schema';
@@ -157,7 +158,7 @@
 							<img
 								alt="{gallery.title} page {currentPage}"
 								height={currentImage.height}
-								src={getImageUrl(currentPage, gallery, selectedPreset)}
+								src={getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer)}
 								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								width={currentImage.width}
 							/>

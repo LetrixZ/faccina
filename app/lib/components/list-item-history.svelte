@@ -11,6 +11,7 @@
 	import Button from './ui/button/button.svelte';
 	import { cn, relativeDate } from '$lib/utils';
 	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
 
 	export let entry: HistoryEntry;
 	export let enableBookmark = false;
@@ -75,7 +76,7 @@
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
 

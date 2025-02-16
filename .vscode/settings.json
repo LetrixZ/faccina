@@ -4,5 +4,8 @@
 		"source.fixAll.eslint": "always"
 	},
 	"prettier.prettierPath": "./node_modules/prettier",
-	"eslint.validate": ["javascript", "svelte"]
+	"eslint.validate": ["javascript", "svelte"],
+	"[go]": { "editor.codeActionsOnSave": {
+			"source.organizeImports": "never"
+		} }
 }

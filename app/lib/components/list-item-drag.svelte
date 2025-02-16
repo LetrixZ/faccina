@@ -9,6 +9,7 @@
 	import Chip from './chip.svelte';
 	import Button from './ui/button/button.svelte';
 	import { cn } from '$lib/utils';
+	import { siteConfig } from '$lib/stores';
 	import { page } from '$app/stores';
 
 	export let gallery: GalleryListItem;
@@ -72,7 +73,7 @@
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
 

@@ -47,7 +47,9 @@
 
 	$: searchOpen = !!$page.state.searchOpen;
 	$: mainGallery = selected[0];
-	$: cover = mainGallery ? `/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover` : null;
+	$: cover = mainGallery
+		? `${$siteConfig.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
+		: null;
 
 	$: {
 		$formData.chapters = selected.map((selected) => selected.id);

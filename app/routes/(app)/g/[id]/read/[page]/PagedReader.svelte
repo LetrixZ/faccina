@@ -4,6 +4,7 @@
 	import ChapterEndToast from './ChapterEndToast.svelte';
 	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
 	import TouchNavigation from './TouchNavigation.svelte';
+	import { siteConfig } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { Gallery, Image } from '$lib/types';
@@ -43,7 +44,7 @@
 		? Math.round((selectedPreset?.width * currentImage.height!) / currentImage.width!)
 		: currentImage.height;
 
-	$: imageUrl = getImageUrl(currentPage, gallery, selectedPreset);
+	$: imageUrl = getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer);
 
 	let scrollContainer: HTMLDivElement;
 	let navContainer: HTMLDivElement;
@@ -123,7 +124,7 @@
 			const imageEl = new Image(width, height);
 			imageEl.onload = () => (image.status = 'loaded');
 			imageEl.onerror = () => (image.status = 'loaded');
-			imageEl.src = getImageUrl(image.pageNumber, gallery, preset);
+			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, $siteConfig.imageServer);
 		}
 	}
 

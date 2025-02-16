@@ -2,6 +2,7 @@
 	import type { Gallery } from '../types';
 	import { Button } from './ui/button';
 	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
 	import { cn, isSpread } from '$lib/utils';
 
 	export let archive: Gallery;
@@ -32,7 +33,7 @@
 						)}
 						height={455}
 						loading="eager"
-						src={`/image/${archive.hash}/${image.pageNumber}?type=thumb`}
+						src={`${$siteConfig.imageServer}/image/${archive.hash}/${image.pageNumber}?type=thumb`}
 						width={320}
 					/>
 					{#if !wideImages && isSpread(image)}

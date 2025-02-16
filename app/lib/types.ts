@@ -138,6 +138,7 @@ export type SiteConfig = {
 	defaultPageLimit: number;
 	pageLimits: number[];
 	clientSideDownloads: boolean;
+	imageServer: string;
 	admin: {
 		deleteRequireConfirmation: boolean;
 	};

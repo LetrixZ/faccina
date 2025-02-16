@@ -19,6 +19,7 @@ export const load = ({ locals }) => {
 			searchPlaceholder: config.site.searchPlaceholder,
 			pageLimits: config.site.galleryListing.pageLimits,
 			defaultPageLimit: config.site.galleryListing.defaultPageLimit,
+			imageServer: config.site.imageServer,
 			admin: {
 				deleteRequireConfirmation: config.site.admin.deleteRequireConfirmation,
 			},

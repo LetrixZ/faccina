@@ -18,6 +18,7 @@
 	import { Textarea } from './ui/textarea';
 	import { Input } from '$lib/components/ui/input';
 	import * as Form from '$lib/components/ui/form';
+	import { siteConfig } from '$lib/stores';
 
 	export let data: SuperValidated<Infer<EditArchiveSchema>>;
 	export let archive: Archive;
@@ -63,7 +64,7 @@
 				class="aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
 				height={910}
 				loading="eager"
-				src={`/image/${archive.hash}/${thumbnail}?type=thumb`}
+				src={`${$siteConfig.imageServer}/image/${archive.hash}/${thumbnail}?type=thumb`}
 				width={640}
 			/>
 

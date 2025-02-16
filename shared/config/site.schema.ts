@@ -70,6 +70,7 @@ const schema = z.object({
 	search_placeholder: z.string().default(''),
 	secure_session_cookie: z.boolean().default(false),
 	store_og_images: z.boolean().default(false),
+	image_server: z.string().default(''),
 	admin: z
 		.object({
 			delete_require_confirmation: z.boolean().default(true),

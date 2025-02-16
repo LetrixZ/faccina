@@ -6,8 +6,9 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { siteConfig } from '$lib/stores';
 	import type { Gallery, Image } from '$lib/types';
-	import { cn, getImageDimensions } from '$lib/utils';
+	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let gallery: Gallery;
@@ -55,12 +56,6 @@
 		}
 
 		setTimeout(() => (blockScrollingNavigation = false));
-	}
-
-	function getImageUrl(page: number, gallery: Gallery, selectedPreset: ReaderPreset | undefined) {
-		return selectedPreset
-			? `/image/${gallery.hash}/${page}?type=${selectedPreset.hash}`
-			: `/image/${gallery.hash}/${page}`;
 	}
 
 	function getStyle(
@@ -229,7 +224,7 @@
 						selectedScaling === 'fill-height' && 'h-full max-h-dvh'
 					)}
 					in:fade={{ duration: 100 }}
-					src={getImageUrl(image.pageNumber, gallery, selectedPreset)}
+					src={getImageUrl(image.pageNumber, gallery, selectedPreset, $siteConfig.imageServer)}
 					style={getImageStyle(image, selectedPreset, selectedScaling, minWidth)}
 				/>
 			{/if}

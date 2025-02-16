@@ -231,7 +231,7 @@
 					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
 					height={910}
 					loading="eager"
-					src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+					src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 					width={640}
 				/>
 			</a>

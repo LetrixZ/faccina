@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import pixelWidth from 'string-pixel-width';
 	import type { SeriesListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
+	import { siteConfig } from '$lib/stores';
 
 	export let series: SeriesListItem;
 
@@ -49,7 +49,7 @@
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src="/image/{series.hash}/{series.thumbnail}?type=cover"
+				src={`${$siteConfig.imageServer}/image/${series.hash}/${series.thumbnail}?type=cover`}
 				width={640}
 			/>
 

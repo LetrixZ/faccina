@@ -362,9 +362,10 @@ export function getImageDimensions(image: Image, preset: ReaderPreset | undefine
 export function getImageUrl(
 	page: number,
 	gallery: Gallery,
-	selectedPreset: ReaderPreset | undefined
+	selectedPreset: ReaderPreset | undefined,
+	imageServer: string
 ) {
 	return selectedPreset
-		? `/image/${gallery.hash}/${page}?type=${selectedPreset.hash}`
-		: `/image/${gallery.hash}/${page}`;
+		? `${imageServer}/image/${gallery.hash}/${page}?type=${selectedPreset.hash}`
+		: `${imageServer}/image/${gallery.hash}/${page}`;
 }

@@ -8,7 +8,7 @@
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
 	import { cn } from '$lib/utils';
-	import { userCollections } from '$lib/stores';
+	import { siteConfig, userCollections } from '$lib/stores';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
 	import { page } from '$app/stores';
@@ -135,7 +135,7 @@
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
 

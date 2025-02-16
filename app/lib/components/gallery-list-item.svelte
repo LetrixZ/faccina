@@ -6,6 +6,7 @@
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
 	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
 
 	export let gallery: GalleryListItem;
 	export let onSelect: (gallery: GalleryListItem) => void;
@@ -53,7 +54,7 @@
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
 

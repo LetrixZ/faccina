@@ -3,6 +3,7 @@ import config from '~shared/config';
 
 export const GET = () => {
 	return json({
+		imageServer: config.site.imageServer,
 		reader: {
 			presets: config.image.readerPresets.map((preset) => ({
 				name: preset.name,
