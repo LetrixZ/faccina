@@ -8,7 +8,7 @@ import { match } from 'ts-pattern';
 import { z } from 'zod';
 import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import db from '../shared/db';
-import { jsonArrayFrom, now } from '../shared/db/helpers';
+import { jsonArrayFrom, like, now } from '../shared/db/helpers';
 import { generateFilename } from '../shared/utils';
 import { metadataSchema } from './metadata/faccina';
 import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
@@ -34,10 +34,11 @@ export const scrape = async (
 	site: string,
 	{
 		idRanges,
+		paths,
 		sleep,
 		interaction,
 		verbose,
-	}: { idRanges?: string; sleep: number; interaction: boolean; verbose: boolean }
+	}: { idRanges?: string; paths: string[]; sleep: number; interaction: boolean; verbose: boolean }
 ) => {
 	if (isNaN(sleep)) {
 		sleep = 5000;
@@ -46,17 +47,19 @@ export const scrape = async (
 	const parsedSite = z.enum(['hentag']).parse(site);
 
 	match(parsedSite)
-		.with('hentag', () => scrapeHenTag({ idRanges, sleep, interaction, verbose }))
+		.with('hentag', () => scrapeHenTag({ idRanges, paths, sleep, interaction, verbose }))
 		.exhaustive();
 };
 
 const scrapeHenTag = async ({
 	idRanges,
+	paths,
 	sleep,
 	interaction,
 	verbose,
 }: {
 	idRanges?: string;
+	paths: string[];
 	sleep: number;
 	interaction: boolean;
 	verbose: boolean;
@@ -92,29 +95,32 @@ const scrapeHenTag = async ({
 		? queryIdRanges(db.selectFrom('archives'), idRanges)
 		: db.selectFrom('archives');
 
-	const archives = await query
-		.select((eb) => [
-			'id',
-			'title',
-			'protected',
-			jsonArrayFrom(
-				eb
-					.selectFrom('archiveTags')
-					.innerJoin('tags', 'id', 'tagId')
-					.select(['id', 'namespace', 'name'])
-					.whereRef('archives.id', '=', 'archiveId')
-					.orderBy('archiveTags.createdAt asc')
-			).as('tags'),
-			jsonArrayFrom(
-				eb
-					.selectFrom('archiveSources')
-					.select(['name', 'url'])
-					.whereRef('archives.id', '=', 'archiveId')
-					.orderBy('archiveSources.createdAt asc')
-			).as('sources'),
-		])
-		.orderBy('id', 'asc')
-		.execute();
+	let newQuery = query.select((eb) => [
+		'id',
+		'title',
+		'protected',
+		jsonArrayFrom(
+			eb
+				.selectFrom('archiveTags')
+				.innerJoin('tags', 'id', 'tagId')
+				.select(['id', 'namespace', 'name'])
+				.whereRef('archives.id', '=', 'archiveId')
+				.orderBy('archiveTags.createdAt asc')
+		).as('tags'),
+		jsonArrayFrom(
+			eb
+				.selectFrom('archiveSources')
+				.select(['name', 'url'])
+				.whereRef('archives.id', '=', 'archiveId')
+				.orderBy('archiveSources.createdAt asc')
+		).as('sources'),
+	]);
+
+	if (paths.length) {
+		newQuery = newQuery.where((eb) => eb.or(paths.map((path) => eb('path', like(), `${path}%`))));
+	}
+
+	const archives = await newQuery.orderBy('id', 'asc').execute();
 
 	console.info(`[HenTag] Scraping ${chalk.bold(archives.length)} archives`);
 

@@ -132,9 +132,8 @@ program
 	.command('metadata:scrape')
 	.description('Scrape metadata from specified site.')
 	.addArgument(new Argument('<site>', 'Site to scrape metadata from.').choices(['hentag']))
-	.addOption(
-		new Option('--ids <ID ranges>', 'Re-index given archive IDs.').conflicts(['paths', 'fromPath'])
-	)
+	.addOption(new Option('--ids <ID ranges>', 'Re-index given archive IDs.'))
+	.addOption(new Option('--paths <paths...>', 'List of paths to limit search to.'))
 	.option(
 		'--sleep <time>',
 		'Indicate how much time in milliseconds to wait between site requests.',
@@ -145,8 +144,8 @@ program
 		'Skip any prompts. If there are multiple results, the most similar one will be chosen.'
 	)
 	.option('-v --verbose', 'Print more logs.')
-	.action((site, { ids, sleep, interaction, verbose }) =>
-		metadataCli.scrape(site, { idRanges: ids, sleep: parseInt(sleep), interaction, verbose })
+	.action((site, { ids, sleep, interaction, verbose, paths }) =>
+		metadataCli.scrape(site, { idRanges: ids, paths, sleep: parseInt(sleep), interaction, verbose })
 	);
 
 program
