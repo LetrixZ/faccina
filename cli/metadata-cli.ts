@@ -38,7 +38,7 @@ export const scrape = async (
 		sleep,
 		interaction,
 		verbose,
-	}: { idRanges?: string; paths: string[]; sleep: number; interaction: boolean; verbose: boolean }
+	}: { idRanges?: string; paths?: string[]; sleep: number; interaction: boolean; verbose: boolean }
 ) => {
 	if (isNaN(sleep)) {
 		sleep = 5000;
@@ -59,7 +59,7 @@ const scrapeHenTag = async ({
 	verbose,
 }: {
 	idRanges?: string;
-	paths: string[];
+	paths?: string[];
 	sleep: number;
 	interaction: boolean;
 	verbose: boolean;
@@ -116,7 +116,7 @@ const scrapeHenTag = async ({
 		).as('sources'),
 	]);
 
-	if (paths.length) {
+	if (paths?.length) {
 		newQuery = newQuery.where((eb) => eb.or(paths.map((path) => eb('path', like(), `${path}%`))));
 	}
 
