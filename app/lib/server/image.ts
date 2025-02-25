@@ -155,7 +155,9 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	const newImage = await pipeline.toBuffer();
 
 	try {
-		await Bun.write(args.savePath, newImage);
+		if (config.image.storeResampledImages) {
+			await Bun.write(args.savePath, newImage);
+		}
 	} catch (err) {
 		console.error(
 			chalk.red(

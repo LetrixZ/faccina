@@ -31,13 +31,6 @@ func addFieldIfNotNil(fields *[]string, k string, value interface{}) {
 	}
 }
 
-func fileNameWithoutExtension(fileName string) string {
-	if pos := strings.LastIndexByte(fileName, '.'); pos != -1 {
-		return fileName[:pos]
-	}
-	return fileName
-}
-
 func checkErr(e error) {
 	if e != nil {
 		panic(e)
@@ -62,13 +55,13 @@ func saveFile(path string, contents []byte) error {
 	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 
 	if err != nil {
-		return fmt.Errorf("Failed to create directory: %s", err)
+		return fmt.Errorf("failed to create directory: %s", err)
 	}
 
 	err = os.WriteFile(path, contents, 0644)
 
 	if err != nil {
-		return fmt.Errorf("Failed to write file: %s", err)
+		return fmt.Errorf("failed to write file: %s", err)
 	}
 
 	return nil

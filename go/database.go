@@ -16,6 +16,6 @@ func getDB(config *Config) bob.DB {
 	case PostgreSQL:
 		panic("PostgreSQL database is not yet supported")
 	default:
-		panic(fmt.Errorf("Unknown database vendor '%s'", config.Database.Vendor))
+		panic(fmt.Errorf("unknown database vendor '%s'", config.Database.Vendor))
 	}
 }

@@ -124,7 +124,7 @@ func encodeImage(img *vips.ImageRef, p *Preset) ([]byte, error) {
 		newImg, _, err := img.ExportAvif(ep)
 		return newImg, err
 	default:
-		return nil, fmt.Errorf("Invalid preset format %s", p.Format)
+		return nil, fmt.Errorf("invalid preset format %s", p.Format)
 	}
 }
 
@@ -313,7 +313,9 @@ func ImageHandler(state *State) func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", mtype.String())
 				w.Write(newImg)
 
-				saveFile(imagePath, newImg)
+				if state.config.Image.StoreResampledImages {
+					saveFile(imagePath, newImg)
+				}
 
 				return
 			} else {
@@ -348,7 +350,9 @@ func ImageHandler(state *State) func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", mtype.String())
 				w.Write(newImg)
 
-				saveFile(imagePath, newImg)
+				if state.config.Image.StoreResampledImages {
+					saveFile(imagePath, newImg)
+				}
 
 				return
 			}
@@ -385,17 +389,15 @@ func main() {
 	r.Use(loggingMiddleware)
 	http.Handle("/", r)
 
-	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
-
 	if port == "" {
-		port = "8000"
+		port = "4000"
+		log.Printf("defaulting to port %s", port)
 	}
 
-	addr := fmt.Sprintf("%s:%s", host, port)
+	log.Printf("listening on port %s", port)
 
-	fmt.Printf("Listening on %s\n", addr)
-
-	err := http.ListenAndServe(addr, r)
-	checkErr(err)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }

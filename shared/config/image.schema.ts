@@ -21,6 +21,7 @@ const schema = z
 		download_presets: z.array(z.string()).default([]),
 		download_default_preset: z.string().optional(),
 		download_allow_original: z.boolean().default(true),
+		store_resampled_images: z.boolean().default(true),
 		caching: z
 			.union([z.boolean(), z.number(), cachingSchema])
 			.optional()

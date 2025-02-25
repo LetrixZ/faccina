@@ -46,11 +46,12 @@ type Config struct {
 }
 
 type Image struct {
-	CoverPreset     string            `toml:"cover_preset"`
-	ThumbnailPreset string            `toml:"thumbnail_preset"`
-	ReaderPresets   []string          `toml:"reader_presets"`
-	Preset          map[string]Preset `toml:"preset"`
-	Caching         Caching           `toml:"caching"`
+	CoverPreset          string            `toml:"cover_preset"`
+	ThumbnailPreset      string            `toml:"thumbnail_preset"`
+	ReaderPresets        []string          `toml:"reader_presets"`
+	Preset               map[string]Preset `toml:"preset"`
+	Caching              Caching           `toml:"caching"`
+	StoreResampledImages bool              `toml:"store_resampled_images"`
 }
 
 type ImageFormat string
@@ -225,6 +226,7 @@ func getConfig() Config {
 				Thubmnail: 172800,
 				Cover:     432000,
 			},
+			StoreResampledImages: true,
 		},
 	}
 
