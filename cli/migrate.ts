@@ -7,6 +7,7 @@ import pg, { Client } from 'pg';
 import { z } from 'zod';
 import config from '../shared/config';
 import db from '../shared/db';
+import { imageDirectory } from '~shared/server.utils';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -57,8 +58,7 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 			continue;
 		}
 
-		const newDirname = join(config.directories.images, hash);
-
+		const newDirname = imageDirectory(hash);
 		await mkdir(join(newDirname, 'cover'), { recursive: true });
 		await mkdir(join(newDirname, 'thumbnail'), { recursive: true });
 
@@ -194,14 +194,14 @@ export const migratePresetHash = async () => {
 		progress.update(count, { id: archive.id, title: archive.title });
 
 		for (const preset of presets) {
-			const directoryOld = join(config.directories.images, archive.hash, preset.name);
+			const directoryOld = join(imageDirectory(archive.hash), preset.name);
 			const existsOld = await exists(directoryOld);
 
 			if (!existsOld) {
 				continue;
 			}
 
-			const directoryNew = join(config.directories.images, archive.hash, preset.hash);
+			const directoryNew = join(imageDirectory(archive.hash), preset.hash);
 			const existsNew = await exists(directoryNew);
 
 			if (existsNew && (await readdir(directoryNew)).length) {

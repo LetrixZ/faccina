@@ -66,3 +66,7 @@ func saveFile(path string, contents []byte) error {
 
 	return nil
 }
+
+func imageDirectory(hash string, config Config) string {
+	return filepath.Join(config.Directories.Images, hash[0:2], hash[2:4], hash)
+}

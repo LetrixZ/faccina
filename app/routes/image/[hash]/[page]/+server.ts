@@ -11,13 +11,12 @@ import { calculateDimensions, encodeImage } from '$lib/server/image';
 import type { ImageArchive } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { exists } from '~shared/server.utils';
+import { exists, imageDirectory } from '~shared/server.utils';
 import { leadingZeros } from '~shared/utils';
 
 const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Array, string]> => {
 	const imagePath = join(
-		config.directories.images,
-		archive.hash,
+		imageDirectory(archive.hash),
 		`${leadingZeros(archive.pageNumber, archive.pages)}${extname(archive.filename)}`
 	);
 
@@ -110,8 +109,7 @@ const resampledImage = async (
 		.otherwise((name) => presets.find((preset) => preset.name === name || preset.hash === name)!);
 
 	const imagePath = join(
-		config.directories.images,
-		archive.hash,
+		imageDirectory(archive.hash),
 		preset.hash,
 		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);

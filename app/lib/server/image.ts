@@ -10,6 +10,7 @@ import type { Preset } from '$lib/image-presets';
 import config from '~shared/config';
 import db from '~shared/db';
 import { leadingZeros } from '~shared/utils';
+import { imageDirectory } from '~shared/server.utils';
 
 export type ImageEncodingArgs = {
 	archive: ImageArchive;
@@ -90,8 +91,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	let data: Buffer | Uint8Array;
 
 	const originalImagePath = join(
-		config.directories.images,
-		args.archive.hash,
+		imageDirectory(args.archive.hash),
 		`${leadingZeros(args.archive.pageNumber, args.archive.pages)}${extname(args.archive.filename)}`
 	);
 

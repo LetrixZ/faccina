@@ -1,10 +1,9 @@
 import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { log } from '$lib/server/utils';
-import config from '~shared/config';
 import db from '~shared/db';
+import { imageDirectory } from '~shared/server.utils';
 
 export const DELETE = async ({ params, locals }) => {
 	const user = locals.user;
@@ -28,15 +27,13 @@ export const DELETE = async ({ params, locals }) => {
 	await db.transaction().execute(async (trx) => {
 		await trx.deleteFrom('archives').where('id', '=', archive.id).execute();
 		await rm(archive.path, { force: true, recursive: true });
-		await rm(join(config.directories.images, archive.hash), { force: true, recursive: true }).catch(
-			(error) => {
-				log(
-					chalk.red(
-						`• Failed to delete archive images ${chalk.bold(archive.title)} [ID: ${archive.id}]\n  Error: ${error}`
-					)
-				);
-			}
-		);
+		await rm(imageDirectory(archive.hash), { force: true, recursive: true }).catch((error) => {
+			log(
+				chalk.red(
+					`• Failed to delete archive images ${chalk.bold(archive.title)} [ID: ${archive.id}]\n  Error: ${error}`
+				)
+			);
+		});
 	});
 
 	return new Response();

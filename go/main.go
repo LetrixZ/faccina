@@ -167,7 +167,7 @@ func ImageHandler(state *State) func(w http.ResponseWriter, r *http.Request) {
 		isFile := fi.Mode().IsRegular()
 
 		if presetType == "" {
-			imagePath := filepath.Join(state.config.Directories.Images, archive.Hash, fmt.Sprintf("%s.%s", leadingZeros(archive.PageNumber, archive.Pages), filepath.Ext(archive.Filename)))
+			imagePath := filepath.Join(imageDirectory(archive.Hash, *state.config), fmt.Sprintf("%s.%s", leadingZeros(archive.PageNumber, archive.Pages), filepath.Ext(archive.Filename)))
 
 			f, err := os.Open(imagePath)
 
@@ -255,7 +255,7 @@ func ImageHandler(state *State) func(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			imagePath := filepath.Join(state.config.Directories.Images, archive.Hash, preset.Hash, fmt.Sprintf("%s.%s", leadingZeros(archive.PageNumber, archive.Pages), preset.Format))
+			imagePath := filepath.Join(imageDirectory(archive.Hash, *state.config), preset.Hash, fmt.Sprintf("%s.%s", leadingZeros(archive.PageNumber, archive.Pages), preset.Format))
 
 			f, err := os.Open(imagePath)
 

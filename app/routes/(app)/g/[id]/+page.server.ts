@@ -14,6 +14,7 @@ import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
 import { leadingZeros } from '~shared/utils';
+import { imageDirectory } from '~shared/server.utils';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user && !config.site.guestAccess) {
@@ -330,8 +331,7 @@ export const actions = {
 
 		try {
 			const imagePath = join(
-				config.directories.images,
-				archive.hash,
+				imageDirectory(archive.hash),
 				'_meta',
 				`${leadingZeros(archive.thumbnail, archive.pages)}.png`
 			);
@@ -378,8 +378,7 @@ export const actions = {
 
 		try {
 			const imagePath = join(
-				config.directories.images,
-				archive.hash,
+				imageDirectory(archive.hash),
 				'_meta',
 				`${leadingZeros(archive.thumbnail, archive.pages)}.png`
 			);

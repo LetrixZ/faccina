@@ -7,6 +7,7 @@ import GalleryPreview from './gallery-preview.svelte';
 import { leadingZeros } from '~shared/utils';
 import config from '~shared/config';
 import { getGallery } from '$lib/server/db/queries';
+import { imageDirectory } from '~shared/server.utils';
 
 export const GET = async ({ fetch, locals, params }) => {
 	if (!locals.user && !config.site.guestAccess) {
@@ -22,8 +23,7 @@ export const GET = async ({ fetch, locals, params }) => {
 	}
 
 	const imagePath = join(
-		config.directories.images,
-		gallery.hash,
+		imageDirectory(gallery.hash),
 		'_meta',
 		`${leadingZeros(gallery.thumbnail, gallery.pages)}.png`
 	);

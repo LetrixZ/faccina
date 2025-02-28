@@ -13,11 +13,13 @@ import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
 import { leadingZeros } from '../shared/utils';
 import { queryIdRanges } from './utilts';
+import { imageDirectory } from '~shared/server.utils';
 
 type GenerateImagesOptions = {
 	ids?: string;
 	force: boolean;
 	reverse?: boolean;
+	skipThumbnails?: boolean;
 	skipReader?: boolean;
 	skipDownload?: boolean;
 };
@@ -61,8 +63,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 		for (const image of archive.images) {
 			const getSavePath = (preset: Preset) =>
 				join(
-					config.directories.images,
-					archive.hash,
+					imageDirectory(archive.hash),
 					preset.hash,
 					`${leadingZeros(image.pageNumber, archive.pages)}.${preset.format}`
 				);
@@ -87,7 +88,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 
 			if (!options.force && (await Bun.file(savePath).exists())) {
 				skipped++;
-			} else {
+			} else if (!options.skipThumbnails) {
 				images.push({
 					filename: image.filename,
 					pageNumber: image.pageNumber,

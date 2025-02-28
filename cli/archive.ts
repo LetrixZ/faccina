@@ -12,7 +12,7 @@ import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { exists } from '../shared/server.utils';
+import { exists, imageDirectory } from '../shared/server.utils';
 import { leadingZeros } from '../shared/utils';
 import {
 	addEmbeddedDirMetadata,
@@ -532,8 +532,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 				if (archive.thumbnail !== undefined) {
 					try {
 						const imagePath = join(
-							config.directories.images,
-							hash,
+							imageDirectory(hash),
 							'_meta',
 							`${leadingZeros(archive.thumbnail, images.length)}.png`
 						);
@@ -545,8 +544,8 @@ export const indexArchives = async (opts: IndexOptions) => {
 				}
 
 				const moveImages = async () => {
-					const sourcePath = join(config.directories.images, existingPath.hash);
-					const destinationPath = join(config.directories.images, hash);
+					const sourcePath = imageDirectory(existingPath.hash);
+					const destinationPath = imageDirectory(hash);
 
 					if (!(await exists(sourcePath))) {
 						if (opts.verbose) {
@@ -631,8 +630,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 
 				for (const image of images) {
 					const imagePath = join(
-						config.directories.images,
-						hash,
+						imageDirectory(hash),
 						`${leadingZeros(image.pageNumber, images.length)}${extname(image.filename)}`
 					);
 

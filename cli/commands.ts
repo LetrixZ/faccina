@@ -61,6 +61,7 @@ program
 	)
 	.option('--reverse', 'Reverse the archive list to generate.')
 	.option('-f --force', 'Do not check if the image already exists.')
+	.option('--skip-thumbnails', 'Do not generate page thumbnail images.')
 	.option('--skip-reader', 'Do not generate images for the reader presets.')
 	.option('--skip-download', 'Do not generate images for the download presets.')
 	.action((options) => images.generateImages(options));
