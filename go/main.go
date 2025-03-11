@@ -392,7 +392,6 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "4000"
-		log.Printf("defaulting to port %s", port)
 	}
 
 	log.Printf("listening on port %s", port)

@@ -1,5 +1,5 @@
 import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import config from '~shared/config';
@@ -55,6 +55,7 @@ const migrateImagesSubHashDirectory = async () => {
 			const res = await Array.fromAsync(new Bun.Glob('**/*').scan(oldPath));
 
 			for (const file of res) {
+				await mkdir(dirname(join(newPath, file)), { recursive: true }).catch(() => {});
 				await rename(join(oldPath, file), join(newPath, file));
 			}
 
