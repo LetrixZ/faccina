@@ -92,7 +92,12 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	}
 
 	for (const tag of mapMultiField(data.Tags)) {
-		archive.tags.push({ namespace: 'tag', name: tag });
+		const [namespace, name] = tag.split(':');
+		if (namespace && name) {
+			archive.tags.push({ namespace, name });
+		} else {
+			archive.tags.push({ namespace: 'tag', name: tag });
+		}
 	}
 
 	for (const tag of mapMultiField(data.Characters)) {

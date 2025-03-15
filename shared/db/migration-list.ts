@@ -16,6 +16,7 @@ import * as _1732766393840_fts_v3 from './migrations/1732766393840_fts-v3';
 import * as _1733882129483_sqlite_fts5 from './migrations/1733882129483_sqlite-fts5';
 import * as _1735711099148_series from './migrations/1735711099148_series';
 import * as _1736898399488_series_fts from './migrations/1736898399488_series-fts';
+import * as _1742056575576_postgres_archive_size from './migrations/1742056575576_postgres-archive-size';
 
 export default {
 	'1725745590227_init': _1725745590227_init,
@@ -36,4 +37,5 @@ export default {
 	'1733882129483_sqlite-fts5': _1733882129483_sqlite_fts5,
 	'1735711099148_series': _1735711099148_series,
 	'1736898399488_series-fts': _1736898399488_series_fts,
+	'1742056575576_postgres-archive-size': _1742056575576_postgres_archive_size,
 };

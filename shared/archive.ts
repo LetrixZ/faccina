@@ -146,7 +146,17 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 		name,
 	}));
 
-	metadataTags = metadataTags.map((tag) => {
+	let uniqueTags: Tag[] = [];
+
+	for (const tag of metadataTags) {
+		if (uniqueTags.find((t) => t.namespace === tag.namespace && t.name === tag.name)) {
+			continue;
+		}
+
+		uniqueTags.push(tag);
+	}
+
+	uniqueTags = uniqueTags.map((tag) => {
 		const mapping = config.metadata.tagMapping.findLast(({ ignoreCase, match, matchNamespace }) => {
 			const normalizedTagName = ignoreCase ? tag.name.toLowerCase() : tag.name;
 			const normalizedMatches = ignoreCase ? match.map((t) => t.toLowerCase()) : match;
@@ -166,19 +176,19 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 		};
 	});
 
-	const tags = metadataTags.length
+	const tags = uniqueTags.length
 		? await db
 				.selectFrom('tags')
 				.select(['id', 'namespace', 'name'])
 				.where(
 					sql`namespace || ':' || name`,
 					'in',
-					metadataTags.map(({ namespace, name }) => `${namespace}:${name}`)
+					uniqueTags.map(({ namespace, name }) => `${namespace}:${name}`)
 				)
 				.execute()
 		: [];
 
-	const tagsInsert = metadataTags.filter(
+	const tagsInsert = uniqueTags.filter(
 		(tag) => !tags.some((_tag) => _tag.namespace === tag.namespace && _tag.name === tag.name)
 	);
 
@@ -207,9 +217,7 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 
 	const relationDelete = archiveTags.filter(
 		(relation) =>
-			!metadataTags.some(
-				(tag) => tag.name === relation.name && tag.namespace === relation.namespace
-			)
+			!uniqueTags.some((tag) => tag.name === relation.name && tag.namespace === relation.namespace)
 	);
 
 	for (const relation of relationDelete) {
@@ -220,7 +228,7 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 			.execute();
 	}
 
-	const relationInsert = metadataTags.filter(
+	const relationInsert = uniqueTags.filter(
 		(tag) =>
 			!archiveTags.some(
 				(relation) => relation.name === tag.name && relation.namespace === tag.namespace
