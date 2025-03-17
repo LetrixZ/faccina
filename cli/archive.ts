@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { rename, rm, stat } from 'node:fs/promises';
+import { mkdir, rename, rm, stat } from 'node:fs/promises';
 import { dirname, extname, join, parse } from 'node:path';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
@@ -566,6 +566,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					}
 
 					try {
+						await mkdir(dirname(destinationPath), { recursive: true }).catch(() => {});
 						await rename(sourcePath, destinationPath);
 					} catch (error) {
 						multibar.log(
