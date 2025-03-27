@@ -101,7 +101,7 @@
 		{#if selected.length}
 			<div
 				aria-label="Collection"
-				class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
+				class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
 				on:consider={(e) => (selected = e.detail.items)}
 				on:finalize={(e) => (selected = e.detail.items)}
 				use:dragHandleZone={{
@@ -138,7 +138,7 @@
 
 <Dialog.Root onOpenChange={(open) => !open && history.back()} open={searchOpen}>
 	<Dialog.Content
-		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-3 pb-0 pt-3"
+		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-3 pt-3 pb-0"
 	>
 		<GallerySearchModal {onSelect} {selected} />
 	</Dialog.Content>

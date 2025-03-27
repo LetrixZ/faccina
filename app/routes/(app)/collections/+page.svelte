@@ -26,7 +26,7 @@
 
 	{#if data.collections.length}
 		<div
-			class="grid w-full grid-cols-2 gap-4 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7"
+			class="xs:grid-cols-3 grid w-full grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7"
 		>
 			{#each data.collections as collection (collection.id)}
 				<CollectionListItem {collection} />

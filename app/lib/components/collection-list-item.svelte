@@ -52,7 +52,7 @@
 			</div>
 		{:else}
 			<div
-				class="flex aspect-[46/64] h-full items-center justify-center rounded bg-secondary opacity-40 shadow-sm"
+				class="bg-secondary flex aspect-[46/64] h-full items-center justify-center rounded opacity-40 shadow-sm"
 			>
 				<FileQuestion class="size-12 text-white opacity-20" />
 			</div>
@@ -64,7 +64,7 @@
 			{collection.name}
 		</p>
 
-		<p class="text-sm font-medium text-muted-foreground">
+		<p class="text-muted-foreground text-sm font-medium">
 			{#if collection.archives.length}
 				{@const count = collection.archives.length}
 				{#if count === 1}

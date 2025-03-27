@@ -130,7 +130,7 @@
 			/>
 		</div>
 
-		<div class="flex items-center gap-2 py-1 max-xs:w-full">
+		<div class="max-xs:w-full flex items-center gap-2 py-1">
 			<Switch
 				bind:checked={showSelected}
 				id="show-selected"
@@ -158,7 +158,7 @@
 {#if library}
 	{#if library.data.length}
 		<div
-			class="grid flex-1 grid-cols-2 gap-2 overflow-auto pb-2 pe-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
+			class="grid flex-1 grid-cols-2 gap-2 overflow-auto pe-2 pb-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
 		>
 			{#each library.data as gallery (gallery.id)}
 				<ListItem

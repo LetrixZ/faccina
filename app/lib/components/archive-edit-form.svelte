@@ -61,7 +61,7 @@
 		<div class="flex max-w-52 flex-col items-center">
 			<img
 				alt={`'${archive.title}' cover`}
-				class="aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
+				class="shadow-shadow aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md"
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${archive.hash}/${thumbnail}?type=thumb`}
@@ -128,7 +128,7 @@
 			</div>
 
 			<Form.Field
-				class="flex flex-row items-start space-x-3 space-y-0 py-2"
+				class="flex flex-row items-start space-y-0 space-x-3 py-2"
 				{form}
 				name="protected"
 			>
@@ -201,12 +201,12 @@
 
 					<div>
 						{#if errors?.name}
-							<p class="text-sm font-medium text-destructive">
+							<p class="text-destructive text-sm font-medium">
 								{errors.name}
 							</p>
 						{/if}
 						{#if errors?.url}
-							<p class="text-sm font-medium text-destructive">
+							<p class="text-destructive text-sm font-medium">
 								{errors.url}
 							</p>
 						{/if}

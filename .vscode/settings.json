@@ -5,7 +5,9 @@
 	},
 	"prettier.prettierPath": "./node_modules/prettier",
 	"eslint.validate": ["javascript", "svelte"],
-	"[go]": { "editor.codeActionsOnSave": {
+	"[go]": {
+		"editor.codeActionsOnSave": {
 			"source.organizeImports": "never"
-		} }
+		}
+	}
 }

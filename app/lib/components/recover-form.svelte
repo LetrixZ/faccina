@@ -45,7 +45,7 @@
 			</Form.Field>
 		</div>
 	{:else}
-		<p class="rounded border border-primary p-4 text-center text-sm">
+		<p class="border-primary rounded border p-4 text-center text-sm">
 			The site can't send emails.<br />Make a request to the admin for a recovery code.
 		</p>
 	{/if}

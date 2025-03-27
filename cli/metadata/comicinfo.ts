@@ -270,7 +270,7 @@ const isoTable = [
 	{ language: 'Welsh', code: 'cy' },
 	{ language: 'Wolof', code: 'wo' },
 	{ language: 'Xhosa', code: 'xh' },
-	{ language: 'Sichuan Yi, Nuosu\\n', code: 'ii\\n' },
+	{ language: 'Sichuan Yi, Nuosu', code: 'ii' },
 	{ language: 'Yiddish', code: 'yi' },
 	{ language: 'Yoruba', code: 'yo' },
 	{ language: 'Zhuang, Chuang', code: 'za' },

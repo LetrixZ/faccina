@@ -19,14 +19,14 @@
 
 	{#if $previewLayout}
 		<span
-			class="stroke absolute inset-0 m-auto h-fit w-fit rounded-md text-2xl font-semibold uppercase tracking-wider"
+			class="stroke absolute inset-0 m-auto h-fit w-fit rounded-md text-2xl font-semibold tracking-wider uppercase"
 		>
 			Next
 		</span>
 	{/if}
 </a>
 <button
-	class="h-full min-w-24 max-w-56 basis-[17.5%] outline-none"
+	class="h-full max-w-56 min-w-24 basis-[17.5%] outline-none"
 	on:click={() => ($showBar = !$showBar)}
 />
 <a
@@ -39,7 +39,7 @@
 
 	{#if $previewLayout}
 		<span
-			class="stroke absolute inset-0 m-auto h-fit w-fit rounded-md text-2xl font-semibold uppercase tracking-wider"
+			class="stroke absolute inset-0 m-auto h-fit w-fit rounded-md text-2xl font-semibold tracking-wider uppercase"
 		>
 			Prev
 		</span>

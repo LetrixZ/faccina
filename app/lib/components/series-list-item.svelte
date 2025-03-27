@@ -53,7 +53,7 @@
 				width={640}
 			/>
 
-			<div class="absolute bottom-1 end-1 flex gap-1">
+			<div class="absolute end-1 bottom-1 flex gap-1">
 				<div class="w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70">
 					{series.chapterCount}C
 				</div>
@@ -63,7 +63,7 @@
 
 	<div class="h-fit space-y-1.5">
 		<a
-			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
+			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
 			href="/series/{series.id}"
 			target="_blank"
 			title={series.title}

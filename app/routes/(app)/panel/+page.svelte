@@ -12,7 +12,7 @@
 	export let data;
 </script>
 
-<main class="container relative flex flex-col items-center space-y-2 md:w-96">
+<main class="relative container flex flex-col items-center space-y-2 md:w-96">
 	<Button
 		class="flex w-full items-center justify-between gap-2 text-neutral-200"
 		href="/preferences"
@@ -23,7 +23,7 @@
 	</Button>
 
 	{#if data.user}
-		<Separator class="!mb-1 !mt-3" />
+		<Separator class="!mt-3 !mb-1" />
 
 		<Button
 			class="flex w-full items-center justify-between gap-2 text-neutral-200"
@@ -58,7 +58,7 @@
 	{/if}
 
 	{#if data.user}
-		<Separator class="!mb-1 !mt-3" />
+		<Separator class="!mt-3 !mb-1" />
 
 		<Button
 			class="flex w-full items-center justify-between gap-2 text-neutral-200"
@@ -80,7 +80,7 @@
 			</Button>
 		</form>
 	{:else if data.site.enableUsers}
-		<Separator class="!mb-1 !mt-3" />
+		<Separator class="!mt-3 !mb-1" />
 
 		<Button
 			class="flex w-full items-center justify-between gap-2 text-neutral-200"

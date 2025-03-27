@@ -142,7 +142,7 @@
 	>
 		<form
 			bind:this={formEl}
-			class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
+			class="bg-muted ring-offset-background focus-within:ring-ring hover:ring-ring relative flex h-full w-full items-center rounded-md focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none hover:ring-2 hover:ring-offset-2"
 			on:submit|preventDefault={() => {
 				popoverOpen = false;
 				dispatcher('search', query);
@@ -224,7 +224,7 @@
 			{/if}
 
 			<Button
-				class="aspect-square h-full rounded p-0 text-muted-foreground !ring-0 !ring-offset-0 focus-within:text-foreground"
+				class="text-muted-foreground focus-within:text-foreground aspect-square h-full rounded p-0 !ring-0 !ring-offset-0"
 				type="submit"
 				variant="ghost"
 			>

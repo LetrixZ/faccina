@@ -44,7 +44,7 @@
 	const { form: deleteFormData, enhance: deleteEnhance } = deleteForm;
 </script>
 
-<main class="container relative flex max-w-screen-md flex-col gap-y-2">
+<main class="relative container flex max-w-screen-md flex-col gap-y-2">
 	<form class="flex flex-col gap-3" method="POST" use:enhance>
 		<input autocomplete="username" bind:value={$formData.username} class="hidden" />
 

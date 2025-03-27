@@ -78,7 +78,7 @@
 
 <Dialog.Root {onOpenChange} {open}>
 	<Dialog.Content
-		class="h-fit max-h-[90dvh] overflow-y-auto bg-background/95 md:max-w-2xl"
+		class="bg-background/95 h-fit max-h-[90dvh] overflow-y-auto md:max-w-2xl"
 		overlayClass="bg-background/70"
 	>
 		{#if presets.length}
@@ -90,7 +90,7 @@
 			>
 				{#each presets as preset}
 					<Button
-						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring ring-primary')}
+						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring-primary ring')}
 						on:click={() =>
 							selectedPreset?.hash === preset.hash
 								? readerAllowOriginal && readerStore.setImagePreset(null)
@@ -121,7 +121,7 @@
 		<div class="grid gap-4 md:grid-cols-2">
 			{#each readingModeOptions as option}
 				<Button
-					class={cn('relative pe-8', option.value === selectedReadingMode && 'ring ring-primary')}
+					class={cn('relative pe-8', option.value === selectedReadingMode && 'ring-primary ring')}
 					on:click={() => readerStore.setReadingMode(option.value)}
 					variant="outline"
 				>
@@ -202,7 +202,7 @@
 					<button
 						class={cn(
 							'relative flex aspect-[17/24] h-28 items-center justify-center overflow-hidden rounded bg-neutral-800',
-							layout.name === $readerStore?.touchLayout && 'ring ring-primary'
+							layout.name === $readerStore?.touchLayout && 'ring-primary ring'
 						)}
 						on:click={() => readerStore.setTouchLayout(layout.name)}
 					>
@@ -303,7 +303,7 @@
 	}
 
 	.scaling-preview > button.selected {
-		@apply ring ring-primary;
+		@apply ring-primary ring;
 	}
 
 	.scaling-preview img {

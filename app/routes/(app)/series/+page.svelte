@@ -11,7 +11,7 @@
 	$: library = data.libraryPage;
 </script>
 
-<main class="container relative flex flex-auto flex-col gap-y-2">
+<main class="relative container flex flex-auto flex-col gap-y-2">
 	<PageTitle>
 		Series ({library.total})
 

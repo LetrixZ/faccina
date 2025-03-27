@@ -14,7 +14,7 @@
 	<title>Home • {data.site.name}</title>
 </svelte:head>
 
-<main class="container relative flex flex-auto flex-col gap-y-2">
+<main class="relative container flex flex-auto flex-col gap-y-2">
 	<PageTitle>Browse ({library.total})</PageTitle>
 
 	<div class="grid items-end gap-2 md:flex">

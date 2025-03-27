@@ -135,7 +135,7 @@
 </script>
 
 <form
-	class="rounded-md border border-input ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+	class="border-input ring-offset-background focus-within:ring-ring rounded-md border focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none"
 	on:submit|preventDefault={submit}
 >
 	<Popover.Root
@@ -234,7 +234,7 @@
 		<div class="flex flex-wrap gap-2 p-2">
 			{#each chips as chip}
 				<button
-					class="rounded-md bg-secondary px-2 py-0.5 text-sm text-neutral-200 hover:bg-secondary/80 hover:text-white motion-safe:duration-150"
+					class="bg-secondary hover:bg-secondary/80 rounded-md px-2 py-0.5 text-sm text-neutral-200 hover:text-white motion-safe:duration-150"
 					on:click={() => removeChip(chip)}
 					type="button"
 				>

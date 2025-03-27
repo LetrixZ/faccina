@@ -58,13 +58,13 @@
 				width={640}
 			/>
 
-			<div class="absolute right-1 top-1">
+			<div class="absolute top-1 right-1">
 				{#if selected}
-					<CircleCheck class="size-7 rounded-full fill-secondary-foreground/90 text-indigo-700" />
+					<CircleCheck class="fill-secondary-foreground/90 size-7 rounded-full text-indigo-700" />
 				{/if}
 			</div>
 
-			<div class="absolute bottom-1 end-1 flex gap-1">
+			<div class="absolute end-1 bottom-1 flex gap-1">
 				{#if gallery.deletedAt}
 					<div
 						class="flex aspect-square size-6 items-center justify-center rounded-md bg-slate-700 p-1 text-xs font-bold text-white opacity-85"
@@ -81,7 +81,7 @@
 
 	<div class="h-fit space-y-1.5">
 		<a
-			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
+			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
 			href={`/g/${gallery.id}${$page.url.search}`}
 			target="_blank"
 			title={gallery.title}

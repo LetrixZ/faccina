@@ -202,9 +202,9 @@
 	<title>{data.site.name}</title>
 </svelte:head>
 
-<div class="fixed z-20 flex h-fit w-full border-b bg-background shadow dark:border-border">
+<div class="bg-background dark:border-border fixed z-20 flex h-fit w-full border-b shadow">
 	<Button
-		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+		class="text-muted-foreground hover:dark:text-primary size-12 rounded-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
 		href="/"
 		on:click={() => ($query = '')}
 		title="Go home"
@@ -214,7 +214,7 @@
 	</Button>
 
 	<Button
-		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+		class="text-muted-foreground hover:dark:text-primary size-12 rounded-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
 		href="/series"
 		on:click={() => ($query = '')}
 		title="Series"
@@ -234,7 +234,7 @@
 			<form
 				action={formAction}
 				bind:this={formEl}
-				class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
+				class="bg-muted ring-offset-background focus-within:ring-ring hover:ring-ring relative flex h-full w-full items-center rounded-md focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none hover:ring-2 hover:ring-offset-2"
 				on:submit={() => (popoverOpen = false)}
 			>
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
@@ -317,7 +317,7 @@
 				{/if}
 
 				<Button
-					class="aspect-square h-full rounded p-0 text-muted-foreground !ring-0 !ring-offset-0 focus-within:text-foreground"
+					class="text-muted-foreground focus-within:text-foreground aspect-square h-full rounded p-0 !ring-0 !ring-offset-0"
 					type="submit"
 					variant="ghost"
 				>
@@ -349,7 +349,7 @@
 	<DropdownMenu.Root preventScroll={false}>
 		<DropdownMenu.Trigger>
 			<Button
-				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+				class="text-muted-foreground hover:dark:text-primary size-12 rounded-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
 				href="/panel"
 				on:click={(ev) => ev.preventDefault()}
 				variant="ghost"

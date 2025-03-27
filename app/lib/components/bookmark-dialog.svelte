@@ -18,7 +18,7 @@
 						<a class="text-lg font-medium" href="/collections/{collection.slug}" target="_blank">
 							{collection.name}
 						</a>
-						<span class="text-sm text-muted-foreground">
+						<span class="text-muted-foreground text-sm">
 							{#if archives.length === 1}
 								1 gallery
 							{:else if !archives.length}

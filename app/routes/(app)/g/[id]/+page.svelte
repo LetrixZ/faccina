@@ -223,12 +223,12 @@
 />
 
 <main class="container flex flex-col gap-2 md:flex-row">
-	<div class="w-full space-y-2 @container md:w-80">
+	<div class="@container w-full space-y-2 md:w-80">
 		<div class="w-full">
 			<a href={`./${gallery.id}/read/1/${$page.url.search}`}>
 				<img
 					alt={`'${gallery.title}' cover`}
-					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
+					class="shadow-shadow aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md"
 					height={910}
 					loading="eager"
 					src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
@@ -242,7 +242,7 @@
 
 			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
-					class="flex w-full bg-sky-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-sky-700/80"
+					class="shadow-shadow flex w-full bg-sky-700 text-center font-semibold text-white shadow hover:bg-sky-700/80"
 					on:click={() => (editOpen = true)}
 				>
 					<Pencil class="size-5 shrink-0" />
@@ -250,7 +250,7 @@
 				</Button>
 
 				<Button
-					class="flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
+					class="shadow-shadow flex w-full bg-orange-700 text-center font-semibold text-white shadow hover:bg-orange-700/80"
 					on:click={() => (editTaxonomyOpen = true)}
 				>
 					<Tag class="size-5 shrink-0" />
@@ -260,7 +260,7 @@
 				{#if archive?.deletedAt}
 					<form action="?/show" method="POST" use:enhance>
 						<Button
-							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
+							class="shadow-shadow flex w-full bg-slate-700 text-center font-semibold text-white shadow hover:bg-slate-700/80"
 							type="submit"
 						>
 							<Eye class="size-5 shrink-0" />
@@ -270,7 +270,7 @@
 				{:else}
 					<form action="?/hide" method="POST" use:enhance>
 						<Button
-							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
+							class="shadow-shadow flex w-full bg-slate-700 text-center font-semibold text-white shadow hover:bg-slate-700/80"
 							type="submit"
 						>
 							<EyeOff class="size-5 shrink-0" />
@@ -280,7 +280,7 @@
 				{/if}
 
 				<Button
-					class="flex w-full bg-red-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-red-700/80"
+					class="shadow-shadow flex w-full bg-red-700 text-center font-semibold text-white shadow hover:bg-red-700/80"
 					on:click={() =>
 						$siteConfig.admin.deleteRequireConfirmation ? (removeArchiveOpen = true) : remove()}
 					type="submit"
@@ -296,7 +296,7 @@
 		<div class="grid gap-2 @xs:grid-cols-2">
 			{#if !data.readEntry || data.readEntry.finishedAt}
 				<Button
-					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+					class={'shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80'}
 					href={`./${gallery.id}/read/1${$page.url.search}`}
 					variant="secondary"
 				>
@@ -305,7 +305,7 @@
 				</Button>
 			{:else}
 				<Button
-					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+					class={'shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80'}
 					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
 					variant="secondary"
 				>
@@ -317,7 +317,7 @@
 			<div class="relative">
 				<Button
 					class={cn(
-						'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80',
+						'shadow-shadow flex w-full bg-green-700 text-center font-semibold text-white shadow hover:bg-green-700/80',
 						!canDownload && 'pointer-events-none opacity-50'
 					)}
 					href="/g/{gallery.id}/download"
@@ -388,10 +388,10 @@
 			{/if}
 		</div>
 
-		<div class="overflow-clip rounded shadow-md shadow-shadow">
+		<div class="shadow-shadow overflow-clip rounded shadow-md">
 			<InfoSection class="space-y-1">
-				<p class="text-lg font-semibold leading-6">{gallery.title}</p>
-				<p class="text-sm text-muted-foreground-light">
+				<p class="text-lg leading-6 font-semibold">{gallery.title}</p>
+				<p class="text-muted-foreground-light text-sm">
 					{generateFilename(gallery.title, gallery.tags)}
 				</p>
 			</InfoSection>

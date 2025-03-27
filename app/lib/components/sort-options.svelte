@@ -168,7 +168,7 @@
 
 	<Button
 		class={cn(
-			'size-8 p-0 text-muted-foreground-light',
+			'text-muted-foreground-light size-8 p-0',
 			sortValue === 'random' && 'pointer-events-none opacity-50'
 		)}
 		href="?{newOrderQuery()}"

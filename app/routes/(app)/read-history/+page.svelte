@@ -40,7 +40,7 @@
 
 					<div
 						aria-label="Collection"
-						class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
+						class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
 					>
 						{#each group.entries as entry}
 							<div>

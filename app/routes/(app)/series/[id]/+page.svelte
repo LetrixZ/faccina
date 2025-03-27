@@ -21,7 +21,7 @@
 	<title>{data.series.title} Series • {data.site.name}</title>
 </svelte:head>
 
-<main class="container relative flex flex-auto flex-col gap-y-2">
+<main class="relative container flex flex-auto flex-col gap-y-2">
 	<PageTitle>
 		{data.series.title} ({library.total})
 

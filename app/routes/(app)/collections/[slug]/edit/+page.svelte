@@ -101,7 +101,7 @@
 		{#if selectedGalleries.length}
 			<div
 				aria-label="Collection"
-				class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
+				class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
 				on:consider={(e) => (selectedGalleries = e.detail.items)}
 				on:finalize={(e) => (selectedGalleries = e.detail.items)}
 				use:dragHandleZone={{
@@ -136,7 +136,7 @@
 
 <Dialog.Root onOpenChange={(open) => !open && history.back()} open={searchOpen}>
 	<Dialog.Content
-		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-2 pb-0 pt-2"
+		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-2 pt-2 pb-0"
 	>
 		<CollectionArchiveSearch
 			on:bookmark={(ev) => {

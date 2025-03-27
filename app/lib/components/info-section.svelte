@@ -14,7 +14,7 @@
 	)}
 >
 	{#if name}
-		<p class="pb-1 text-xs font-medium uppercase tracking-wide">{name}</p>
+		<p class="pb-1 text-xs font-medium tracking-wide uppercase">{name}</p>
 	{/if}
 
 	<slot />

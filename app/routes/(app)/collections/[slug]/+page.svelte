@@ -29,7 +29,7 @@
 	<title>{data.collection.name} • {data.site.name}</title>
 </svelte:head>
 
-<main class="container relative flex h-full flex-col gap-y-2">
+<main class="relative container flex h-full flex-col gap-y-2">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<PageTitle>
 			{data.collection.name} ({library.total})
