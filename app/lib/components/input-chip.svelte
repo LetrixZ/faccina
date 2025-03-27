@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import * as Popover from '$lib/components/ui/popover';
 	import { cn, slugify } from '../utils';
 	import { Button } from './ui/button';
 	import Input from './ui/input/input.svelte';
-	import * as Popover from '$lib/components/ui/popover';
+	import { createEventDispatcher } from 'svelte';
 
 	export let chips: string[] = [];
 	export let id: string | undefined = undefined;

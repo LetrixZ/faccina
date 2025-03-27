@@ -1,9 +1,9 @@
-import YAML from 'yaml';
-import { z } from 'zod';
 import config from '../../shared/config';
 import { type ArchiveMetadata } from '../../shared/metadata';
 import { stringOrNumberArray } from './schemas';
 import { parseFilename } from './utils';
+import YAML from 'yaml';
+import { z } from 'zod';
 
 const metadataSchema = z.object({
 	title: z.string(),

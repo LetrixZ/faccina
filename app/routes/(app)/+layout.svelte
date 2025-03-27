@@ -1,16 +1,4 @@
 <script lang="ts">
-	import type { ActionResult } from '@sveltejs/kit';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Heart from 'lucide-svelte/icons/heart';
-	import Home from 'lucide-svelte/icons/house';
-	import LogIn from 'lucide-svelte/icons/log-in';
-	import LogOut from 'lucide-svelte/icons/log-out';
-	import Search from 'lucide-svelte/icons/search';
-	import Settings from 'lucide-svelte/icons/settings';
-	import User from 'lucide-svelte/icons/user';
-	import UserCircle from 'lucide-svelte/icons/user-round';
-	import Book from 'lucide-svelte/icons/book';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import LoginForm from '$lib/components/login-form.svelte';
@@ -25,6 +13,18 @@
 	import type { UserFormState } from '$lib/models';
 	import { query, tagList, userCollections } from '$lib/stores';
 	import { cn } from '$lib/utils';
+	import type { ActionResult } from '@sveltejs/kit';
+	import Book from 'lucide-svelte/icons/book';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Heart from 'lucide-svelte/icons/heart';
+	import Home from 'lucide-svelte/icons/house';
+	import LogIn from 'lucide-svelte/icons/log-in';
+	import LogOut from 'lucide-svelte/icons/log-out';
+	import Search from 'lucide-svelte/icons/search';
+	import Settings from 'lucide-svelte/icons/settings';
+	import User from 'lucide-svelte/icons/user';
+	import UserCircle from 'lucide-svelte/icons/user-round';
 
 	export let data;
 

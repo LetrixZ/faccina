@@ -1,9 +1,9 @@
 <script lang="ts">
-	import pixelWidth from 'string-pixel-width';
+	import { siteConfig } from '$lib/stores';
 	import type { SeriesListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { siteConfig } from '$lib/stores';
+	import pixelWidth from 'string-pixel-width';
 
 	export let series: SeriesListItem;
 

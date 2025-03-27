@@ -1,10 +1,10 @@
-import { rm } from 'node:fs/promises';
-import { Glob } from 'bun';
-import { sql } from 'kysely';
 import db from '../shared/db';
 import config from './config';
 import type { Image, Series, Source, Tag } from './metadata';
 import { leadingZeros } from './utils';
+import { Glob } from 'bun';
+import { sql } from 'kysely';
+import { rm } from 'node:fs/promises';
 
 /**
  * Upserts archive sources

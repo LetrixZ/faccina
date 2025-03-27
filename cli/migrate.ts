@@ -1,12 +1,12 @@
-import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import config from '../shared/config';
+import db from '../shared/db';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
+import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import pg, { Client } from 'pg';
 import { z } from 'zod';
-import config from '../shared/config';
-import db from '../shared/db';
 import { imageDirectory } from '~shared/server.utils';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');

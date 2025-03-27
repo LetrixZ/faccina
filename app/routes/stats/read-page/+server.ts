@@ -1,5 +1,5 @@
-import type { RequestHandler } from '@sveltejs/kit';
 import { readStatSchema } from '$lib/types';
+import type { RequestHandler } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 import { max, now } from '~shared/db/helpers';

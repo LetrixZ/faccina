@@ -1,7 +1,7 @@
+import type { DB } from '../shared/db/types';
+import { ExpressionWrapper, type SelectQueryBuilder, type SqlBool } from 'kysely';
 import { readdir, stat } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { ExpressionWrapper, type SelectQueryBuilder, type SqlBool } from 'kysely';
-import type { DB } from '../shared/db/types';
 
 export const parseIdRanges = (str: string) => {
 	const idRanges = str.split(',');

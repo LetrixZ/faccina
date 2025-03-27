@@ -1,8 +1,8 @@
 <script lang="ts">
-	import cookie from 'cookie';
-	import { toast } from 'svelte-sonner';
 	import { browser } from '$app/environment';
 	import InputChip from '$lib/components/input-chip.svelte';
+	import cookie from 'cookie';
+	import { toast } from 'svelte-sonner';
 
 	export let data;
 

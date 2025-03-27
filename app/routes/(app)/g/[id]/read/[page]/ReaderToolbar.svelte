@@ -1,13 +1,13 @@
 <script lang="ts">
+	import type { ToolbarPosition } from './reader';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import ChevronFirst from 'lucide-svelte/icons/chevron-first';
 	import ChevronLast from 'lucide-svelte/icons/chevron-last';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Menu from 'lucide-svelte/icons/menu';
 	import { linear } from 'svelte/easing';
 	import { slide } from 'svelte/transition';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	import Menu from 'lucide-svelte/icons/menu';
-	import type { ToolbarPosition } from './reader';
 
 	export let currentPage: number;
 	export let pages: number;

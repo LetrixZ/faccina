@@ -1,18 +1,18 @@
 <script lang="ts">
+	import { tagList } from '$lib/stores';
+	import { editTagsSchema, type EditTagsSchema } from '../schemas';
+	import type { TagNamespace } from '../types';
+	import { isTag } from '../utils';
+	import InputChip from './input-chip.svelte';
+	import { Button } from './ui/button';
+	import { Label } from './ui/label';
+	import { Separator } from './ui/separator';
 	import type { ActionResult } from '@sveltejs/kit';
 	import Save from 'lucide-svelte/icons/save';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import type { TagNamespace } from '../types';
-	import { editTagsSchema, type EditTagsSchema } from '../schemas';
-	import { isTag } from '../utils';
-	import InputChip from './input-chip.svelte';
-	import { Button } from './ui/button';
-	import { Label } from './ui/label';
-	import { Separator } from './ui/separator';
-	import { tagList } from '$lib/stores';
 
 	export let data: SuperValidated<Infer<EditTagsSchema>>;
 

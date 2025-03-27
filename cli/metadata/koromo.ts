@@ -1,9 +1,9 @@
-import dayjs from 'dayjs';
-import { z } from 'zod';
 import config from '../../shared/config';
 import { type ArchiveMetadata } from '../../shared/metadata';
 import { mapMultiField, multiTextField } from './schemas';
 import { parseFilename } from './utils';
+import dayjs from 'dayjs';
+import { z } from 'zod';
 
 const metadataSchema = z.object({
 	Title: z.string(),

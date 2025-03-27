@@ -1,13 +1,4 @@
 <script lang="ts">
-	import OctagonAlert from 'lucide-svelte/icons/octagon-alert';
-	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
-	import { toast } from 'svelte-sonner';
-	import { flip } from 'svelte/animate';
-	import { cubicIn } from 'svelte/easing';
-	import { fade } from 'svelte/transition';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SeriesForm from '../../series-form.svelte';
 	import { pushState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import GallerySearchModal from '$lib/components/gallery-search-modal.svelte';
@@ -19,6 +10,15 @@
 	import { siteConfig } from '$lib/stores';
 	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
+	import SeriesForm from '../../series-form.svelte';
+	import OctagonAlert from 'lucide-svelte/icons/octagon-alert';
+	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
+	import { toast } from 'svelte-sonner';
+	import { flip } from 'svelte/animate';
+	import { cubicIn } from 'svelte/easing';
+	import { fade } from 'svelte/transition';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	export let data;
 

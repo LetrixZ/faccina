@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Search from 'lucide-svelte/icons/search';
-	import { createEventDispatcher } from 'svelte';
-	import type { Tag } from '../types';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
+	import type { Tag } from '../types';
+	import Search from 'lucide-svelte/icons/search';
+	import { createEventDispatcher } from 'svelte';
 
 	export let tags: Tag[];
 	export let searchPlaceholder = '';

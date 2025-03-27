@@ -1,5 +1,5 @@
-import { sql, type Kysely } from 'kysely';
 import config from '../../config';
+import { sql, type Kysely } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.dropIndex('tags_namespace').execute();

@@ -1,7 +1,7 @@
+import migrations from './migration-list';
+import type { DB } from './types';
 import chalk from 'chalk';
 import { Kysely, Migrator } from 'kysely';
-import type { DB } from './types';
-import migrations from './migration-list';
 
 export default async (db: Kysely<DB>) => {
 	const shouldMigrate = await (async () => {

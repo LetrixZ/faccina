@@ -1,7 +1,7 @@
 <script lang="ts">
-	import pixelWidth from 'string-pixel-width';
 	import type { Gallery, Tag, TagNamespace } from '$lib/types';
 	import { cn, isTag } from '$lib/utils';
+	import pixelWidth from 'string-pixel-width';
 
 	export let gallery: Gallery;
 	export let dataURL: string;

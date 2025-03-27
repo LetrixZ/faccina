@@ -1,19 +1,19 @@
 <script lang="ts">
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import pixelWidth from 'string-pixel-width';
-	import { toast } from 'svelte-sonner';
+	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { siteConfig, userCollections } from '$lib/stores';
+	import { cn } from '$lib/utils';
 	import type { GalleryListItem, ListPageType, Tag } from '../types';
 	import BookmarkToast from './bookmark-toast.svelte';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { cn } from '$lib/utils';
-	import { siteConfig, userCollections } from '$lib/stores';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
-	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
-	import { browser } from '$app/environment';
+	import Bookmark from 'lucide-svelte/icons/bookmark';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import pixelWidth from 'string-pixel-width';
+	import { toast } from 'svelte-sonner';
 
 	export let gallery: GalleryListItem;
 	export let enableBookmark = false;

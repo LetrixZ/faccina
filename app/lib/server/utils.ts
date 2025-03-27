@@ -1,12 +1,12 @@
-import { appendFile } from 'fs/promises';
+import { orderSchema, sortSchema, type Order, type Sort } from '$lib/schemas';
+import type { GalleryListItem, Tag } from '../types';
 import chalk from 'chalk';
 import dayjs from 'dayjs';
+import { appendFile } from 'fs/promises';
 import { omit } from 'ramda';
 import stripAnsi from 'strip-ansi';
 import { z } from 'zod';
-import type { GalleryListItem, Tag } from '../types';
 import config from '~shared/config';
-import { orderSchema, sortSchema, type Order, type Sort } from '$lib/schemas';
 
 export const handleTags = (tags: Tag[]): Tag[] => {
 	const { tagExclude, tagWeight } = config.site.galleryListing;

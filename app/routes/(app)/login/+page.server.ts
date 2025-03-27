@@ -1,9 +1,9 @@
+import { loginSchema } from '$lib/schemas';
+import { lucia } from '$lib/server/auth';
+import type { Actions, PageServerLoad } from './$types';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
-import { loginSchema } from '$lib/schemas';
-import { lucia } from '$lib/server/auth';
 import config from '~shared/config';
 import db from '~shared/db';
 

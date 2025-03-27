@@ -1,13 +1,13 @@
-import { join } from 'node:path';
-import { og } from '@ethercorps/sveltekit-og';
-import sharp from 'sharp';
+import { getGallery } from '$lib/server/db/queries';
 import interBold from '../../../../../assets/Inter-Bold.ttf?raw-hex';
 import interRegular from '../../../../../assets/Inter-Regular.ttf?raw-hex';
 import GalleryPreview from './gallery-preview.svelte';
-import { leadingZeros } from '~shared/utils';
+import { og } from '@ethercorps/sveltekit-og';
+import { join } from 'node:path';
+import sharp from 'sharp';
 import config from '~shared/config';
-import { getGallery } from '$lib/server/db/queries';
 import { imageDirectory } from '~shared/server.utils';
+import { leadingZeros } from '~shared/utils';
 
 export const GET = async ({ fetch, locals, params }) => {
 	if (!locals.user && !config.site.guestAccess) {

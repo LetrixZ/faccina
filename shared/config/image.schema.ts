@@ -1,6 +1,6 @@
+import { generatePresetHash, presetSchema, type Preset } from '$lib/image-presets';
 import { omit } from 'ramda';
 import { z } from 'zod';
-import { generatePresetHash, presetSchema, type Preset } from '$lib/image-presets';
 
 const cachingSchema = z.object({
 	page: z.number().default(365 * 24 * 3600),

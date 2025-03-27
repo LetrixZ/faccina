@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import type { Selected } from 'bits-ui';
-	import { siteConfig } from '../stores';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import { siteConfig } from '../stores';
+	import type { Selected } from 'bits-ui';
+	import { createEventDispatcher } from 'svelte';
 
 	export let pageLimits: number[];
 	export let value: number | undefined = undefined;

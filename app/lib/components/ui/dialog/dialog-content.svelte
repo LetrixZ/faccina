@@ -1,30 +1,32 @@
 <script lang="ts">
-	import { cn, flyAndScale } from '$lib/utils';
-	import { Dialog as DialogPrimitive } from 'bits-ui';
-	import * as Dialog from './index';
+	import { cn } from '$lib/utils.js';
+	import * as Dialog from './index.js';
+	import X from '@lucide/svelte/icons/x';
+	import { Dialog as DialogPrimitive, type WithoutChildrenOrChild } from 'bits-ui';
+	import type { Snippet } from 'svelte';
 
-	type $$Props = DialogPrimitive.ContentProps & { overlayClass?: string | null | undefined };
-
-	let className: $$Props['class'] = undefined;
-	export let overlayClass: $$Props['overlayClass'] = undefined;
-	export let transition: $$Props['transition'] = flyAndScale;
-	export let transitionConfig: $$Props['transitionConfig'] = {
-		duration: 200,
-	};
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		portalProps,
+		children,
+		...restProps
+	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
+		portalProps?: DialogPrimitive.PortalProps;
+		children: Snippet;
+	} = $props();
 </script>
 
-<Dialog.Portal>
-	<Dialog.Overlay class={overlayClass} />
+<Dialog.Portal {...portalProps}>
+	<Dialog.Overlay />
 	<DialogPrimitive.Content
-		{transition}
-		{transitionConfig}
+		bind:ref
 		class={cn(
-			'bg-background fixed top-[50%] left-[50%] z-50 grid w-full max-w-[90dvw] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg md:w-full md:max-w-lg',
+			'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-background fixed top-[50%] left-[50%] z-50 grid w-full max-w-[90dvw] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 md:w-full md:max-w-lg',
 			className
 		)}
-		{...$$restProps}
+		{...restProps}
 	>
-		<slot />
+		{@render children?.()}
 	</DialogPrimitive.Content>
 </Dialog.Portal>

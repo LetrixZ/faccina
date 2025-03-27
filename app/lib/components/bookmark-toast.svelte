@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button } from './ui/button';
 	import type { GalleryListItem } from '$lib/types';
+	import { Button } from './ui/button';
 
 	export let gallery: GalleryListItem;
 	export let bookmarked: boolean;

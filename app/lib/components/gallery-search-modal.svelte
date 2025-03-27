@@ -1,9 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import { siteConfig, tagList } from '../stores';
-	import GalleryListItemC from './gallery-list-item.svelte';
-	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SearchBar from '$lib/components/search-bar.svelte';
@@ -11,6 +6,11 @@
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
 	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
+	import { siteConfig, tagList } from '../stores';
+	import GalleryListItemC from './gallery-list-item.svelte';
+	import { Switch } from './ui/switch';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let selected: GalleryListItem[] = [];
 	export let onSelect: (gallery: GalleryListItem) => void;

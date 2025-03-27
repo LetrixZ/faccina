@@ -1,5 +1,5 @@
-import { sql, type Kysely } from 'kysely';
 import { id, now } from '../helpers';
+import { sql, type Kysely } from 'kysely';
 import config from '~shared/config';
 
 export async function up(db: Kysely<any>): Promise<void> {

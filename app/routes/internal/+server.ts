@@ -1,8 +1,8 @@
-import { json, redirect } from '@sveltejs/kit';
 import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
 import type { GalleryLibraryResponse } from '$lib/types';
 import { decompressBlacklist, randomString } from '$lib/utils';
+import { json, redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 
 export const GET = async ({ url, cookies, locals }) => {

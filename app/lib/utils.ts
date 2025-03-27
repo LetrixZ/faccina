@@ -1,3 +1,6 @@
+import { presetSchema } from '$lib/image-presets';
+import { ImageSize, TouchLayout } from './models';
+import type { Gallery, Image, Tag } from './types';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { clsx, type ClassValue } from 'clsx';
@@ -13,10 +16,7 @@ import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-import { ImageSize, TouchLayout } from './models';
-import type { Gallery, Image, Tag } from './types';
 import type { ReaderPreset } from '~shared/config/image.schema';
-import { presetSchema } from '$lib/image-presets';
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 

@@ -1,8 +1,4 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
-	import { toast } from 'svelte-sonner';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
@@ -10,6 +6,10 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { createCollectionSchema } from '$lib/schemas';
 	import { cn } from '$lib/utils';
+	import Save from 'lucide-svelte/icons/save';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	export let data;
 

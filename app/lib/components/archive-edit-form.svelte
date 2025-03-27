@@ -1,4 +1,15 @@
 <script lang="ts">
+	import * as Form from '$lib/components/ui/form';
+	import { Input } from '$lib/components/ui/input';
+	import { siteConfig } from '$lib/stores';
+	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
+	import type { Archive } from '../types';
+	import { cn } from '../utils';
+	import GallerySource from './gallery-source.svelte';
+	import { Button } from './ui/button';
+	import { Checkbox } from './ui/checkbox';
+	import { Separator } from './ui/separator';
+	import { Textarea } from './ui/textarea';
 	import type { ActionResult } from '@sveltejs/kit';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Save from 'lucide-svelte/icons/save';
@@ -8,17 +19,6 @@
 	import { toast } from 'svelte-sonner';
 	import { type Infer, intProxy, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
-	import type { Archive } from '../types';
-	import { cn } from '../utils';
-	import GallerySource from './gallery-source.svelte';
-	import { Button } from './ui/button';
-	import { Checkbox } from './ui/checkbox';
-	import { Separator } from './ui/separator';
-	import { Textarea } from './ui/textarea';
-	import { Input } from '$lib/components/ui/input';
-	import * as Form from '$lib/components/ui/form';
-	import { siteConfig } from '$lib/stores';
 
 	export let data: SuperValidated<Infer<EditArchiveSchema>>;
 	export let archive: Archive;

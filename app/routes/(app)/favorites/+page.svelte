@@ -1,11 +1,11 @@
 <script lang="ts">
-	import FileText from 'lucide-svelte/icons/file-text';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import FileText from 'lucide-svelte/icons/file-text';
 
 	export let data;
 

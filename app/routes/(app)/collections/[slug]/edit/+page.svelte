@@ -1,13 +1,4 @@
 <script lang="ts">
-	import BookmarkPlus from 'lucide-svelte/icons/bookmark-plus';
-	import Save from 'lucide-svelte/icons/save';
-	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
-	import { toast } from 'svelte-sonner';
-	import { flip } from 'svelte/animate';
-	import { cubicIn } from 'svelte/easing';
-	import { fade } from 'svelte/transition';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { pushState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
@@ -19,6 +10,15 @@
 	import { createCollectionSchema } from '$lib/schemas';
 	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
+	import BookmarkPlus from 'lucide-svelte/icons/bookmark-plus';
+	import Save from 'lucide-svelte/icons/save';
+	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
+	import { toast } from 'svelte-sonner';
+	import { flip } from 'svelte/animate';
+	import { cubicIn } from 'svelte/easing';
+	import { fade } from 'svelte/transition';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	export let data;
 

@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { MetaTags } from 'svelte-meta-tags';
+	import { goto, pushState, replaceState } from '$app/navigation';
+	import { page } from '$app/stores';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { siteConfig, user } from '$lib/stores';
+	import type { ReadStat } from '$lib/types';
 	import PagedReader from './PagedReader.svelte';
 	import Settings from './ReaderSettings.svelte';
 	import Toolbar from './ReaderToolbar.svelte';
 	import VerticalReader from './VerticalReader.svelte';
 	import { readerStore, scalingOptions, touchLayoutOptions } from './reader.js';
-	import type { ReadStat } from '$lib/types';
-	import { siteConfig, user } from '$lib/stores';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { page } from '$app/stores';
-	import { goto, pushState, replaceState } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { MetaTags } from 'svelte-meta-tags';
 
 	export let data;
 

@@ -1,7 +1,7 @@
-import { rm } from 'node:fs/promises';
+import { log } from '$lib/server/utils';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
-import { log } from '$lib/server/utils';
+import { rm } from 'node:fs/promises';
 import db from '~shared/db';
 import { imageDirectory } from '~shared/server.utils';
 

@@ -1,21 +1,19 @@
 <script lang="ts">
+	import { cn } from '$lib/utils.js';
 	import { Label as LabelPrimitive } from 'bits-ui';
-	import { cn } from '$lib/utils';
 
-	type $$Props = LabelPrimitive.Props;
-	type $$Events = LabelPrimitive.Events;
-
-	let className: $$Props['class'] = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		...restProps
+	}: LabelPrimitive.RootProps = $props();
 </script>
 
 <LabelPrimitive.Root
+	bind:ref
 	class={cn(
 		'text-muted-foreground-light text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
 		className
 	)}
-	{...$$restProps}
-	on:mousedown
->
-	<slot />
-</LabelPrimitive.Root>
+	{...restProps}
+/>

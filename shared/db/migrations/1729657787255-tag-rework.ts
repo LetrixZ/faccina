@@ -1,7 +1,7 @@
-import { type Kysely } from 'kysely';
 import config from '../../config';
 import { taxonomyTables } from '../../taxonomy';
 import { id, now } from '../helpers';
+import { type Kysely } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	if (config.database.vendor === 'sqlite') {

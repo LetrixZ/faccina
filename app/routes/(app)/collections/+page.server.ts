@@ -1,6 +1,6 @@
-import { redirect } from '@sveltejs/kit';
 import { userCollections } from '$lib/server/db/queries';
 import type { Collection } from '$lib/types';
+import { redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 

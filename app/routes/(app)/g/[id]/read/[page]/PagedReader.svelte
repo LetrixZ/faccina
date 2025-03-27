@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import ChapterEndToast from './ChapterEndToast.svelte';
-	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import { siteConfig } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
 	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
+	import ChapterEndToast from './ChapterEndToast.svelte';
+	import TouchNavigation from './TouchNavigation.svelte';
+	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let gallery: Gallery;

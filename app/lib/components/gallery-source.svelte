@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { HTMLAnchorAttributes } from 'svelte/elements';
-	import { cn } from '../utils';
 	import Anchira from '../../assets/anchira.webp';
 	import ExHentai from '../../assets/exhentai.ico';
 	import Fakku from '../../assets/fakku.svg';
@@ -11,8 +9,10 @@
 	import Patreon from '../../assets/patreon.webp';
 	import Pixiv from '../../assets/pixiv.webp';
 	import ProjectHentai from '../../assets/project-hentai.webp';
+	import { cn } from '../utils';
+	import type { HTMLAnchorAttributes } from 'svelte/elements';
 
-	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
+	type $Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 
 	export let source: { name: string; url?: string | null };
 
@@ -66,7 +66,7 @@
 		}
 	})();
 
-	let className: $$Props['class'] = undefined;
+	let className: $Props['class'] = undefined;
 
 	export { className as class };
 </script>

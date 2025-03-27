@@ -1,9 +1,9 @@
-import crypto from 'crypto';
+import { createCollectionSchema } from '$lib/schemas';
+import { slugify } from '$lib/utils';
 import { fail, redirect } from '@sveltejs/kit';
+import crypto from 'crypto';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { slugify } from '$lib/utils';
-import { createCollectionSchema } from '$lib/schemas';
 import config from '~shared/config';
 import db from '~shared/db';
 

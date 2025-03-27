@@ -1,15 +1,15 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import * as Form from '$lib/components/ui/form';
+	import { Input } from '$lib/components/ui/input';
+	import type { UserFormState } from '../models';
+	import { resetSchema, type ResetSchema } from '../schemas';
+	import { Button } from './ui/button';
 	import type { ActionResult } from '@sveltejs/kit';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import type { UserFormState } from '../models';
-	import { resetSchema, type ResetSchema } from '../schemas';
-	import { Button } from './ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { page } from '$app/stores';
-	import * as Form from '$lib/components/ui/form';
 
 	export let data: SuperValidated<Infer<ResetSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;

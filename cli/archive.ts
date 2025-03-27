@@ -1,13 +1,4 @@
-import { createReadStream } from 'node:fs';
-import { mkdir, rename, rm, stat } from 'node:fs/promises';
-import { dirname, extname, join, parse } from 'node:path';
-import { Glob, sleep } from 'bun';
-import chalk from 'chalk';
-import cliProgress from 'cli-progress';
-import { filetypemime } from 'magic-bytes.js';
-import naturalCompare from 'natural-compare-lite';
-import StreamZip from 'node-stream-zip';
-import slugify from 'slugify';
+import { readStream } from '$lib/server/utils';
 import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
@@ -23,7 +14,16 @@ import {
 } from './metadata';
 import { parseFilename } from './metadata/utils';
 import { directorySize, queryIdRanges } from './utilts';
-import { readStream } from '$lib/server/utils';
+import { Glob, sleep } from 'bun';
+import chalk from 'chalk';
+import cliProgress from 'cli-progress';
+import { filetypemime } from 'magic-bytes.js';
+import naturalCompare from 'natural-compare-lite';
+import StreamZip from 'node-stream-zip';
+import { createReadStream } from 'node:fs';
+import { mkdir, rename, rm, stat } from 'node:fs/promises';
+import { dirname, extname, join, parse } from 'node:path';
+import slugify from 'slugify';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
 

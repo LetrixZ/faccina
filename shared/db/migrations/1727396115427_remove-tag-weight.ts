@@ -1,5 +1,5 @@
-import type { Kysely } from 'kysely';
 import { id } from '../helpers';
+import type { Kysely } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.dropTable('tag_weights').execute();

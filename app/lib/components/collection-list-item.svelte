@@ -1,8 +1,8 @@
 <script lang="ts">
-	import FileQuestion from 'lucide-svelte/icons/file-question';
-	import type { Collection } from '../types';
 	import { siteConfig } from '$lib/stores';
 	import { cn } from '$lib/utils';
+	import type { Collection } from '../types';
+	import FileQuestion from 'lucide-svelte/icons/file-question';
 
 	export let collection: Collection;
 

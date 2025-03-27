@@ -1,13 +1,16 @@
 <script lang="ts">
-	import type { HTMLAttributes } from 'svelte/elements';
 	import { cn } from '$lib/utils';
+	import type { WithElementRef } from 'bits-ui';
+	import type { HTMLLiAttributes } from 'svelte/elements';
 
-	type $$Props = HTMLAttributes<HTMLLIElement>;
-	let className: $$Props['class'] = undefined;
-
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		...restProps
+	}: WithElementRef<HTMLLiAttributes> = $props();
 </script>
 
-<li class={cn('text-muted-foreground-light', className)} {...$$restProps}>
-	<slot />
+<li class={cn('text-text-muted-foreground-light', className)} bind:this={ref} {...restProps}>
+	{@render children?.()}
 </li>

@@ -1,3 +1,5 @@
+import config from '../config';
+import type { DB } from './types';
 import {
 	type Expression,
 	ExpressionWrapper,
@@ -17,8 +19,6 @@ import {
 	jsonBuildObject as sqliteJsonBuildObject,
 	jsonObjectFrom as sqliteJsonObjectFrom,
 } from 'kysely/helpers/sqlite';
-import config from '../config';
-import type { DB } from './types';
 
 /**
  * Create a new table with a primary key ID

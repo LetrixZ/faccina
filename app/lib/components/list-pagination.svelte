@@ -1,12 +1,12 @@
 <script lang="ts">
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { createEventDispatcher } from 'svelte';
-	import Button from './ui/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { cn } from '$lib/utils';
+	import Button from './ui/button/button.svelte';
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import { createEventDispatcher } from 'svelte';
 
 	export let total: number;
 	export let limit: number;

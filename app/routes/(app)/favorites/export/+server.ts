@@ -1,7 +1,7 @@
-import { error } from '@sveltejs/kit';
 import { getGallery } from '$lib/server/db/queries';
 import type { Gallery } from '$lib/types';
 import { getMetadata } from '$lib/utils';
+import { error } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { TouchLayoutOption } from './reader';
 	import { cn } from '$lib/utils';
+	import type { TouchLayoutOption } from './reader';
 
 	export let selectedTouchLayoutOption: TouchLayoutOption;
 	export let previewLayout: boolean;

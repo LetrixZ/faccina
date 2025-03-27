@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { type Order, type Sort } from './schemas';
+import { z } from 'zod';
 
 export type TagNamespace =
 	| 'artist'

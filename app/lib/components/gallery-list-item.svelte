@@ -1,12 +1,12 @@
 <script lang="ts">
-	import CircleCheck from 'lucide-svelte/icons/circle-check';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import pixelWidth from 'string-pixel-width';
+	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
 	import type { GalleryListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
+	import CircleCheck from 'lucide-svelte/icons/circle-check';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import pixelWidth from 'string-pixel-width';
 
 	export let gallery: GalleryListItem;
 	export let onSelect: (gallery: GalleryListItem) => void;

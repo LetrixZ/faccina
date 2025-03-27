@@ -1,4 +1,10 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
+	import { cn, relativeDate } from '$lib/utils';
+	import type { HistoryEntry, Tag } from '../types';
+	import Chip from './chip.svelte';
+	import Button from './ui/button/button.svelte';
 	import dayjs from 'dayjs';
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import BookOpenCheck from 'lucide-svelte/icons/book-open-check';
@@ -6,12 +12,6 @@
 	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
-	import type { HistoryEntry, Tag } from '../types';
-	import Chip from './chip.svelte';
-	import Button from './ui/button/button.svelte';
-	import { cn, relativeDate } from '$lib/utils';
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
 
 	export let entry: HistoryEntry;
 	export let enableBookmark = false;

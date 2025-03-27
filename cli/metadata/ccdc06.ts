@@ -1,8 +1,8 @@
+import { type ArchiveMetadata } from '../../shared/metadata';
+import { mapMultiField, multiTextField } from './schemas';
 import dayjs from 'dayjs';
 import YAML from 'yaml';
 import { z } from 'zod';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { mapMultiField, multiTextField } from './schemas';
 
 const multiIdField = z.union([z.number(), z.string()]);
 

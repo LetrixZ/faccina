@@ -1,16 +1,16 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
+	import { cn } from '$lib/utils';
+	import type { GalleryListItem, Tag } from '../types';
+	import Chip from './chip.svelte';
+	import Button from './ui/button/button.svelte';
 	import AlignJustify from 'lucide-svelte/icons/align-justify';
 	import Bookmark from 'lucide-svelte/icons/bookmark';
 	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
 	import { dragHandle } from 'svelte-dnd-action';
-	import type { GalleryListItem, Tag } from '../types';
-	import Chip from './chip.svelte';
-	import Button from './ui/button/button.svelte';
-	import { cn } from '$lib/utils';
-	import { siteConfig } from '$lib/stores';
-	import { page } from '$app/stores';
 
 	export let gallery: GalleryListItem;
 	export let enableBookmark = false;

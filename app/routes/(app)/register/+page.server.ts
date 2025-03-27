@@ -1,12 +1,12 @@
+import { registerSchema } from '$lib/schemas';
+import { lucia } from '$lib/server/auth';
+import type { Actions, PageServerLoad } from './$types';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { generateIdFromEntropySize } from 'lucia';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { lucia } from '$lib/server/auth';
-import { registerSchema } from '$lib/schemas';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {

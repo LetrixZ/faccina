@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button } from './ui/button';
 	import { enhance } from '$app/forms';
 	import { userCollections } from '$lib/stores';
 	import type { Gallery } from '$lib/types';
+	import { Button } from './ui/button';
 
 	export let gallery: Pick<Gallery, 'id'>;
 </script>

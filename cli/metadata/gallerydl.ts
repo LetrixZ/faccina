@@ -1,8 +1,8 @@
-import dayjs from 'dayjs';
-import { z } from 'zod';
 import config from '../../shared/config';
 import { type ArchiveMetadata } from '../../shared/metadata';
 import { parseFilename } from './utils';
+import dayjs from 'dayjs';
+import { z } from 'zod';
 
 const metadataSchema = z.object({
 	title: z.string(),

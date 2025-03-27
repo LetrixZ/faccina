@@ -1,12 +1,12 @@
-import chalk from 'chalk';
-import { Argument, Command, Option } from 'commander';
 import { version } from '../package.json';
 import * as archive from './archive';
 import * as images from './images';
 import * as metadataCli from './metadata-cli';
 import * as migrate from './migrate';
-import * as users from './users';
 import * as server from './server';
+import * as users from './users';
+import chalk from 'chalk';
+import { Argument, Command, Option } from 'commander';
 
 const program = new Command();
 

@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import type { Scaling, TouchLayoutOption } from './reader';
 	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { siteConfig } from '$lib/stores';
 	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
+	import TouchNavigation from './TouchNavigation.svelte';
+	import type { Scaling, TouchLayoutOption } from './reader';
+	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let gallery: Gallery;

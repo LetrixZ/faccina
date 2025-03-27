@@ -1,7 +1,4 @@
 <script lang="ts">
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Trash from 'lucide-svelte/icons/trash';
-	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListNavbar from '$lib/components/list-navbar.svelte';
@@ -10,6 +7,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import Pencil from 'lucide-svelte/icons/pencil';
+	import Trash from 'lucide-svelte/icons/trash';
+	import { toast } from 'svelte-sonner';
 
 	export let data;
 	export let form;

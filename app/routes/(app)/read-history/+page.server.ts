@@ -1,6 +1,6 @@
-import { redirect } from '@sveltejs/kit';
 import { sortArchiveTags } from '$lib/server/utils';
 import type { HistoryEntry } from '$lib/types';
+import { redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers';

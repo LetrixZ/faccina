@@ -1,9 +1,9 @@
-import { randomBytes } from 'crypto';
-import chalk from 'chalk';
-import { generateIdFromEntropySize } from 'lucia';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import { recoveryCode, sendRecoveryEmail } from '../shared/users';
+import chalk from 'chalk';
+import { randomBytes } from 'crypto';
+import { generateIdFromEntropySize } from 'lucia';
 
 export const generateLoginLink = async (username: string) => {
 	const db = (await import('../shared/db')).default;

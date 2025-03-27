@@ -1,10 +1,10 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
-	import { type SuperForm } from 'sveltekit-superforms';
-	import type { z } from 'zod';
 	import * as Form from '$lib/components/ui/form';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { type CreateSeriesSchema } from '$lib/schemas.js';
+	import Save from 'lucide-svelte/icons/save';
+	import { type SuperForm } from 'sveltekit-superforms';
+	import type { z } from 'zod';
 
 	export let form: SuperForm<z.infer<CreateSeriesSchema>, unknown>;
 

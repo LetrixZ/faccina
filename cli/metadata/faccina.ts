@@ -1,7 +1,7 @@
+import { type ArchiveMetadata } from '../../shared/metadata';
 import dayjs from 'dayjs';
 import YAML from 'yaml';
 import { z } from 'zod';
-import { type ArchiveMetadata } from '../../shared/metadata';
 
 export const metadataSchema = z.object({
 	id: z.number().optional(),

@@ -1,8 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import { siteConfig, tagList } from '../stores';
-	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
@@ -11,6 +7,10 @@
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
 	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
+	import { siteConfig, tagList } from '../stores';
+	import { Switch } from './ui/switch';
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let selectedGalleries: number[] = [];
 

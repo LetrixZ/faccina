@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { orderTypes, sortTypes } from './sort';
 import { stringOrStringArray } from './common';
+import { orderTypes, sortTypes } from './sort';
+import { z } from 'zod';
 
 const usernameSchema = z
 	.string()

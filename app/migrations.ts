@@ -1,7 +1,7 @@
-import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
+import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import config from '~shared/config';
 import { exists, imageDirectory } from '~shared/server.utils';
 

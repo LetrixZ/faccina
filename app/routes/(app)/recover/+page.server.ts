@@ -1,8 +1,8 @@
+import { recoverSchema } from '$lib/schemas';
+import type { Actions } from './$types';
 import { error, fail } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions } from './$types';
-import { recoverSchema } from '$lib/schemas';
 import config from '~shared/config';
 import db from '~shared/db';
 import { recoveryCode, sendRecoveryEmail } from '~shared/users';

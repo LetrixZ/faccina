@@ -1,13 +1,16 @@
 <script lang="ts">
+	import { cn } from '$lib/utils.js';
+	import type { WithElementRef } from 'bits-ui';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '$lib/utils';
 
-	type $$Props = HTMLAttributes<HTMLUListElement>;
-
-	let className: $$Props['class'] = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		...restProps
+	}: WithElementRef<HTMLAttributes<HTMLUListElement>> = $props();
 </script>
 
-<ul class={cn('flex w-full flex-row items-center gap-1', className)} {...$$restProps}>
-	<slot />
+<ul bind:this={ref} class={cn('flex w-full flex-row items-center gap-1', className)} {...restProps}>
+	{@render children?.()}
 </ul>

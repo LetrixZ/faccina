@@ -1,7 +1,7 @@
+import { userDeleteSchema } from '$lib/schemas';
 import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { userDeleteSchema } from '$lib/schemas';
 import db from '~shared/db';
 
 export const actions = {

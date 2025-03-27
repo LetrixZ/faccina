@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { stringOrStringArray } from './common';
+import { z } from 'zod';
 
 const tagMappingSchema = z.object({
 	match: stringOrStringArray,

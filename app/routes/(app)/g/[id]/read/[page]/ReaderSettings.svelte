@@ -1,14 +1,4 @@
 <script lang="ts">
-	import Image from 'lucide-svelte/icons/image';
-	import Info from 'lucide-svelte/icons/info';
-	import {
-		readerStore,
-		readingModeOptions,
-		reverseLayoutOptions,
-		scalingOptions,
-		touchLayoutOptions,
-		type Scaling,
-	} from './reader';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -19,6 +9,16 @@
 	import { siteConfig } from '$lib/stores';
 	import { type Gallery, type Image as GalleryImage } from '$lib/types';
 	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
+	import {
+		readerStore,
+		readingModeOptions,
+		reverseLayoutOptions,
+		scalingOptions,
+		touchLayoutOptions,
+		type Scaling,
+	} from './reader';
+	import Image from 'lucide-svelte/icons/image';
+	import Info from 'lucide-svelte/icons/info';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let open = false;

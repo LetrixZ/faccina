@@ -1,8 +1,8 @@
-import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
 import { libraryItems, searchArchives } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
 import { randomString } from '$lib/utils';
+import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 import db from '~shared/db';
 
 export const load: PageServerLoad = async ({ locals, url }) => {

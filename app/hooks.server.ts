@@ -1,8 +1,8 @@
-import { type Handle } from '@sveltejs/kit';
-import chalk from 'chalk';
-import { runMigrations } from './migrations';
 import { lucia } from '$lib/server/auth';
 import { log } from '$lib/server/utils';
+import { runMigrations } from './migrations';
+import { type Handle } from '@sveltejs/kit';
+import chalk from 'chalk';
 import config from '~shared/config';
 
 await runMigrations();
