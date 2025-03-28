@@ -4,6 +4,7 @@ import { Popover as PopoverPrimitive } from 'bits-ui';
 const Root = PopoverPrimitive.Root;
 const Trigger = PopoverPrimitive.Trigger;
 const Close = PopoverPrimitive.Close;
+const Portal = PopoverPrimitive.Portal;
 
 export {
 	Close,
@@ -13,6 +14,7 @@ export {
 	Close as PopoverClose,
 	Content as PopoverContent,
 	Trigger as PopoverTrigger,
+	Portal,
 	Root,
 	Trigger,
 };

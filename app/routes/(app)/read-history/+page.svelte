@@ -6,24 +6,26 @@
 	import type { HistoryEntry } from '$lib/types';
 	import { relativeDate } from '$lib/utils';
 
-	export let data;
+	const { data } = $props();
 
-	$: groupedEntries = data.entries.reduce(
-		(acc, entry) => {
-			const date = relativeDate(entry.lastReadAt);
+	const groupedEntries = $derived(
+		data.entries.reduce(
+			(acc, entry) => {
+				const date = relativeDate(entry.lastReadAt);
 
-			let dateEntry = acc.find((entry) => entry.date === date);
+				let dateEntry = acc.find((entry) => entry.date === date);
 
-			if (!dateEntry) {
-				dateEntry = { date, entries: [] };
-				acc.push(dateEntry);
-			}
+				if (!dateEntry) {
+					dateEntry = { date, entries: [] };
+					acc.push(dateEntry);
+				}
 
-			dateEntry.entries.push(entry);
+				dateEntry.entries.push(entry);
 
-			return acc;
-		},
-		[] as { date: string; entries: HistoryEntry[] }[]
+				return acc;
+			},
+			[] as { date: string; entries: HistoryEntry[] }[]
+		)
 	);
 </script>
 

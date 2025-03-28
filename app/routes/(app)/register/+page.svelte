@@ -1,7 +1,7 @@
 <script lang="ts">
 	import RegisterForm from '$lib/components/register-form.svelte';
 
-	export let data;
+	const { data } = $props();
 </script>
 
 <main class="container mx-auto w-full md:w-96">

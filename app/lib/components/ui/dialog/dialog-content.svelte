@@ -1,24 +1,26 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
 	import * as Dialog from './index.js';
-	import X from '@lucide/svelte/icons/x';
 	import { Dialog as DialogPrimitive, type WithoutChildrenOrChild } from 'bits-ui';
 	import type { Snippet } from 'svelte';
+	import type { ClassValue } from 'svelte/elements';
 
 	let {
 		ref = $bindable(null),
 		class: className,
+		overlayClass,
 		portalProps,
 		children,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
 		portalProps?: DialogPrimitive.PortalProps;
+		overlayClass?: ClassValue | null;
 		children: Snippet;
 	} = $props();
 </script>
 
 <Dialog.Portal {...portalProps}>
-	<Dialog.Overlay />
+	<Dialog.Overlay class={overlayClass} />
 	<DialogPrimitive.Content
 		bind:ref
 		class={cn(

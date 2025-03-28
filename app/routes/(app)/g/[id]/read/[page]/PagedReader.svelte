@@ -1,56 +1,73 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
+	import { page } from '$app/state';
+	import { appState } from '$lib/stores';
 	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
 	import ChapterEndToast from './ChapterEndToast.svelte';
 	import TouchNavigation from './TouchNavigation.svelte';
-	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
+	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader.svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
-	export let gallery: Gallery;
+	type Props = {
+		gallery: Gallery;
+		currentPage: number;
+		minWidth: number;
+		maxWidth: number;
+		selectedPreset?: ReaderPreset;
+		selectedScalingOption: ScalingOption;
+		selectedTouchLayoutOption: TouchLayoutOption;
+		previewLayout: boolean;
+		hasPrevious: boolean;
+		hasNext: boolean;
+		toolbarPosition: 'top' | 'bottom';
+		onPrevious: () => void;
+		onNext: () => void;
+		onMenu: (value?: boolean) => void;
+	};
 
-	export let currentPage: number;
+	let {
+		gallery,
+		currentPage,
+		minWidth,
+		maxWidth,
+		selectedPreset,
+		selectedScalingOption,
+		selectedTouchLayoutOption,
+		previewLayout,
+		hasPrevious,
+		hasNext,
+		toolbarPosition,
+		onPrevious,
+		onNext,
+		onMenu,
+	}: Props = $props();
 
-	export let minWidth: number;
-	export let maxWidth: number;
+	let isMounted = $state(false);
 
-	export let selectedPreset: ReaderPreset | undefined;
-	export let selectedScalingOption: ScalingOption;
-	export let selectedTouchLayoutOption: TouchLayoutOption;
+	const currentImage = $derived(gallery.images[currentPage - 1]!);
 
-	export let previewLayout: boolean;
+	const selectedScaling = $derived(selectedScalingOption.value);
 
-	export let hasPrevious: boolean;
-	export let hasNext: boolean;
+	const imageWidth = $derived(selectedPreset?.width ?? currentImage.width);
+	const imageHeight = $derived(
+		selectedPreset?.width
+			? Math.round((selectedPreset?.width * currentImage.height!) / currentImage.width!)
+			: currentImage.height
+	);
 
-	export let toolbarPosition: 'top' | 'bottom';
-
-	export let onPrevious: () => void;
-	export let onNext: () => void;
-	export let onMenu: (value?: boolean) => void;
-
-	let isMounted = false;
-
-	$: currentImage = gallery.images[currentPage - 1]!;
-
-	$: selectedScaling = selectedScalingOption.value;
-
-	$: imageWidth = selectedPreset?.width ?? currentImage.width;
-	$: imageHeight = selectedPreset?.width
-		? Math.round((selectedPreset?.width * currentImage.height!) / currentImage.width!)
-		: currentImage.height;
-
-	$: imageUrl = getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer);
+	const imageUrl = $derived(
+		getImageUrl(currentPage, gallery, selectedPreset, appState.siteConfig.imageServer)
+	);
 
 	let scrollContainer: HTMLDivElement;
+	// svelte-ignore non_reactive_update
 	let navContainer: HTMLDivElement;
 	let imageElement: HTMLImageElement;
 
-	let imageStatus = gallery.images.map((image) => ({ ...image, status: 'idle' }));
+	const imageStatus = $derived(gallery.images.map((image) => ({ ...image, status: 'idle' })));
 
 	function setPosition() {
 		if (!navContainer || !scrollContainer) {
@@ -124,7 +141,7 @@
 			const imageEl = new Image(width, height);
 			imageEl.onload = () => (image.status = 'loaded');
 			imageEl.onerror = () => (image.status = 'loaded');
-			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, $siteConfig.imageServer);
+			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, appState.siteConfig.imageServer);
 		}
 	}
 
@@ -133,23 +150,23 @@
 		setPosition();
 	});
 
-	$: {
+	$effect(() => {
 		if (selectedScaling) {
 			scrollContainer?.scrollTo({ top: 0, behavior: 'instant' });
 		}
-	}
+	});
 
-	$: {
+	$effect(() => {
 		if (isMounted) {
 			preloadPages(currentPage, selectedPreset);
 		}
-	}
+	});
 </script>
 
 <div
 	bind:this={scrollContainer}
 	class="relative w-full overflow-auto"
-	on:scroll={() => setPosition()}
+	onscroll={() => setPosition()}
 >
 	<div
 		class={cn(
@@ -176,7 +193,7 @@
 	</div>
 
 	<TouchNavigation
-		bind:navContainer
+		bind:ref={navContainer}
 		hasNext={true}
 		{hasPrevious}
 		{onMenu}
@@ -193,7 +210,7 @@
 					componentProps: {
 						gallery,
 						onBack: () => {
-							goto(`/g/${gallery.id}${$page.url.search}`);
+							goto(`/g/${gallery.id}${page.url.search}`);
 							toast.dismiss('end-chapter');
 						},
 					},

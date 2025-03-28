@@ -4,25 +4,25 @@
 	import cookie from 'cookie';
 	import { toast } from 'svelte-sonner';
 
-	export let data;
+	const { data } = $props();
 
-	let isMouted = false;
-	let selectedTags: string[] = [];
+	let isMouted = $state(false);
+	let selectedTags = $state<string[]>([]);
 
-	$: {
+	$effect(() => {
 		if (browser && isMouted) {
 			document.cookie = cookie.serialize('blacklist', selectedTags.join(','), {
 				path: '/',
 				maxAge: 31536000,
 			});
 		}
-	}
+	});
 
-	let blacklist: string[] = [];
+	let blacklist = $state<string[]>([]);
 
-	$: {
+	$effect(() => {
 		blacklist = data.blacklist;
-	}
+	});
 
 	const save = async () => {
 		const formData = new FormData();
@@ -45,8 +45,8 @@
 		<InputChip
 			chips={blacklist}
 			id="tags"
-			on:update={(ev) => {
-				blacklist = ev.detail;
+			onUpdate={(update) => {
+				blacklist = update;
 				save();
 			}}
 			tags={data.tags.map((tag) => `${tag.namespace}:${tag.name}`)}

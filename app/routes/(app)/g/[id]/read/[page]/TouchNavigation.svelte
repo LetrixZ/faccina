@@ -1,48 +1,61 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import type { TouchLayoutOption } from './reader';
+	import type { TouchLayoutOption } from './reader.svelte';
 
-	export let selectedTouchLayoutOption: TouchLayoutOption;
-	export let previewLayout: boolean;
+	type Props = {
+		ref?: HTMLElement | null;
+		selectedTouchLayoutOption: TouchLayoutOption;
+		previewLayout: boolean;
+		hasPrevious: boolean;
+		hasNext: boolean;
+		onPrevious: () => void;
+		onNext: () => void;
+		onMenu: (value?: boolean) => void;
+	};
 
-	export let hasPrevious: boolean;
-	export let hasNext: boolean;
-
-	export let onPrevious: () => void;
-	export let onNext: () => void;
-	export let onMenu: (value?: boolean) => void;
-
-	export let navContainer: HTMLDivElement;
+	let {
+		ref = $bindable(null),
+		selectedTouchLayoutOption,
+		previewLayout,
+		hasPrevious,
+		hasNext,
+		onPrevious,
+		onNext,
+		onMenu,
+	}: Props = $props();
 </script>
 
 <div
-	bind:this={navContainer}
+	bind:this={ref}
 	class="absolute inset-x-0 grid h-full w-full"
 	style="grid-template-columns: repeat({selectedTouchLayoutOption.rows[0]?.length}, minmax(0, 1fr))"
 >
 	{#each selectedTouchLayoutOption.rows as row}
 		{#each row as column}
 			{#if column === 'p'}
+				<!-- svelte-ignore a11y_consider_explicit_label -->
 				<button
 					class={cn('outline-none', previewLayout && 'bg-red-500/60')}
 					disabled={!hasPrevious}
 					draggable="false"
-					on:click={onPrevious}
+					onclick={onPrevious}
 					tabindex="-1"
 				></button>
 			{:else if column === 'n'}
+				<!-- svelte-ignore a11y_consider_explicit_label -->
 				<button
 					class={cn('outline-none', previewLayout && 'bg-green-500/60')}
 					disabled={!hasNext}
 					draggable="false"
-					on:click={onNext}
+					onclick={onNext}
 					tabindex="-1"
 				></button>
 			{:else}
+				<!-- svelte-ignore a11y_consider_explicit_label -->
 				<button
 					class={cn('outline-none', previewLayout && 'bg-neutral-500/60')}
 					draggable="false"
-					on:click={() => onMenu()}
+					onclick={() => onMenu()}
 					tabindex="-1"
 				></button>
 			{/if}

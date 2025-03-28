@@ -5,11 +5,9 @@
 	import PageTitle from '$lib/components/page-title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import FileText from 'lucide-svelte/icons/file-text';
+	import FileText from '@lucide/svelte/icons/file-text';
 
-	export let data;
-
-	$: library = data.libraryPage;
+	const { data } = $props();
 </script>
 
 <svelte:head>
@@ -18,7 +16,7 @@
 
 <main class="relative container flex flex-auto flex-col gap-y-2">
 	<div class="flex justify-between">
-		<PageTitle>Favorites ({library.total})</PageTitle>
+		<PageTitle>Favorites ({data.libraryPage.total})</PageTitle>
 
 		<Button class="flex gap-2" href="/favorites/export" variant="outline">
 			<FileText class="size-4" /> Export Favorites
@@ -26,14 +24,14 @@
 	</div>
 
 	<div class="grid items-end gap-2 md:flex">
-		<ListNavbar {library} type="favorites" />
+		<ListNavbar library={data.libraryPage} type="favorites" />
 	</div>
 
 	<Separator />
 
-	{#if library.data.length}
+	{#if data.libraryPage.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each library.data as archive (archive.id)}
+			{#each data.libraryPage.data as archive (archive.id)}
 				<ListItem enableBookmark gallery={archive} type="favorites" />
 			{/each}
 		</div>
@@ -45,7 +43,7 @@
 
 	<ListPagination
 		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
-		limit={library.limit}
-		total={library.total}
+		limit={data.libraryPage.limit}
+		total={data.libraryPage.total}
 	/>
 </main>

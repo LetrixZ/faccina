@@ -1,60 +1,65 @@
 <script lang="ts">
 	import { goto, pushState, replaceState } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { siteConfig, user } from '$lib/stores';
+	import { appState } from '$lib/stores.js';
 	import type { ReadStat } from '$lib/types';
 	import PagedReader from './PagedReader.svelte';
 	import Settings from './ReaderSettings.svelte';
 	import Toolbar from './ReaderToolbar.svelte';
 	import VerticalReader from './VerticalReader.svelte';
-	import { readerStore, scalingOptions, touchLayoutOptions } from './reader.js';
+	import { getTouchLayoutOptions, readerState, scalingOptions } from './reader.svelte.js';
 	import { onMount } from 'svelte';
 	import { MetaTags } from 'svelte-meta-tags';
 
-	export let data;
+	const { data } = $props();
 
 	let scrollContainer: HTMLDivElement | undefined;
 
-	let previewLayout = false;
-	let toolbarVisible = true;
-	let isMouted = false;
+	let previewLayout = $state(false);
+	let toolbarVisible = $state(true);
+	let isMouted = $state(false);
 
-	$: readerAllowOriginal = data.readerAllowOriginal;
+	const readerAllowOriginal = $derived(data.readerAllowOriginal);
 
-	$: currentPage = $page.state.page || parseInt($page.params.page!);
-	$: currentImage = data.gallery.images[currentPage - 1]!;
+	const currentPage = $derived(page.state.page || parseInt(page.params.page!));
+	const currentImage = $derived(data.gallery.images[currentPage - 1]!);
 
-	$: hasPrevious = currentPage > 1;
-	$: hasNext = currentPage < data.gallery.pages;
+	const hasPrevious = $derived(currentPage > 1);
+	const hasNext = $derived(currentPage < data.gallery.pages);
 
-	$: reader = $readerStore!;
+	const selectedPreset = $derived(
+		data.presets.find((preset) => preset.hash === readerState.preset)
+	);
 
-	$: selectedPreset = data.presets.find((preset) => preset.hash === reader.preset);
+	const selectedScaling = $derived(readerState.scaling!);
+	const selectedScalingOption = $derived(
+		scalingOptions.find((option) => option.value === selectedScaling)!
+	);
 
-	$: selectedScaling = reader.scaling;
-	$: selectedScalingOption = scalingOptions.find((option) => option.value === selectedScaling)!;
+	const touchLayoutOptions = getTouchLayoutOptions();
 
-	$: selectedTouchLayout = reader.touchLayout;
-	$: selectedTouchLayoutOption = $touchLayoutOptions.find(
-		(layout) => layout.name === selectedTouchLayout
-	)!;
+	const selectedTouchLayout = $derived(readerState.touchLayout);
+	const selectedTouchLayoutOption = $derived(
+		touchLayoutOptions.find((layout) => layout.name === selectedTouchLayout)!
+	);
 
-	$: settingsOpen = $page.state.settingsOpen === true;
+	const settingsOpen = $derived(page.state.settingsOpen === true);
 
-	let scrollTo: ((page: number) => void) | undefined;
+	// svelte-ignore non_reactive_update
+	let verticalReader: VerticalReader | undefined;
 
 	function gotoPage(pageNumber: number) {
 		if (isMouted) {
-			replaceState(`/g/${data.gallery.id}/read/${pageNumber}${$page.url.search}`, {
+			replaceState(`/g/${data.gallery.id}/read/${pageNumber}${page.url.search}`, {
 				page: pageNumber,
 			});
 		}
 	}
 
 	function onPage(page: number) {
-		if (scrollTo) {
-			scrollTo(page);
+		if (verticalReader) {
+			verticalReader.scrollTo(page);
 		} else {
 			gotoPage(page);
 		}
@@ -87,7 +92,7 @@
 	}
 
 	function stateReadPage(page: number) {
-		if (!$siteConfig.enableReadHistory || !$user) {
+		if (!appState.siteConfig.enableReadHistory || !appState.user) {
 			return;
 		}
 
@@ -139,9 +144,9 @@
 		isMouted = true;
 	});
 
-	$: {
+	$effect(() => {
 		stateReadPage(currentPage);
-	}
+	});
 </script>
 
 <svelte:head>
@@ -170,14 +175,14 @@
 	}}
 />
 
-{#if reader.readingMode === 'paged'}
+{#if readerState.readingMode === 'paged'}
 	<PagedReader
 		{currentPage}
 		gallery={data.gallery}
 		{hasNext}
 		{hasPrevious}
-		maxWidth={reader.maxWidth}
-		minWidth={reader.minWidth}
+		maxWidth={readerState.maxWidth!}
+		minWidth={readerState.minWidth!}
 		{onMenu}
 		{onNext}
 		{onPrevious}
@@ -185,18 +190,18 @@
 		{selectedPreset}
 		{selectedScalingOption}
 		{selectedTouchLayoutOption}
-		toolbarPosition={reader.toolbarPosition}
+		toolbarPosition={readerState.toolbarPosition!}
 	/>
-{:else if reader.readingMode === 'continuous-vertical'}
+{:else if readerState.readingMode === 'continuous-vertical'}
 	<VerticalReader
-		bind:scrollTo
+		bind:this={verticalReader}
 		{currentPage}
 		gallery={data.gallery}
 		{gotoPage}
 		{hasNext}
 		{hasPrevious}
-		maxWidth={reader.maxWidth}
-		minWidth={reader.minWidth}
+		maxWidth={readerState.maxWidth!}
+		minWidth={readerState.minWidth!}
 		{onMenu}
 		{onNext}
 		{onPrevious}
@@ -204,17 +209,17 @@
 		{selectedPreset}
 		{selectedScaling}
 		{selectedTouchLayoutOption}
-		verticalGap={reader.verticalGap}
+		verticalGap={readerState.verticalGap!}
 	/>
 {/if}
 
 <Toolbar
 	{currentPage}
-	onBack={() => goto(`/g/${data.gallery.id}${$page.url.search}`)}
-	onMenu={() => pushState('', { settingsOpen: true, page: $page.state.page })}
+	onBack={() => goto(`/g/${data.gallery.id}${page.url.search}`)}
+	onMenu={() => pushState('', { settingsOpen: true, page: page.state.page })}
 	{onPage}
 	pages={data.gallery.pages}
-	position={reader.toolbarPosition}
+	position={readerState.toolbarPosition!}
 	visible={toolbarVisible}
 />
 

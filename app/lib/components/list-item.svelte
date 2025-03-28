@@ -1,51 +1,63 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { siteConfig, userCollections } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import { cn } from '$lib/utils';
 	import type { GalleryListItem, ListPageType, Tag } from '../types';
 	import BookmarkToast from './bookmark-toast.svelte';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { toast } from 'svelte-sonner';
 
-	export let gallery: GalleryListItem;
-	export let enableBookmark = false;
-	export let imageBookmark = false;
-	export let newTab = false;
-	export let type: ListPageType;
+	type Props = {
+		gallery: GalleryListItem;
+		enableBookmark?: boolean;
+		imageBookmark?: boolean;
+		newTab?: boolean;
+		type: ListPageType;
+		bookmarked?: boolean;
+		onBookmark?: (bookmarked: boolean) => void;
+	};
 
-	export let bookmarked: boolean | undefined = undefined;
-	export let onBookmark: ((bookmarked: boolean) => void) | undefined = undefined;
+	let {
+		gallery,
+		enableBookmark = false,
+		imageBookmark = false,
+		newTab = false,
+		type,
+		bookmarked,
+		onBookmark,
+	}: Props = $props();
 
-	let collectionsOpen = false;
-	let bookmarkGallery: GalleryListItem | null = null;
+	let collectionsOpen = $state(false);
+	let bookmarkGallery = $state<GalleryListItem>();
 
-	$: _bookmarked =
+	const _bookmarked = $derived(
 		bookmarked !== undefined
 			? bookmarked
-			: !!$userCollections
+			: !!appState.userCollections
 					?.find((c) => c.protected)
-					?.archives.find((archive) => archive.id === gallery.id);
+					?.archives.find((archive) => archive.id === gallery.id)
+	);
 
-	$: {
+	$effect(() => {
 		if (!collectionsOpen) {
-			bookmarkGallery = null;
+			bookmarkGallery = undefined;
 		}
-	}
+	});
 
-	$: [reducedTags, moreCount] = (() => {
+	const { tags, moreCount } = $derived.by(() => {
 		const tags = gallery.tags;
 
 		const maxWidth = 290;
 
-		let tagCount = tags.length;
+		let moreCount = tags.length;
 		let width = 0;
 
 		const reduced: Tag[] = [];
@@ -64,14 +76,12 @@
 
 				width += tagWidth;
 				reduced.push(tag);
-				tagCount--;
+				moreCount--;
 			}
 		}
 
-		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+		return { tags: reduced, moreCount };
+	});
 
 	const handleBookmark = (bookmarked: boolean) => {
 		if (onBookmark) {
@@ -79,7 +89,7 @@
 			return;
 		}
 
-		const defaultCollection = $userCollections?.find((c) => c.protected);
+		const defaultCollection = appState.userCollections?.find((c) => c.protected);
 
 		if (!defaultCollection) {
 			return;
@@ -119,10 +129,10 @@
 
 <div class="group h-auto w-auto space-y-2">
 	<a
-		href={`/g/${gallery.id}${$page.url.search}`}
+		href="/g/{gallery.id}{page.url.search}"
 		tabindex="-1"
 		{...newTab && { target: '_blank' }}
-		on:click={(ev) => {
+		onclick={(ev) => {
 			if (enableBookmark && imageBookmark) {
 				ev.preventDefault();
 				handleBookmark(!_bookmarked);
@@ -131,11 +141,11 @@
 	>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
-				alt={`'${gallery.title}' cover`}
+				alt="'{gallery.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src="{appState.siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
 				width={640}
 			/>
 
@@ -151,7 +161,9 @@
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
 							_bookmarked && 'opacity-90'
 						)}
-						on:click|preventDefault|stopPropagation={() => {
+						onclick={(ev) => {
+							ev.preventDefault();
+							ev.stopPropagation();
 							handleBookmark(!_bookmarked);
 						}}
 					>
@@ -186,7 +198,7 @@
 	<div class="h-fit space-y-1.5">
 		<a
 			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-			href={`/g/${gallery.id}${$page.url.search}`}
+			href="/g/{gallery.id}{page.url.search}"
 			title={gallery.title}
 			{...newTab && { target: '_blank' }}
 		>

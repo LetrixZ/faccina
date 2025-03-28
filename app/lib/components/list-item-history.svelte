@@ -1,34 +1,41 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
+	import { page } from '$app/state';
+	import { appState } from '$lib/stores';
 	import { cn, relativeDate } from '$lib/utils';
 	import type { HistoryEntry, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import Button from './ui/button/button.svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import BookOpenCheck from '@lucide/svelte/icons/book-open-check';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import dayjs from 'dayjs';
-	import BookOpen from 'lucide-svelte/icons/book-open';
-	import BookOpenCheck from 'lucide-svelte/icons/book-open-check';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
-	import { createEventDispatcher } from 'svelte';
 
-	export let entry: HistoryEntry;
-	export let enableBookmark = false;
-	export let bookmarked = false;
-	export let imageBookmark = false;
-	export let newTab = false;
+	type Props = {
+		entry: HistoryEntry;
+		enableBookmark?: boolean;
+		bookmarked?: boolean;
+		imageBookmark?: boolean;
+		newTab?: boolean;
+		onBookmark?: (bookmark: boolean) => void;
+	};
 
-	$: gallery = entry.archive;
+	let {
+		entry,
+		enableBookmark = false,
+		bookmarked = false,
+		imageBookmark = false,
+		newTab = false,
+		onBookmark,
+	}: Props = $props();
 
-	const dispatch = createEventDispatcher<{ bookmark: boolean; dropItem: [number, number] }>();
-
-	$: [reducedTags, moreCount] = (() => {
+	const { tags, moreCount } = $derived.by(() => {
 		const maxWidth = 290;
 
-		const tags = gallery.tags;
+		const tags = entry.archive.tags;
 
-		let tagCount = tags.length;
+		let moreCount = tags.length;
 		let width = 0;
 
 		const reduced: Tag[] = [];
@@ -47,36 +54,35 @@
 
 				width += tagWidth;
 				reduced.push(tag);
-				tagCount--;
+				moreCount--;
 			}
 		}
 
-		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+		return { tags: reduced, moreCount };
+	});
 </script>
 
 <div class="group bg-background/70 relative flex justify-between gap-2 rounded pe-6">
 	<a
-		href={`/g/${gallery.id}${$page.url.search}`}
+		href="/g/{entry.archive.id}{page.url.search}"
 		tabindex="-1"
 		{...newTab && { target: '_blank' }}
 		class="flex-shrink-0"
-		on:click={(ev) => {
+		onclick={(ev) => {
 			if (enableBookmark && imageBookmark) {
 				ev.preventDefault();
-				dispatch('bookmark', !bookmarked);
+				onBookmark?.(!bookmarked);
 			}
 		}}
 	>
 		<div class="relative max-w-24 overflow-clip rounded-md shadow md:max-w-32">
 			<img
-				alt={`'${gallery.title}' cover`}
+				alt="'{entry.archive.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src="{appState.siteConfig.imageServer}/image/{entry.archive.hash}/{entry.archive
+					.thumbnail}?type=cover"
 				width={640}
 			/>
 
@@ -87,8 +93,10 @@
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
 							bookmarked && 'opacity-90'
 						)}
-						on:click|preventDefault|stopPropagation={() => {
-							dispatch('bookmark', !bookmarked);
+						onclick={(ev) => {
+							ev.preventDefault();
+							ev.stopPropagation();
+							onBookmark?.(!bookmarked);
 						}}
 					>
 						<Bookmark class={cn(bookmarked && 'fill-white')} />
@@ -96,7 +104,7 @@
 				</div>
 			{/if}
 			<div class="absolute end-1 bottom-1 flex gap-1">
-				{#if gallery.deletedAt}
+				{#if entry.archive.deletedAt}
 					<div
 						class="flex aspect-square size-6 items-center justify-center rounded-md bg-slate-700 p-1 text-xs font-bold text-white opacity-85"
 					>
@@ -104,7 +112,7 @@
 					</div>
 				{/if}
 				<div class="w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70">
-					{gallery.pages}P
+					{entry.archive.pages}P
 				</div>
 			</div>
 		</div>
@@ -113,11 +121,11 @@
 	<div class="h-fit flex-auto space-y-1.5">
 		<a
 			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-			href={`/g/${gallery.id}${$page.url.search}`}
-			title={gallery.title}
+			href="/g/{entry.archive.id}{page.url.search}"
+			title={entry.archive.title}
 			{...newTab && { target: '_blank' }}
 		>
-			{gallery.title}
+			{entry.archive.title}
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
@@ -157,7 +165,7 @@
 			{:else}
 				<Button
 					class="flex h-fit w-fit items-center gap-1 p-0 text-sm font-medium"
-					href={`/g/${gallery.id}/read/${entry.lastPage}${$page.url.search}`}
+					href="/g/{entry.archive.id}/read/{entry.lastPage}{page.url.search}"
 					variant="link"
 				>
 					<span>

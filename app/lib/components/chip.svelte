@@ -3,8 +3,12 @@
 	import type { Tag } from '../types';
 	import { Button } from './ui/button';
 
-	export let tag: Tag;
-	export let newTab = false;
+	type Props = {
+		tag: Tag;
+		newTab?: boolean;
+	};
+
+	let { tag, newTab = false }: Props = $props();
 
 	const classes = (() => {
 		switch (tag.namespace) {
@@ -25,23 +29,23 @@
 		}
 	})();
 
-	$: namespace = ['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(
-		tag.namespace
-	)
-		? null
-		: tag.namespace;
+	const namespace = $derived(
+		['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(tag.namespace)
+			? null
+			: tag.namespace
+	);
 
-	$: label = (() => {
+	const label = $derived.by(() => {
 		if (namespace) {
 			return `${namespace}:${tag.name}`;
 		} else {
 			return tag.name;
 		}
-	})();
+	});
 
-	$: url = (() => {
-		return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
-	})();
+	const url = $derived(
+		`/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase()
+	);
 </script>
 
 <Button

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
-	import { siteConfig } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
 	import type { Archive } from '../types';
 	import { cn } from '../utils';
@@ -10,26 +10,35 @@
 	import { Checkbox } from './ui/checkbox';
 	import { Separator } from './ui/separator';
 	import { Textarea } from './ui/textarea';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Save from '@lucide/svelte/icons/save';
+	import Trash from '@lucide/svelte/icons/trash';
 	import type { ActionResult } from '@sveltejs/kit';
-	import Plus from 'lucide-svelte/icons/plus';
-	import Save from 'lucide-svelte/icons/save';
-	import Trash from 'lucide-svelte/icons/trash';
 	import prettyBytes from 'pretty-bytes';
-	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { type Infer, intProxy, superForm, type SuperValidated } from 'sveltekit-superforms';
+	import {
+		type Infer,
+		intProxy,
+		superForm,
+		type SuperValidated,
+		type ValidationErrors,
+	} from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 
-	export let data: SuperValidated<Infer<EditArchiveSchema>>;
-	export let archive: Archive;
+	type Props = {
+		data: SuperValidated<Infer<EditArchiveSchema>>;
+		archive: Archive;
+		onResult?: (result: ActionResult) => void;
+		onClose?: () => void;
+	};
 
-	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
+	let { data, archive, onResult, onClose }: Props = $props();
 
 	let form = superForm(data, {
 		validators: zodClient(editArchiveSchema),
 		dataType: 'json',
 		onResult: ({ result }) => {
-			dispatch('result', result);
+			onResult?.(result);
 
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
@@ -39,20 +48,27 @@
 		},
 	});
 
-	const { form: formData, enhance, errors } = form;
+	const { form: formData, enhance, errors: formErrors } = form;
 
 	const thumbnailProxy = intProxy(form, 'thumbnail');
+	const thumbnail = $derived(parseInt($thumbnailProxy));
 
-	$: thumbnail = parseInt($thumbnailProxy);
+	const sourcesValid = $derived($formData.sources.every((source) => source.name));
 
-	$: sourcesValid = $formData.sources.every((source) => source.name);
+	let errors = $state<ValidationErrors<Infer<EditArchiveSchema>>>({});
+
+	$effect(() => {
+		const unsubscribe = formErrors.subscribe((_errors) => (errors = _errors));
+
+		return () => unsubscribe();
+	});
 </script>
 
 <form
 	action="?/editInfo"
 	class="space-y-4"
 	method="POST"
-	on:submit={(ev) => ev.preventDefault()}
+	onsubmit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex gap-4">
@@ -60,17 +76,17 @@
 
 		<div class="flex max-w-52 flex-col items-center">
 			<img
-				alt={`'${archive.title}' cover`}
+				alt="'{archive.title}' cover"
 				class="shadow-shadow aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${archive.hash}/${thumbnail}?type=thumb`}
+				src="{appState.siteConfig.imageServer}/image/{archive.hash}/{thumbnail}?type=thumb"
 				width={640}
 			/>
 
 			<Button
 				class="text-neutral-200"
-				href={`/image/${archive.hash}/${thumbnail}?type=cover`}
+				href="/image/{archive.hash}/{thumbnail}?type=cover"
 				target="_blank"
 				variant="link"
 			>
@@ -80,48 +96,58 @@
 
 		<div class="flex-auto">
 			<Form.Field {form} name="title">
-				<Form.Control let:attrs>
-					<Form.Label>Title</Form.Label>
-					<Input {...attrs} bind:value={$formData.title} />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Title</Form.Label>
+						<Input {...props} bind:value={$formData.title} />
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<Form.Field {form} name="description">
-				<Form.Control let:attrs>
-					<Form.Label>Description</Form.Label>
-					<Textarea {...attrs} bind:value={$formData.description} />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Description</Form.Label>
+						<Textarea {...props} bind:value={$formData.description} />
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<div class="grid grid-cols-3 gap-4">
 				<Form.Field {form} name="thumbnail">
-					<Form.Control let:attrs>
-						<Form.Label>Thumbnail page</Form.Label>
-						<Input
-							{...attrs}
-							bind:value={$thumbnailProxy}
-							max={archive.pages}
-							min={1}
-							type="number"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Thumbnail page</Form.Label>
+							<Input
+								{...props}
+								bind:value={$thumbnailProxy}
+								max={archive.pages}
+								min={1}
+								type="number"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
 				<Form.Field {form} name="releasedAt">
-					<Form.Control let:attrs>
-						<Form.Label>Released At</Form.Label>
-						<Input {...attrs} bind:value={$formData.releasedAt} type="datetime-local" />
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Released At</Form.Label>
+							<Input {...props} bind:value={$formData.releasedAt} type="datetime-local" />
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
 				<Form.Field {form} name="language">
-					<Form.Control let:attrs>
-						<Form.Label>Language</Form.Label>
-						<Input {...attrs} bind:value={$formData.language} />
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Language</Form.Label>
+							<Input {...props} bind:value={$formData.language} />
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
@@ -132,16 +158,18 @@
 				{form}
 				name="protected"
 			>
-				<Form.Control let:attrs>
-					<Checkbox {...attrs} bind:checked={$formData.protected} />
-					<div class="space-y-1 leading-none">
-						<Form.Label>Protected</Form.Label>
-						<Form.Description>
-							Indicate if this gallery should be protected against metadata changes that impact
-							during indexing. If enabled, only path, hash, size and images will be updated.
-						</Form.Description>
-					</div>
-					<input hidden name={attrs.name} value={$formData.protected} />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Checkbox {...props} bind:checked={$formData.protected} />
+						<div class="space-y-1 leading-none">
+							<Form.Label>Protected</Form.Label>
+							<Form.Description>
+								Indicate if this gallery should be protected against metadata changes that impact
+								during indexing. If enabled, only path, hash, size and images will be updated.
+							</Form.Description>
+						</div>
+						<input hidden name={props.name} value={$formData.protected} />
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -181,18 +209,21 @@
 	<div>
 		<div class="flex flex-col gap-2">
 			{#each $formData.sources as source, i}
-				{@const errors = $errors.sources?.[i]}
+				{@const soruceErrors = errors.sources?.[i]}
 				<div class="flex flex-col gap-1">
 					<div class="flex gap-2">
 						<GallerySource class="my-auto size-8 flex-shrink-0" {source} />
 						<Input
 							bind:value={source.name}
-							class={cn('h-9 w-32', errors?.name && 'border-destructive')}
+							class={cn('h-9 w-32', soruceErrors?.name && 'border-destructive')}
 						/>
-						<Input bind:value={source.url} class={cn('h-9', errors?.url && 'border-destructive')} />
+						<Input
+							bind:value={source.url}
+							class={cn('h-9', soruceErrors?.url && 'border-destructive')}
+						/>
 						<Button
 							class="size-9 flex-shrink-0 p-2"
-							on:click={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
+							onclick={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
 							variant="outline"
 						>
 							<Trash />
@@ -200,14 +231,14 @@
 					</div>
 
 					<div>
-						{#if errors?.name}
+						{#if soruceErrors?.name}
 							<p class="text-destructive text-sm font-medium">
-								{errors.name}
+								{soruceErrors.name}
 							</p>
 						{/if}
-						{#if errors?.url}
+						{#if soruceErrors?.url}
 							<p class="text-destructive text-sm font-medium">
-								{errors.url}
+								{soruceErrors.url}
 							</p>
 						{/if}
 					</div>
@@ -216,7 +247,7 @@
 
 			<Button
 				disabled={!sourcesValid}
-				on:click={() => ($formData.sources = [...$formData.sources, { name: '' }])}
+				onclick={() => ($formData.sources = [...$formData.sources, { name: '' }])}
 				variant="outline"
 			>
 				<Plus class="me-2 size-5" /> Add source
@@ -227,8 +258,8 @@
 	<Separator />
 
 	<div class="flex justify-between">
-		<Button on:click={() => dispatch('close')} variant="outline">Discard changes</Button>
-		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" on:click={() => form.submit()}>
+		<Button onclick={() => onClose?.()} variant="outline">Discard changes</Button>
+		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" onclick={() => form.submit()}>
 			<Save class="size-5" />
 			<span>Save changes</span>
 		</Button>

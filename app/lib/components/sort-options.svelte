@@ -1,22 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 	import type { ListPageType } from '$lib/types';
 	import type { Order, Sort } from '../schemas';
 	import { cn, randomString } from '../utils';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import ChevronUp from 'lucide-svelte/icons/chevron-up';
-	import { createEventDispatcher } from 'svelte';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import type { ClassValue } from 'svelte/elements';
 
-	export let type: ListPageType = 'main';
-	export let defaultSort: Sort = 'released_at';
-	export let defaultOrder: Order = 'desc';
-	export let sort: Sort | undefined = undefined;
-	export let order: Order | undefined = undefined;
-	export let sortOptions: Sort[] = (() => {
+	const getSortOptions = (type: ListPageType) => {
 		const options: Sort[] = [];
 
 		switch (type) {
@@ -48,11 +43,35 @@
 		}
 
 		return options;
-	})();
+	};
 
-	const dispatch = createEventDispatcher<{ sort: { sort: Sort; seed?: string }; order: Order }>();
+	type Props = {
+		class?: ClassValue | null;
+		type?: ListPageType;
+		defaultSort?: Sort;
+		defaultOrder?: Order;
+		sortOptions?: Sort[];
+		sort?: Sort;
+		order?: Order;
+		onSort?: (sort: Sort, seed?: string) => boolean;
+		onOrder?: (order: Order) => boolean;
+	};
 
-	$: defaultSortType = (() => {
+	let {
+		class: className,
+		type = 'main',
+		defaultSort = 'released_at',
+		defaultOrder = 'desc',
+		sortOptions: userSortOptions,
+		sort,
+		order,
+		onSort,
+		onOrder,
+	}: Props = $props();
+
+	const sortOptions = $derived(userSortOptions ? userSortOptions : getSortOptions(type));
+
+	const defaultSortType = $derived.by(() => {
 		switch (type) {
 			case 'main':
 				return defaultSort;
@@ -63,9 +82,9 @@
 			case 'series':
 				return 'series_order';
 		}
-	})();
+	});
 
-	$: defaultOrderType = (() => {
+	const defaultOrderType = $derived.by(() => {
 		switch (type) {
 			case 'main':
 				return defaultOrder;
@@ -75,7 +94,7 @@
 			case 'series':
 				return 'asc';
 		}
-	})();
+	});
 
 	const selectSortOptions: { label: string; value: Sort }[] = (() => {
 		const options = [
@@ -97,52 +116,55 @@
 		return options;
 	})();
 
-	$: sortValue = (() => {
+	const sortValue = $derived.by(() => {
 		if (sort) {
 			return sort;
 		}
 
-		return ($page.url.searchParams.get('sort') as Sort) ?? defaultSortType;
-	})();
+		return (page.url.searchParams.get('sort') as Sort) ?? defaultSortType;
+	});
 
-	$: orderValue = (() => {
+	const orderValue = $derived.by(() => {
 		if (order) {
 			return order;
 		}
 
-		return ($page.url.searchParams.get('order') as Order) ?? defaultOrderType;
-	})();
+		return (page.url.searchParams.get('order') as Order) ?? defaultOrderType;
+	});
 
-	$: sortOption = sortValue && selectSortOptions.find((option) => option.value === sortValue);
+	const sortOption = $derived(
+		sortValue && selectSortOptions.find((option) => option.value === sortValue)
+	);
 
 	const newOrderQuery = () => {
-		const query = new URLSearchParams($page.url.searchParams.toString());
+		const query = new URLSearchParams(page.url.searchParams.toString());
 		query.set('order', orderValue === 'desc' ? 'asc' : 'desc');
 		return query.toString();
 	};
+
+	const selectedLabel = $derived(
+		sortValue ? selectSortOptions.find((option) => option.value === sortValue)?.label : ''
+	);
 </script>
 
-<div class={cn('flex items-end gap-2', $$props.class)}>
+<div class={cn('flex items-end gap-2', className)}>
 	<div class="w-full space-y-0.5 md:w-fit">
 		<Label>Sort by</Label>
 		<Select.Root
 			items={selectSortOptions}
-			onSelectedChange={(option) => {
-				const newSort = option?.value ?? defaultSortType;
-				if (
-					!dispatch(
-						'sort',
-						{ sort: newSort, seed: newSort === 'random' ? randomString() : undefined },
-						{ cancelable: true }
-					)
-				) {
+			value={sortOption?.value}
+			type="single"
+			onValueChange={(value) => {
+				const newSort = value ?? defaultSortType;
+
+				if (onSort && !onSort(newSort as Sort, newSort === 'random' ? randomString() : undefined)) {
 					return;
 				}
 
-				const query = new URLSearchParams($page.url.searchParams.toString());
-				query.set('sort', option?.value ?? defaultSortType);
+				const query = new URLSearchParams(page.url.searchParams.toString());
+				query.set('sort', value ?? defaultSortType);
 
-				if (option?.value === 'random') {
+				if (value === 'random') {
 					if (!query.get('seed')) {
 						query.set('seed', randomString());
 					}
@@ -152,13 +174,14 @@
 
 				goto(`?${query.toString()}`);
 			}}
-			preventScroll={false}
-			selected={sortOption}
 		>
-			<Select.Trigger aria-label="Select sorting option" class="w-full sm:w-48">
-				<Select.Value class="text-muted-foreground-light" />
+			<Select.Trigger
+				aria-label="Select sorting option"
+				class="w-full sm:w-48 text-muted-foreground-light"
+			>
+				{selectedLabel}
 			</Select.Trigger>
-			<Select.Content>
+			<Select.Content preventScroll={false}>
 				{#each selectSortOptions as option}
 					<Select.Item value={option.value}>{option.label}</Select.Item>
 				{/each}
@@ -172,14 +195,14 @@
 			sortValue === 'random' && 'pointer-events-none opacity-50'
 		)}
 		href="?{newOrderQuery()}"
-		on:click={(ev) => {
+		onclick={(ev) => {
 			ev.preventDefault();
 
-			if (!dispatch('order', orderValue === 'desc' ? 'asc' : 'desc', { cancelable: true })) {
+			if (onOrder && !onOrder(orderValue === 'desc' ? 'asc' : 'desc')) {
 				return;
 			}
 
-			const query = new URLSearchParams($page.url.searchParams.toString());
+			const query = new URLSearchParams(page.url.searchParams.toString());
 			query.set('order', orderValue === 'desc' ? 'asc' : 'desc');
 			goto(`?${query.toString()}`);
 		}}

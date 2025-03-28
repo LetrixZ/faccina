@@ -3,23 +3,32 @@
 	import { cn, slugify } from '../utils';
 	import { Button } from './ui/button';
 	import Input from './ui/input/input.svelte';
-	import { createEventDispatcher } from 'svelte';
 
-	export let chips: string[] = [];
-	export let id: string | undefined = undefined;
-	export let tags: string[] = [];
-	export let placeholder: string | undefined = undefined;
+	type Props = {
+		chips: string[];
+		id?: string;
+		tags: string[];
+		placeholder?: string;
+		onUpdate?: (update: string[]) => void;
+	};
 
-	const dispatch = createEventDispatcher<{ update: string[] }>();
+	let {
+		chips = [],
+		id = undefined,
+		tags = [],
+		placeholder = undefined,
+		onUpdate,
+	}: Props = $props();
 
-	let input = '';
+	let input = $state('');
 
 	let containerEl: HTMLDivElement;
+	// svelte-ignore non_reactive_update
 	let inputEl: HTMLInputElement;
 
 	const removeChip = (chip: string) => {
 		chips = chips.filter((_chip) => _chip !== chip);
-		dispatch('update', chips);
+		onUpdate?.(chips);
 	};
 
 	const submit = () => {
@@ -37,20 +46,20 @@
 
 		chips = [...chips, aux];
 		popoverOpen = false;
-		dispatch('update', chips);
+		onUpdate?.(chips);
 		input = '';
 	};
 
-	let selectPosition = -1;
-	let highligtedIndex = -1;
-	let isFocused = false;
-	let popoverOpen = false;
+	let selectPosition = $state(-1);
+	let highligtedIndex = $state(-1);
+	let isFocused = $state(false);
+	let popoverOpen = $state(false);
 
-	$: {
+	$effect(() => {
 		if (!isFocused) {
 			highligtedIndex = -1;
 		}
-	}
+	});
 
 	const insertTag = async (inputEl: HTMLInputElement, index?: number) => {
 		const currentPosition = inputEl.selectionStart;
@@ -89,136 +98,148 @@
 		chips = [...chips, tag];
 		highligtedIndex = -1;
 		popoverOpen = false;
-		dispatch('update', chips);
+		onUpdate?.(chips);
 		input = '';
 	};
 
-	$: filteredTags = input.trim().length
-		? (() => {
-				let value = input.toLowerCase();
+	const filteredTags = $derived.by(() => {
+		if (!input.trim().length) {
+			return [];
+		}
 
-				if (value[selectPosition - 1] !== ' ') {
-					let wordEnd = selectPosition;
-					let wordStart = selectPosition;
+		let value = input.toLowerCase();
 
-					if (wordEnd < value.length) {
-						while (value[wordEnd] && value[wordEnd] !== ' ') {
-							wordEnd++;
-						}
-					}
+		if (value[selectPosition - 1] !== ' ') {
+			let wordEnd = selectPosition;
+			let wordStart = selectPosition;
 
-					while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-						wordStart--;
-					}
-
-					if (wordStart >= 0 && wordEnd >= 0) {
-						value = value.substring(wordStart, wordEnd);
-					}
-				} else {
-					value = '';
+			if (wordEnd < value.length) {
+				while (value[wordEnd] && value[wordEnd] !== ' ') {
+					wordEnd++;
 				}
+			}
 
-				if (!value.trim().length || value === '-') {
-					return [];
-				}
+			while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
+				wordStart--;
+			}
 
-				return tags
-					.filter((name) => {
-						return (
-							name.toLowerCase().includes(value) &&
-							!chips.find((chip) => slugify(chip) === slugify(name))
-						);
-					})
-					.slice(0, 5);
-			})()
-		: [];
+			if (wordStart >= 0 && wordEnd >= 0) {
+				value = value.substring(wordStart, wordEnd);
+			}
+		} else {
+			value = '';
+		}
+
+		if (!value.trim().length || value === '-') {
+			return [];
+		}
+
+		return tags
+			.filter((name) => {
+				return (
+					name.toLowerCase().includes(value) &&
+					!chips.find((chip) => slugify(chip) === slugify(name))
+				);
+			})
+			.slice(0, 5);
+	});
 </script>
 
 <form
 	class="border-input ring-offset-background focus-within:ring-ring rounded-md border focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none"
-	on:submit|preventDefault={submit}
+	onsubmit={(ev) => {
+		ev.preventDefault();
+		submit();
+	}}
 >
 	<Popover.Root
-		disableFocusTrap={true}
 		onOpenChange={(open) => (popoverOpen = open)}
 		open={!!filteredTags.length && popoverOpen}
-		openFocus={inputEl}
-		portal={containerEl}
 	>
-		<div bind:this={containerEl} class="relative">
-			<Popover.Trigger class="absolute -bottom-3.5 w-full" />
+		<Popover.Portal>
+			<div bind:this={containerEl} class="relative">
+				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 
-			<Input
-				autocomplete="off"
-				bind:htmlInput={inputEl}
-				bind:value={input}
-				class="border-0 focus-visible:ring-0"
-				{id}
-				name="q"
-				on:focus={() => {
-					isFocused = true;
-					popoverOpen = true;
-				}}
-				on:input={() => {
-					popoverOpen = true;
-					setTimeout(() => {
-						selectPosition = inputEl.selectionStart ?? -1;
-					}, 1);
-				}}
-				on:keydown={(ev) => {
-					switch (ev.key) {
-						case 'Escape':
-							ev.preventDefault();
-							break;
-						case 'ArrowDown':
-							ev.preventDefault();
-							if (highligtedIndex >= filteredTags.length) {
-								highligtedIndex = -1;
-							}
-
-							highligtedIndex += 1;
-							break;
-						case 'ArrowUp':
-							ev.preventDefault();
-
-							if (highligtedIndex <= -1) {
-								highligtedIndex = filteredTags.length;
-							}
-
-							highligtedIndex -= 1;
-							break;
-						case 'Enter':
-							if (highligtedIndex >= 0) {
+				<Input
+					autocomplete="off"
+					bind:ref={inputEl}
+					bind:value={input}
+					class="border-0 focus-visible:ring-0"
+					{id}
+					name="q"
+					onfocus={() => {
+						isFocused = true;
+						popoverOpen = true;
+					}}
+					oninput={() => {
+						popoverOpen = true;
+						setTimeout(() => {
+							selectPosition = inputEl.selectionStart ?? -1;
+						}, 1);
+					}}
+					onkeydown={(ev) => {
+						switch (ev.key) {
+							case 'Escape':
 								ev.preventDefault();
-							}
-
-							insertTag(ev.currentTarget);
-
-							break;
-						case 'Tab':
-							if (filteredTags.length) {
+								break;
+							case 'ArrowDown':
 								ev.preventDefault();
-								highligtedIndex = 0;
+								if (highligtedIndex >= filteredTags.length) {
+									highligtedIndex = -1;
+								}
+
+								highligtedIndex += 1;
+								break;
+							case 'ArrowUp':
+								ev.preventDefault();
+
+								if (highligtedIndex <= -1) {
+									highligtedIndex = filteredTags.length;
+								}
+
+								highligtedIndex -= 1;
+								break;
+							case 'Enter':
+								if (highligtedIndex >= 0) {
+									ev.preventDefault();
+								}
+
 								insertTag(ev.currentTarget);
-							}
 
-							break;
-					}
-				}}
-				on:selectionchange={() => {
-					setTimeout(() => {
-						selectPosition = inputEl.selectionStart ?? -1;
-					}, 1);
-				}}
-				{placeholder}
-			/>
-		</div>
+								break;
+							case 'Tab':
+								if (filteredTags.length) {
+									ev.preventDefault();
+									highligtedIndex = 0;
+									insertTag(ev.currentTarget);
+								}
 
-		<Popover.Content align="start" class="grid w-fit p-0">
+								break;
+						}
+					}}
+					onselectionchange={() => {
+						setTimeout(() => {
+							selectPosition = inputEl.selectionStart ?? -1;
+						}, 1);
+					}}
+					{placeholder}
+				/>
+			</div>
+		</Popover.Portal>
+
+		<Popover.Content
+			align="start"
+			class="grid w-fit p-0"
+			trapFocus={false}
+			onOpenAutoFocus={(ev) => {
+				ev.preventDefault();
+				inputEl.focus();
+			}}
+		>
 			{#each filteredTags as tag, i}
 				<Button
 					class={cn('justify-start', i === highligtedIndex && 'underline')}
-					on:click={() => {
+					onclick={() => {
 						inputEl.focus();
 						insertTag(inputEl, i);
 					}}
@@ -235,7 +256,7 @@
 			{#each chips as chip}
 				<button
 					class="bg-secondary hover:bg-secondary/80 rounded-md px-2 py-0.5 text-sm text-neutral-200 hover:text-white motion-safe:duration-150"
-					on:click={() => removeChip(chip)}
+					onclick={() => removeChip(chip)}
 					type="button"
 				>
 					{chip}

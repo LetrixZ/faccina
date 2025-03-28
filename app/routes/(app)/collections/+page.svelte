@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 
-	export let data;
+	const { data } = $props();
 </script>
 
 <main class="container flex flex-auto flex-col space-y-2">

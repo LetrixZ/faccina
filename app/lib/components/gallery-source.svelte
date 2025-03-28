@@ -10,13 +10,16 @@
 	import Pixiv from '../../assets/pixiv.webp';
 	import ProjectHentai from '../../assets/project-hentai.webp';
 	import { cn } from '../utils';
-	import type { HTMLAnchorAttributes } from 'svelte/elements';
+	import type { ClassValue } from 'svelte/elements';
 
-	type $Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
+	type Props = {
+		source: { name: string; url?: string | null };
+		class?: ClassValue | null;
+	};
 
-	export let source: { name: string; url?: string | null };
+	let { source, class: className }: Props = $props();
 
-	$: image = (() => {
+	const image = $derived.by(() => {
 		switch (source.name.toLowerCase()) {
 			case 'fakku':
 				return Fakku;
@@ -43,9 +46,9 @@
 			default:
 				return;
 		}
-	})();
+	});
 
-	$: style = (() => {
+	const style = $derived.by(() => {
 		switch (source.name.toLowerCase()) {
 			case 'fakku':
 				return 'background: #AB2328; padding: 0.25rem';
@@ -64,11 +67,7 @@
 			case 'hentainexus':
 				return 'background: black;';
 		}
-	})();
-
-	let className: $Props['class'] = undefined;
-
-	export { className as class };
+	});
 </script>
 
 <a
@@ -82,7 +81,7 @@
 	title={source.name}
 >
 	{#if image}
-		<img alt={`${source.name} icon`} src={image} />
+		<img alt="{source.name} icon" src={image} />
 	{:else}
 		<span>?</span>
 	{/if}

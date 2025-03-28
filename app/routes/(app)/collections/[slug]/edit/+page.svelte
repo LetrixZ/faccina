@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { pushState } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
 	import ListItemDrag from '$lib/components/list-item-drag.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -10,8 +10,8 @@
 	import { createCollectionSchema } from '$lib/schemas';
 	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
-	import BookmarkPlus from 'lucide-svelte/icons/bookmark-plus';
-	import Save from 'lucide-svelte/icons/save';
+	import BookmarkPlus from '@lucide/svelte/icons/bookmark-plus';
+	import Save from '@lucide/svelte/icons/save';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
@@ -20,17 +20,19 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 
-	export let data;
+	const { data } = $props();
 
-	let selectedGalleries = data.collection.archives as (GalleryListItem & {
-		[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
-	})[];
+	let selectedGalleries = $derived(
+		data.collection.archives as (GalleryListItem & {
+			[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
+		})[]
+	);
 
-	$: {
+	$effect(() => {
 		selectedGalleries = data.collection.archives;
-	}
+	});
 
-	$: searchOpen = !!$page.state.searchOpen;
+	const searchOpen = $derived(!!page.state.searchOpen);
 
 	let form = superForm(data.editForm, {
 		validators: zodClient(createCollectionSchema),
@@ -48,7 +50,7 @@
 	const { form: formData, enhance, errors } = form;
 
 	const openSearch = () => {
-		if (!$page.state.searchOpen) {
+		if (!page.state.searchOpen) {
 			pushState('', {
 				searchOpen: true,
 			});
@@ -64,24 +66,26 @@
 	<form
 		class="flex flex-auto flex-col gap-2"
 		method="POST"
-		on:submit={() => {
+		onsubmit={() => {
 			$formData.archives = selectedGalleries.map((gallery) => gallery.id);
 		}}
 		use:enhance
 	>
 		<div class="flex w-full items-start gap-2">
 			<Form.Field class="flex-auto" {form} name="name">
-				<Form.Control let:attrs>
-					<Input
-						{...attrs}
-						bind:value={$formData.name}
-						class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
-						placeholder="Collection name"
-					/>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Input
+							{...props}
+							bind:value={$formData.name}
+							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
+							placeholder="Collection name"
+						/>
 
-					{#if $errors.name}
-						<Form.FieldErrors />
-					{/if}
+						{#if $errors.name}
+							<Form.FieldErrors />
+						{/if}
+					{/snippet}
 				</Form.Control>
 			</Form.Field>
 
@@ -91,7 +95,7 @@
 					<span class="sr-only">Save changes</span>
 				</Button>
 
-				<Button class="w-full gap-x-2 bg-indigo-700 hover:bg-indigo-700/80" on:click={openSearch}>
+				<Button class="w-full gap-x-2 bg-indigo-700 hover:bg-indigo-700/80" onclick={openSearch}>
 					<BookmarkPlus class="size-5" />
 					<span class="max-md:sr-only">Add galleries</span>
 				</Button>
@@ -102,8 +106,8 @@
 			<div
 				aria-label="Collection"
 				class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
-				on:consider={(e) => (selectedGalleries = e.detail.items)}
-				on:finalize={(e) => (selectedGalleries = e.detail.items)}
+				onconsider={(e) => (selectedGalleries = e.detail.items)}
+				onfinalize={(e) => (selectedGalleries = e.detail.items)}
 				use:dragHandleZone={{
 					items: selectedGalleries,
 					flipDurationMs: 50,
@@ -128,7 +132,7 @@
 		{:else}
 			<div class="flex flex-auto flex-col items-center justify-center gap-4">
 				<h3 class="text-2xl font-medium">No galleries added</h3>
-				<Button on:click={openSearch} variant="outline">Add galleries</Button>
+				<Button onclick={openSearch} variant="outline">Add galleries</Button>
 			</div>
 		{/if}
 	</form>
@@ -139,8 +143,7 @@
 		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-2 pt-2 pb-0"
 	>
 		<CollectionArchiveSearch
-			on:bookmark={(ev) => {
-				const { gallery, bookmark } = ev.detail;
+			onBookmark={({ gallery, bookmark }) => {
 				if (bookmark) {
 					selectedGalleries = [...selectedGalleries, gallery];
 				} else {

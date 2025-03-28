@@ -1,51 +1,68 @@
 <script lang="ts">
 	import { beforeNavigate } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { siteConfig } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
 	import TouchNavigation from './TouchNavigation.svelte';
-	import type { Scaling, TouchLayoutOption } from './reader';
+	import type { Scaling, TouchLayoutOption } from './reader.svelte';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
-	export let gallery: Gallery;
-	export let currentPage: number;
+	type Props = {
+		gallery: Gallery;
+		currentPage: number;
+		verticalGap: number;
+		minWidth: number;
+		maxWidth: number;
+		selectedPreset?: ReaderPreset;
+		selectedScaling: Scaling;
+		selectedTouchLayoutOption: TouchLayoutOption;
+		previewLayout: boolean;
+		hasPrevious: boolean;
+		hasNext: boolean;
+		gotoPage: (page: number) => void;
+		onPrevious: () => void;
+		onNext: () => void;
+		onMenu: (value?: boolean) => void;
+		scrollTo?: (page: number) => void;
+	};
 
-	export let verticalGap: number;
-	export let minWidth: number;
-	export let maxWidth: number;
+	let {
+		gallery,
+		currentPage,
+		verticalGap,
+		minWidth,
+		maxWidth,
+		selectedPreset,
+		selectedScaling,
+		selectedTouchLayoutOption,
+		previewLayout,
+		hasPrevious,
+		hasNext,
+		gotoPage,
+		onPrevious,
+		onNext,
+		onMenu,
+	}: Props = $props();
 
-	export let selectedScaling: Scaling;
-	export let selectedPreset: ReaderPreset | undefined;
-	export let selectedTouchLayoutOption: TouchLayoutOption;
+	let visiblePage = $state(1);
 
-	export let previewLayout: boolean;
+	let blockScrollingNavigation = $state(false);
 
-	export let hasPrevious: boolean;
-	export let hasNext: boolean;
+	let containers: HTMLDivElement[] = $state([]);
 
-	export let gotoPage: (page: number) => void;
-	export let onPrevious: () => void;
-	export let onNext: () => void;
-	export let onMenu: (value?: boolean) => void;
+	let clientWidth = $state<number>();
+	let clientHeight = $state(0);
 
-	let visiblePage = 1;
-
-	let blockScrollingNavigation = false;
+	let hasWidth = $state(false);
 
 	let scrollContainer: HTMLDivElement;
+	// svelte-ignore non_reactive_update
 	let navContainer: HTMLDivElement;
 	let endContainer: HTMLDivElement;
-
-	let containers: HTMLDivElement[] = [];
-
-	let clientWidth: number;
-	let clientHeight = 0;
-
-	let hasWidth = false;
 
 	export function scrollTo(page: number, skipNavigation: boolean = false) {
 		blockScrollingNavigation = true;
@@ -170,15 +187,15 @@
 		});
 	});
 
-	$: {
+	$effect(() => {
 		getCurrentContainer(clientHeight);
-	}
+	});
 
-	$: {
+	$effect(() => {
 		if (clientWidth !== undefined) {
 			hasWidth = true;
 		}
-	}
+	});
 </script>
 
 <div
@@ -186,7 +203,7 @@
 	bind:clientWidth
 	bind:this={scrollContainer}
 	class="relative h-full w-full overflow-y-auto"
-	on:scroll={onScroll}
+	onscroll={onScroll}
 >
 	<div class="relative h-80 w-full">
 		<div
@@ -224,7 +241,12 @@
 						selectedScaling === 'fill-height' && 'h-full max-h-dvh'
 					)}
 					in:fade={{ duration: 100 }}
-					src={getImageUrl(image.pageNumber, gallery, selectedPreset, $siteConfig.imageServer)}
+					src={getImageUrl(
+						image.pageNumber,
+						gallery,
+						selectedPreset,
+						appState.siteConfig.imageServer
+					)}
 					style={getImageStyle(image, selectedPreset, selectedScaling, minWidth)}
 				/>
 			{/if}
@@ -234,14 +256,14 @@
 	<div bind:this={endContainer} class="relative h-[40dvh] w-full">
 		<div class="absolute inset-0 flex flex-col items-center justify-center gap-4 text-neutral-200">
 			<p class="text-2xl font-medium">End of chapter</p>
-			<Button class="z-50" href="/g/{gallery.id}{$page.url.search}" variant="outline">
+			<Button class="z-50" href="/g/{gallery.id}{page.url.search}" variant="outline">
 				Go back
 			</Button>
 		</div>
 	</div>
 
 	<TouchNavigation
-		bind:navContainer
+		bind:ref={navContainer}
 		{hasNext}
 		{hasPrevious}
 		{onMenu}

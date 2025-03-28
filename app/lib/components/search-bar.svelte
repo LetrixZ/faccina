@@ -1,85 +1,91 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
 	import type { Tag } from '../types';
-	import Search from 'lucide-svelte/icons/search';
-	import { createEventDispatcher } from 'svelte';
+	import Search from '@lucide/svelte/icons/search';
 
-	export let tags: Tag[];
-	export let searchPlaceholder = '';
+	type Props = {
+		tags: Tag[];
+		searchPlaceholder: string;
+		onSearch?: (search: string) => void;
+	};
 
-	const dispatcher = createEventDispatcher<{ search: string }>();
+	let { tags, searchPlaceholder, onSearch }: Props = $props();
 
+	// svelte-ignore non_reactive_update
 	let formEl: HTMLFormElement;
+	// svelte-ignore non_reactive_update
 	let inputEl: HTMLInputElement;
 
-	let query = '';
+	let query = $state('');
 
-	$: sort = $page.url.searchParams.get('sort');
-	$: order = $page.url.searchParams.get('order');
+	const sort = $derived(page.url.searchParams.get('sort'));
+	const order = $derived(page.url.searchParams.get('order'));
 
-	let selectPosition = -1;
-	let highligtedIndex = -1;
-	let isFocused = false;
-	let popoverOpen = false;
-	let negate = false;
-	let or = false;
+	let selectPosition = $state(-1);
+	let highligtedIndex = $state(-1);
+	let isFocused = $state(false);
+	let popoverOpen = $state(false);
+	let negate = $state(false);
+	let or = $state(false);
 
-	$: filteredTags = query.trim().length
-		? (() => {
-				let value = query.toLowerCase();
+	const filteredTags = $derived.by(() => {
+		if (!query.trim().length) {
+			return [];
+		}
 
-				if (value[selectPosition - 1] !== ' ') {
-					let wordEnd = selectPosition;
-					let wordStart = selectPosition;
+		let value = query.toLowerCase();
 
-					if (wordEnd < value.length) {
-						while (value[wordEnd] && value[wordEnd] !== ' ') {
-							wordEnd++;
-						}
-					}
+		if (value[selectPosition - 1] !== ' ') {
+			let wordEnd = selectPosition;
+			let wordStart = selectPosition;
 
-					while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-						wordStart--;
-					}
-
-					if (wordStart >= 0 && wordEnd >= 0) {
-						value = value.substring(wordStart, wordEnd);
-					}
-				} else {
-					value = '';
+			if (wordEnd < value.length) {
+				while (value[wordEnd] && value[wordEnd] !== ' ') {
+					wordEnd++;
 				}
+			}
 
-				if (!value.trim().length || value === '-' || value === '~') {
-					return [];
-				}
+			while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
+				wordStart--;
+			}
 
-				negate = value[0] === '-';
-				or = value[0] === '~';
+			if (wordStart >= 0 && wordEnd >= 0) {
+				value = value.substring(wordStart, wordEnd);
+			}
+		} else {
+			value = '';
+		}
 
-				if (negate || or) {
-					value = value.substring(1);
-				}
+		if (!value.trim().length || value === '-' || value === '~') {
+			return [];
+		}
 
-				return tags
-					.filter(({ namespace, name }) => {
-						return (
-							`${namespace}:${name}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name}"`.toLowerCase().includes(value)
-						);
-					})
-					.slice(0, 5);
-			})()
-		: [];
+		negate = value[0] === '-';
+		or = value[0] === '~';
 
-	$: {
+		if (negate || or) {
+			value = value.substring(1);
+		}
+
+		return tags
+			.filter(({ namespace, name }) => {
+				return (
+					`${namespace}:${name}`.toLowerCase().includes(value) ||
+					`${namespace}:"${name}"`.toLowerCase().includes(value)
+				);
+			})
+			.slice(0, 5);
+	});
+
+	$effect(() => {
 		if (!isFocused) {
 			highligtedIndex = -1;
 		}
-	}
+	});
 
 	const insertTag = async (input: HTMLInputElement, index?: number) => {
 		let value = query;
@@ -134,121 +140,129 @@
 
 <div class="h-8 w-full">
 	<Popover.Root
-		disableFocusTrap={true}
 		onOpenChange={(open) => (popoverOpen = open)}
 		open={!!filteredTags.length && popoverOpen}
-		openFocus={inputEl}
-		portal={formEl}
 	>
-		<form
-			bind:this={formEl}
-			class="bg-muted ring-offset-background focus-within:ring-ring hover:ring-ring relative flex h-full w-full items-center rounded-md focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none hover:ring-2 hover:ring-offset-2"
-			on:submit|preventDefault={() => {
-				popoverOpen = false;
-				dispatcher('search', query);
-			}}
-		>
-			<Popover.Trigger class="absolute -bottom-3.5 w-full" />
-			<Input
-				autocomplete="off"
-				bind:htmlInput={inputEl}
-				bind:value={query}
-				class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
-				name="q"
-				on:blur={() => (isFocused = false)}
-				on:focus={() => {
-					isFocused = true;
-					popoverOpen = true;
+		<Popover.Portal>
+			<form
+				bind:this={formEl}
+				class="bg-muted ring-offset-background focus-within:ring-ring hover:ring-ring relative flex h-full w-full items-center rounded-md focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none hover:ring-2 hover:ring-offset-2"
+				onsubmit={(ev) => {
+					ev.preventDefault();
+					popoverOpen = false;
+					onSearch?.(query);
 				}}
-				on:input={() => {
-					popoverOpen = true;
-					setTimeout(() => {
-						selectPosition = inputEl.selectionStart ?? -1;
-					}, 1);
-				}}
-				on:keydown={(ev) => {
-					switch (ev.key) {
-						case 'Escape':
-							ev.preventDefault();
-							break;
-						case 'ArrowDown':
-							ev.preventDefault();
-							if (highligtedIndex >= filteredTags.length) {
-								highligtedIndex = -1;
-							}
-
-							highligtedIndex += 1;
-							break;
-						case 'ArrowUp':
-							ev.preventDefault();
-
-							if (highligtedIndex <= -1) {
-								highligtedIndex = filteredTags.length;
-							}
-
-							highligtedIndex -= 1;
-							break;
-						case 'Enter':
-							if (highligtedIndex >= 0) {
-								ev.preventDefault();
-							}
-
-							insertTag(ev.currentTarget);
-
-							break;
-						case 'Tab':
-							if (filteredTags.length) {
-								ev.preventDefault();
-								highligtedIndex = 0;
-								insertTag(ev.currentTarget);
-							}
-
-							break;
-					}
-				}}
-				on:selectionchange={() => {
-					setTimeout(() => {
-						selectPosition = inputEl.selectionStart ?? -1;
-					}, 1);
-				}}
-				placeholder={searchPlaceholder}
-				type="search"
-			/>
-
-			{#if sort}
-				<input class="hidden" name="sort" value={sort} />
-			{/if}
-
-			{#if order}
-				<input class="hidden" name="order" value={order} />
-			{/if}
-
-			<Button
-				class="text-muted-foreground focus-within:text-foreground aspect-square h-full rounded p-0 !ring-0 !ring-offset-0"
-				type="submit"
-				variant="ghost"
 			>
-				<span class="sr-only">Search</span>
-				<Search class="size-5" />
-			</Button>
-		</form>
+				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
+				<Input
+					autocomplete="off"
+					bind:ref={inputEl}
+					bind:value={query}
+					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
+					name="q"
+					onblur={() => (isFocused = false)}
+					onfocus={() => {
+						isFocused = true;
+						popoverOpen = true;
+					}}
+					oninput={() => {
+						popoverOpen = true;
+						setTimeout(() => {
+							selectPosition = inputEl.selectionStart ?? -1;
+						}, 1);
+					}}
+					onkeydown={(ev) => {
+						switch (ev.key) {
+							case 'Escape':
+								ev.preventDefault();
+								break;
+							case 'ArrowDown':
+								ev.preventDefault();
+								if (highligtedIndex >= filteredTags.length) {
+									highligtedIndex = -1;
+								}
 
-		<Popover.Content align="start" class="grid w-fit p-0">
-			{#each filteredTags as tag, i}
-				{@const value =
-					`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
+								highligtedIndex += 1;
+								break;
+							case 'ArrowUp':
+								ev.preventDefault();
+
+								if (highligtedIndex <= -1) {
+									highligtedIndex = filteredTags.length;
+								}
+
+								highligtedIndex -= 1;
+								break;
+							case 'Enter':
+								if (highligtedIndex >= 0) {
+									ev.preventDefault();
+								}
+
+								insertTag(ev.currentTarget);
+
+								break;
+							case 'Tab':
+								if (filteredTags.length) {
+									ev.preventDefault();
+									highligtedIndex = 0;
+									insertTag(ev.currentTarget);
+								}
+
+								break;
+						}
+					}}
+					onselectionchange={() => {
+						setTimeout(() => {
+							selectPosition = inputEl.selectionStart ?? -1;
+						}, 1);
+					}}
+					placeholder={searchPlaceholder}
+					type="search"
+				/>
+
+				{#if sort}
+					<input class="hidden" name="sort" value={sort} />
+				{/if}
+
+				{#if order}
+					<input class="hidden" name="order" value={order} />
+				{/if}
 
 				<Button
-					class={cn('justify-start', i === highligtedIndex && 'underline')}
-					on:click={() => {
-						inputEl.focus();
-						insertTag(inputEl, i);
-					}}
-					variant="link"
+					class="text-muted-foreground focus-within:text-foreground aspect-square h-full rounded p-0 !ring-0 !ring-offset-0"
+					type="submit"
+					variant="ghost"
 				>
-					{value}
+					<span class="sr-only">Search</span>
+					<Search class="size-5" />
 				</Button>
-			{/each}
-		</Popover.Content>
+			</form>
+
+			<Popover.Content
+				align="start"
+				class="grid w-fit p-0"
+				trapFocus={false}
+				onOpenAutoFocus={(ev) => {
+					ev.preventDefault();
+					inputEl.focus();
+				}}
+			>
+				{#each filteredTags as tag, i}
+					{@const value =
+						`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
+
+					<Button
+						class={cn('justify-start', i === highligtedIndex && 'underline')}
+						onclick={() => {
+							inputEl.focus();
+							insertTag(inputEl, i);
+						}}
+						variant="link"
+					>
+						{value}
+					</Button>
+				{/each}
+			</Popover.Content>
+		</Popover.Portal>
 	</Popover.Root>
 </div>

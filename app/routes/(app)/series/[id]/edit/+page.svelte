@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { pushState } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import GallerySearchModal from '$lib/components/gallery-search-modal.svelte';
 	import ListItemDrag from '$lib/components/list-item-drag.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { createSeriesSchema } from '$lib/schemas.js';
-	import { siteConfig } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
 	import SeriesForm from '../../series-form.svelte';
-	import OctagonAlert from 'lucide-svelte/icons/octagon-alert';
+	import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
@@ -20,7 +20,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 
-	export let data;
+	const { data } = $props();
 
 	const form = superForm(data.form, {
 		validators: zodClient(createSeriesSchema),
@@ -37,26 +37,26 @@
 
 	const { form: formData } = form;
 
-	let selected: (GalleryListItem & {
-		[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
-	})[] = [];
+	let selected = $state<(GalleryListItem & { [SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown })[]>([]);
 
-	$: {
+	$effect(() => {
 		selected = data.series.chapters;
-	}
+	});
 
-	$: searchOpen = !!$page.state.searchOpen;
-	$: mainGallery = selected[0];
-	$: cover = mainGallery
-		? `${$siteConfig.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
-		: null;
+	const searchOpen = $derived(!!page.state.searchOpen);
+	const mainGallery = $derived(selected[0]);
+	const cover = $derived(
+		mainGallery
+			? `${appState.siteConfig.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
+			: null
+	);
 
-	$: {
+	$effect(() => {
 		$formData.chapters = selected.map((selected) => selected.id);
-	}
+	});
 
 	const openSearch = () => {
-		if (!$page.state.searchOpen) {
+		if (!page.state.searchOpen) {
 			pushState('', { searchOpen: true });
 		}
 	};
@@ -71,7 +71,7 @@
 </script>
 
 <svelte:head>
-	<title>Create series | {$siteConfig.name}</title>
+	<title>Edit series | {appState.siteConfig.name}</title>
 </svelte:head>
 
 <main class="container flex flex-auto flex-col gap-4">
@@ -100,7 +100,7 @@
 	<div class="relative flex flex-auto flex-col gap-2">
 		<div class="flex items-center justify-between">
 			<p class="text-xl">Chapters</p>
-			<Button on:click={openSearch} variant="outline">Add galleries</Button>
+			<Button onclick={openSearch} variant="outline">Add galleries</Button>
 		</div>
 
 		<Separator />
@@ -109,8 +109,8 @@
 			<div
 				aria-label="Collection"
 				class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
-				on:consider={(e) => (selected = e.detail.items)}
-				on:finalize={(e) => (selected = e.detail.items)}
+				onconsider={(e) => (selected = e.detail.items)}
+				onfinalize={(e) => (selected = e.detail.items)}
 				use:dragHandleZone={{
 					items: selected,
 					flipDurationMs: 50,
@@ -137,7 +137,7 @@
 				class="my-auto flex h-fit w-full flex-grow flex-col items-center justify-center gap-4 py-10"
 			>
 				<h3 class="text-2xl font-medium">No galleries added</h3>
-				<Button on:click={openSearch} variant="outline">Add galleries</Button>
+				<Button onclick={openSearch} variant="outline">Add galleries</Button>
 			</div>
 		{/if}
 	</div>

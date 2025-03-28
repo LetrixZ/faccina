@@ -1,19 +1,16 @@
 <script>
 	import { Toaster } from '$lib/components/ui/sonner';
-	import { siteConfig, user } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import '../app.pcss';
 
-	export let data;
+	const { data, children } = $props();
 
-	$: {
-		$siteConfig = data.site;
-	}
-
-	$: {
-		$user = data.user;
-	}
+	$effect(() => {
+		appState.siteConfig = data.site;
+		appState.user = data.user;
+	});
 </script>
 
-<Toaster position="bottom-center" richColors />
+{@render children()}
 
-<slot></slot>
+<Toaster position="bottom-center" richColors />

@@ -1,18 +1,22 @@
 <script lang="ts">
-	import { siteConfig } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import type { SeriesListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
 	import pixelWidth from 'string-pixel-width';
 
-	export let series: SeriesListItem;
+	type Props = {
+		series: SeriesListItem;
+	};
 
-	$: [reducedTags, moreCount] = (() => {
+	let { series }: Props = $props();
+
+	const { tags, moreCount } = $derived.by(() => {
 		const tags = series.tags;
 
 		const maxWidth = 290;
 
-		let tagCount = tags.length;
+		let moreCount = tags.length;
 		let width = 0;
 
 		const reduced: Tag[] = [];
@@ -31,14 +35,12 @@
 
 				width += tagWidth;
 				reduced.push(tag);
-				tagCount--;
+				moreCount--;
 			}
 		}
 
-		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+		return { tags: reduced, moreCount };
+	});
 </script>
 
 <div class="group h-auto w-auto space-y-2">
@@ -49,7 +51,7 @@
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${series.hash}/${series.thumbnail}?type=cover`}
+				src={`${appState.siteConfig.imageServer}/image/${series.hash}/${series.thumbnail}?type=cover`}
 				width={640}
 			/>
 

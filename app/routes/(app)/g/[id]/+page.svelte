@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import ArchiveEditForm from '$lib/components/archive-edit-form.svelte';
 	import ArchiveTagsEditForm from '$lib/components/archive-tag-edit-form.svelte';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
@@ -16,55 +16,56 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import type { Preset } from '$lib/image-presets';
 	import { type Task } from '$lib/models';
-	import { siteConfig, userCollections } from '$lib/stores';
+	import { appState } from '$lib/stores.js';
 	import { cn, dateTimeFormat, getMetadata, humanFileSize, isTag, randomString } from '$lib/utils';
+	import BookOpenText from '@lucide/svelte/icons/book-open-text';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Download from '@lucide/svelte/icons/download';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import Heart from '@lucide/svelte/icons/heart';
+	import Info from '@lucide/svelte/icons/info';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Tag from '@lucide/svelte/icons/tag';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import BookOpenText from 'lucide-svelte/icons/book-open-text';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Download from 'lucide-svelte/icons/download';
-	import Eye from 'lucide-svelte/icons/eye';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import Heart from 'lucide-svelte/icons/heart';
-	import Info from 'lucide-svelte/icons/info';
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Tag from 'lucide-svelte/icons/tag';
-	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import pMap from 'p-map';
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
 	import { writable } from 'svelte/store';
 	import { generateFilename } from '~shared/utils';
 
-	export let data;
+	const { data } = $props();
 
-	let editOpen = false;
-	let editTaxonomyOpen = false;
-	let collectionsOpen = false;
-	let removeArchiveOpen = false;
+	let editOpen = $state(false);
+	let editTaxonomyOpen = $state(false);
+	let collectionsOpen = $state(false);
+	let removeArchiveOpen = $state(false);
 
-	$: canDownload = data.site.guestDownloads || !!data.user;
-	$: gallery = data.gallery;
-	$: archive = data.archive;
+	const canDownload = $derived(data.site.guestDownloads || !!data.user);
+	const gallery = $derived(data.gallery);
+	const archive = $derived(data.archive);
 
-	$: artists = gallery.tags.filter((tag) => tag.namespace === 'artist');
-	$: circles = gallery.tags.filter((tag) => tag.namespace === 'circle');
-	$: magazines = gallery.tags.filter((tag) => tag.namespace === 'magazine');
-	$: events = gallery.tags.filter((tag) => tag.namespace === 'event');
-	$: publishers = gallery.tags.filter((tag) => tag.namespace === 'publisher');
-	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
-	$: tags = gallery.tags.filter(isTag);
+	const artists = $derived(gallery.tags.filter((tag) => tag.namespace === 'artist'));
+	const circles = $derived(gallery.tags.filter((tag) => tag.namespace === 'circle'));
+	const magazines = $derived(gallery.tags.filter((tag) => tag.namespace === 'magazine'));
+	const events = $derived(gallery.tags.filter((tag) => tag.namespace === 'event'));
+	const publishers = $derived(gallery.tags.filter((tag) => tag.namespace === 'publisher'));
+	const parodies = $derived(gallery.tags.filter((tag) => tag.namespace === 'parody'));
+	const tags = $derived(gallery.tags.filter(isTag));
 
-	$: defaultPresetName =
-		data.defaultPreset?.name ?? (data.allowOriginal ? '[original]' : data.presets[0]?.name);
+	const defaultPresetName = $derived(
+		data.defaultPreset?.name ?? (data.allowOriginal ? '[original]' : data.presets[0]?.name)
+	);
 
 	const startDownload = async (ev: MouseEvent, preset?: Preset) => {
-		if (!$siteConfig.clientSideDownloads) {
+		if (!appState.siteConfig.clientSideDownloads) {
 			return;
 		} else {
 			ev.preventDefault();
 		}
 
-		const task = writable<Task>({
+		let task = $state<Task>({
 			gallery: gallery,
 			progress: 0,
 			total: gallery.images.length,
@@ -138,12 +139,12 @@
 							.arrayBuffer()
 							.then((buffer) => imageFile.push(new Uint8Array(buffer), true));
 
-						task.update((task) => ({ ...task, progress: task.progress + 1 }));
+						task = { ...task, progress: task.progress + 1 };
 					},
 					{ concurrency: 3 }
 				).then(() => {
 					zip.end();
-					task.update((task) => ({ ...task, complete: true }));
+					task = { ...task, complete: true };
 					resolve();
 				});
 			} catch (e) {
@@ -157,7 +158,7 @@
 		toast.promise(promise, {
 			id,
 			componentProps: {
-				task,
+				task: () => task,
 				save: () => save(new Blob(chunks, { type: 'application/zip' })),
 			},
 			loading: DownloadProgress,
@@ -172,9 +173,9 @@
 		});
 	};
 
-	$: isBookmarked = !!$userCollections
-		?.find((c) => c.protected)
-		?.archives.find((a) => a.id === gallery.id);
+	const isBookmarked = $derived(
+		!!appState.userCollections?.find((c) => c.protected)?.archives.find((a) => a.id === gallery.id)
+	);
 
 	const remove = async () => {
 		toast.promise(fetch(`/internal/${gallery.id}/remove`, { method: 'DELETE' }), {
@@ -225,13 +226,14 @@
 <main class="container flex flex-col gap-2 md:flex-row">
 	<div class="@container w-full space-y-2 md:w-80">
 		<div class="w-full">
-			<a href={`./${gallery.id}/read/1/${$page.url.search}`}>
+			<a href="./{gallery.id}/read/1/{page.url.search}">
 				<img
-					alt={`'${gallery.title}' cover`}
+					alt="'{gallery.title}' cover"
 					class="shadow-shadow aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md"
 					height={910}
 					loading="eager"
-					src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+					src="{appState.siteConfig
+						.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
 					width={640}
 				/>
 			</a>
@@ -243,7 +245,7 @@
 			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
 					class="shadow-shadow flex w-full bg-sky-700 text-center font-semibold text-white shadow hover:bg-sky-700/80"
-					on:click={() => (editOpen = true)}
+					onclick={() => (editOpen = true)}
 				>
 					<Pencil class="size-5 shrink-0" />
 					<span class="flex-auto"> Edit info </span>
@@ -251,7 +253,7 @@
 
 				<Button
 					class="shadow-shadow flex w-full bg-orange-700 text-center font-semibold text-white shadow hover:bg-orange-700/80"
-					on:click={() => (editTaxonomyOpen = true)}
+					onclick={() => (editTaxonomyOpen = true)}
 				>
 					<Tag class="size-5 shrink-0" />
 					<span class="flex-auto"> Edit tags </span>
@@ -281,8 +283,10 @@
 
 				<Button
 					class="shadow-shadow flex w-full bg-red-700 text-center font-semibold text-white shadow hover:bg-red-700/80"
-					on:click={() =>
-						$siteConfig.admin.deleteRequireConfirmation ? (removeArchiveOpen = true) : remove()}
+					onclick={() =>
+						appState.siteConfig.admin.deleteRequireConfirmation
+							? (removeArchiveOpen = true)
+							: remove()}
 					type="submit"
 				>
 					<Trash2 class="size-5 shrink-0" />
@@ -297,7 +301,7 @@
 			{#if !data.readEntry || data.readEntry.finishedAt}
 				<Button
 					class={'shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80'}
-					href={`./${gallery.id}/read/1${$page.url.search}`}
+					href={`./${gallery.id}/read/1${page.url.search}`}
 					variant="secondary"
 				>
 					<BookOpenText class="size-5 shrink-0" />
@@ -306,7 +310,7 @@
 			{:else}
 				<Button
 					class={'shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80'}
-					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
+					href={`./${gallery.id}/read/${data.readEntry.lastPage}${page.url.search}`}
 					variant="secondary"
 				>
 					<BookOpenText class="size-5 shrink-0" />
@@ -321,7 +325,7 @@
 						!canDownload && 'pointer-events-none opacity-50'
 					)}
 					href="/g/{gallery.id}/download"
-					on:click={startDownload}
+					onclick={startDownload}
 					variant="secondary"
 				>
 					<Download class="size-5 shrink-0" />
@@ -364,7 +368,7 @@
 						{/if}
 					</div>
 
-					{#if $siteConfig.enableCollections}
+					{#if appState.siteConfig.enableCollections}
 						<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
 							<Dialog.Trigger>
 								<Button
@@ -526,20 +530,19 @@
 	<GalleryThumbnails archive={gallery} />
 </main>
 
-<Dialog.Root
-	closeOnEscape={false}
-	closeOnOutsideClick={false}
-	onOpenChange={(open) => (editOpen = open)}
-	open={editOpen}
->
-	<Dialog.Content class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl">
+<Dialog.Root onOpenChange={(open) => (editOpen = open)} open={editOpen}>
+	<Dialog.Content
+		class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl"
+		escapeKeydownBehavior="ignore"
+		interactOutsideBehavior="ignore"
+	>
 		{#if archive && data.editForm}
 			<ArchiveEditForm
 				{archive}
 				data={data.editForm}
-				on:close={() => (editOpen = false)}
-				on:result={({ detail }) => {
-					if (detail.type === 'success') {
+				onClose={() => (editOpen = false)}
+				onResult={(result) => {
+					if (result.type === 'success') {
 						editOpen = false;
 					}
 				}}
@@ -548,19 +551,18 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root
-	closeOnEscape={false}
-	closeOnOutsideClick={false}
-	onOpenChange={(open) => (editTaxonomyOpen = open)}
-	open={editTaxonomyOpen}
->
-	<Dialog.Content class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl">
+<Dialog.Root onOpenChange={(open) => (editTaxonomyOpen = open)} open={editTaxonomyOpen}>
+	<Dialog.Content
+		class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl"
+		escapeKeydownBehavior="ignore"
+		interactOutsideBehavior="ignore"
+	>
 		{#if archive && data.editTagsForm}
 			<ArchiveTagsEditForm
 				data={data.editTagsForm}
-				on:close={() => (editTaxonomyOpen = false)}
-				on:result={({ detail }) => {
-					if (detail.type === 'success') {
+				onClose={() => (editTaxonomyOpen = false)}
+				onResult={(result) => {
+					if (result.type === 'success') {
 						editTaxonomyOpen = false;
 					}
 				}}
@@ -580,7 +582,7 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action on:click={remove}>Continue</AlertDialog.Action>
+			<AlertDialog.Action onclick={remove}>Continue</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import Cookie from 'cookie';
 import dayjs from 'dayjs';
-import { derived, writable } from 'svelte/store';
 import { z } from 'zod';
 import type { ReaderPreset } from '~shared/config/image.schema';
 
@@ -68,12 +67,48 @@ export const reverseLayoutOptions = [
 	{ value: 'both', label: 'Both' },
 ] satisfies { value: ReverseLayout; label: string }[];
 
-function createReaderStore() {
-	let initialized = false;
-	const store = writable<ReaderSettings | undefined>();
+class ReaderState {
+	initialized = false;
+	settings = $state<ReaderSettings>();
 
-	function init(defaultPreset: ReaderPreset | null | undefined) {
-		if (initialized) {
+	get preset() {
+		return this.settings?.preset;
+	}
+
+	get reverseLayout() {
+		return this.settings?.reverseLayout;
+	}
+
+	get readingMode() {
+		return this.settings?.readingMode;
+	}
+
+	get verticalGap() {
+		return this.settings?.verticalGap;
+	}
+
+	get scaling() {
+		return this.settings?.scaling;
+	}
+
+	get minWidth() {
+		return this.settings?.minWidth;
+	}
+
+	get maxWidth() {
+		return this.settings?.maxWidth;
+	}
+
+	get touchLayout() {
+		return this.settings?.touchLayout;
+	}
+
+	get toolbarPosition() {
+		return this.settings?.toolbarPosition;
+	}
+
+	init(defaultPreset: ReaderPreset | null | undefined) {
+		if (this.initialized) {
 			return;
 		}
 
@@ -97,11 +132,14 @@ function createReaderStore() {
 			}
 		}
 
-		store.set(settings);
-		initialized = true;
+		this.settings = settings;
+
+		if (this.settings) {
+			this.initialized = true;
+		}
 	}
 
-	function updateCookie(settings: ReaderSettings) {
+	updateCookie(settings: ReaderSettings) {
 		try {
 			document.cookie = Cookie.serialize('reader', JSON.stringify(settings), {
 				expires: dayjs().add(1, 'year').toDate(),
@@ -115,125 +153,78 @@ function createReaderStore() {
 		return settings;
 	}
 
-	function setImagePreset(value: ReaderPreset | null) {
-		store.update((settings) => {
-			if (settings) {
-				settings.preset = value?.hash ?? null;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setImagePreset(value: ReaderPreset | null) {
+		if (this.settings) {
+			this.settings.preset = value?.hash ?? null;
+		}
 	}
 
-	function setReadingMode(value: string) {
-		store.update((settings) => {
-			if (settings) {
-				settings.readingMode = value as ReadingMode;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setReadingMode(value: string) {
+		if (this.settings) {
+			this.settings.readingMode = value as ReadingMode;
+		}
 	}
 
-	function setVerticalGap(value: number) {
-		store.update((settings) => {
-			if (settings) {
-				settings.verticalGap = value;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setVerticalGap(value: number) {
+		if (this.settings) {
+			this.settings.verticalGap = value;
+		}
 	}
 
-	function setScaling(value: string) {
-		store.update((settings) => {
-			if (settings) {
-				settings.scaling = value as Scaling;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setScaling(value: string) {
+		if (this.settings) {
+			this.settings.scaling = value as Scaling;
+		}
 	}
 
-	function setMinWidth(value: number) {
-		store.update((settings) => {
-			if (settings) {
-				settings.minWidth = value;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setMinWidth(value: number) {
+		if (this.settings) {
+			this.settings.minWidth = value;
+		}
 	}
 
-	function setMaxWidth(value: number) {
-		store.update((settings) => {
-			if (settings) {
-				settings.maxWidth = value;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setMaxWidth(value: number) {
+		if (this.settings) {
+			this.settings.maxWidth = value;
+		}
 	}
 
-	function setTouchLayout(value: string) {
-		store.update((settings) => {
-			if (settings) {
-				settings.touchLayout = value as TouchLayout;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setTouchLayout(value: string) {
+		if (this.settings) {
+			this.settings.touchLayout = value as TouchLayout;
+		}
 	}
 
-	function setReverseLayout(value: string) {
-		store.update((settings) => {
-			if (settings) {
-				settings.reverseLayout = value as ReverseLayout;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setReverseLayout(value: string) {
+		if (this.settings) {
+			this.settings.reverseLayout = value as ReverseLayout;
+		}
 	}
 
-	function setToolbarPosition(value: string) {
-		store.update((settings) => {
-			if (settings) {
-				settings.toolbarPosition = value as ToolbarPosition;
-				return updateCookie(settings);
-			}
-
-			return settings;
-		});
+	setToolbarPosition(value: string) {
+		if (this.settings) {
+			this.settings.toolbarPosition = value as ToolbarPosition;
+		}
 	}
-
-	return {
-		subscribe: store.subscribe,
-		init,
-		setImagePreset,
-		setReadingMode,
-		setVerticalGap,
-		setScaling,
-		setMaxWidth,
-		setMinWidth,
-		setTouchLayout,
-		setReverseLayout,
-		setToolbarPosition,
-	};
 }
 
-export const readerStore = createReaderStore();
+export const readerState = new ReaderState();
+
+$effect(() => {
+	try {
+		document.cookie = Cookie.serialize('reader', JSON.stringify(readerState.settings), {
+			expires: dayjs().add(1, 'year').toDate(),
+			httpOnly: false,
+			path: '/',
+		});
+	} catch {
+		/* empty */
+	}
+});
 
 export type TouchLayoutOption = { name: TouchLayout; rows: string[][] };
 
-export const touchLayoutOptions = derived(readerStore, (reader) => {
+const touchLayoutOptions = $derived.by(() => {
 	const layouts = [
 		{ name: 'sides', rows: [['p', 'p', '', 'n', 'n']] },
 		{
@@ -261,7 +252,7 @@ export const touchLayoutOptions = derived(readerStore, (reader) => {
 		},
 	] satisfies TouchLayoutOption[];
 
-	switch (reader?.reverseLayout) {
+	switch (readerState.reverseLayout) {
 		case 'vertical':
 			layouts.forEach((layout) => layout.rows.reverse());
 			break;
@@ -278,3 +269,5 @@ export const touchLayoutOptions = derived(readerStore, (reader) => {
 
 	return layouts;
 });
+
+export const getTouchLayoutOptions = () => touchLayoutOptions;

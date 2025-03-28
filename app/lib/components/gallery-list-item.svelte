@@ -1,23 +1,27 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
+	import { page } from '$app/state';
+	import { appState } from '$lib/stores';
 	import type { GalleryListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import CircleCheck from 'lucide-svelte/icons/circle-check';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 
-	export let gallery: GalleryListItem;
-	export let onSelect: (gallery: GalleryListItem) => void;
-	export let selected = false;
+	type Props = {
+		gallery: GalleryListItem;
+		selected?: boolean;
+		onSelect?: (gallery: GalleryListItem) => void;
+	};
 
-	$: [reducedTags, moreCount] = (() => {
-		const tags = gallery.tags;
+	let { gallery, selected = false, onSelect }: Props = $props();
 
+	const { tags, moreCount } = $derived.by(() => {
 		const maxWidth = 290;
 
-		let tagCount = tags.length;
+		const tags = gallery.tags;
+
+		let moreCount = tags.length;
 		let width = 0;
 
 		const reduced: Tag[] = [];
@@ -36,25 +40,29 @@
 
 				width += tagWidth;
 				reduced.push(tag);
-				tagCount--;
+				moreCount--;
 			}
 		}
 
-		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+		return { tags: reduced, moreCount };
+	});
 </script>
 
 <div class="group h-auto w-auto space-y-2">
-	<a href={`/g/${gallery.id}${$page.url.search}`} on:click|preventDefault={() => onSelect(gallery)}>
+	<a
+		href="/g/{gallery.id}{page.url.search}"
+		onclick={(ev) => {
+			ev.preventDefault();
+			onSelect?.(gallery);
+		}}
+	>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
-				alt={`'${gallery.title}' cover`}
+				alt="'{gallery.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src="{appState.siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
 				width={640}
 			/>
 
@@ -82,7 +90,7 @@
 	<div class="h-fit space-y-1.5">
 		<a
 			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-			href={`/g/${gallery.id}${$page.url.search}`}
+			href="/g/{gallery.id}{page.url.search}"
 			target="_blank"
 			title={gallery.title}
 		>

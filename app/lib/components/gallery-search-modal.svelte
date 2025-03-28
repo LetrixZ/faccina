@@ -5,24 +5,28 @@
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
+	import { appState } from '$lib/stores';
 	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
-	import { siteConfig, tagList } from '../stores';
 	import GalleryListItemC from './gallery-list-item.svelte';
 	import { Switch } from './ui/switch';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
-	export let selected: GalleryListItem[] = [];
-	export let onSelect: (gallery: GalleryListItem) => void;
+	type Props = {
+		selected: GalleryListItem[];
+		onSelect?: (gallery: GalleryListItem) => void;
+	};
 
-	$: selectedIds = selected.map((gallery) => gallery.id);
+	let { selected = [], onSelect }: Props = $props();
 
-	let isMounted = false;
-	let filterSelected = false;
+	const selectedIds = $derived(selected.map((gallery) => gallery.id));
 
-	let library: GalleryLibraryResponse | null = null;
+	let isMounted = $state(false);
+	let filterSelected = $state(false);
 
-	let searchQuery: {
+	let library: GalleryLibraryResponse | null = $state(null);
+
+	type SearchQuery = {
 		query: string;
 		page: number;
 		limit: number;
@@ -30,14 +34,16 @@
 		order: Order;
 		ids: number[];
 		seed?: string;
-	} = {
+	};
+
+	let searchQuery = $derived<SearchQuery>({
 		query: '',
 		page: 1,
-		limit: $siteConfig.pageLimits[0] ?? 24,
-		sort: $siteConfig.defaultSort,
-		order: $siteConfig.defaultOrder,
+		limit: appState.siteConfig.pageLimits[0] ?? 24,
+		sort: appState.siteConfig.defaultSort,
+		order: appState.siteConfig.defaultOrder,
 		ids: [],
-	};
+	});
 
 	const search = async () => {
 		const { query, page, limit, sort, order, ids, seed } = searchQuery;
@@ -73,62 +79,61 @@
 		}
 	};
 
-	$: {
+	onMount(() => {
+		isMounted = true;
+	});
+
+	$effect(() => {
 		searchQuery.ids = filterSelected ? selectedIds : [];
 
 		if (isMounted) {
 			search();
 		}
-	}
-
-	onMount(() => {
-		isMounted = true;
 	});
 
-	$: {
+	$effect(() => {
 		if (!selected.length) {
 			filterSelected = false;
 		}
-	}
+	});
 </script>
 
 <div class="flex gap-2">
 	<SearchBar
-		on:search={(ev) => {
-			ev.preventDefault();
-			searchQuery = { ...searchQuery, page: 1, query: ev.detail };
+		onSearch={(query) => {
+			searchQuery = { ...searchQuery, page: 1, query };
 			search();
 		}}
-		searchPlaceholder={$siteConfig.searchPlaceholder}
-		tags={$tagList}
+		searchPlaceholder={appState.siteConfig.searchPlaceholder}
+		tags={appState.tagList}
 	/>
 </div>
 
 <div class="grid items-end gap-2 lg:flex">
 	<div class="flex flex-wrap items-end gap-2">
 		<LimitOptions
-			on:change={(ev) => {
-				ev.preventDefault();
-				searchQuery = { ...searchQuery, limit: ev.detail };
+			onChange={(value) => {
+				searchQuery = { ...searchQuery, limit: value };
 				search();
+				return false;
 			}}
-			pageLimits={$siteConfig.pageLimits}
+			pageLimits={appState.siteConfig.pageLimits}
 			value={searchQuery.limit}
 		/>
 
 		<div class="max-xs:flex-auto">
 			<SortOptions
-				defaultOrder={$siteConfig.defaultOrder}
-				defaultSort={$siteConfig.defaultSort}
-				on:order={(ev) => {
-					ev.preventDefault();
-					searchQuery = { ...searchQuery, order: ev.detail };
+				defaultOrder={appState.siteConfig.defaultOrder}
+				defaultSort={appState.siteConfig.defaultSort}
+				onOrder={(order) => {
+					searchQuery = { ...searchQuery, order };
 					search();
+					return false;
 				}}
-				on:sort={(ev) => {
-					ev.preventDefault();
-					searchQuery = { ...searchQuery, sort: ev.detail.sort, seed: ev.detail.seed };
+				onSort={(sort, seed) => {
+					searchQuery = { ...searchQuery, sort, seed };
 					search();
+					return false;
 				}}
 				order={searchQuery.order}
 				sort={searchQuery.sort}
@@ -140,7 +145,7 @@
 				bind:checked={filterSelected}
 				disabled={!selected.length}
 				id="show-selected"
-				on:click={() => (searchQuery.page = 1)}
+				onclick={() => (searchQuery.page = 1)}
 			/>
 			<Label class="w-full" for="show-selected">Show only selected</Label>
 		</div>
@@ -150,10 +155,10 @@
 		<ListPagination
 			class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
 			limit={library.limit}
-			on:navigate={(ev) => {
-				ev.preventDefault();
-				searchQuery = { ...searchQuery, page: ev.detail };
+			onNavigate={(page) => {
+				searchQuery = { ...searchQuery, page };
 				search();
+				return false;
 			}}
 			total={library.total}
 			value={searchQuery.page}

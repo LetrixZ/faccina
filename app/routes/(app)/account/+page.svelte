@@ -5,15 +5,15 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Separator } from '$lib/components/ui/separator';
 	import { userDeleteSchema, userEditSchema } from '$lib/schemas';
-	import Save from 'lucide-svelte/icons/save';
+	import Save from '@lucide/svelte/icons/save';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 
-	export let data;
+	const { data } = $props();
 
-	let deleteOpen = false;
-	let showPasswordInput = false;
+	let deleteOpen = $state(false);
+	let showPasswordInput = $state(false);
 
 	let form = superForm(data.userForm, {
 		dataType: 'json',
@@ -50,11 +50,13 @@
 
 		<div class="space-y-3">
 			<Form.Field {form} name="email">
-				<Form.Control let:attrs>
-					<Form.Label>
-						Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
-					</Form.Label>
-					<Input {...attrs} autocomplete="email" bind:value={$formData.email} type="email" />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>
+							Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
+						</Form.Label>
+						<Input {...props} autocomplete="email" bind:value={$formData.email} type="email" />
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -64,41 +66,47 @@
 			<p class="font-medium">Change password</p>
 
 			<Form.Field {form} name="currentPassword">
-				<Form.Control let:attrs>
-					<Form.Label>Current password</Form.Label>
-					<Input
-						{...attrs}
-						autocomplete="current-password"
-						bind:value={$formData.currentPassword}
-						type="password"
-					/>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Current password</Form.Label>
+						<Input
+							{...props}
+							autocomplete="current-password"
+							bind:value={$formData.currentPassword}
+							type="password"
+						/>
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<div class="grid gap-3 sm:grid-cols-2">
 				<Form.Field {form} name="newPassword">
-					<Form.Control let:attrs>
-						<Form.Label>New password</Form.Label>
-						<Input
-							{...attrs}
-							autocomplete="new-password"
-							bind:value={$formData.newPassword}
-							type="password"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>New password</Form.Label>
+							<Input
+								{...props}
+								autocomplete="new-password"
+								bind:value={$formData.newPassword}
+								type="password"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
 				<Form.Field {form} name="confirmNewPassword">
-					<Form.Control let:attrs>
-						<Form.Label>Confirm new password</Form.Label>
-						<Input
-							{...attrs}
-							autocomplete="new-password"
-							bind:value={$formData.confirmNewPassword}
-							type="password"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Confirm new password</Form.Label>
+							<Input
+								{...props}
+								autocomplete="new-password"
+								bind:value={$formData.confirmNewPassword}
+								type="password"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
@@ -115,7 +123,7 @@
 
 			<Button
 				href="/account/delete"
-				on:click={(ev) => {
+				onclick={(ev) => {
 					ev.preventDefault();
 					deleteOpen = true;
 				}}
@@ -140,14 +148,16 @@
 		{#if showPasswordInput}
 			<form action="/account/delete" method="POST" use:deleteEnhance>
 				<Form.Field form={deleteForm} name="currentPassword">
-					<Form.Control let:attrs>
-						<Form.Label>Current password</Form.Label>
-						<Input
-							{...attrs}
-							autocomplete="current-password"
-							bind:value={$deleteFormData.currentPassword}
-							type="password"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Current password</Form.Label>
+							<Input
+								{...props}
+								autocomplete="current-password"
+								bind:value={$deleteFormData.currentPassword}
+								type="password"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
@@ -156,9 +166,9 @@
 
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action asChild>
+			<AlertDialog.Action>
 				<Button
-					on:click={() => {
+					onclick={() => {
 						if (showPasswordInput) {
 							deleteForm.submit();
 						} else {

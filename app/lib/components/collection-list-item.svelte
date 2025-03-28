@@ -1,12 +1,16 @@
 <script lang="ts">
-	import { siteConfig } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import { cn } from '$lib/utils';
 	import type { Collection } from '../types';
-	import FileQuestion from 'lucide-svelte/icons/file-question';
+	import FileQuestion from '@lucide/svelte/icons/file-question';
 
-	export let collection: Collection;
+	type Props = {
+		collection: Collection;
+	};
 
-	$: archives = collection.archives.slice(0, 3).reverse();
+	let { collection }: Props = $props();
+
+	const archives = $derived(collection.archives.slice(0, 3).reverse());
 
 	const getStyle = (index: number) => {
 		if (archives.length === 2) {
@@ -40,11 +44,12 @@
 			>
 				{#each archives as archive, i}
 					<img
-						alt={`'${archive.title}' cover`}
+						alt="'{archive.title}' cover"
 						class="absolute mb-2 aspect-[45/64] rounded shadow duration-150"
 						height={910}
 						loading="eager"
-						src={`${$siteConfig.imageServer}/image/${archive.hash}/${archive.thumbnail}?type=cover`}
+						src="{appState.siteConfig
+							.imageServer}/image/{archive.hash}/{archive.thumbnail}?type=cover"
 						style={getStyle(i)}
 						width={640}
 					/>

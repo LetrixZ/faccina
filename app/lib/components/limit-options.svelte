@@ -1,45 +1,54 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import { siteConfig } from '../stores';
-	import type { Selected } from 'bits-ui';
-	import { createEventDispatcher } from 'svelte';
+	import { appState } from '$lib/stores';
 
-	export let pageLimits: number[];
-	export let value: number | undefined = undefined;
+	type Props = {
+		pageLimits: number[];
+		value?: number;
+		onChange?: (value: number) => boolean;
+	};
 
-	const dispatch = createEventDispatcher<{ change: number }>();
+	let { pageLimits, value, onChange }: Props = $props();
 
-	const options: { label: string; value: number }[] = pageLimits.map((limit) => ({
-		label: limit.toString(),
-		value: limit,
-	}));
+	const options = $derived(
+		pageLimits.map((limit) => ({
+			label: limit.toString(),
+			value: limit.toString(),
+		}))
+	);
 
-	$: limit = (() => {
+	const limit = $derived.by(() => {
 		if (value) {
 			return value;
 		}
 
-		const param = $page.url.searchParams.get('limit');
+		const param = page.url.searchParams.get('limit');
 
 		if (!param) {
-			return $siteConfig.defaultPageLimit;
+			return appState.siteConfig.defaultPageLimit;
 		}
 
 		return parseInt(param) || pageLimits[0];
-	})();
+	});
 
-	$: limitOption = options.find((option) => option.value === limit) ?? options[0];
+	const limitOption = $derived(
+		options.find((option) => +option.value === limit)?.value ?? options[0]?.value
+	);
 
-	const onSelectedChange = (option: Selected<number> | undefined) => {
-		if (!dispatch('change', option?.value ?? pageLimits[0]!, { cancelable: true })) {
+	const selectedLabel = $derived(
+		value ? options.find((option) => +option.value === value)?.label : ''
+	);
+
+	const onValueChange = (value: string) => {
+		if (onChange && !onChange(+value || pageLimits[0]!)) {
 			return;
 		}
 
-		const query = new URLSearchParams($page.url.searchParams.toString());
-		query.set('limit', option?.value.toString() ?? pageLimits[0]!.toString());
+		const query = new URLSearchParams(page.url.searchParams.toString());
+		query.set('limit', value ?? pageLimits[0]!.toString());
 
 		goto(`?${query.toString()}`);
 	};
@@ -48,11 +57,11 @@
 <div class="flex items-end justify-between gap-2">
 	<div class="space-y-0.5 md:w-fit">
 		<Label class="text-end">Per page</Label>
-		<Select.Root items={options} {onSelectedChange} preventScroll={false} selected={limitOption}>
-			<Select.Trigger aria-label="Select page limit" class="w-20">
-				<Select.Value class="text-muted-foreground-light" />
+		<Select.Root items={options} {onValueChange} type="single" value={limitOption}>
+			<Select.Trigger aria-label="Select page limit" class="w-20 text-muted-foreground-light">
+				{selectedLabel}
 			</Select.Trigger>
-			<Select.Content>
+			<Select.Content preventScroll={false}>
 				{#each options as option}
 					<Select.Item value={option.value}>{option.label}</Select.Item>
 				{/each}

@@ -5,9 +5,7 @@
 	import PageTitle from '$lib/components/page-title.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 
-	export let data;
-
-	$: library = data.library;
+	const { data } = $props();
 </script>
 
 <svelte:head>
@@ -15,17 +13,17 @@
 </svelte:head>
 
 <main class="relative container flex flex-auto flex-col gap-y-2">
-	<PageTitle>Browse ({library.total})</PageTitle>
+	<PageTitle>Browse ({data.library.total})</PageTitle>
 
 	<div class="grid items-end gap-2 md:flex">
-		<ListNavbar {library} type="main" />
+		<ListNavbar library={data.library} type="main" />
 	</div>
 
 	<Separator />
 
-	{#if library.data.length}
+	{#if data.library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each library.data as archive (archive.id)}
+			{#each data.library.data as archive (archive.id)}
 				<ListItem enableBookmark={!!data.user} gallery={archive} type="main" />
 			{/each}
 		</div>
@@ -37,7 +35,7 @@
 
 	<ListPagination
 		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
-		limit={library.limit}
-		total={library.total}
+		limit={data.library.limit}
+		total={data.library.total}
 	/>
 </main>

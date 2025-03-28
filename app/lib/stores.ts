@@ -1,9 +1,11 @@
 import type { CollectionItem, SiteConfig, Tag } from './types';
 import type { User } from 'lucia';
-import { writable } from 'svelte/store';
 
-export const query = writable('');
-export const user = writable<User | null>();
-export const siteConfig = writable<SiteConfig>({} as SiteConfig);
-export const userCollections = writable<CollectionItem[] | undefined>(undefined);
-export const tagList = writable<Tag[]>([]);
+class AppState {
+	user = $state<User>();
+	userCollections = $state<CollectionItem[]>();
+	siteConfig = $state<SiteConfig>({} as SiteConfig);
+	tagList = $state<Tag[]>([]);
+}
+
+export const appState = new AppState();

@@ -7,22 +7,19 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Trash from 'lucide-svelte/icons/trash';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Trash from '@lucide/svelte/icons/trash';
 	import { toast } from 'svelte-sonner';
 
-	export let data;
-	export let form;
+	const { data, form } = $props();
 
-	let deleteOpen = false;
+	let deleteOpen = $state(false);
 
-	$: library = data.libraryPage;
-
-	$: {
+	$effect(() => {
 		if (form?.message && form.type === 'error') {
 			toast.error(form.message);
 		}
-	}
+	});
 </script>
 
 <svelte:head>
@@ -32,7 +29,7 @@
 <main class="relative container flex h-full flex-col gap-y-2">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<PageTitle>
-			{data.collection.name} ({library.total})
+			{data.collection.name} ({data.libraryPage.total})
 		</PageTitle>
 
 		<div class="flex gap-2">
@@ -76,14 +73,14 @@
 	</div>
 
 	<div class="grid items-end gap-2 md:flex">
-		<ListNavbar {library} type="collection" />
+		<ListNavbar library={data.libraryPage} type="collection" />
 	</div>
 
 	<Separator />
 
-	{#if library.data.length}
+	{#if data.libraryPage.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each library.data as archive (archive.id)}
+			{#each data.libraryPage.data as archive (archive.id)}
 				<ListItem gallery={archive} type="collection" />
 			{/each}
 		</div>
@@ -95,7 +92,7 @@
 
 	<ListPagination
 		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
-		limit={library.limit}
-		total={library.total}
+		limit={data.libraryPage.limit}
+		total={data.libraryPage.total}
 	/>
 </main>

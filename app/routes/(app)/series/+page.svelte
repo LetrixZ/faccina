@@ -5,15 +5,18 @@
 	import SeriesListItem from '$lib/components/series-list-item.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { appState } from '$lib/stores.js';
 
-	export let data;
-
-	$: library = data.libraryPage;
+	const { data } = $props();
 </script>
+
+<svelte:head>
+	<title>Series | {appState.siteConfig.name}</title>
+</svelte:head>
 
 <main class="relative container flex flex-auto flex-col gap-y-2">
 	<PageTitle>
-		Series ({library.total})
+		Series ({data.libraryPage.total})
 
 		{#if data.user?.admin}
 			<Button class="ms-auto h-fit w-fit p-2" href="/series/new" variant="link">
@@ -25,16 +28,16 @@
 	<div class="grid items-end gap-2 md:flex">
 		<ListNavbar
 			defaultSort="updated_at"
-			{library}
+			library={data.libraryPage}
 			sortOptions={['updated_at', 'created_at', 'title']}
 		/>
 	</div>
 
 	<Separator />
 
-	{#if library.data.length}
+	{#if data.libraryPage.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each library.data as series (series.id)}
+			{#each data.libraryPage.data as series (series.id)}
 				<SeriesListItem {series} />
 			{/each}
 		</div>
@@ -46,7 +49,7 @@
 
 	<ListPagination
 		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
-		limit={library.limit}
-		total={library.total}
+		limit={data.libraryPage.limit}
+		total={data.libraryPage.total}
 	/>
 </main>

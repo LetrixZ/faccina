@@ -6,41 +6,51 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { siteConfig } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import { type Gallery, type Image as GalleryImage } from '$lib/types';
 	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
 	import {
-		readerStore,
+		readerState,
 		readingModeOptions,
 		reverseLayoutOptions,
 		scalingOptions,
-		touchLayoutOptions,
 		type Scaling,
-	} from './reader';
-	import Image from 'lucide-svelte/icons/image';
-	import Info from 'lucide-svelte/icons/info';
+	} from './reader.svelte';
+	import Image from '@lucide/svelte/icons/image';
+	import Info from '@lucide/svelte/icons/info';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
-	export let open = false;
-	export let onOpenChange: (value: boolean) => void;
-	export let readerAllowOriginal: boolean;
+	type Props = {
+		open: boolean;
+		onOpenChange?: (open: boolean) => void;
+		readerAllowOriginal: boolean;
+		previewLayout: boolean;
+		presets: ReaderPreset[];
+		selectedPreset?: ReaderPreset;
+		gallery: Gallery;
+		currentPage: number;
+		currentImage: GalleryImage;
+		scrollContainer?: HTMLDivElement;
+	};
 
-	export let previewLayout = false;
+	let {
+		open,
+		onOpenChange,
+		readerAllowOriginal,
+		previewLayout = $bindable(false),
+		presets,
+		selectedPreset,
+		gallery,
+		currentPage,
+		currentImage,
+		scrollContainer,
+	}: Props = $props();
 
-	export let gallery: Gallery;
+	let containers = $state<HTMLButtonElement[]>([]);
 
-	export let currentPage: number;
-	export let currentImage: GalleryImage;
+	const selectedReadingMode = $derived(readerState.readingMode);
 
-	export let scrollContainer: HTMLDivElement | undefined;
-
-	export let presets: ReaderPreset[];
-
-	export let selectedPreset: ReaderPreset | undefined;
-
-	let containers: HTMLButtonElement[] = [];
-
-	$: selectedReadingMode = $readerStore?.readingMode;
+	const touchLayoutOptions = getTouchLayoutOptions();
 
 	function calculateHeight(width: number) {
 		return Math.round((width * currentImage.height!) / currentImage.width!);
@@ -76,7 +86,7 @@
 	}
 </script>
 
-<Dialog.Root {onOpenChange} {open}>
+<Dialog.Root bind:open {onOpenChange}>
 	<Dialog.Content
 		class="bg-background/95 h-fit max-h-[90dvh] overflow-y-auto md:max-w-2xl"
 		overlayClass="bg-background/70"
@@ -91,10 +101,10 @@
 				{#each presets as preset}
 					<Button
 						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring-primary ring')}
-						on:click={() =>
+						onclick={() =>
 							selectedPreset?.hash === preset.hash
-								? readerAllowOriginal && readerStore.setImagePreset(null)
-								: readerStore.setImagePreset(preset)}
+								? readerAllowOriginal && readerState.setImagePreset(null)
+								: readerState.setImagePreset(preset)}
 						variant="outline"
 					>
 						<span class="truncate"> {preset.label} </span>
@@ -122,7 +132,7 @@
 			{#each readingModeOptions as option}
 				<Button
 					class={cn('relative pe-8', option.value === selectedReadingMode && 'ring-primary ring')}
-					on:click={() => readerStore.setReadingMode(option.value)}
+					onclick={() => readerState.setReadingMode(option.value)}
 					variant="outline"
 				>
 					<span class="truncate"> {option.label} </span>
@@ -133,11 +143,11 @@
 		<div class="space-y-1 md:w-fit">
 			<Label>Gap between pages</Label>
 			<Input
-				disabled={$readerStore?.readingMode !== 'continuous-vertical'}
+				disabled={readerState?.readingMode !== 'continuous-vertical'}
 				min="0"
-				on:change={(ev) => readerStore.setVerticalGap(parseInt(ev.currentTarget.value))}
+				onchange={(ev) => readerState.setVerticalGap(parseInt(ev.currentTarget.value))}
 				type="number"
-				value={$readerStore?.verticalGap}
+				value={readerState?.verticalGap}
 			/>
 		</div>
 
@@ -148,9 +158,9 @@
 				<div class="scaling-preview">
 					<button
 						bind:this={containers[i]}
-						class:selected={$readerStore?.scaling === option.value}
-						on:click={() => {
-							readerStore.setScaling(option.value);
+						class:selected={readerState?.scaling === option.value}
+						onclick={() => {
+							readerState.setScaling(option.value);
 							scrollContainer?.scrollTo({ top: 0, behavior: 'instant' });
 						}}
 					>
@@ -158,7 +168,12 @@
 							<img
 								alt="{gallery.title} page {currentPage}"
 								height={currentImage.height}
-								src={getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer)}
+								src={getImageUrl(
+									currentPage,
+									gallery,
+									selectedPreset,
+									appState.siteConfig.imageServer
+								)}
 								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								width={currentImage.width}
 							/>
@@ -174,22 +189,22 @@
 			<div class="space-y-1">
 				<Label>Min width</Label>
 				<Input
-					disabled={$readerStore?.scaling !== 'original'}
+					disabled={readerState?.scaling !== 'original'}
 					min="0"
-					on:input={(ev) => readerStore.setMinWidth(parseInt(ev.currentTarget.value))}
+					oninput={(ev) => readerState.setMinWidth(parseInt(ev.currentTarget.value))}
 					type="number"
-					value={$readerStore?.minWidth}
+					value={readerState?.minWidth}
 				/>
 			</div>
 
 			<div class="space-y-1">
 				<Label>Max width</Label>
 				<Input
-					disabled={$readerStore?.scaling !== 'original'}
+					disabled={readerState?.scaling !== 'original'}
 					min="0"
-					on:input={(ev) => readerStore.setMaxWidth(parseInt(ev.currentTarget.value))}
+					oninput={(ev) => readerState.setMaxWidth(parseInt(ev.currentTarget.value))}
 					type="number"
-					value={$readerStore?.maxWidth}
+					value={readerState?.maxWidth}
 				/>
 			</div>
 		</div>
@@ -198,13 +213,13 @@
 
 		<div class="grid gap-6 md:grid-cols-2">
 			<div class="flex flex-grow justify-evenly gap-6">
-				{#each $touchLayoutOptions as layout}
+				{#each touchLayoutOptions as layout}
 					<button
 						class={cn(
 							'relative flex aspect-[17/24] h-28 items-center justify-center overflow-hidden rounded bg-neutral-800',
-							layout.name === $readerStore?.touchLayout && 'ring-primary ring'
+							layout.name === readerState?.touchLayout && 'ring-primary ring'
 						)}
-						on:click={() => readerStore.setTouchLayout(layout.name)}
+						onclick={() => readerState.setTouchLayout(layout.name)}
 					>
 						<Image class="size-12 text-neutral-500/50" />
 						<div
@@ -252,8 +267,8 @@
 
 		<RadioGroup.Root
 			class="grid grid-cols-2 md:grid-cols-4"
-			onValueChange={(value) => readerStore.setReverseLayout(value)}
-			value={$readerStore?.reverseLayout}
+			onValueChange={(value) => readerState.setReverseLayout(value)}
+			value={readerState?.reverseLayout}
 		>
 			{#each reverseLayoutOptions as option}
 				<div class="flex items-center space-x-2">
@@ -267,8 +282,8 @@
 
 		<RadioGroup.Root
 			class="grid grid-cols-2 md:grid-cols-4"
-			onValueChange={(value) => readerStore.setToolbarPosition(value)}
-			value={$readerStore?.toolbarPosition}
+			onValueChange={(value) => readerState.setToolbarPosition(value)}
+			value={readerState?.toolbarPosition}
 		>
 			<div class="flex items-center space-x-2">
 				<RadioGroup.Item id="top" value="top" />
@@ -303,22 +318,22 @@
 	}
 
 	.scaling-preview > button.selected {
-		@apply ring-primary ring;
+		@apply ring ring-primary;
 	}
 
 	.scaling-preview img {
 		filter: brightness(0.75);
 	}
 
-	.scaling-preview .original {
+	:global(.scaling-preview .original) {
 		width: 70%;
 	}
 
-	.scaling-preview .fill-width {
+	:global(.scaling-preview .fill-width) {
 		width: 100%;
 	}
 
-	.scaling-preview .fill-height {
+	:global(.scaling-preview .fill-height) {
 		height: 100%;
 	}
 </style>

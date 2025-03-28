@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { readerStore } from './reader';
+	import { readerState } from './reader.svelte.js';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
-	export let data;
+	const { data, children } = $props();
 
-	$: {
+	$effect(() => {
 		let defaultPreset: ReaderPreset | null | undefined = data.defaultPreset;
 
 		if (!defaultPreset) {
@@ -15,10 +15,10 @@
 			}
 		}
 
-		readerStore.init(data.defaultPreset);
-	}
+		readerState.init(data.defaultPreset);
+	});
 </script>
 
-{#if $readerStore}
-	<slot />
+{#if readerState.initialized}
+	{@render children()}
 {/if}

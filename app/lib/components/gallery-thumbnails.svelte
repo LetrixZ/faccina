@@ -1,39 +1,45 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
+	import { page } from '$app/state';
+	import { appState } from '$lib/stores';
 	import { cn, isSpread } from '$lib/utils';
 	import type { Gallery } from '../types';
 	import { Button } from './ui/button';
 
-	export let archive: Gallery;
+	type Props = {
+		archive: Gallery;
+	};
 
-	let maxCount = 12;
+	let { archive }: Props = $props();
 
-	$: filteredImages = archive?.images.slice(0, maxCount);
+	let maxCount = $state(12);
 
-	$: wideImages =
+	const filteredImages = $derived(archive?.images.slice(0, maxCount));
+
+	const wideImages = $derived(
 		archive.images.reduce(
 			(acc, image) => acc + (image.width && image.height ? image.width / image.height : 0),
 			0
 		) /
 			archive.images.length >=
-		1;
+			1
+	);
 </script>
 
 <div class="flex-grow space-y-2">
 	<div class="@container">
 		<div class="3xl:grid-cols-6 grid grid-cols-2 gap-2 xl:grid-cols-4 @2xl:grid-cols-3">
 			{#each filteredImages as image (image.pageNumber)}
-				<a class="relative" href={`./${archive.id}/read/${image.pageNumber}${$page.url.search}`}>
+				<a class="relative" href="./{archive.id}/read/{image.pageNumber}{page.url.search}">
 					<img
-						alt={`Page ${image.pageNumber}`}
+						alt="Page {image.pageNumber}"
 						class={cn(
 							'shadow-shadow aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md',
 							isSpread(image) && 'object-contain'
 						)}
 						height={455}
 						loading="eager"
-						src={`${$siteConfig.imageServer}/image/${archive.hash}/${image.pageNumber}?type=thumb`}
+						src="{appState.siteConfig
+							.imageServer}/image/{archive.hash}/{image.pageNumber}?type=thumb"
 						width={320}
 					/>
 					{#if !wideImages && isSpread(image)}
@@ -50,8 +56,8 @@
 
 	{#if filteredImages.length < archive.images.length}
 		<div class="grid grid-cols-2 gap-2">
-			<Button on:click={() => (maxCount += 12)} variant="indigo-outline">Show more</Button>
-			<Button on:click={() => (maxCount = archive.images.length)} variant="blue-outline">
+			<Button onclick={() => (maxCount += 12)} variant="indigo-outline">Show more</Button>
+			<Button onclick={() => (maxCount = archive.images.length)} variant="blue-outline">
 				Show all
 			</Button>
 		</div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tagList } from '$lib/stores';
+	import { appState } from '$lib/stores';
 	import { editTagsSchema, type EditTagsSchema } from '../schemas';
 	import type { TagNamespace } from '../types';
 	import { isTag } from '../utils';
@@ -7,22 +7,25 @@
 	import { Button } from './ui/button';
 	import { Label } from './ui/label';
 	import { Separator } from './ui/separator';
+	import Save from '@lucide/svelte/icons/save';
 	import type { ActionResult } from '@sveltejs/kit';
-	import Save from 'lucide-svelte/icons/save';
-	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 
-	export let data: SuperValidated<Infer<EditTagsSchema>>;
+	type Props = {
+		data: SuperValidated<Infer<EditTagsSchema>>;
+		onResult?: (result: ActionResult) => void;
+		onClose?: () => void;
+	};
 
-	const dispatch = createEventDispatcher<{ result: ActionResult; close: void }>();
+	let { data, onResult, onClose }: Props = $props();
 
 	let form = superForm(data, {
 		validators: zodClient(editTagsSchema),
 		dataType: 'json',
 		onResult: ({ result }) => {
-			dispatch('result', result);
+			onResult?.(result);
 
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
@@ -34,19 +37,29 @@
 
 	const { form: formData, enhance } = form;
 
-	$: artists = $formData.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name);
-	$: circles = $formData.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name);
-	$: magazines = $formData.tags
-		.filter((tag) => tag.namespace === 'magazine')
-		.map((tag) => tag.name);
-	$: events = $formData.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name);
-	$: publishers = $formData.tags
-		.filter((tag) => tag.namespace === 'publisher')
-		.map((tag) => tag.name);
-	$: parodies = $formData.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name);
-	$: tags = $formData.tags
-		.filter(isTag)
-		.map((tag) => (tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`));
+	const artists = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)
+	);
+	const circles = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)
+	);
+	const magazines = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)
+	);
+	const events = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)
+	);
+	const publishers = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'publisher').map((tag) => tag.name)
+	);
+	const parodies = $derived(
+		$formData.tags.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)
+	);
+	const tags = $derived(
+		$formData.tags
+			.filter(isTag)
+			.map((tag) => (tag.namespace === 'tag' ? tag.name : `${tag.namespace}:${tag.name}`))
+	);
 
 	const updateTags = (namespace: TagNamespace, tags: string[]) => {
 		switch (namespace) {
@@ -105,7 +118,7 @@
 	action="?/editTags"
 	class="space-y-4"
 	method="POST"
-	on:submit={(ev) => ev.preventDefault()}
+	onsubmit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex flex-col">
@@ -117,8 +130,8 @@
 			<InputChip
 				chips={artists}
 				id="artists"
-				on:update={(ev) => updateTags('artist', ev.detail)}
-				tags={$tagList.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)}
+				onUpdate={(tags) => updateTags('artist', tags)}
+				tags={appState.tagList.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)}
 			/>
 		</div>
 	</div>
@@ -128,8 +141,8 @@
 		<InputChip
 			chips={circles}
 			id="circles"
-			on:update={(ev) => updateTags('circle', ev.detail)}
-			tags={$tagList.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)}
+			onUpdate={(tags) => updateTags('circle', tags)}
+			tags={appState.tagList.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -138,8 +151,8 @@
 		<InputChip
 			chips={magazines}
 			id="magazines"
-			on:update={(ev) => updateTags('magazine', ev.detail)}
-			tags={$tagList.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)}
+			onUpdate={(tags) => updateTags('magazine', tags)}
+			tags={appState.tagList.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -148,8 +161,8 @@
 		<InputChip
 			chips={events}
 			id="events"
-			on:update={(ev) => updateTags('event', ev.detail)}
-			tags={$tagList.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)}
+			onUpdate={(tags) => updateTags('event', tags)}
+			tags={appState.tagList.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -158,8 +171,8 @@
 		<InputChip
 			chips={publishers}
 			id="publishers"
-			on:update={(ev) => updateTags('publisher', ev.detail)}
-			tags={$tagList.filter((tag) => tag.namespace === 'publishers').map((tag) => tag.name)}
+			onUpdate={(tags) => updateTags('publisher', tags)}
+			tags={appState.tagList.filter((tag) => tag.namespace === 'publishers').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -168,8 +181,8 @@
 		<InputChip
 			chips={parodies}
 			id="parodies"
-			on:update={(ev) => updateTags('parody', ev.detail)}
-			tags={$tagList.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)}
+			onUpdate={(tags) => updateTags('parody', tags)}
+			tags={appState.tagList.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)}
 		/>
 	</div>
 
@@ -178,16 +191,16 @@
 		<InputChip
 			chips={tags}
 			id="tags"
-			on:update={(ev) => updateTags('tag', ev.detail)}
-			tags={$tagList.filter(isTag).map((tag) => tag.name)}
+			onUpdate={(tags) => updateTags('tag', tags)}
+			tags={appState.tagList.filter(isTag).map((tag) => tag.name)}
 		/>
 	</div>
 
 	<Separator />
 
 	<div class="flex justify-between">
-		<Button on:click={() => dispatch('close')} variant="outline">Discard changes</Button>
-		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" on:click={() => form.submit()}>
+		<Button onclick={() => onClose?.()} variant="outline">Discard changes</Button>
+		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" onclick={() => form.submit()}>
 			<Save class="size-5" />
 			<span>Save changes</span>
 		</Button>

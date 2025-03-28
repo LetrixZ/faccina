@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Heart from 'lucide-svelte/icons/heart';
-	import LogIn from 'lucide-svelte/icons/log-in';
-	import LogOut from 'lucide-svelte/icons/log-out';
-	import Settings from 'lucide-svelte/icons/settings';
-	import User from 'lucide-svelte/icons/user';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Heart from '@lucide/svelte/icons/heart';
+	import LogIn from '@lucide/svelte/icons/log-in';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Settings from '@lucide/svelte/icons/settings';
+	import User from '@lucide/svelte/icons/user';
 
-	export let data;
+	const { data } = $props();
 </script>
 
 <main class="relative container flex flex-col items-center space-y-2 md:w-96">
