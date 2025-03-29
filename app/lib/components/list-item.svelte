@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { cn } from '$lib/utils';
 	import type { GalleryListItem, ListPageType, Tag } from '../types';
 	import BookmarkToast from './bookmark-toast.svelte';

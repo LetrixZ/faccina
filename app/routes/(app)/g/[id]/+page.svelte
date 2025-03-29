@@ -16,7 +16,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import type { Preset } from '$lib/image-presets';
 	import { type Task } from '$lib/models';
-	import { appState } from '$lib/stores.js';
+	import { appState } from '$lib/stores.svelte';
 	import { cn, dateTimeFormat, getMetadata, humanFileSize, isTag, randomString } from '$lib/utils';
 	import BookOpenText from '@lucide/svelte/icons/book-open-text';
 	import Bookmark from '@lucide/svelte/icons/bookmark';

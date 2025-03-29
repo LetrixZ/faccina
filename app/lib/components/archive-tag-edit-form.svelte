@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { editTagsSchema, type EditTagsSchema } from '../schemas';
 	import type { TagNamespace } from '../types';
 	import { isTag } from '../utils';

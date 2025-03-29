@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
 	import ChapterEndToast from './ChapterEndToast.svelte';

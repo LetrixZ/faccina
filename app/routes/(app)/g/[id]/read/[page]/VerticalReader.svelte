@@ -2,7 +2,7 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
 	import TouchNavigation from './TouchNavigation.svelte';

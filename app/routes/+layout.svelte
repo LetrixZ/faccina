@@ -1,9 +1,12 @@
 <script>
 	import { Toaster } from '$lib/components/ui/sonner';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import '../app.pcss';
 
 	const { data, children } = $props();
+
+	appState.siteConfig = data.site;
+	appState.user = data.user;
 
 	$effect(() => {
 		appState.siteConfig = data.site;

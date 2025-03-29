@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import type { SeriesListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';

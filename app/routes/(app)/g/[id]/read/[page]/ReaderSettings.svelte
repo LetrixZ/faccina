@@ -6,7 +6,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { type Gallery, type Image as GalleryImage } from '$lib/types';
 	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
 	import {

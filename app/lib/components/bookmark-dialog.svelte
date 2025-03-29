@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import type { Gallery } from '$lib/types';
 	import { Button } from './ui/button';
 

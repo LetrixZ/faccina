@@ -15,10 +15,8 @@
 
 	let { tags, searchPlaceholder, onSearch }: Props = $props();
 
-	// svelte-ignore non_reactive_update
-	let formEl: HTMLFormElement;
-	// svelte-ignore non_reactive_update
-	let inputEl: HTMLInputElement;
+	let formEl = $state<HTMLFormElement | null>(null);
+	let inputEl = $state<HTMLInputElement | null>(null);
 
 	let query = $state('');
 
@@ -133,7 +131,7 @@
 		popoverOpen = false;
 
 		setTimeout(() => {
-			inputEl.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
+			inputEl?.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
 		}, 1);
 	};
 </script>
@@ -168,7 +166,7 @@
 					oninput={() => {
 						popoverOpen = true;
 						setTimeout(() => {
-							selectPosition = inputEl.selectionStart ?? -1;
+							selectPosition = inputEl?.selectionStart ?? -1;
 						}, 1);
 					}}
 					onkeydown={(ev) => {
@@ -213,7 +211,7 @@
 					}}
 					onselectionchange={() => {
 						setTimeout(() => {
-							selectPosition = inputEl.selectionStart ?? -1;
+							selectPosition = inputEl?.selectionStart ?? -1;
 						}, 1);
 					}}
 					placeholder={searchPlaceholder}
@@ -244,7 +242,7 @@
 				trapFocus={false}
 				onOpenAutoFocus={(ev) => {
 					ev.preventDefault();
-					inputEl.focus();
+					inputEl?.focus();
 				}}
 			>
 				{#each filteredTags as tag, i}
@@ -254,8 +252,10 @@
 					<Button
 						class={cn('justify-start', i === highligtedIndex && 'underline')}
 						onclick={() => {
-							inputEl.focus();
-							insertTag(inputEl, i);
+							if (inputEl) {
+								inputEl.focus();
+								insertTag(inputEl, i);
+							}
 						}}
 						variant="link"
 					>

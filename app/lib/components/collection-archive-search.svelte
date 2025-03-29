@@ -6,7 +6,7 @@
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
 	import { Switch } from './ui/switch';
 	import { onMount } from 'svelte';

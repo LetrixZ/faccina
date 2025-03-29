@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { cn, relativeDate } from '$lib/utils';
 	import type { HistoryEntry, Tag } from '../types';
 	import Chip from './chip.svelte';

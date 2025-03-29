@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { cn } from '$lib/utils';
 	import type { Collection } from '../types';
 	import FileQuestion from '@lucide/svelte/icons/file-question';

@@ -5,7 +5,7 @@
 	import SeriesListItem from '$lib/components/series-list-item.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { appState } from '$lib/stores.js';
+	import { appState } from '$lib/stores.svelte';
 
 	const { data } = $props();
 </script>

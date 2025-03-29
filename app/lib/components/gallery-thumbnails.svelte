@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { cn, isSpread } from '$lib/utils';
 	import type { Gallery } from '../types';
 	import { Button } from './ui/button';

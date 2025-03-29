@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 
 	type Props = {
 		pageLimits: number[];

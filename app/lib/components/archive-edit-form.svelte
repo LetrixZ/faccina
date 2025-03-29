@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
 	import type { Archive } from '../types';
 	import { cn } from '../utils';

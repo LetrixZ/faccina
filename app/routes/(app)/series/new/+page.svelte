@@ -7,7 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { createSeriesSchema } from '$lib/schemas.js';
-	import { appState } from '$lib/stores.js';
+	import { appState } from '$lib/stores.svelte';
 	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
 	import SeriesForm from '../series-form.svelte';

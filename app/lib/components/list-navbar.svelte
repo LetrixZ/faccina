@@ -3,7 +3,7 @@
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import type { Sort } from '$lib/schemas';
-	import { appState } from '$lib/stores';
+	import { appState } from '$lib/stores.svelte';
 	import type { LibraryResponse, ListPageType } from '$lib/types';
 
 	type Props = {

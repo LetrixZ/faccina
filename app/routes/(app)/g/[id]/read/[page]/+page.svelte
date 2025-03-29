@@ -2,7 +2,7 @@
 	import { goto, pushState, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { appState } from '$lib/stores.js';
+	import { appState } from '$lib/stores.svelte';
 	import type { ReadStat } from '$lib/types';
 	import PagedReader from './PagedReader.svelte';
 	import Settings from './ReaderSettings.svelte';
