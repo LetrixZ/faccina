@@ -59,6 +59,7 @@ const schema = z.object({
 	site_name: z.string().default('Faccina'),
 	url: z.string().default(''),
 	enable_users: z.boolean().default(true),
+	disable_registration: z.boolean().default(false),
 	enable_collections: z.boolean().default(true),
 	enable_read_history: z.boolean().default(true),
 	admin_users: z.array(usernameSchema).default([]),

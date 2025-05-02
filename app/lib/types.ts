@@ -127,6 +127,7 @@ export type SiteConfig = {
 	name: string;
 	url?: string;
 	enableUsers: boolean;
+	disableRegistration: boolean;
 	enableCollections: boolean;
 	enableReadHistory: boolean;
 	hasMailer: boolean;

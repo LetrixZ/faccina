@@ -139,6 +139,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.where('archives.id', 'in', ids)
 			.execute();
 
+		archives.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+
 		return json({
 			archives,
 			page: searchParams.page,

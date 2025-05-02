@@ -8,6 +8,7 @@ export const load = ({ locals }) => {
 			name: config.site.siteName,
 			url: config.site.url,
 			enableUsers: config.site.enableUsers,
+			disableRegistration: config.site.disableRegistration,
 			enableCollections: config.site.enableCollections,
 			enableReadHistory: config.site.enableReadHistory,
 			hasMailer: !!config.mailer,
