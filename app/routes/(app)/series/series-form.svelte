@@ -16,7 +16,7 @@
 </script>
 
 <form class="flex flex-grow flex-col gap-2" method="POST" use:enhance>
-	<Form.Field {form} name="title">
+	<Form.Field name="title" {form}>
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label class="text-xl">Series title</Form.Label>

@@ -1,0 +1,145 @@
+{
+	"directories": {
+		"content": "./content",
+		"images": "./images"
+	},
+	"database": {
+		"vendor": "sqlite",
+		"config": {
+			"path": "db.sqlite"
+		}
+	},
+	"server": {
+		"auto_unpack": false
+	},
+	"site": {
+		"site_name": "Faccina",
+		"enable_users": true,
+		"enable_collections": true,
+		"enable_read_history": true,
+		"admin_users": [
+			"fermin"
+		],
+		"default_sort": "released_at",
+		"default_order": "desc",
+		"guest_access": true,
+		"guest_downloads": true,
+		"client_side_downloads": true,
+		"search_placeholder": "tag:vanilla -tag:illustration",
+		"secure_session_cookie": false,
+		"admin": {
+			"delete_require_confirmation": true
+		},
+		"gallery_listing": {
+			"page_limits": [
+				6,
+				12,
+				24,
+				48
+			],
+			"default_page_limit": 12,
+			"tag_weight": [
+				{
+					"namespace": "artist",
+					"weight": 1000
+				},
+				{
+					"namespace": "circle",
+					"weight": 999
+				},
+				{
+					"namespace": "parody",
+					"weight": 998
+				},
+				{
+					"name": [
+						"vanilla"
+					],
+					"weight": 100
+				},
+				{
+					"name": [
+						"comedy",
+						"love hotel"
+					],
+					"weight": 150
+				}
+			],
+			"tag_exclude": [
+				{
+					"name": [
+						"original",
+						"original work"
+					],
+					"namespace": "parody",
+					"ignore_case": true
+				},
+				{
+					"namespace": "magazine"
+				},
+				{
+					"namespace": "event"
+				},
+				{
+					"namespace": "publisher"
+				},
+				{
+					"name": [
+						"vanilla",
+						"ntr"
+					],
+					"ignore_case": true
+				},
+				{
+					"name": [
+						"comedy"
+					]
+				}
+			],
+			"use_default_tag_weight": true,
+			"use_default_tag_exclude": true
+		}
+	},
+	"image": {
+		"thumbnail_preset": "980p",
+		"aspect_ratio_similar": true,
+		"remove_on_update": true,
+		"preset": {
+			"980p": {
+				"format": "webp",
+				"near_lossless": true,
+				"effort": 4,
+				"hash": "d8a5da25"
+			},
+			"jxl": {
+				"format": "jxl",
+				"hash": "096b19c6"
+			}
+		},
+		"reader_presets": [
+			"jxl",
+			"980p"
+		],
+		"reader_default_preset": "jxl",
+		"reader_allow_original": true,
+		"download_allow_original": true,
+		"store_resampled_images": true,
+		"caching": {
+			"page": 31536000,
+			"thumbnail": 172800,
+			"cover": 432000
+		},
+		"default_cover_preset": {
+			"format": "webp",
+			"width": 540,
+			"label": "Cover",
+			"hash": "2b35e7e8"
+		},
+		"default_thumbnail_preset": {
+			"format": "webp",
+			"width": 360,
+			"label": "Thumbnail",
+			"hash": "90521505"
+		}
+	}
+}

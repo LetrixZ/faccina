@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gorilla/mux"
@@ -375,7 +374,6 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	config := getConfig()
-	spew.Dump(config)
 
 	db := getDB(&config)
 

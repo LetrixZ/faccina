@@ -31,14 +31,14 @@
 <main class="container flex flex-auto flex-col gap-2 overflow-hidden">
 	<form method="POST" use:enhance>
 		<div class="flex items-start gap-2">
-			<Form.Field class="flex-auto" {form} name="name">
+			<Form.Field name="name" class="flex-auto" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Input
 							{...props}
-							bind:value={$formData.name}
 							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
 							placeholder="Collection name"
+							bind:value={$formData.name}
 						/>
 					{/snippet}
 				</Form.Control>

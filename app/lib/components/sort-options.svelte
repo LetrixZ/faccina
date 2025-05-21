@@ -1,15 +1,8 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { Label } from '$lib/components/ui/label';
-	import * as Select from '$lib/components/ui/select';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
+	import { sortSchema, type Order, type Sort } from '../schemas';
 	import type { ListPageType } from '$lib/types';
-	import type { Order, Sort } from '../schemas';
-	import { cn, randomString } from '../utils';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import ChevronUp from '@lucide/svelte/icons/chevron-up';
-	import type { ClassValue } from 'svelte/elements';
 
 	const getSortOptions = (type: ListPageType) => {
 		const options: Sort[] = [];
@@ -46,55 +39,17 @@
 	};
 
 	type Props = {
-		class?: ClassValue | null;
-		type?: ListPageType;
-		defaultSort?: Sort;
-		defaultOrder?: Order;
+		sort: Sort;
+		order: Order;
+		type: ListPageType;
 		sortOptions?: Sort[];
-		sort?: Sort;
-		order?: Order;
-		onSort?: (sort: Sort, seed?: string) => boolean;
-		onOrder?: (order: Order) => boolean;
+		onSort?: (sort: Sort, seed?: string) => boolean | unknown;
+		onOrder?: (order: Order) => boolean | unknown;
 	};
 
-	let {
-		class: className,
-		type = 'main',
-		defaultSort = 'released_at',
-		defaultOrder = 'desc',
-		sortOptions: userSortOptions,
-		sort,
-		order,
-		onSort,
-		onOrder,
-	}: Props = $props();
+	let { type, sortOptions: userSortOptions, sort, order, onSort, onOrder }: Props = $props();
 
 	const sortOptions = $derived(userSortOptions ? userSortOptions : getSortOptions(type));
-
-	const defaultSortType = $derived.by(() => {
-		switch (type) {
-			case 'main':
-				return defaultSort;
-			case 'favorites':
-				return 'saved_at';
-			case 'collection':
-				return 'collection_order';
-			case 'series':
-				return 'series_order';
-		}
-	});
-
-	const defaultOrderType = $derived.by(() => {
-		switch (type) {
-			case 'main':
-				return defaultOrder;
-			case 'favorites':
-				return 'desc';
-			case 'collection':
-			case 'series':
-				return 'asc';
-		}
-	});
 
 	const selectSortOptions: { label: string; value: Sort }[] = (() => {
 		const options = [
@@ -115,39 +70,40 @@
 
 		return options;
 	})();
-
-	const sortValue = $derived.by(() => {
-		if (sort) {
-			return sort;
-		}
-
-		return (page.url.searchParams.get('sort') as Sort) ?? defaultSortType;
-	});
-
-	const orderValue = $derived.by(() => {
-		if (order) {
-			return order;
-		}
-
-		return (page.url.searchParams.get('order') as Order) ?? defaultOrderType;
-	});
-
-	const sortOption = $derived(
-		sortValue && selectSortOptions.find((option) => option.value === sortValue)
-	);
-
-	const newOrderQuery = () => {
-		const query = new URLSearchParams(page.url.searchParams.toString());
-		query.set('order', orderValue === 'desc' ? 'asc' : 'desc');
-		return query.toString();
-	};
-
-	const selectedLabel = $derived(
-		sortValue ? selectSortOptions.find((option) => option.value === sortValue)?.label : ''
-	);
 </script>
 
-<div class={cn('flex items-end gap-2', className)}>
+<fieldset class="fieldset">
+	<legend class="fieldset-legend">Sort by</legend>
+
+	<div class="flex gap-1.5">
+		<select
+			class="select w-48"
+			onchange={(event) => {
+				const { data } = sortSchema.safeParse(event.currentTarget.value);
+				if (data) onSort?.(data);
+			}}
+			bind:value={sort}
+		>
+			{#each selectSortOptions as option (option.value)}
+				<option selected={option.value === sort} value={option.value}>{option.label}</option>
+			{/each}
+		</select>
+		<button
+			class="btn btn-square btn-ghost"
+			onclick={() => onOrder?.(order === 'desc' ? 'asc' : 'desc')}
+		>
+			{#if order === 'desc'}
+				<span class="sr-only">Set ascending order</span>
+				<ChevronDownIcon />
+			{:else}
+				<span class="sr-only">Set descending order</span>
+				<ChevronUpIcon />
+			{/if}
+		</button>
+	</div>
+</fieldset>
+
+<!-- <div class={cn('flex items-end gap-2', className)}>
 	<div class="w-full space-y-0.5 md:w-fit">
 		<Label>Sort by</Label>
 		<Select.Root
@@ -216,4 +172,4 @@
 			<ChevronUp />
 		{/if}
 	</Button>
-</div>
+</div> -->

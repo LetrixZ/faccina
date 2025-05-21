@@ -8,7 +8,6 @@
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
 	import { createCollectionSchema } from '$lib/schemas';
-	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
 	import BookmarkPlus from '@lucide/svelte/icons/bookmark-plus';
 	import Save from '@lucide/svelte/icons/save';
@@ -19,11 +18,12 @@
 	import { fade } from 'svelte/transition';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
+	import type { GalleryItem } from '$lib/types';
 
 	const { data } = $props();
 
 	let selectedGalleries = $derived(
-		data.collection.archives as (GalleryListItem & {
+		data.collection.archives as (GalleryItem & {
 			[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
 		})[]
 	);
@@ -72,14 +72,14 @@
 		use:enhance
 	>
 		<div class="flex w-full items-start gap-2">
-			<Form.Field class="flex-auto" {form} name="name">
+			<Form.Field name="name" class="flex-auto" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Input
 							{...props}
-							bind:value={$formData.name}
 							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
 							placeholder="Collection name"
+							bind:value={$formData.name}
 						/>
 
 						{#if $errors.name}
@@ -104,8 +104,8 @@
 
 		{#if selectedGalleries.length}
 			<div
-				aria-label="Collection"
 				class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
+				aria-label="Collection"
 				onconsider={(e) => (selectedGalleries = e.detail.items)}
 				onfinalize={(e) => (selectedGalleries = e.detail.items)}
 				use:dragHandleZone={{
@@ -115,7 +115,7 @@
 				}}
 			>
 				{#each selectedGalleries as gallery (gallery.id)}
-					<div animate:flip={{ duration: 50 }} class="relative">
+					<div class="relative" animate:flip={{ duration: 50 }}>
 						<ListItemDrag {gallery} newTab />
 
 						{#if gallery[SHADOW_ITEM_MARKER_PROPERTY_NAME]}

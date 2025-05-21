@@ -1,5 +1,3 @@
-import type { Preset } from '$lib/image-presets';
-import type { ImageArchive } from '$lib/types';
 import chalk from 'chalk';
 import imageSize from 'image-size';
 import StreamZip from 'node-stream-zip';
@@ -11,6 +9,8 @@ import config from '~shared/config';
 import db from '~shared/db';
 import { imageDirectory } from '~shared/server.utils';
 import { leadingZeros } from '~shared/utils';
+import type { Preset } from '$lib/image-presets';
+import type { ImageArchive } from '$lib/types';
 
 export type ImageEncodingArgs = {
 	archive: ImageArchive;

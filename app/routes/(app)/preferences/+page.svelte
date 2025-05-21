@@ -43,8 +43,8 @@
 		<p class="text-sm font-medium">You can use the same tag syntax as the search.</p>
 
 		<InputChip
-			chips={blacklist}
 			id="tags"
+			chips={blacklist}
 			onUpdate={(update) => {
 				blacklist = update;
 				save();

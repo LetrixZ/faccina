@@ -161,12 +161,10 @@
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 
 				<Input
-					autocomplete="off"
-					bind:ref={inputEl}
-					bind:value={input}
-					class="border-0 focus-visible:ring-0"
 					{id}
 					name="q"
+					class="border-0 focus-visible:ring-0"
+					autocomplete="off"
 					onfocus={() => {
 						isFocused = true;
 						popoverOpen = true;
@@ -223,18 +221,20 @@
 						}, 1);
 					}}
 					{placeholder}
+					bind:ref={inputEl}
+					bind:value={input}
 				/>
 			</div>
 		</Popover.Portal>
 
 		<Popover.Content
-			align="start"
 			class="grid w-fit p-0"
-			trapFocus={false}
+			align="start"
 			onOpenAutoFocus={(ev) => {
 				ev.preventDefault();
 				inputEl.focus();
 			}}
+			trapFocus={false}
 		>
 			{#each filteredTags as tag, i}
 				<Button
@@ -255,7 +255,7 @@
 		<div class="flex flex-wrap gap-2 p-2">
 			{#each chips as chip}
 				<button
-					class="bg-secondary hover:bg-secondary/80 rounded-md px-2 py-0.5 text-sm text-neutral-200 hover:text-white motion-safe:duration-150"
+					class="rounded-md bg-secondary px-2 py-0.5 text-sm text-neutral-200 hover:bg-secondary/80 hover:text-white motion-safe:duration-150"
 					onclick={() => removeChip(chip)}
 					type="button"
 				>

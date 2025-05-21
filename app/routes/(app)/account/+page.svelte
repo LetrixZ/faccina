@@ -46,16 +46,16 @@
 
 <main class="relative container flex max-w-screen-md flex-col gap-y-2">
 	<form class="flex flex-col gap-3" method="POST" use:enhance>
-		<input autocomplete="username" bind:value={$formData.username} class="hidden" />
+		<input class="hidden" autocomplete="username" bind:value={$formData.username} />
 
 		<div class="space-y-3">
-			<Form.Field {form} name="email">
+			<Form.Field name="email" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>
 							Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
 						</Form.Label>
-						<Input {...props} autocomplete="email" bind:value={$formData.email} type="email" />
+						<Input {...props} autocomplete="email" type="email" bind:value={$formData.email} />
 					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
@@ -65,15 +65,15 @@
 
 			<p class="font-medium">Change password</p>
 
-			<Form.Field {form} name="currentPassword">
+			<Form.Field name="currentPassword" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Current password</Form.Label>
 						<Input
 							{...props}
 							autocomplete="current-password"
-							bind:value={$formData.currentPassword}
 							type="password"
+							bind:value={$formData.currentPassword}
 						/>
 					{/snippet}
 				</Form.Control>
@@ -81,30 +81,30 @@
 			</Form.Field>
 
 			<div class="grid gap-3 sm:grid-cols-2">
-				<Form.Field {form} name="newPassword">
+				<Form.Field name="newPassword" {form}>
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>New password</Form.Label>
 							<Input
 								{...props}
 								autocomplete="new-password"
-								bind:value={$formData.newPassword}
 								type="password"
+								bind:value={$formData.newPassword}
 							/>
 						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field {form} name="confirmNewPassword">
+				<Form.Field name="confirmNewPassword" {form}>
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>Confirm new password</Form.Label>
 							<Input
 								{...props}
 								autocomplete="new-password"
-								bind:value={$formData.confirmNewPassword}
 								type="password"
+								bind:value={$formData.confirmNewPassword}
 							/>
 						{/snippet}
 					</Form.Control>
@@ -147,15 +147,15 @@
 
 		{#if showPasswordInput}
 			<form action="/account/delete" method="POST" use:deleteEnhance>
-				<Form.Field form={deleteForm} name="currentPassword">
+				<Form.Field name="currentPassword" form={deleteForm}>
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>Current password</Form.Label>
 							<Input
 								{...props}
 								autocomplete="current-password"
-								bind:value={$deleteFormData.currentPassword}
 								type="password"
+								bind:value={$deleteFormData.currentPassword}
 							/>
 						{/snippet}
 					</Form.Control>

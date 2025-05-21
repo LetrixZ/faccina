@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores.svelte';
-	import type { GalleryListItem, Tag } from '../types';
-	import Chip from './chip.svelte';
-	import { Button } from './ui/button';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
+	import type { GalleryItem, SiteConfig, Tag } from '../types';
+	import Chip from './chip.svelte';
+	import { Button } from './ui/button';
 
 	type Props = {
-		gallery: GalleryListItem;
+		gallery: GalleryItem;
 		selected?: boolean;
-		onSelect?: (gallery: GalleryListItem) => void;
+		onSelect?: (gallery: GalleryItem) => void;
+		siteConfig: SiteConfig;
 	};
 
-	let { gallery, selected = false, onSelect }: Props = $props();
+	let { gallery, selected = false, onSelect, siteConfig }: Props = $props();
 
 	const { tags, moreCount } = $derived.by(() => {
 		const maxWidth = 290;
@@ -58,11 +58,11 @@
 	>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
-				alt="'{gallery.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt="'{gallery.title}' cover"
 				height={910}
 				loading="eager"
-				src="{appState.siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
+				src="{siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
 				width={640}
 			/>
 
@@ -104,7 +104,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

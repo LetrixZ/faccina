@@ -4,8 +4,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
-	import type { Tag } from '../types';
 	import Search from '@lucide/svelte/icons/search';
+	import type { Tag } from '../types';
 
 	type Props = {
 		tags: Tag[];
@@ -144,7 +144,7 @@
 		<Popover.Portal>
 			<form
 				bind:this={formEl}
-				class="bg-muted ring-offset-background focus-within:ring-ring hover:ring-ring relative flex h-full w-full items-center rounded-md focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none hover:ring-2 hover:ring-offset-2"
+				class="ring-offset-background focus-within:ring-ring hover:ring-ring relative flex h-full w-full items-center rounded-md bg-muted focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-none hover:ring-2 hover:ring-offset-2"
 				onsubmit={(ev) => {
 					ev.preventDefault();
 					popoverOpen = false;
@@ -153,11 +153,9 @@
 			>
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 				<Input
-					autocomplete="off"
-					bind:ref={inputEl}
-					bind:value={query}
-					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
 					name="q"
+					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
+					autocomplete="off"
 					onblur={() => (isFocused = false)}
 					onfocus={() => {
 						isFocused = true;
@@ -216,14 +214,16 @@
 					}}
 					placeholder={searchPlaceholder}
 					type="search"
+					bind:ref={inputEl}
+					bind:value={query}
 				/>
 
 				{#if sort}
-					<input class="hidden" name="sort" value={sort} />
+					<input name="sort" class="hidden" value={sort} />
 				{/if}
 
 				{#if order}
-					<input class="hidden" name="order" value={order} />
+					<input name="order" class="hidden" value={order} />
 				{/if}
 
 				<Button
@@ -237,13 +237,13 @@
 			</form>
 
 			<Popover.Content
-				align="start"
 				class="grid w-fit p-0"
-				trapFocus={false}
+				align="start"
 				onOpenAutoFocus={(ev) => {
 					ev.preventDefault();
 					inputEl?.focus();
 				}}
+				trapFocus={false}
 			>
 				{#each filteredTags as tag, i}
 					{@const value =

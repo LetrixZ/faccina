@@ -2,38 +2,36 @@
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
+	import type { Query } from '$lib/query.svelte';
 	import type { Sort } from '$lib/schemas';
-	import { appState } from '$lib/stores.svelte';
 	import type { LibraryResponse, ListPageType } from '$lib/types';
 
 	type Props = {
 		library: LibraryResponse<unknown>;
-		type?: ListPageType;
+		type: ListPageType;
 		sortOptions?: Sort[];
-		defaultSort?: Sort;
+		pageLimits: number[];
+		query: Query;
+		onQuery?: (query: Query) => boolean | unknown;
 	};
 
-	let {
-		library,
-		type = 'main',
-		sortOptions = undefined,
-		defaultSort = undefined,
-	}: Props = $props();
+	let { library, type, sortOptions, pageLimits, query, onQuery }: Props = $props();
 </script>
 
-<div class="flex w-full gap-2">
-	<LimitOptions pageLimits={appState.siteConfig.pageLimits} />
+<div class="flex w-full gap-1.5">
+	<LimitOptions
+		onChange={(value) => (query.limit = value) && onQuery?.(query)}
+		{pageLimits}
+		value={query.limit}
+	/>
 	<SortOptions
-		class="w-full"
-		defaultOrder={appState.siteConfig.defaultOrder}
-		defaultSort={defaultSort ?? appState.siteConfig.defaultSort}
+		onOrder={(value) => (query.order = value) && onQuery?.(query)}
+		onSort={(value) => (query.sort = value) && onQuery?.(query)}
+		order={query.order}
+		sort={query.sort}
 		{sortOptions}
 		{type}
 	/>
 </div>
 
-<ListPagination
-	class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
-	limit={library.limit}
-	total={library.total}
-/>
+<ListPagination currentPage={library.page} limit={library.limit} total={library.total} />

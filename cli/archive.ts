@@ -1,8 +1,18 @@
 import { readStream } from '$lib/server/utils';
+import { Glob, sleep } from 'bun';
+import chalk from 'chalk';
+import cliProgress from 'cli-progress';
+import { filetypemime } from 'magic-bytes.js';
+import naturalCompare from 'natural-compare-lite';
+import StreamZip from 'node-stream-zip';
+import { createReadStream } from 'node:fs';
+import { mkdir, rename, rm, stat } from 'node:fs/promises';
+import { dirname, extname, join, parse } from 'node:path';
+import slugify from 'slugify';
+import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
-import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { exists, imageDirectory } from '../shared/server.utils';
 import { leadingZeros } from '../shared/utils';
 import {
@@ -14,16 +24,6 @@ import {
 } from './metadata';
 import { parseFilename } from './metadata/utils';
 import { directorySize, queryIdRanges } from './utilts';
-import { Glob, sleep } from 'bun';
-import chalk from 'chalk';
-import cliProgress from 'cli-progress';
-import { filetypemime } from 'magic-bytes.js';
-import naturalCompare from 'natural-compare-lite';
-import StreamZip from 'node-stream-zip';
-import { createReadStream } from 'node:fs';
-import { mkdir, rename, rm, stat } from 'node:fs/promises';
-import { dirname, extname, join, parse } from 'node:path';
-import slugify from 'slugify';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
 

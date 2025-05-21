@@ -18,15 +18,9 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false,
-		"noUncheckedIndexedAccess": true,
+		// "noUncheckedIndexedAccess": true,
 		"types": ["@types/bun"],
-		"rootDirs": ["./", "./.svelte-kit/types"],
-		"paths": {
-			"~shared": ["./shared"],
-			"~shared/*": ["./shared/*"],
-			"$lib": ["./app/lib"],
-			"$lib/*": ["./app/lib/*"]
-		}
+		"rootDirs": ["./", "./.svelte-kit/types"]
 	},
 	"include": [
 		"./app/**/*.js",

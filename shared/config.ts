@@ -1,6 +1,6 @@
-import { camelizeSchema, configSchema } from './config.schema';
 import { parseTOML } from 'confbox';
 import { readFileSync } from 'fs';
+import { camelizeSchema, configSchema } from './config.schema';
 
 const configFile = process.env.CONFIG_FILE ?? 'config.toml';
 const content = readFileSync(configFile, 'utf8');

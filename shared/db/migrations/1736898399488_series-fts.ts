@@ -1,11 +1,17 @@
-import { id, now } from '../helpers';
 import { sql, type Kysely } from 'kysely';
 import config from '~shared/config';
+import { id, now } from '../helpers';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.alterTable('series').renameTo('series_old').execute();
 	await db.schema.alterTable('series_archive').renameTo('series_archive_old').execute();
-	await db.schema.alterTable('series_archive_old').dropConstraint('series_archive_pkey').execute();
+
+	if (config.database.vendor !== 'sqlite') {
+		await db.schema
+			.alterTable('series_archive_old')
+			.dropConstraint('series_archive_pkey')
+			.execute();
+	}
 
 	await id(db.schema, 'series')
 		.addColumn('title', 'varchar(1024)', (col) => col.notNull())

@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { appState } from '$lib/stores.svelte';
-	import type { Gallery } from '$lib/types';
 	import { Button } from './ui/button';
+	import type { CollectionItem, Gallery } from '$lib/types';
 
 	type Props = {
 		gallery: Pick<Gallery, 'id'>;
+		userCollections: CollectionItem[] | undefined;
 	};
 
-	let { gallery }: Props = $props();
+	let { gallery, userCollections }: Props = $props();
 </script>
 
-{#if appState.userCollections?.length}
+{#if userCollections?.length}
 	<ul class="grid gap-2">
-		{#each appState.userCollections as collection}
+		{#each userCollections as collection}
 			{@const archives = collection.archives}
 			<li class="flex items-center justify-between">
 				<div class="flex gap-2">
@@ -36,14 +36,14 @@
 
 				{#if archives.some(({ id }) => id === gallery.id)}
 					<form action="/g/{gallery.id}/?/removeCollection" method="POST" use:enhance>
-						<input class="hidden" name="collection" value={collection.id} />
-						<input class="hidden" name="archive" value={gallery.id} />
+						<input name="collection" class="hidden" value={collection.id} />
+						<input name="archive" class="hidden" value={gallery.id} />
 						<Button class="ms-auto" size="sm" type="submit" variant="destructive">Remove</Button>
 					</form>
 				{:else}
 					<form action="/g/{gallery.id}/?/addCollection" method="POST" use:enhance>
-						<input class="hidden" name="collection" value={collection.id} />
-						<input class="hidden" name="archive" value={gallery.id} />
+						<input name="collection" class="hidden" value={collection.id} />
+						<input name="archive" class="hidden" value={gallery.id} />
 						<Button class="ms-auto" size="sm" type="submit" variant="indigo">Add</Button>
 					</form>
 				{/if}

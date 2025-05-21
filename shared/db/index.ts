@@ -1,7 +1,3 @@
-import config from '../config';
-import connection from './connection';
-import migrations from './migrations';
-import type { DB } from './types';
 import { Database } from 'bun:sqlite';
 import {
 	CamelCasePlugin,
@@ -12,6 +8,10 @@ import {
 } from 'kysely';
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
 import { Pool } from 'pg';
+import type { DB } from './types';
+import config from '../config';
+import connection from './connection';
+import migrations from './migrations';
 
 export const databaseType = config.database.vendor;
 

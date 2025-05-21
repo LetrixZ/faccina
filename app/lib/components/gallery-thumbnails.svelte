@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores.svelte';
 	import { cn, isSpread } from '$lib/utils';
-	import type { Gallery } from '../types';
+	import type { Gallery, SiteConfig } from '../types';
 	import { Button } from './ui/button';
 
 	type Props = {
 		archive: Gallery;
+		siteConfig: SiteConfig;
 	};
 
-	let { archive }: Props = $props();
+	let { archive, siteConfig }: Props = $props();
 
 	let maxCount = $state(12);
 
@@ -31,20 +31,19 @@
 			{#each filteredImages as image (image.pageNumber)}
 				<a class="relative" href="./{archive.id}/read/{image.pageNumber}{page.url.search}">
 					<img
-						alt="Page {image.pageNumber}"
 						class={cn(
 							'shadow-shadow aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md',
 							isSpread(image) && 'object-contain'
 						)}
+						alt="Page {image.pageNumber}"
 						height={455}
 						loading="eager"
-						src="{appState.siteConfig
-							.imageServer}/image/{archive.hash}/{image.pageNumber}?type=thumb"
+						src="{siteConfig.imageServer}/image/{archive.hash}/{image.pageNumber}?type=thumb"
 						width={320}
 					/>
 					{#if !wideImages && isSpread(image)}
 						<span
-							class="bg-muted absolute right-2 bottom-2 rounded-md px-1 py-0.5 text-xs font-medium tracking-wide uppercase opacity-90"
+							class="absolute right-2 bottom-2 rounded-md bg-muted px-1 py-0.5 text-xs font-medium tracking-wide uppercase opacity-90"
 						>
 							Spread
 						</span>

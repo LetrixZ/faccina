@@ -1,346 +1,142 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import LoginForm from '$lib/components/login-form.svelte';
-	import RecoverForm from '$lib/components/recover-form.svelte';
-	import RegisterForm from '$lib/components/register-form.svelte';
-	import ResetForm from '$lib/components/reset-form.svelte';
-	import SearchBar from '$lib/components/search-bar.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import type { UserFormState } from '$lib/models';
-	import { appState } from '$lib/stores.svelte';
-	import Book from '@lucide/svelte/icons/book';
-	import Bookmark from '@lucide/svelte/icons/bookmark';
-	import Clock from '@lucide/svelte/icons/clock';
-	import Heart from '@lucide/svelte/icons/heart';
-	import Home from '@lucide/svelte/icons/house';
+	import * as DropdownMenu from '$lib/components/new/dropdown-menu';
+	import IconButton from '$lib/components/newnew/icon-button.svelte';
+	import { appState } from '$lib/state.svelte.js';
+	import { apiUrl, cn } from '$lib/utils';
+	import { Cog, LogOut, UserPlus } from '@lucide/svelte';
+	import House from '@lucide/svelte/icons/house';
 	import LogIn from '@lucide/svelte/icons/log-in';
-	import LogOut from '@lucide/svelte/icons/log-out';
-	import Settings from '@lucide/svelte/icons/settings';
-	import User from '@lucide/svelte/icons/user';
-	import UserCircle from '@lucide/svelte/icons/user-round';
-	import type { ActionResult } from '@sveltejs/kit';
+	import Menu from '@lucide/svelte/icons/menu';
+	import { toast } from 'svelte-sonner';
 
 	const { data, children } = $props();
 
-	let loginOpen = $state(false);
-	let userFormState = $state<UserFormState>('login');
+	let scrollY = $state(0);
 
-	let formEl: HTMLFormElement;
-	let inputEl = $state<HTMLInputElement | null>(null);
+	const inputQuery = $derived(decodeURIComponent(page.url.searchParams.get('q') || ''));
 
-	const formAction = $derived.by(() => {
-		switch (page.route.id) {
-			case '/(app)/favorites':
-			case '/(app)/collections/[slug]':
-			case '/(app)/series':
-			case '/(app)/series/[id]':
-				return page.url.pathname;
-			default:
-				return '/';
+	$effect(() => {
+		if (appState.preferences.disableLayoutColors) {
+			return;
 		}
-	});
 
-	const sort = $derived(page.url.searchParams.get('sort'));
-	const order = $derived(page.url.searchParams.get('order'));
-	const seed = $derived(page.url.searchParams.get('seed'));
-
-	let query = $derived(page.url.searchParams.get('q') ?? '');
-
-	let shouldAutocomplete = $state(true);
-
-	let selectPosition = $state(-1);
-	let highligtedIndex = $state(-1);
-	let isFocused = $state(false);
-	let popoverOpen = $state(false);
-	let negate = $state(false);
-	let or = $state(false);
-
-	const filteredTags = $derived.by(() => {
-		if (query.trim().length) {
-			let value = query.toLowerCase();
-
-			if (value[selectPosition - 1] !== ' ') {
-				let wordEnd = selectPosition;
-				let wordStart = selectPosition;
-
-				if (wordEnd < value.length) {
-					while (value[wordEnd] && value[wordEnd] !== ' ') {
-						wordEnd++;
-					}
-				}
-
-				while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-					wordStart--;
-				}
-
-				if (wordStart >= 0 && wordEnd >= 0) {
-					value = value.substring(wordStart, wordEnd);
-				}
+		const currentGallery = appState.currentGallery;
+		if (currentGallery) {
+			const appColor = appState.colors.get(currentGallery);
+			if (appColor) {
+				document.documentElement.style.setProperty('--app-color', `${appColor}`);
 			} else {
-				value = '';
+				document.documentElement.style.removeProperty('--app-color');
 			}
-
-			if (!value.trim().length || value === '-' || value === '~') {
-				return [];
-			}
-
-			negate = value[0] === '-';
-			or = value[0] === '~';
-
-			if (negate || or) {
-				value = value.substring(1);
-			}
-
-			const tagMap = new Map();
-
-			appState.tagList
-				.filter(({ namespace, name }) => {
-					return (
-						`${namespace}:${name}`.toLowerCase().includes(value) ||
-						`${namespace}:"${name}"`.toLowerCase().includes(value) ||
-						`${namespace}:${name.replaceAll(' ', '_')}`.toLowerCase().includes(value) ||
-						`${namespace}:"${name.replaceAll(' ', '_')}"`.toLowerCase().includes(value)
-					);
-				})
-				.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));
-
-			return Array.from(tagMap.values()).slice(0, 5);
-		}
-
-		return [];
-	});
-
-	$effect(() => {
-		if (!isFocused) {
-			highligtedIndex = -1;
+		} else {
+			document.documentElement.style.removeProperty('--app-color');
 		}
 	});
 
-	const insertTag = async (input: HTMLInputElement, index?: number) => {
-		let value = query;
+	const logout = async () => {
+		const res = await fetch(`${apiUrl}/api/v1/auth/logout`, { method: 'POST' });
 
-		const currentPosition = input.selectionStart;
-
-		if (currentPosition === null) {
-			return;
-		}
-
-		let wordEnd = currentPosition;
-		let wordStart = currentPosition;
-
-		if (query[currentPosition - 1] !== ' ') {
-			if (wordEnd < query.length) {
-				while (query[wordEnd] && query[wordEnd] !== ' ') {
-					wordEnd++;
-				}
-			}
-
-			while (query[wordStart - 1] && query[wordStart - 1] !== ' ') {
-				wordStart--;
-			}
-		}
-
-		const tag = filteredTags[index ?? highligtedIndex];
-
-		if (!tag) {
-			return;
-		}
-
-		let tagValue =
-			`${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name} `.toLowerCase();
-
-		if (negate) {
-			tagValue = '-' + tagValue;
-		} else if (or) {
-			tagValue = '~' + tagValue;
-		}
-
-		value = query.substring(0, wordStart) + tagValue + query.substring(wordEnd).trimStart();
-		query = value;
-
-		highligtedIndex = -1;
-		popoverOpen = false;
-
-		setTimeout(() => {
-			inputEl?.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
-		}, 1);
-	};
-
-	const handleUserFormResult = (result: ActionResult) => {
-		if (result.type === 'success' || result.type === 'redirect') {
-			loginOpen = false;
+		if (res.ok) {
+			invalidateAll();
+		} else {
+			const { message } = await res.json();
+			toast.error(message);
 		}
 	};
-
-	const logout = () => {
-		fetch(`/logout`, {
-			method: 'POST',
-		}).then(() => invalidateAll());
-	};
-
-	const showLogin = () => {
-		userFormState = 'login';
-		loginOpen = true;
-	};
-
-	$effect(() => {
-		appState.userCollections = data.userCollections;
-		appState.tagList = data.tagList;
-	});
 </script>
 
 <svelte:head>
 	<title>{data.site.name}</title>
 </svelte:head>
 
-<div class="bg-background dark:border-border fixed z-20 flex h-fit w-full border-b shadow">
-	<Button
-		class="text-muted-foreground hover:dark:text-primary size-12 rounded-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-		href="/"
-		onclick={() => (query = '')}
-		title="Go home"
-		variant="ghost"
-	>
-		<Home class="size-6" />
-	</Button>
+<svelte:window bind:scrollY />
 
-	<Button
-		class="text-muted-foreground hover:dark:text-primary size-12 rounded-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-		href="/series"
-		onclick={() => (query = '')}
-		title="Series"
-		variant="ghost"
-	>
-		<Book class="size-6" />
-	</Button>
+<div class="mx-auto flex w-full grow flex-col px-2 pt-16 pb-4 2xl:max-w-8xl">
+	<div class="fixed inset-x-0 top-2 z-20 mx-auto flex justify-center px-3 md:px-4">
+		<div
+			class={cn(
+				'search flex h-12 w-full max-w-7xl items-center justify-center gap-0.5 rounded-3xl px-2 py-2 backdrop-blur-md transition-shadow md:gap-2.5 md:px-4',
+				scrollY > 36 && 'shadow-muted/50 shadow'
+			)}
+		>
+			<a class="size-8 shrink-0 p-1.5" href="/">
+				<House class="size-full" />
+			</a>
 
-	<div class="h-12 w-full flex-1 p-2">
-		<SearchBar
-			tags={appState.tagList}
-			searchPlaceholder={appState.siteConfig.searchPlaceholder}
-			onSearch={(search) => {
-				console.log({ search });
-			}}
-		/>
+			<a href="/">
+				<IconButton icon={House} />
+			</a>
+
+			<form class="size-full" action="/" method="GET">
+				<input
+					name="q"
+					class="size-full rounded-3xl border px-3 text-sm duration-150 outline-none"
+					placeholder={data.site.searchPlaceholder}
+					type="search"
+					value={inputQuery}
+				/>
+			</form>
+
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					<button class="size-8 shrink-0 p-1.5">
+						<Menu class="size-full" />
+					</button>
+				</DropdownMenu.Trigger>
+
+				<DropdownMenu.Content
+					align="end"
+					forceMount
+					preventScroll={false}
+					side="bottom"
+					sideOffset={15}
+				>
+					<DropdownMenu.Item href="/preferences" icon={Cog} text="Preferences" />
+
+					<DropdownMenu.Separator />
+
+					{#if data.user}
+						<DropdownMenu.Item icon={LogOut} onclick={logout} text="Logout" />
+					{:else}
+						<DropdownMenu.Item
+							href="/login?to={page.url.pathname}{page.url.search}"
+							icon={LogIn}
+							text="Login"
+						/>
+						<DropdownMenu.Item href="/register" icon={UserPlus} text="Register" />
+					{/if}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
 	</div>
 
-	<DropdownMenu.Root>
-		<DropdownMenu.Trigger>
-			<Button
-				class="text-muted-foreground hover:dark:text-primary size-12 rounded-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-				href="/panel"
-				onclick={(ev) => ev.preventDefault()}
-				variant="ghost"
-			>
-				<UserCircle class="size-6" />
-			</Button>
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Content class="min-w-40" preventScroll={false}>
-			<DropdownMenu.Group>
-				<a href="/preferences">
-					<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
-						Preferences
-						<Settings class="ms-auto size-4" />
-					</DropdownMenu.Item>
-				</a>
-
-				{#if data.user}
-					<DropdownMenu.Separator />
-
-					<a href="/favorites">
-						<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
-							Favorites
-							<Heart class="ms-auto size-4" />
-						</DropdownMenu.Item>
-					</a>
-
-					{#if data.site.enableCollections}
-						<a href="/collections">
-							<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
-								Collections
-								<Bookmark class="ms-auto size-4" />
-							</DropdownMenu.Item>
-						</a>
-					{/if}
-
-					{#if data.site.enableReadHistory}
-						<a href="/read-history">
-							<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
-								Read history
-								<Clock class="ms-auto size-4" />
-							</DropdownMenu.Item>
-						</a>
-					{/if}
-				{/if}
-
-				{#if data.user}
-					<DropdownMenu.Separator />
-
-					<a href="/account">
-						<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
-							Account
-							<User class="ms-auto size-[1.125rem]" />
-						</DropdownMenu.Item>
-					</a>
-					<DropdownMenu.Item
-						class="flex w-full cursor-pointer items-center text-neutral-200"
-						onclick={logout}
-					>
-						Logout
-						<LogOut class="ms-auto size-4" />
-					</DropdownMenu.Item>
-				{:else if data.site.enableUsers}
-					<DropdownMenu.Separator />
-
-					<DropdownMenu.Item
-						class="flex w-full cursor-pointer items-center text-neutral-200"
-						onclick={showLogin}
-					>
-						Login
-						<LogIn class="ms-auto size-4" />
-					</DropdownMenu.Item>
-				{/if}
-			</DropdownMenu.Group>
-		</DropdownMenu.Content>
-	</DropdownMenu.Root>
-</div>
-
-<div class="flex w-full flex-auto flex-col pt-12">
 	{@render children()}
 </div>
 
-<Dialog.Root bind:open={loginOpen}>
-	<Dialog.Content class="max-w-[90%] md:max-w-md">
-		{#if userFormState === 'register'}
-			<RegisterForm
-				changeState={(state) => (userFormState = state)}
-				data={data.registerForm}
-				hasMailer={data.site.hasMailer}
-				onResult={(result) => handleUserFormResult(result)}
-			/>
-		{:else if userFormState === 'recover'}
-			<RecoverForm
-				changeState={(state) => (userFormState = state)}
-				data={data.recoverForm}
-				hasMailer={data.site.hasMailer}
-				onResult={(result) => handleUserFormResult(result)}
-			/>
-		{:else if userFormState === 'reset'}
-			<ResetForm
-				changeState={(state) => (userFormState = state)}
-				data={data.resetForm}
-				onResult={(result) => handleUserFormResult(result)}
-			/>
-		{:else if userFormState === 'login'}
-			<LoginForm
-				changeState={(state) => (userFormState = state)}
-				data={data.loginForm}
-				hasMailer={data.site.hasMailer}
-				onResult={(result) => handleUserFormResult(result)}
-			/>
-		{/if}
-	</Dialog.Content>
-</Dialog.Root>
+<style>
+	.search {
+		background-color: --alpha(
+			color-mix(in oklab, var(--app-color), var(--color-background) 85%) / 60%
+		);
+		transition:
+			background-color 300ms,
+			shadow 200ms;
+	}
+
+	.search input {
+		background-color: --alpha(
+			color-mix(in oklab, var(--app-color), var(--color-background) 85%) / 60%
+		);
+		border-color: --alpha(
+			color-mix(in oklab, var(--color-neutral-500) 80%, var(--color-accent)) / 40%
+		);
+
+		&:focus-visible {
+			border-color: --alpha(
+				color-mix(in oklab, var(--color-neutral-400) 80%, var(--color-accent)) / 60%
+			);
+		}
+	}
+</style>

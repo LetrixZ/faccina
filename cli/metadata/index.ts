@@ -1,3 +1,13 @@
+import { Glob } from 'bun';
+import chalk from 'chalk';
+import cliProgress from 'cli-progress';
+import { strFromU8 } from 'fflate';
+import { StreamZipAsync } from 'node-stream-zip';
+import { readdirSync } from 'node:fs';
+import { basename, dirname, extname, join, parse } from 'node:path';
+import { match } from 'ts-pattern';
+import XML2JS from 'xml2js';
+import YAML from 'yaml';
 import type { ArchiveMetadata } from '../../shared/metadata';
 import type { IndexScan, MetadataScan } from '../archive';
 import { basenames } from '../utilts';
@@ -13,16 +23,6 @@ import hentag from './hentag';
 import hentainexus from './hentainexus';
 import koharu from './koharu';
 import koromo from './koromo';
-import { Glob } from 'bun';
-import chalk from 'chalk';
-import cliProgress from 'cli-progress';
-import { strFromU8 } from 'fflate';
-import { StreamZipAsync } from 'node-stream-zip';
-import { readdirSync } from 'node:fs';
-import { basename, dirname, extname, join, parse } from 'node:path';
-import { match } from 'ts-pattern';
-import XML2JS from 'xml2js';
-import YAML from 'yaml';
 
 export enum MetadataFormat {
 	JSON = 'JSON',

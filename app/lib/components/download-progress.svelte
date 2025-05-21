@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { Task } from '$lib/models';
 	import { cn } from '$lib/utils';
+	import Save from '@lucide/svelte/icons/save';
 	import Button from './ui/button/button.svelte';
 	import Progress from './ui/progress/progress.svelte';
-	import Save from '@lucide/svelte/icons/save';
+	import type { Task } from '$lib/models';
 
 	type Props = {
 		task: () => Task;
@@ -24,7 +24,7 @@
 
 		<Button
 			class={cn(
-				'hover:bg-success/20 size-7 flex-shrink-0 bg-transparent p-1 disabled:opacity-5',
+				'size-7 flex-shrink-0 bg-transparent p-1 hover:bg-success/20 disabled:opacity-5',
 				task.complete && 'text-success'
 			)}
 			disabled={!task.complete}

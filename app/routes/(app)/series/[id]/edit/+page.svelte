@@ -7,10 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { createSeriesSchema } from '$lib/schemas.js';
-	import { appState } from '$lib/stores.svelte';
-	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
-	import SeriesForm from '../../series-form.svelte';
 	import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
@@ -19,6 +16,8 @@
 	import { fade } from 'svelte/transition';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
+	import SeriesForm from '../../series-form.svelte';
+	import type { GalleryItem } from '$lib/types';
 
 	const { data } = $props();
 
@@ -37,7 +36,7 @@
 
 	const { form: formData } = form;
 
-	let selected = $state<(GalleryListItem & { [SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown })[]>([]);
+	let selected = $state<(GalleryItem & { [SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown })[]>([]);
 
 	$effect(() => {
 		selected = data.series.chapters;
@@ -47,7 +46,7 @@
 	const mainGallery = $derived(selected[0]);
 	const cover = $derived(
 		mainGallery
-			? `${appState.siteConfig.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
+			? `${data.site.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
 			: null
 	);
 
@@ -61,7 +60,7 @@
 		}
 	};
 
-	const onSelect = (gallery: GalleryListItem) => {
+	const onSelect = (gallery: GalleryItem) => {
 		if (selected.find((g) => g.id === gallery.id)) {
 			selected = selected.filter((g) => g.id !== gallery.id);
 		} else {
@@ -71,23 +70,23 @@
 </script>
 
 <svelte:head>
-	<title>Edit series | {appState.siteConfig.name}</title>
+	<title>Edit series | {data.site.name}</title>
 </svelte:head>
 
 <main class="container flex flex-auto flex-col gap-4">
 	<div class="flex gap-2">
 		<div class="relative h-fit w-fit max-w-64 overflow-clip rounded-md bg-neutral-900">
 			<img
-				alt="Cover"
 				class={cn('aspect-[45/64] object-contain', !cover && 'invisible')}
+				alt="Cover"
 				height={910}
 				src={cover}
 				width={640}
 			/>
 			{#if !cover}
 				<img
-					alt="Placeholder"
 					class="pointer-events-none absolute inset-0 m-auto blur-2xl brightness-[0.15]"
+					alt="Placeholder"
 					src="/favicon.png"
 					width="150"
 				/>
@@ -107,8 +106,8 @@
 
 		{#if selected.length}
 			<div
-				aria-label="Collection"
 				class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
+				aria-label="Collection"
 				onconsider={(e) => (selected = e.detail.items)}
 				onfinalize={(e) => (selected = e.detail.items)}
 				use:dragHandleZone={{
@@ -118,15 +117,15 @@
 				}}
 			>
 				{#each selected as gallery (gallery.id)}
-					<div animate:flip={{ duration: 50 }} class="relative">
-						<ListItemDrag {gallery} newTab />
+					<div class="relative" animate:flip={{ duration: 50 }}>
+						<ListItemDrag {gallery} newTab siteConfig={data.site} />
 
 						{#if gallery[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
 							<div
 								class="visible absolute inset-0 m-0 rounded opacity-50"
 								in:fade={{ duration: 200, easing: cubicIn }}
 							>
-								<ListItemDrag {gallery} newTab />
+								<ListItemDrag {gallery} newTab siteConfig={data.site} />
 							</div>
 						{/if}
 					</div>
@@ -147,6 +146,6 @@
 	<Dialog.Content
 		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-3 pt-3 pb-0"
 	>
-		<GallerySearchModal {onSelect} {selected} />
+		<GallerySearchModal {onSelect} {selected} siteConfig={data.site} tagList={data.tagList} />
 	</Dialog.Content>
 </Dialog.Root>

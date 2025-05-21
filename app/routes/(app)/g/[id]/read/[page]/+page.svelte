@@ -2,15 +2,14 @@
 	import { goto, pushState, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { appState } from '$lib/stores.svelte';
-	import type { ReadStat } from '$lib/types';
+	import { onMount } from 'svelte';
+	import { MetaTags } from 'svelte-meta-tags';
 	import PagedReader from './PagedReader.svelte';
+	import { getTouchLayoutOptions, readerState, scalingOptions } from './reader.svelte.js';
 	import Settings from './ReaderSettings.svelte';
 	import Toolbar from './ReaderToolbar.svelte';
 	import VerticalReader from './VerticalReader.svelte';
-	import { getTouchLayoutOptions, readerState, scalingOptions } from './reader.svelte.js';
-	import { onMount } from 'svelte';
-	import { MetaTags } from 'svelte-meta-tags';
+	import type { ReadStat } from '$lib/types';
 
 	const { data } = $props();
 
@@ -92,7 +91,7 @@
 	}
 
 	function stateReadPage(page: number) {
-		if (!appState.siteConfig.enableReadHistory || !appState.user) {
+		if (!data.site.enableReadHistory || !data.user) {
 			return;
 		}
 
@@ -224,7 +223,6 @@
 />
 
 <Settings
-	bind:previewLayout
 	{currentImage}
 	{currentPage}
 	gallery={data.gallery}
@@ -238,6 +236,7 @@
 	{readerAllowOriginal}
 	{scrollContainer}
 	{selectedPreset}
+	bind:previewLayout
 />
 
 <noscript>

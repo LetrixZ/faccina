@@ -1,5 +1,3 @@
-import config from '../shared/config';
-import db from '../shared/db';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
@@ -8,6 +6,8 @@ import { basename, join } from 'node:path';
 import pg, { Client } from 'pg';
 import { z } from 'zod';
 import { imageDirectory } from '~shared/server.utils';
+import config from '../shared/config';
+import db from '../shared/db';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 

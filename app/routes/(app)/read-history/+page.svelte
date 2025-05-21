@@ -3,8 +3,8 @@
 	import PageTitle from '$lib/components/page-title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import type { HistoryEntry } from '$lib/types';
 	import { relativeDate } from '$lib/utils';
+	import type { HistoryEntry } from '$lib/types';
 
 	const { data } = $props();
 
@@ -41,8 +41,8 @@
 					<p class="font-medium">{group.date}</p>
 
 					<div
-						aria-label="Collection"
 						class="3xl:grid-cols-4 relative grid gap-2 md:grid-cols-2 xl:grid-cols-3"
+						aria-label="Collection"
 					>
 						{#each group.entries as entry}
 							<div>

@@ -2,13 +2,13 @@
 	import { page } from '$app/state';
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
+	import { toast } from 'svelte-sonner';
+	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 	import type { UserFormState } from '../models';
 	import { registerSchema, type RegisterSchema } from '../schemas';
 	import { Button } from './ui/button';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { toast } from 'svelte-sonner';
-	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	type Props = {
 		data: SuperValidated<Infer<RegisterSchema>>;
@@ -35,9 +35,9 @@
 	const { form: formData, enhance } = form;
 </script>
 
-<form action="/register{page.url.search}" class="space-y-3" method="POST" use:enhance>
+<form class="space-y-3" action="/register{page.url.search}" method="POST" use:enhance>
 	<div class="flex flex-col">
-		<Form.Field {form} name="username">
+		<Form.Field name="username" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Username</Form.Label>
@@ -47,43 +47,43 @@
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="password">
+		<Form.Field name="password" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Password</Form.Label>
 					<Input
 						{...props}
 						autocomplete="new-password"
-						bind:value={$formData.password}
 						type="password"
+						bind:value={$formData.password}
 					/>
 				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="confirmPassword">
+		<Form.Field name="confirmPassword" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Confirm Password</Form.Label>
 					<Input
 						{...props}
 						autocomplete="new-password"
-						bind:value={$formData.confirmPassword}
 						type="password"
+						bind:value={$formData.confirmPassword}
 					/>
 				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="email">
+		<Form.Field name="email" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>
 						Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
 					</Form.Label>
-					<Input {...props} autocomplete="email" bind:value={$formData.email} type="email" />
+					<Input {...props} autocomplete="email" type="email" bind:value={$formData.email} />
 				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />

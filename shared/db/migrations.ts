@@ -1,7 +1,7 @@
-import migrations from './migration-list';
-import type { DB } from './types';
 import chalk from 'chalk';
 import { Kysely, Migrator } from 'kysely';
+import type { DB } from './types';
+import migrations from './migration-list';
 
 export default async (db: Kysely<DB>) => {
 	const shouldMigrate = await (async () => {
@@ -22,21 +22,24 @@ export default async (db: Kysely<DB>) => {
 			},
 		});
 
-		const { error, results } = await migrator.migrateToLatest();
+		for (const migration of await migrator.getMigrations()) {
+			const { error, results } = await migrator.migrateUp();
 
-		if (error) {
-			if (error instanceof Error) {
-				throw error;
-			} else {
-				console.error(error);
+			if (error) {
+				console.error(chalk.red(`Migration ${chalk.bold(migration.name)} failed`));
+				if (error instanceof Error) {
+					throw error;
+				} else {
+					console.error(error);
 
-				throw new Error('Migration failed');
-			}
-		} else if (results) {
-			for (const result of results) {
-				console.info(
-					chalk.green(`Applied migration ${chalk.bold(result.migrationName)} successfully`)
-				);
+					throw new Error('Migration failed');
+				}
+			} else if (results) {
+				for (const result of results) {
+					console.info(
+						chalk.green(`Applied migration ${chalk.bold(result.migrationName)} successfully`)
+					);
+				}
 			}
 		}
 	}

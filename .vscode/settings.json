@@ -5,9 +5,10 @@
 	},
 	"prettier.prettierPath": "./node_modules/prettier",
 	"eslint.validate": ["javascript", "svelte"],
-	"[go]": {
-		"editor.codeActionsOnSave": {
-			"source.organizeImports": "never"
-		}
-	}
+	"files.associations": {
+		"*.css": "tailwindcss"
+	},
+	"tailwindCSS.experimental.classRegex": [
+		["([\"'`][^\"'`]*.*?[\"'`])", "[\"'`]([^\"'`]*).*?[\"'`]"]
+	]
 }

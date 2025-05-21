@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores.svelte';
 	import { cn, relativeDate } from '$lib/utils';
-	import type { HistoryEntry, Tag } from '../types';
-	import Chip from './chip.svelte';
-	import Button from './ui/button/button.svelte';
 	import BookOpen from '@lucide/svelte/icons/book-open';
 	import BookOpenCheck from '@lucide/svelte/icons/book-open-check';
 	import Bookmark from '@lucide/svelte/icons/bookmark';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import dayjs from 'dayjs';
 	import pixelWidth from 'string-pixel-width';
+	import type { HistoryEntry, SiteConfig, Tag } from '../types';
+	import Chip from './chip.svelte';
+	import Button from './ui/button/button.svelte';
 
 	type Props = {
 		entry: HistoryEntry;
@@ -19,6 +18,7 @@
 		imageBookmark?: boolean;
 		newTab?: boolean;
 		onBookmark?: (bookmark: boolean) => void;
+		siteConfig: SiteConfig;
 	};
 
 	let {
@@ -28,6 +28,7 @@
 		imageBookmark = false,
 		newTab = false,
 		onBookmark,
+		siteConfig,
 	}: Props = $props();
 
 	const { tags, moreCount } = $derived.by(() => {
@@ -77,11 +78,11 @@
 	>
 		<div class="relative max-w-24 overflow-clip rounded-md shadow md:max-w-32">
 			<img
-				alt="'{entry.archive.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt="'{entry.archive.title}' cover"
 				height={910}
 				loading="eager"
-				src="{appState.siteConfig.imageServer}/image/{entry.archive.hash}/{entry.archive
+				src="{siteConfig.imageServer}/image/{entry.archive.hash}/{entry.archive
 					.thumbnail}?type=cover"
 				width={640}
 			/>
@@ -135,7 +136,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

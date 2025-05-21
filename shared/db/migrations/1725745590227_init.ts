@@ -1,8 +1,8 @@
+import chalk from 'chalk';
+import { type Kysely, sql } from 'kysely';
 import config from '../../config';
 import { taxonomyTables } from '../../taxonomy';
 import { id, now } from '../helpers';
-import chalk from 'chalk';
-import { type Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {

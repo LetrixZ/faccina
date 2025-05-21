@@ -2,13 +2,13 @@
 	import { page } from '$app/state';
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
+	import { toast } from 'svelte-sonner';
+	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 	import type { UserFormState } from '../models';
 	import { loginSchema, type LoginSchema } from '../schemas';
 	import { Button } from './ui/button';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { toast } from 'svelte-sonner';
-	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	type Props = {
 		data: SuperValidated<Infer<LoginSchema>>;
@@ -35,9 +35,9 @@
 	const { form: formData, enhance } = form;
 </script>
 
-<form action="/login{page.url.search}" class="space-y-3" method="POST" use:enhance>
+<form class="space-y-3" action="/login{page.url.search}" method="POST" use:enhance>
 	<div class="flex flex-col">
-		<Form.Field {form} name="username">
+		<Form.Field name="username" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Username</Form.Label>
@@ -47,15 +47,15 @@
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="password">
+		<Form.Field name="password" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Password</Form.Label>
 					<Input
 						{...props}
 						autocomplete="current-password"
-						bind:value={$formData.password}
 						type="password"
+						bind:value={$formData.password}
 					/>
 				{/snippet}
 			</Form.Control>

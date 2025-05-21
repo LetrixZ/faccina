@@ -1,25 +1,25 @@
 <script lang="ts">
-	import { appState } from '$lib/stores.svelte';
+	import Save from '@lucide/svelte/icons/save';
+	import { toast } from 'svelte-sonner';
+	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
+	import type { Tag, TagNamespace } from '../types';
 	import { editTagsSchema, type EditTagsSchema } from '../schemas';
-	import type { TagNamespace } from '../types';
 	import { isTag } from '../utils';
 	import InputChip from './input-chip.svelte';
 	import { Button } from './ui/button';
 	import { Label } from './ui/label';
 	import { Separator } from './ui/separator';
-	import Save from '@lucide/svelte/icons/save';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { toast } from 'svelte-sonner';
-	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	type Props = {
 		data: SuperValidated<Infer<EditTagsSchema>>;
 		onResult?: (result: ActionResult) => void;
 		onClose?: () => void;
+		tagList: Tag[];
 	};
 
-	let { data, onResult, onClose }: Props = $props();
+	let { data, onResult, onClose, tagList }: Props = $props();
 
 	let form = superForm(data, {
 		validators: zodClient(editTagsSchema),
@@ -115,23 +115,23 @@
 </script>
 
 <form
-	action="?/editTags"
 	class="space-y-4"
+	action="?/editTags"
 	method="POST"
 	onsubmit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex flex-col">
-		<button aria-hidden="true" class="hidden" disabled type="submit"></button>
+		<button class="hidden" aria-hidden="true" disabled type="submit"></button>
 		<input class="invisible h-0" />
 
 		<div class="space-y-1.5">
 			<Label for="artists">Artists</Label>
 			<InputChip
-				chips={artists}
 				id="artists"
+				chips={artists}
 				onUpdate={(tags) => updateTags('artist', tags)}
-				tags={appState.tagList.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)}
+				tags={tagList.filter((tag) => tag.namespace === 'artist').map((tag) => tag.name)}
 			/>
 		</div>
 	</div>
@@ -139,60 +139,60 @@
 	<div class="space-y-1.5">
 		<Label for="circles">Circles</Label>
 		<InputChip
-			chips={circles}
 			id="circles"
+			chips={circles}
 			onUpdate={(tags) => updateTags('circle', tags)}
-			tags={appState.tagList.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)}
+			tags={tagList.filter((tag) => tag.namespace === 'circle').map((tag) => tag.name)}
 		/>
 	</div>
 
 	<div class="space-y-1.5">
 		<Label for="magazines">Magazines</Label>
 		<InputChip
-			chips={magazines}
 			id="magazines"
+			chips={magazines}
 			onUpdate={(tags) => updateTags('magazine', tags)}
-			tags={appState.tagList.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)}
+			tags={tagList.filter((tag) => tag.namespace === 'magazine').map((tag) => tag.name)}
 		/>
 	</div>
 
 	<div class="space-y-1.5">
 		<Label for="events">Events</Label>
 		<InputChip
-			chips={events}
 			id="events"
+			chips={events}
 			onUpdate={(tags) => updateTags('event', tags)}
-			tags={appState.tagList.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)}
+			tags={tagList.filter((tag) => tag.namespace === 'event').map((tag) => tag.name)}
 		/>
 	</div>
 
 	<div class="space-y-1.5">
 		<Label for="publishers">Publishers</Label>
 		<InputChip
-			chips={publishers}
 			id="publishers"
+			chips={publishers}
 			onUpdate={(tags) => updateTags('publisher', tags)}
-			tags={appState.tagList.filter((tag) => tag.namespace === 'publishers').map((tag) => tag.name)}
+			tags={tagList.filter((tag) => tag.namespace === 'publishers').map((tag) => tag.name)}
 		/>
 	</div>
 
 	<div class="space-y-1.5">
 		<Label for="parodies">Parodies</Label>
 		<InputChip
-			chips={parodies}
 			id="parodies"
+			chips={parodies}
 			onUpdate={(tags) => updateTags('parody', tags)}
-			tags={appState.tagList.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)}
+			tags={tagList.filter((tag) => tag.namespace === 'parody').map((tag) => tag.name)}
 		/>
 	</div>
 
 	<div class="space-y-1.5">
 		<Label for="tags">Tags</Label>
 		<InputChip
-			chips={tags}
 			id="tags"
+			chips={tags}
 			onUpdate={(tags) => updateTags('tag', tags)}
-			tags={appState.tagList.filter(isTag).map((tag) => tag.name)}
+			tags={tagList.filter(isTag).map((tag) => tag.name)}
 		/>
 	</div>
 

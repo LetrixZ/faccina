@@ -1,6 +1,7 @@
+import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin } from 'vite';
 
 const file = fileURLToPath(new URL('package.json', import.meta.url));
@@ -21,7 +22,6 @@ const hexLoader: Plugin = {
 		}
 
 		const data = await Bun.file(path).bytes();
-		// @ts-expect-error works
 		const hex = data.toHex();
 
 		return `export default '${hex}';`;
@@ -29,7 +29,28 @@ const hexLoader: Plugin = {
 };
 
 export default defineConfig({
-	server: { fs: { allow: ['app', 'shared/utils.ts', 'shared/config'] } },
-	plugins: [hexLoader, sveltekit()],
+	server: {
+		fs: { allow: ['app', 'shared/utils.ts', 'shared/config'] },
+		proxy: {
+			'/internal': {
+				target: process.env.PUBLIC_API_URL,
+				changeOrigin: true,
+			},
+			'/image': {
+				target: process.env.PUBLIC_API_URL,
+				changeOrigin: true,
+			},
+			'/api': {
+				target: process.env.PUBLIC_API_URL,
+				changeOrigin: true,
+			},
+		},
+	},
+	plugins: [hexLoader, tailwindcss(), sveltekit()],
 	define: { PKG: pkg },
+	build: {
+		rollupOptions: {
+			external: ['Bun', 'bun'],
+		},
+	},
 });

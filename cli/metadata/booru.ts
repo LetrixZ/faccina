@@ -1,6 +1,6 @@
-import { type ArchiveMetadata } from '../../shared/metadata';
 import dayjs from 'dayjs';
 import { z } from 'zod';
+import { type ArchiveMetadata } from '../../shared/metadata';
 
 const metadataSchema = z.string().transform((val) =>
 	val

@@ -1,588 +1,293 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
+	import { invalidate } from '$app/navigation';
 	import { page } from '$app/state';
-	import ArchiveEditForm from '$lib/components/archive-edit-form.svelte';
-	import ArchiveTagsEditForm from '$lib/components/archive-tag-edit-form.svelte';
-	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
 	import Chip from '$lib/components/chip.svelte';
-	import DownloadProgress from '$lib/components/download-progress.svelte';
 	import GallerySource from '$lib/components/gallery-source.svelte';
-	import GalleryThumbnails from '$lib/components/gallery-thumbnails.svelte';
-	import InfoSection from '$lib/components/info-section.svelte';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import { Separator } from '$lib/components/ui/separator';
-	import type { Preset } from '$lib/image-presets';
-	import { type Task } from '$lib/models';
-	import { appState } from '$lib/stores.svelte';
-	import { cn, dateTimeFormat, getMetadata, humanFileSize, isTag, randomString } from '$lib/utils';
-	import BookOpenText from '@lucide/svelte/icons/book-open-text';
-	import Bookmark from '@lucide/svelte/icons/bookmark';
-	import Download from '@lucide/svelte/icons/download';
-	import Eye from '@lucide/svelte/icons/eye';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
-	import Heart from '@lucide/svelte/icons/heart';
-	import Info from '@lucide/svelte/icons/info';
-	import Pencil from '@lucide/svelte/icons/pencil';
-	import Tag from '@lucide/svelte/icons/tag';
-	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import pMap from 'p-map';
-	import { MetaTags } from 'svelte-meta-tags';
+	import IconButton from '$lib/components/new/icon-button.svelte';
+	import Button from '$lib/components/newnew/button.svelte';
+	import { appState } from '$lib/state.svelte.js';
+	import { apiUrl, cn, dateTimeFormat, getColor, humanFileSize, isSpread, isTag } from '$lib/utils';
+	import {
+		Bookmark,
+		BookmarkCheck,
+		BookmarkX,
+		BookOpenText,
+		Download,
+		Heart,
+		HeartOff,
+	} from '@lucide/svelte';
+	import Colums4 from '@lucide/svelte/icons/columns-4';
+	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { writable } from 'svelte/store';
 	import { generateFilename } from '~shared/utils';
+	import type { Tag } from '$lib/types';
+	import type { ClassValue } from 'svelte/elements';
+
+	const previewLayouts = ['columns', 'grid'];
+	type PreviewLayout = (typeof previewLayouts)[number];
 
 	const { data } = $props();
 
-	let editOpen = $state(false);
-	let editTaxonomyOpen = $state(false);
-	let collectionsOpen = $state(false);
-	let removeArchiveOpen = $state(false);
+	let previewLayout = $state<PreviewLayout>('columns');
 
-	const canDownload = $derived(data.site.guestDownloads || !!data.user);
-	const gallery = $derived(data.gallery);
-	const archive = $derived(data.archive);
+	let coverElement: HTMLImageElement;
 
-	const artists = $derived(gallery.tags.filter((tag) => tag.namespace === 'artist'));
-	const circles = $derived(gallery.tags.filter((tag) => tag.namespace === 'circle'));
-	const magazines = $derived(gallery.tags.filter((tag) => tag.namespace === 'magazine'));
-	const events = $derived(gallery.tags.filter((tag) => tag.namespace === 'event'));
-	const publishers = $derived(gallery.tags.filter((tag) => tag.namespace === 'publisher'));
-	const parodies = $derived(gallery.tags.filter((tag) => tag.namespace === 'parody'));
-	const tags = $derived(gallery.tags.filter(isTag));
-
-	const defaultPresetName = $derived(
-		data.defaultPreset?.name ?? (data.allowOriginal ? '[original]' : data.presets[0]?.name)
+	const artists = $derived(
+		data.gallery.tags.filter((tag) => tag.namespace === 'artist' || tag.namespace === 'author')
 	);
+	const circles = $derived(
+		data.gallery.tags.filter((tag) => tag.namespace === 'circle' || tag.namespace === 'group')
+	);
+	const publishers = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'publisher'));
+	const magazines = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'magazine'));
+	const events = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'event'));
+	const parodies = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'parody'));
+	const tags = $derived(data.gallery.tags.filter(isTag));
 
-	const startDownload = async (ev: MouseEvent, preset?: Preset) => {
-		if (!appState.siteConfig.clientSideDownloads) {
-			return;
+	const pagesValue = $derived(data.gallery.pages === 1 ? `1 page` : `${data.gallery.pages} pages`);
+
+	const setColor = () => appState.colors.set(data.gallery.id, getColor(coverElement));
+
+	const toggleFavorite = async () => {
+		const res = await fetch(`${apiUrl}/api/v1/user/toggle-favorite/${data.gallery.id}`, {
+			method: 'POST',
+		});
+
+		if (res.ok) {
+			invalidate('gallery:detail');
 		} else {
-			ev.preventDefault();
+			const { message } = await res.json();
+			toast.error(message);
+		}
+	};
+
+	let mounted = $state(false);
+
+	$effect(() => {
+		if (mounted) {
+			localStorage.setItem('preview_layout', previewLayout);
+		}
+	});
+
+	onMount(() => {
+		const item = localStorage.getItem('preview_layout');
+		if (item && previewLayouts.includes(item)) {
+			previewLayout = item;
 		}
 
-		let task = $state<Task>({
-			gallery: gallery,
-			progress: 0,
-			total: gallery.images.length,
-			complete: false,
-		});
-
-		const chunks: Uint8Array[] = [];
-
-		const save = (blob: Blob) => {
-			const url = URL.createObjectURL(blob);
-			const anchor = document.createElement('a');
-			anchor.href = url;
-			anchor.download = `${generateFilename(gallery.title, gallery.tags)}.cbz`;
-			anchor.click();
-			URL.revokeObjectURL(url);
-		};
-
-		const promise = new Promise<void>((resolve, reject) => {
-			const zip = new Zip();
-
-			const beforeUnloadHandler = (event: Event) => {
-				event.preventDefault();
-				return 'There are downloads in progress. Are you sure you want to leave?';
-			};
-			window.addEventListener('beforeunload', beforeUnloadHandler);
-
-			zip.ondata = async (err, chunk, final) => {
-				if (!err) {
-					chunks.push(chunk);
-
-					if (final) {
-						save(new Blob(chunks, { type: 'application/zip' }));
-						window.removeEventListener('beforeunload', beforeUnloadHandler);
-					}
-				} else {
-					reject(err);
-				}
-			};
-
-			try {
-				const metadataFile = new ZipPassThrough('info.json');
-				zip.add(metadataFile);
-				metadataFile.push(
-					strToU8(JSON.stringify(getMetadata(gallery, location.origin), null, 2)),
-					true
-				);
-
-				pMap(
-					gallery.images,
-					async (image) => {
-						let presetName = preset?.name ?? defaultPresetName;
-						let url: string;
-
-						if (presetName && presetName !== '[original]') {
-							url = `/image/${gallery.hash}/${image.pageNumber}?type=${presetName}`;
-						} else {
-							url = `/image/${gallery.hash}/${image.pageNumber}`;
-						}
-
-						const response = await fetch(url);
-
-						if (!response.ok) {
-							throw new Error('Failed to fetch image');
-						}
-
-						const blob = await response.blob();
-						const imageFile = new ZipPassThrough(image.filename);
-						zip.add(imageFile);
-
-						await blob!
-							.arrayBuffer()
-							.then((buffer) => imageFile.push(new Uint8Array(buffer), true));
-
-						task = { ...task, progress: task.progress + 1 };
-					},
-					{ concurrency: 3 }
-				).then(() => {
-					zip.end();
-					task = { ...task, complete: true };
-					resolve();
-				});
-			} catch (e) {
-				console.error(e);
-				zip.terminate();
-			}
-		});
-
-		const id = randomString();
-
-		toast.promise(promise, {
-			id,
-			componentProps: {
-				task: () => task,
-				save: () => save(new Blob(chunks, { type: 'application/zip' })),
-			},
-			loading: DownloadProgress,
-			success: () => DownloadProgress,
-			error: () => {
-				setTimeout(() => toast.dismiss(id), 5000);
-
-				return 'Download failed';
-			},
-			position: 'bottom-center',
-			duration: 10000,
-		});
-	};
-
-	const isBookmarked = $derived(
-		!!appState.userCollections?.find((c) => c.protected)?.archives.find((a) => a.id === gallery.id)
-	);
-
-	const remove = async () => {
-		toast.promise(fetch(`/internal/${gallery.id}/remove`, { method: 'DELETE' }), {
-			loading: 'Deleting archive',
-			success: () => {
-				goto('/');
-				return 'Archive succesfully deleted';
-			},
-			error: (error) => {
-				console.error(error);
-
-				if (error instanceof Error) {
-					return `Failed to delete archive: ${error.message}`;
-				}
-
-				return 'Failed to delete archive';
-			},
-			position: 'bottom-center',
-			duration: 10000,
-		});
-	};
+		mounted = true;
+	});
 </script>
 
 <svelte:head>
-	<title>{gallery.title} • {data.site.name}</title>
+	<title>{data.gallery.title} • {data.site.name}</title>
 </svelte:head>
 
-<MetaTags
-	canonical={data.site.url}
-	description={gallery.description ?? undefined}
-	openGraph={{
-		url: `${data.site.url}/g/${gallery.id}`,
-		description: gallery.description ?? undefined,
-		type: 'article',
-		images: [{ url: `${data.site.url}/api/og/g/${gallery.id}` }],
-		siteName: data.site.name,
-	}}
-	title={gallery.title}
-	titleTemplate={`%s - ${data.site.name}`}
-	twitter={{
-		cardType: 'summary_large_image',
-		description: gallery.description ?? undefined,
-		image: `${data.site.url}/api/og/g/${gallery.id}`,
-		title: `${gallery.title} - ${data.site.name}`,
-	}}
-/>
+{#snippet actionButtons()}
+	<Button centered color="blue" icon={BookOpenText} iconSide="start">Start Reading</Button>
+	<Button centered color="green" icon={Download} iconSide="start">Download</Button>
 
-<main class="container flex flex-col gap-2 md:flex-row">
-	<div class="@container w-full space-y-2 md:w-80">
-		<div class="w-full">
-			<a href="./{gallery.id}/read/1/{page.url.search}">
-				<img
-					alt="'{gallery.title}' cover"
-					class="shadow-shadow aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md"
-					height={910}
-					loading="eager"
-					src="{appState.siteConfig
-						.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
-					width={640}
-				/>
-			</a>
-		</div>
-
-		{#if data.user?.admin}
-			<Separator />
-
-			<div class="grid gap-2 @xs:grid-cols-2">
-				<Button
-					class="shadow-shadow flex w-full bg-sky-700 text-center font-semibold text-white shadow hover:bg-sky-700/80"
-					onclick={() => (editOpen = true)}
-				>
-					<Pencil class="size-5 shrink-0" />
-					<span class="flex-auto"> Edit info </span>
-				</Button>
-
-				<Button
-					class="shadow-shadow flex w-full bg-orange-700 text-center font-semibold text-white shadow hover:bg-orange-700/80"
-					onclick={() => (editTaxonomyOpen = true)}
-				>
-					<Tag class="size-5 shrink-0" />
-					<span class="flex-auto"> Edit tags </span>
-				</Button>
-
-				{#if archive?.deletedAt}
-					<form action="?/show" method="POST" use:enhance>
-						<Button
-							class="shadow-shadow flex w-full bg-slate-700 text-center font-semibold text-white shadow hover:bg-slate-700/80"
-							type="submit"
-						>
-							<Eye class="size-5 shrink-0" />
-							<span class="flex-auto"> Show </span>
-						</Button>
-					</form>
+	{#if data.user}
+		<div class="col-span-2 flex gap-2.5">
+			<Button
+				class="grow"
+				centered
+				color="red"
+				icon={data.gallery.favorite ? HeartOff : Heart}
+				iconClass={cn(data.gallery.favorite && 'fill-neutral-200')}
+				iconSide="start"
+				onclick={toggleFavorite}
+			>
+				{#if data.gallery.favorite}
+					Remove from Favorites
 				{:else}
-					<form action="?/hide" method="POST" use:enhance>
-						<Button
-							class="shadow-shadow flex w-full bg-slate-700 text-center font-semibold text-white shadow hover:bg-slate-700/80"
-							type="submit"
-						>
-							<EyeOff class="size-5 shrink-0" />
-							<span class="flex-auto"> Hide </span>
-						</Button>
-					</form>
+					Add to favorites
 				{/if}
+			</Button>
 
-				<Button
-					class="shadow-shadow flex w-full bg-red-700 text-center font-semibold text-white shadow hover:bg-red-700/80"
-					onclick={() =>
-						appState.siteConfig.admin.deleteRequireConfirmation
-							? (removeArchiveOpen = true)
-							: remove()}
-					type="submit"
-				>
-					<Trash2 class="size-5 shrink-0" />
-					<span class="flex-auto"> Delete </span>
-				</Button>
-			</div>
-
-			<Separator />
-		{/if}
-
-		<div class="grid gap-2 @xs:grid-cols-2">
-			{#if !data.readEntry || data.readEntry.finishedAt}
-				<Button
-					class={'shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80'}
-					href={`./${gallery.id}/read/1${page.url.search}`}
-					variant="secondary"
-				>
-					<BookOpenText class="size-5 shrink-0" />
-					<span class="flex-auto"> Start reading </span>
-				</Button>
-			{:else}
-				<Button
-					class={'shadow-shadow flex w-full bg-indigo-700 text-center font-semibold text-white shadow hover:bg-indigo-700/80'}
-					href={`./${gallery.id}/read/${data.readEntry.lastPage}${page.url.search}`}
-					variant="secondary"
-				>
-					<BookOpenText class="size-5 shrink-0" />
-					<span class="flex-auto"> Continue </span>
-				</Button>
-			{/if}
-
-			<div class="relative">
-				<Button
-					class={cn(
-						'shadow-shadow flex w-full bg-green-700 text-center font-semibold text-white shadow hover:bg-green-700/80',
-						!canDownload && 'pointer-events-none opacity-50'
-					)}
-					href="/g/{gallery.id}/download"
-					onclick={startDownload}
-					variant="secondary"
-				>
-					<Download class="size-5 shrink-0" />
-					<span class="flex-auto"> Download </span>
-				</Button>
-			</div>
-
-			{#if !canDownload}
-				<div class="col-span-2 flex items-center gap-2 px-2 py-0.5 text-sm text-neutral-300">
-					<Info class="size-4" />
-					<span class="w-full flex-auto text-center">Guest downloads are disabled</span>
-				</div>
-			{/if}
-
-			{#if data.user}
-				<div class="col-span-2 flex items-center">
-					<div class="flex-auto">
-						{#if data.isFavorite}
-							<form action="?/removeFavorite" method="POST" use:enhance>
-								<Button
-									class="flex w-full bg-transparent text-center font-semibold text-white"
-									type="submit"
-									variant="ghost"
-								>
-									<Heart class="size-5 shrink-0 fill-red-500 text-red-500" />
-									<span class="flex-auto"> Remove from Favorites </span>
-								</Button>
-							</form>
-						{:else}
-							<form action="?/addFavorite" method="POST" use:enhance>
-								<Button
-									class="flex w-full bg-transparent text-center font-semibold text-white"
-									type="submit"
-									variant="ghost"
-								>
-									<Heart class="size-5 shrink-0" />
-									<span class="flex-auto"> Add to Favorites </span>
-								</Button>
-							</form>
-						{/if}
-					</div>
-
-					{#if appState.siteConfig.enableCollections}
-						<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
-							<Dialog.Trigger>
-								<Button
-									class="flex w-fit bg-transparent p-2 text-center font-semibold text-white"
-									variant="ghost"
-								>
-									{#if isBookmarked}
-										<Bookmark class="size-6 fill-current" />
-									{:else}
-										<Bookmark class="size-6" />
-									{/if}
-									<span class="sr-only"> Bookmark </span>
-								</Button>
-							</Dialog.Trigger>
-							<Dialog.Content>
-								<BookmarkDialog {gallery} />
-							</Dialog.Content>
-						</Dialog.Root>
-					{/if}
-				</div>
-			{/if}
+			<Button color="orange" icon={Bookmark} />
 		</div>
+	{/if}
+{/snippet}
 
-		<div class="shadow-shadow overflow-clip rounded shadow-md">
-			<InfoSection class="space-y-1">
-				<p class="text-lg leading-6 font-semibold">{gallery.title}</p>
-				<p class="text-muted-foreground-light text-sm">
-					{generateFilename(gallery.title, gallery.tags)}
-				</p>
-			</InfoSection>
+<div class="flex flex-col gap-2">
+	<div style="--color: rgba({appState.colors.get(data.gallery.id)});" class="flex rounded-lg">
+		<div class="flex w-full flex-col gap-x-4 gap-y-1.5 md:flex-row">
+			<div class="flex flex-col gap-2.5">
+				<a href="/g/{data.gallery.id}/read/1{page.url.search}">
+					<img
+						bind:this={coverElement}
+						class="aspect-[45/64] w-full rounded-sm object-contain shadow md:max-w-80 md:min-w-80"
+						alt="'{data.gallery.title}' cover"
+						crossorigin="anonymous"
+						height={910}
+						loading="eager"
+						onload={setColor}
+						src="{apiUrl}/image/{data.gallery.hash}/{data.gallery.thumbnail}?type=cover"
+						width={640}
+					/>
+				</a>
 
-			{#if gallery.description?.length}
-				<InfoSection name="Description">
-					<p class="text-sm">{gallery.description}</p>
-				</InfoSection>
-			{/if}
+				<div class="grid grid-cols-2 gap-2.5 max-md:hidden">
+					{@render actionButtons()}
+				</div>
+			</div>
 
-			{#if artists.length}
-				<InfoSection name="Artists">
-					<div class="flex flex-wrap gap-2">
-						{#each artists as artist}
-							<Chip tag={artist} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
+			<div class="flex flex-col gap-[0.1875rem] md:gap-1.5">
+				<h1 class="text-2xl font-semibold md:text-4xl">
+					{data.gallery.title}
+				</h1>
 
-			{#if circles.length}
-				<InfoSection name="Circles">
-					<div class="flex flex-wrap gap-2">
-						{#each circles as circle}
-							<Chip tag={circle} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if magazines.length}
-				<InfoSection name="Magazines">
-					<div class="flex flex-wrap gap-2">
-						{#each magazines as magazine}
-							<Chip tag={magazine} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if events.length}
-				<InfoSection name="Events">
-					<div class="flex flex-wrap gap-2">
-						{#each events as event}
-							<Chip tag={event} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if publishers.length}
-				<InfoSection name="Publishers">
-					<div class="flex flex-wrap gap-2">
-						{#each publishers as publisher}
-							<Chip tag={publisher} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if parodies.length}
-				<InfoSection name="Parodies">
-					<div class="flex flex-wrap gap-2">
-						{#each parodies as parody}
-							<Chip tag={parody} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if tags.length}
-				<InfoSection name="Tags">
-					<div class="flex flex-wrap gap-2">
-						{#each tags as tag}
-							<Chip {tag} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if gallery.sources?.length}
-				<InfoSection name="Sources">
-					<div class="flex flex-wrap gap-2">
-						{#each gallery.sources as source}
-							<GallerySource {source} />
-						{/each}
-					</div>
-				</InfoSection>
-			{/if}
-
-			{#if gallery.series.length}
-				<InfoSection name="Series">
-					{#each gallery.series as series}
-						<p class="text-sm">
-							• <a
-								class="font-medium hover:underline hover:underline-offset-4"
-								href="/series/{series.id}"
-							>
-								{series.title}
-							</a>
-						</p>
-					{/each}
-				</InfoSection>
-			{/if}
-
-			<InfoSection name="Length">
-				<p class="text-sm">{gallery.pages} pages</p>
-			</InfoSection>
-
-			{#if gallery.size}
-				<InfoSection name="Size">
-					<p class="text-sm">{humanFileSize(gallery.size)}</p>
-				</InfoSection>
-			{/if}
-
-			{#if gallery.releasedAt}
-				<InfoSection name="Released">
-					<p class="text-sm">
-						{dateTimeFormat(gallery.releasedAt)}
+				{#snippet sectionLabel(name: string)}
+					<p class="flex min-h-5 w-16 shrink-0 items-center text-xs font-medium text-zinc-200">
+						{name}
 					</p>
-				</InfoSection>
-			{/if}
+				{/snippet}
 
-			<InfoSection name="Added">
-				<p class="text-sm">
-					{dateTimeFormat(gallery.createdAt)}
-				</p>
-			</InfoSection>
+				{#snippet tagSection(name: string, tags: Tag[], className?: ClassValue)}
+					<div class={cn('flex items-start gap-2', className)}>
+						{@render sectionLabel(name)}
+						<div class="flex flex-wrap gap-1.5">
+							{#each tags as tag, i (i)}
+								<Chip {tag} />
+							{/each}
+						</div>
+					</div>
+				{/snippet}
+
+				{#snippet infoSection(name: string, value: string | number, className?: ClassValue)}
+					<div class={cn('flex items-start gap-2', className)}>
+						{@render sectionLabel(name)}
+						<p class="flex min-h-5 items-center text-xs font-semibold">{value}</p>
+					</div>
+				{/snippet}
+
+				<div class="flex grow flex-col gap-1.5">
+					{#if artists.length}
+						{@render tagSection('Artists', artists)}
+					{/if}
+
+					{#if circles.length}
+						{@render tagSection('Circles', circles)}
+					{/if}
+
+					{#if publishers.length}
+						{@render tagSection('Publishers', publishers)}
+					{/if}
+
+					{#if magazines.length}
+						{@render tagSection('Magazines', magazines)}
+					{/if}
+
+					{#if events.length}
+						{@render tagSection('Events', events)}
+					{/if}
+
+					{#if parodies.length}
+						{@render tagSection('Parodies', parodies)}
+					{/if}
+
+					{#if tags.length}
+						{@render tagSection('Tags', tags)}
+					{/if}
+
+					{#if data.gallery.sources?.length}
+						<div class={cn('flex items-start gap-2')}>
+							{@render sectionLabel('Sources')}
+							<div class="flex flex-wrap gap-1.5">
+								{#each data.gallery.sources as source, i (i)}
+									<GallerySource {source} />
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{@render infoSection('Length', pagesValue)}
+					{@render infoSection('Size', humanFileSize(data.gallery.size))}
+					{@render infoSection('Filename', generateFilename(data.gallery.title, data.gallery.tags))}
+
+					{#if data.gallery.releasedAt}
+						{@render infoSection('Released', dateTimeFormat(data.gallery.releasedAt))}
+					{/if}
+
+					{@render infoSection('Added', dateTimeFormat(data.gallery.createdAt))}
+
+					<h5 class="max-w-4xl text-sm">
+						{#if data.gallery.description?.length}
+							{@render sectionLabel('Description')}
+							<p class="font-medium">{data.gallery.description}</p>
+						{:else}
+							<i class=" text-zinc-400"> No description given</i>
+						{/if}
+					</h5>
+
+					<div class="grid grid-cols-2 gap-2.5 md:hidden">
+						{@render actionButtons()}
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 
-	<GalleryThumbnails archive={gallery} />
-</main>
+	<div class="flex items-center gap-1.5">
+		<p class="text-sm text-zinc-200">Previews</p>
 
-<Dialog.Root onOpenChange={(open) => (editOpen = open)} open={editOpen}>
-	<Dialog.Content
-		class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl"
-		escapeKeydownBehavior="ignore"
-		interactOutsideBehavior="ignore"
-	>
-		{#if archive && data.editForm}
-			<ArchiveEditForm
-				{archive}
-				data={data.editForm}
-				onClose={() => (editOpen = false)}
-				onResult={(result) => {
-					if (result.type === 'success') {
-						editOpen = false;
-					}
-				}}
-			/>
-		{/if}
-	</Dialog.Content>
-</Dialog.Root>
+		<IconButton
+			class={['ms-auto p-0', previewLayout === 'columns' && 'active']}
+			onclick={() => (previewLayout = 'columns')}
+		>
+			<Colums4 class="size-4.5" />
+		</IconButton>
 
-<Dialog.Root onOpenChange={(open) => (editTaxonomyOpen = open)} open={editTaxonomyOpen}>
-	<Dialog.Content
-		class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl"
-		escapeKeydownBehavior="ignore"
-		interactOutsideBehavior="ignore"
-	>
-		{#if archive && data.editTagsForm}
-			<ArchiveTagsEditForm
-				data={data.editTagsForm}
-				onClose={() => (editTaxonomyOpen = false)}
-				onResult={(result) => {
-					if (result.type === 'success') {
-						editTaxonomyOpen = false;
-					}
-				}}
-			/>
-		{/if}
-	</Dialog.Content>
-</Dialog.Root>
+		<IconButton
+			class={['p-0', previewLayout === 'grid' && 'active']}
+			onclick={() => (previewLayout = 'grid')}
+		>
+			<LayoutGrid class="size-4.5" />
+		</IconButton>
+	</div>
 
-<AlertDialog.Root onOpenChange={(open) => (removeArchiveOpen = open)} open={removeArchiveOpen}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Are you sure?</AlertDialog.Title>
-			<AlertDialog.Description>
-				This will permanently delete the archive from the database, the associated files and
-				generated images.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={remove}>Continue</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+	{#if previewLayout === 'columns'}
+		<div
+			class="-mx-1.5 scrollbar-thin flex gap-1.5 overflow-x-auto px-1.5 pb-1.5 scrollbar-thumb-zinc-500 scrollbar-track-transparent scrollbar-hover:scrollbar-thumb-zinc-400"
+		>
+			{#each data.gallery.images as image (image.pageNumber)}
+				<a
+					class="shrink-0 basis-[40%] md:basis-[25%] lg:basis-[17.5%] 2xl:basis-[15%]"
+					href="/g/{data.gallery.id}/read/{image.pageNumber}{page.url.search}"
+				>
+					<img
+						class={cn(
+							'shadow-shadow aspect-[45/64] h-full w-full rounded-sm bg-zinc-800 object-contain shadow-md',
+							isSpread(image) && 'object-contain'
+						)}
+						alt={`Thumbnail for page ${image.pageNumber}`}
+						height={455}
+						src="{apiUrl}/image/{data.gallery.hash}/{image.pageNumber}?type=thumb"
+						width={320}
+					/>
+				</a>
+			{/each}
+		</div>
+	{:else if previewLayout === 'grid'}
+		<div
+			class="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8"
+		>
+			{#each data.gallery.images as image (image.pageNumber)}
+				<a href="/g/{data.gallery.id}/read/{image.pageNumber}{page.url.search}">
+					<img
+						class={cn(
+							'shadow-shadow aspect-[45/64] h-full w-full rounded-sm bg-zinc-800 object-contain shadow-md',
+							isSpread(image) && 'object-contain'
+						)}
+						alt={`Thumbnail for page ${image.pageNumber}`}
+						height={455}
+						src="{apiUrl}/image/{data.gallery.hash}/{image.pageNumber}?type=thumb"
+						width={320}
+					/>
+				</a>
+			{/each}
+		</div>
+	{/if}
+</div>

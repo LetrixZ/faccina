@@ -69,7 +69,7 @@
 			<User class="size-4" />
 		</Button>
 
-		<form action="/logout?to=/panel" class="w-full" method="POST">
+		<form class="w-full" action="/logout?to=/panel" method="POST">
 			<Button
 				class="iteƒms-center flex w-full justify-between gap-2 text-neutral-200"
 				type="submit"
@@ -91,4 +91,13 @@
 			<LogIn class="size-4" />
 		</Button>
 	{/if}
+
+	<Button
+		class="flex w-full items-center justify-between gap-2 text-neutral-200"
+		href="/login"
+		variant="outline"
+	>
+		Login
+		<LogIn class="size-4" />
+	</Button>
 </main>

@@ -2,13 +2,13 @@
 	import { page } from '$app/state';
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
+	import { toast } from 'svelte-sonner';
+	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 	import type { UserFormState } from '../models';
 	import { recoverSchema, type RecoverSchema } from '../schemas';
 	import { Button } from './ui/button';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { toast } from 'svelte-sonner';
-	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	type Props = {
 		data: SuperValidated<Infer<RecoverSchema>>;
@@ -35,10 +35,10 @@
 	const { form: formData, enhance } = form;
 </script>
 
-<form action="/recover{page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
+<form class="flex flex-col space-y-3" action="/recover{page.url.search}" method="POST" use:enhance>
 	{#if hasMailer}
 		<div class="flex flex-col">
-			<Form.Field {form} name="username">
+			<Form.Field name="username" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Username</Form.Label>
@@ -49,7 +49,7 @@
 			</Form.Field>
 		</div>
 	{:else}
-		<p class="border-primary rounded border p-4 text-center text-sm">
+		<p class="rounded border border-primary p-4 text-center text-sm">
 			The site can't send emails.<br />Make a request to the admin for a recovery code.
 		</p>
 	{/if}

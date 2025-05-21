@@ -1,0 +1,199 @@
+@import 'tailwindcss';
+@import './inter.css';
+
+@plugin 'tailwind-scrollbar';
+
+/* @theme {
+	--color-zinc-850: color-mix(in oklch, var(--color-zinc-900), var(--color-zinc-800));
+
+	--color-muted: color-mix(in oklch, var(--color-zinc-950), var(--color-zinc-900) 50%);
+
+	--color-input: var(--color-zinc-800);
+	--color-input-focused: var(--color-zinc-600);
+	--color-card: color-mix(in oklch, var(--color-zinc-900), var(--color-zinc-800) 55%);
+	--color-card: var(--color-zinc-900);
+
+	--color-button-hover: var(--color-zinc-800);
+	--color-button-active: var(--color-zinc-700);
+
+	--color-nav-button: color-mix(in oklch, var(--color-zinc-400), var(--color-zinc-300) 40%);
+
+	--color-button: color-mix(in oklch, var(--color-zinc-600), var(--color-zinc-800) 50%);
+	--color-button-highlight: color-mix(in oklch, var(--color-zinc-600), var(--color-zinc-800) 35%);
+
+	--color-button-content: color-mix(in oklch, var(--color-zinc-300), var(--color-zinc-500) 50%);
+	--color-button-content-highlight: color-mix(
+		in oklch,
+		var(--color-zinc-200),
+		var(--color-zinc-300) 25%
+	);
+
+	--container-8xl: 96rem;
+
+	--spacing-6_5: calc(var(--spacing) * 6.5);
+	--spacing-4_5: calc(var(--spacing) * 4.5);
+
+	--text-xsm: 0.8125rem;
+
+	--border-mix-ratio: 80%;
+	--border-color: color-mix(in srgb, var(--color-button), var(--color-muted));
+
+	--color-border: color-mix(
+		in srgb,
+		var(--app-color, var(--color-zinc-700)),
+		var(--color-zinc-700) 90%
+	);
+	--color-border: color-mix(in srgb, var(--app-color), var(--border-color) var(--border-mix-ratio));
+	--color-border-highlight: color-mix(in srgb, var(--color-border), var(--color-zinc-200) 10%);
+
+	--color-accent-disabled: --alpha(
+		color-mix(in srgb, var(--color-accent), var(--color-neutral-200)) / 40%
+	);
+
+	--color-button: color-mix(in srgb, var(--app-color), var(--color-neutral-400) 90%);
+	--color-button-hover: color-mix(in srgb, var(--app-color), var(--color-neutral-300) 90%);
+	--color-button-active: color-mix(in srgb, var(--app-color), var(--color-neutral-200) 90%);
+
+	--color-background: color-mix(in srgb, var(--color-neutral-950) 96.5%, var(--app-color));
+
+	--color-muted: var(--color-neutral-850);
+	--color-muted-foreground: var(--color-foreground);
+
+	--color-green: var(--color-green-700);
+	--color-blue: var(--color-blue-700);
+
+
+	--color-input: --alpha(color-mix(in srgb, var(--color-muted) 80%, var(--app-color)) / 20%);
+	--color-input-border: --alpha(color-mix(in srgb, var(--color-muted) 60%, var(--app-color)) / 75%);
+	--color-input-focused: --alpha(
+		color-mix(in srgb, var(--color-muted) 40%, var(--app-color)) / 80%
+	);
+
+	--color-button: --alpha(color-mix(in srgb, var(--color-muted) 80%, var(--app-color)) / 60%);
+	--color-button-hover: --alpha(color-mix(in srgb, var(--color-muted) 80%, var(--app-color)) / 70%);
+	--color-button-activated: --alpha(
+		color-mix(in srgb, var(--color-muted) 80%, var(--app-color)) / 75%
+	);
+	--color-button-border: --alpha(
+		color-mix(in srgb, var(--color-zinc-600) 60%, var(--app-color)) / 75%
+	);
+	--color-button-foreground: var(--color-foreground);
+
+	--color-button-green: --alpha(
+		color-mix(
+				in srgb,
+				color-mix(in srgb, var(--color-green) 80%, var(--color-muted)) 80%,
+				var(--app-color)
+			) /
+			50%
+	);
+	--color-button-green-hover: --alpha(
+		color-mix(
+				in srgb,
+				color-mix(in srgb, var(--color-green) 90%, var(--color-muted)) 80%,
+				var(--app-color)
+			) /
+			55%
+	);
+	--color-button-green-activated: --alpha(
+		color-mix(
+				in srgb,
+				color-mix(in srgb, var(--color-green) 90%, var(--color-muted)) 85%,
+				var(--app-color)
+			) /
+			60%
+	);
+	--color-button-green-border: --alpha(
+		color-mix(in srgb, var(--color-green) 80%, var(--app-color)) / 75%
+	);
+	--color-button-green-border: color-mix(
+		in srgb,
+		var(--color-button-green) 90%,
+		var(--color-foreground)
+	);
+
+	--color-button-blue: --alpha(
+		color-mix(
+				in srgb,
+				color-mix(in srgb, var(--color-blue) 80%, var(--color-muted)) 80%,
+				var(--app-color)
+			) /
+			50%
+	);
+	--color-button-blue-hover: --alpha(
+		color-mix(
+				in srgb,
+				color-mix(in srgb, var(--color-blue) 90%, var(--color-muted)) 80%,
+				var(--app-color)
+			) /
+			55%
+	);
+	--color-button-blue-activated: --alpha(
+		color-mix(
+				in srgb,
+				color-mix(in srgb, var(--color-blue) 90%, var(--color-muted)) 80%,
+				var(--app-color)
+			) /
+			60%
+	);
+	--color-button-blue-border: --alpha(
+		color-mix(in srgb, var(--color-blue) 80%, var(--app-color)) / 75%
+	);
+	--color-button-blue-border: color-mix(
+		in srgb,
+		var(--color-button-blue) 90%,
+		var(--color-foreground)
+	);
+} */
+
+@theme {
+	--text-xsm: 0.8125rem;
+
+	--container-8xl: 96rem;
+
+	--color-neutral-850: color-mix(in oklch, var(--color-neutral-800), var(--color-neutral-900));
+	--color-neutral-750: color-mix(in oklch, var(--color-neutral-700), var(--color-neutral-800));
+
+	--color-background: var(--color-neutral-950);
+	--color-foreground: var(--color-neutral-100);
+	--color-accent: var(--app-color);
+}
+
+@layer base {
+	@property --app-color {
+		initial-value: oklch(26.9% 0 0);
+		inherits: true;
+		syntax: '<color>';
+	}
+
+	:root {
+		font-family: 'Inter', sans-serif;
+	}
+
+	@supports (font-variation-settings: normal) {
+		:root {
+			font-family: 'InterVariable', sans-serif;
+			font-optical-sizing: auto;
+		}
+	}
+
+	html {
+		color: var(--color-foreground);
+		background: linear-gradient(
+				to bottom,
+				color-mix(in oklab, var(--color-background) 85%, var(--app-color)),
+				transparent
+			)
+			no-repeat;
+		background-color: color-mix(in oklab, var(--color-background) 95%, var(--app-color));
+	}
+
+	button,
+	[role='button'] {
+		cursor: pointer;
+	}
+	button:disabled,
+	[role='button']:disabled {
+		cursor: default;
+	}
+}

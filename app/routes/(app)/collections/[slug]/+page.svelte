@@ -58,11 +58,11 @@
 						</Dialog.Header>
 
 						<div class="flex w-full gap-2">
-							<Button class="flex-auto" on:click={() => (deleteOpen = false)} variant="secondary">
+							<Button class="flex-auto" variant="secondary" on:click={() => (deleteOpen = false)}>
 								Cancel
 							</Button>
 
-							<form action="?/remove" class="flex-auto" method="POST" use:enhance>
+							<form class="flex-auto" action="?/remove" method="POST" use:enhance>
 								<Button class="w-full" type="submit" variant="destructive">Remove</Button>
 							</form>
 						</div>

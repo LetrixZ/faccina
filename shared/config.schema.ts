@@ -1,10 +1,10 @@
+import camelcaseKeys from 'camelcase-keys';
+import { resolve } from 'node:path';
+import { z } from 'zod';
 import imageSchema from './config/image.schema';
 import metadataSchema from './config/metadata.schema';
 import siteSchema from './config/site.schema';
-import camelcaseKeys from 'camelcase-keys';
-import { resolve } from 'node:path';
 import type { CamelCase } from 'type-fest';
-import { z } from 'zod';
 
 type CamelCaseOptions = {
 	preserveConsecutiveUppercase?: boolean;

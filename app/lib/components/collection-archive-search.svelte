@@ -6,18 +6,26 @@
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
-	import { appState } from '$lib/stores.svelte';
-	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
-	import { Switch } from './ui/switch';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { Switch } from './ui/switch';
+	import type {
+		CollectionItem,
+		GalleryLibraryResponse,
+		GalleryItem,
+		SiteConfig,
+		Tag,
+	} from '$lib/types';
 
 	type Props = {
 		selectedGalleries: number[];
-		onBookmark?: (gallery: GalleryListItem, bookmarked: boolean) => void;
+		onBookmark?: (gallery: GalleryItem, bookmarked: boolean) => void;
+		tags: Tag[];
+		siteConfig: SiteConfig;
+		userCollections: CollectionItem[] | undefined;
 	};
 
-	let { selectedGalleries = [], onBookmark }: Props = $props();
+	let { selectedGalleries, onBookmark, tags, siteConfig, userCollections }: Props = $props();
 
 	let isMounted = $state(false);
 	let showSelected = $state(false);
@@ -37,9 +45,9 @@
 	let searchQuery = $derived<SearchQuery>({
 		query: '',
 		page: 1,
-		limit: appState.siteConfig.pageLimits[0] ?? 24,
-		sort: appState.siteConfig.defaultSort,
-		order: appState.siteConfig.defaultOrder,
+		limit: siteConfig.pageLimits[0] ?? 24,
+		sort: siteConfig.defaultSort,
+		order: siteConfig.defaultOrder,
 		ids: [],
 	});
 
@@ -96,8 +104,8 @@
 			searchQuery = { ...searchQuery, page: 1, query };
 			search();
 		}}
-		searchPlaceholder={appState.siteConfig.searchPlaceholder}
-		tags={appState.tagList}
+		searchPlaceholder={siteConfig.searchPlaceholder}
+		{tags}
 	/>
 </div>
 
@@ -109,14 +117,14 @@
 				search();
 				return false;
 			}}
-			pageLimits={appState.siteConfig.pageLimits}
+			{siteConfig}
 			value={searchQuery.limit}
 		/>
 
 		<div class="max-xs:flex-auto">
 			<SortOptions
-				defaultOrder={appState.siteConfig.defaultOrder}
-				defaultSort={appState.siteConfig.defaultSort}
+				defaultOrder={siteConfig.defaultOrder}
+				defaultSort={siteConfig.defaultSort}
 				onOrder={(order) => {
 					searchQuery = { ...searchQuery, order };
 					search();
@@ -134,9 +142,9 @@
 
 		<div class="max-xs:w-full flex items-center gap-2 py-1">
 			<Switch
-				bind:checked={showSelected}
 				id="show-selected"
 				onclick={() => (searchQuery.page = 1)}
+				bind:checked={showSelected}
 			/>
 			<Label class="w-full" for="show-selected">Show only selected</Label>
 		</div>
@@ -145,6 +153,7 @@
 	{#if library}
 		<ListPagination
 			class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
+			currentPage={library.page}
 			limit={library.limit}
 			onNavigate={(page) => {
 				searchQuery = { ...searchQuery, page };
@@ -170,7 +179,9 @@
 					imageBookmark
 					newTab
 					onBookmark={(bookmarked) => onBookmark?.(gallery, bookmarked)}
+					{siteConfig}
 					type="collection"
+					{userCollections}
 				/>
 			{/each}
 		</div>

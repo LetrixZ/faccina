@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { appState } from '$lib/stores.svelte';
 	import { cn } from '$lib/utils';
-	import type { Collection } from '../types';
 	import FileQuestion from '@lucide/svelte/icons/file-question';
+	import type { Collection, SiteConfig } from '../types';
 
 	type Props = {
 		collection: Collection;
+		siteConfig: SiteConfig;
 	};
 
-	let { collection }: Props = $props();
+	let { collection, siteConfig }: Props = $props();
 
 	const archives = $derived(collection.archives.slice(0, 3).reverse());
 
@@ -44,20 +44,19 @@
 			>
 				{#each archives as archive, i}
 					<img
-						alt="'{archive.title}' cover"
+						style={getStyle(i)}
 						class="absolute mb-2 aspect-[45/64] rounded shadow duration-150"
+						alt="'{archive.title}' cover"
 						height={910}
 						loading="eager"
-						src="{appState.siteConfig
-							.imageServer}/image/{archive.hash}/{archive.thumbnail}?type=cover"
-						style={getStyle(i)}
+						src="{siteConfig.imageServer}/image/{archive.hash}/{archive.thumbnail}?type=cover"
 						width={640}
 					/>
 				{/each}
 			</div>
 		{:else}
 			<div
-				class="bg-secondary flex aspect-[46/64] h-full items-center justify-center rounded opacity-40 shadow-sm"
+				class="flex aspect-[46/64] h-full items-center justify-center rounded bg-secondary opacity-40 shadow-sm"
 			>
 				<FileQuestion class="size-12 text-white opacity-20" />
 			</div>

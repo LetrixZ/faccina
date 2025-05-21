@@ -1,11 +1,11 @@
 import { resetSchema } from '$lib/schemas';
-import type { Actions, PageServerLoad } from './$types';
 import { error, fail } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
+import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => {
 	if (!config.site.enableUsers) {

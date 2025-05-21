@@ -1,7 +1,5 @@
 import { type Order, type Sort } from '$lib/schemas';
-import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
 import { shuffle } from '$lib/utils';
-import { log, type SearchParams, sortArchiveTags } from '../utils';
 import chalk from 'chalk';
 import {
 	type Expression,
@@ -15,11 +13,14 @@ import { z } from 'zod';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom, like } from '~shared/db/helpers';
+import { log, type SearchParams, sortArchiveTags } from '../utils';
+import type { Query } from '$lib/query.svelte';
+import type { Archive, Collection, Gallery, GalleryItem, Tag } from '$lib/types';
 import type { DB } from '~shared/db/types';
 
 export type QueryOptions = {
 	showHidden?: boolean;
-	matchIds?: number[];
+	matchIds?: number[] | null;
 	sortingIds?: number[];
 	tagBlacklist?: string[];
 	skipPagination?: boolean;
@@ -421,7 +422,7 @@ const parseTitleQuery = (titleMatch: string[]) => {
 };
 
 export const searchArchives = async (
-	params: SearchParams,
+	searchQuery: Query,
 	options: QueryOptions
 ): Promise<{ ids: number[]; total: number }> => {
 	let start = performance.now();
@@ -437,11 +438,11 @@ export const searchArchives = async (
 		languageMatch,
 		urlMatch,
 		sourceMatch,
-	} = parseQuery(params.query);
+	} = parseQuery(searchQuery.search);
 
 	log(
 		chalk.blue(
-			`• Query parsed in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${params.query.length ? ` - ${params.query}` : ''}`
+			`• Query parsed in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${searchQuery.search.length ? ` - ${searchQuery.search}` : ''}`
 		)
 	);
 
@@ -465,10 +466,11 @@ export const searchArchives = async (
 		}
 	};
 
-	const sort = params.sort ?? config.site.defaultSort;
-	const order = params.order ?? config.site.defaultOrder;
-
-	const orderBy = sortQuery(sort, order) as OrderByExpression<DB, 'archives', undefined>;
+	const orderBy = sortQuery(searchQuery.sort, searchQuery.order) as OrderByExpression<
+		DB,
+		'archives',
+		undefined
+	>;
 
 	if (options.tagBlacklist?.length) {
 		for (const tag of options.tagBlacklist) {
@@ -543,7 +545,7 @@ export const searchArchives = async (
 
 	log(
 		chalk.blue(
-			`• Exclude and optional tags fetched in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${params.query.length ? ` - ${params.query}` : ''}`
+			`• Exclude and optional tags fetched in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}${searchQuery.search.length ? ` - ${searchQuery.search}` : ''}`
 		)
 	);
 
@@ -747,14 +749,14 @@ export const searchArchives = async (
 
 	query = query
 		.orderBy([orderBy])
-		.orderBy(order === 'asc' ? 'archives.createdAt asc' : 'archives.createdAt desc')
-		.orderBy(order === 'asc' ? 'archives.id asc' : 'archives.id desc');
+		.orderBy(searchQuery.order === 'asc' ? 'archives.createdAt asc' : 'archives.createdAt desc')
+		.orderBy(searchQuery.order === 'asc' ? 'archives.id asc' : 'archives.id desc');
 
 	const compiled = query.compile();
 
 	log(
 		chalk.blue(
-			`• Main query builded in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)} - \n  Compiled query: ${chalk.gray(compiled.sql)}\n  Parameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${params.query.length ? ` - ${params.query}` : ''}`
+			`• Main query builded in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)} - \n  Compiled query: ${chalk.gray(compiled.sql)}\n  Parameters: ${chalk.gray(JSON.stringify(compiled.parameters))}${searchQuery.search.length ? ` - ${searchQuery.search}` : ''}`
 		)
 	);
 
@@ -766,12 +768,12 @@ export const searchArchives = async (
 		chalk.blue(`• Query exceuted in ${chalk.bold(`${(performance.now() - start).toFixed(2)}ms`)}`)
 	);
 
-	if (config.database.vendor === 'sqlite' && sort === 'title') {
+	if (config.database.vendor === 'sqlite' && searchQuery.sort === 'title') {
 		filteredResults = (filteredResults as { id: number; title: string }[]).toSorted((a, b) =>
 			naturalCompare(a.title.toLowerCase(), b.title.toLowerCase())
 		);
 
-		if (order === 'desc') {
+		if (searchQuery.order === 'desc') {
 			filteredResults = filteredResults.toReversed();
 		}
 	}
@@ -785,14 +787,17 @@ export const searchArchives = async (
 		};
 	}
 
-	if (sort === 'random' && params.seed) {
-		allIds = shuffle(allIds, params.seed);
+	if (searchQuery.sort === 'random' && searchQuery.seed) {
+		allIds = shuffle(allIds, searchQuery.seed);
 	}
 
 	return {
 		ids: options.skipPagination
 			? allIds
-			: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
+			: allIds.slice(
+					(searchQuery.page - 1) * searchQuery.limit,
+					searchQuery.page * searchQuery.limit
+				),
 		total: allIds.length,
 	};
 };
@@ -800,7 +805,7 @@ export const searchArchives = async (
 export const libraryItems = async (
 	ids: number[],
 	options?: QueryOptions
-): Promise<GalleryListItem[]> => {
+): Promise<GalleryItem[]> => {
 	if (!ids.length) {
 		return [];
 	}
@@ -824,7 +829,7 @@ export const libraryItems = async (
 			).as('tags'),
 		])
 		.where('archives.id', 'in', ids)
-		.execute()) satisfies GalleryListItem[];
+		.execute()) satisfies GalleryItem[];
 
 	if (!options?.skipHandlingTags) {
 		archives = archives.map((archive) => sortArchiveTags(archive));

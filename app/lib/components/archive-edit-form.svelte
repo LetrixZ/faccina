@@ -1,19 +1,9 @@
 <script lang="ts">
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
-	import { appState } from '$lib/stores.svelte';
-	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
-	import type { Archive } from '../types';
-	import { cn } from '../utils';
-	import GallerySource from './gallery-source.svelte';
-	import { Button } from './ui/button';
-	import { Checkbox } from './ui/checkbox';
-	import { Separator } from './ui/separator';
-	import { Textarea } from './ui/textarea';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Save from '@lucide/svelte/icons/save';
 	import Trash from '@lucide/svelte/icons/trash';
-	import type { ActionResult } from '@sveltejs/kit';
 	import prettyBytes from 'pretty-bytes';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -24,15 +14,25 @@
 		type ValidationErrors,
 	} from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
+	import type { Archive, SiteConfig } from '../types';
+	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
+	import { cn } from '../utils';
+	import GallerySource from './gallery-source.svelte';
+	import { Button } from './ui/button';
+	import { Checkbox } from './ui/checkbox';
+	import { Separator } from './ui/separator';
+	import { Textarea } from './ui/textarea';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	type Props = {
 		data: SuperValidated<Infer<EditArchiveSchema>>;
 		archive: Archive;
 		onResult?: (result: ActionResult) => void;
 		onClose?: () => void;
+		siteConfig: SiteConfig;
 	};
 
-	let { data, archive, onResult, onClose }: Props = $props();
+	let { data, archive, onResult, onClose, siteConfig }: Props = $props();
 
 	let form = superForm(data, {
 		validators: zodClient(editArchiveSchema),
@@ -59,28 +59,27 @@
 
 	$effect(() => {
 		const unsubscribe = formErrors.subscribe((_errors) => (errors = _errors));
-
 		return () => unsubscribe();
 	});
 </script>
 
 <form
-	action="?/editInfo"
 	class="space-y-4"
+	action="?/editInfo"
 	method="POST"
 	onsubmit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex gap-4">
-		<button aria-hidden="true" class="hidden" disabled type="submit"></button>
+		<button class="hidden" aria-hidden="true" disabled type="submit"></button>
 
 		<div class="flex max-w-52 flex-col items-center">
 			<img
-				alt="'{archive.title}' cover"
 				class="shadow-shadow aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md"
+				alt="'{archive.title}' cover"
 				height={910}
 				loading="eager"
-				src="{appState.siteConfig.imageServer}/image/{archive.hash}/{thumbnail}?type=thumb"
+				src="{siteConfig.imageServer}/image/{archive.hash}/{thumbnail}?type=thumb"
 				width={640}
 			/>
 
@@ -95,7 +94,7 @@
 		</div>
 
 		<div class="flex-auto">
-			<Form.Field {form} name="title">
+			<Form.Field name="title" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Title</Form.Label>
@@ -105,7 +104,7 @@
 				<Form.FieldErrors />
 			</Form.Field>
 
-			<Form.Field {form} name="description">
+			<Form.Field name="description" {form}>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Description</Form.Label>
@@ -116,33 +115,33 @@
 			</Form.Field>
 
 			<div class="grid grid-cols-3 gap-4">
-				<Form.Field {form} name="thumbnail">
+				<Form.Field name="thumbnail" {form}>
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>Thumbnail page</Form.Label>
 							<Input
 								{...props}
-								bind:value={$thumbnailProxy}
 								max={archive.pages}
 								min={1}
 								type="number"
+								bind:value={$thumbnailProxy}
 							/>
 						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field {form} name="releasedAt">
+				<Form.Field name="releasedAt" {form}>
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>Released At</Form.Label>
-							<Input {...props} bind:value={$formData.releasedAt} type="datetime-local" />
+							<Input {...props} type="datetime-local" bind:value={$formData.releasedAt} />
 						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field {form} name="language">
+				<Form.Field name="language" {form}>
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label>Language</Form.Label>
@@ -154,9 +153,9 @@
 			</div>
 
 			<Form.Field
+				name="protected"
 				class="flex flex-row items-start space-y-0 space-x-3 py-2"
 				{form}
-				name="protected"
 			>
 				<Form.Control>
 					{#snippet children({ props })}
@@ -168,7 +167,7 @@
 								during indexing. If enabled, only path, hash, size and images will be updated.
 							</Form.Description>
 						</div>
-						<input hidden name={props.name} value={$formData.protected} />
+						<input name={props.name} hidden value={$formData.protected} />
 					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
@@ -214,12 +213,12 @@
 					<div class="flex gap-2">
 						<GallerySource class="my-auto size-8 flex-shrink-0" {source} />
 						<Input
-							bind:value={source.name}
 							class={cn('h-9 w-32', soruceErrors?.name && 'border-destructive')}
+							bind:value={source.name}
 						/>
 						<Input
-							bind:value={source.url}
 							class={cn('h-9', soruceErrors?.url && 'border-destructive')}
+							bind:value={source.url}
 						/>
 						<Button
 							class="size-9 flex-shrink-0 p-2"

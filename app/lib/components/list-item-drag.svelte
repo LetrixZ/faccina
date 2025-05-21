@@ -1,23 +1,23 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores.svelte';
 	import { cn } from '$lib/utils';
-	import type { GalleryListItem, Tag } from '../types';
-	import Chip from './chip.svelte';
-	import Button from './ui/button/button.svelte';
 	import AlignJustify from '@lucide/svelte/icons/align-justify';
 	import Bookmark from '@lucide/svelte/icons/bookmark';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { dragHandle } from 'svelte-dnd-action';
+	import type { GalleryItem, SiteConfig, Tag } from '../types';
+	import Chip from './chip.svelte';
+	import Button from './ui/button/button.svelte';
 
 	type Props = {
-		gallery: GalleryListItem;
+		gallery: GalleryItem;
 		enableBookmark?: boolean;
 		bookmarked?: boolean;
 		imageBookmark?: boolean;
 		newTab?: boolean;
 		onBookmark?: (bookmark: boolean) => void;
+		siteConfig: SiteConfig;
 	};
 
 	let {
@@ -27,6 +27,7 @@
 		imageBookmark = false,
 		newTab = false,
 		onBookmark,
+		siteConfig,
 	}: Props = $props();
 
 	const { tags, moreCount } = $derived.by(() => {
@@ -61,7 +62,7 @@
 	});
 </script>
 
-<div class="group bg-background/70 relative flex justify-between gap-2 rounded pe-6">
+<div class="group relative flex justify-between gap-2 rounded bg-background/70 pe-6">
 	<a
 		href="/g/{gallery.id}{page.url.search}"
 		tabindex="-1"
@@ -76,11 +77,11 @@
 	>
 		<div class="relative max-w-24 overflow-clip rounded-md shadow md:max-w-32">
 			<img
-				alt="'{gallery.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt="'{gallery.title}' cover"
 				height={910}
 				loading="eager"
-				src="{appState.siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
+				src="{siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
 				width={640}
 			/>
 
@@ -133,7 +134,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}
@@ -143,8 +144,8 @@
 	</div>
 
 	<div
-		aria-label="Drag {gallery.title}"
 		class="absolute inset-y-0 right-0 flex h-full items-center"
+		aria-label="Drag {gallery.title}"
 		use:dragHandle
 	>
 		<AlignJustify class="text-muted-foreground" />

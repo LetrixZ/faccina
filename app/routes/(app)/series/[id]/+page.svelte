@@ -47,7 +47,7 @@
 								Cancel
 							</Button>
 
-							<form action="?/remove" class="flex-auto" method="POST" use:enhance>
+							<form class="flex-auto" action="?/remove" method="POST" use:enhance>
 								<Button class="w-full" type="submit" variant="destructive">Remove</Button>
 							</form>
 						</div>

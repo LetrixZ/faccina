@@ -3,11 +3,11 @@ import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
 import { BunSQLiteAdapter } from '@lucia-auth/adapter-sqlite';
 import { Database } from 'bun:sqlite';
 import { Lucia } from 'lucia';
-import type { Pool } from 'pg';
 import { match } from 'ts-pattern';
 import config from '~shared/config';
 import { databaseType } from '~shared/db';
 import connection from '~shared/db/connection';
+import type { Pool } from 'pg';
 
 let _lucia: Lucia<
 	Record<never, never>,

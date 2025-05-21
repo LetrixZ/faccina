@@ -1,5 +1,5 @@
+import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import adapter from 'svelte-adapter-bun';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -15,7 +15,8 @@ const config = {
 			},
 		},
 		adapter: adapter({
-			reusePort: true,
+			fallback: 'index.html',
+			pages: './web/build',
 		}),
 		alias: {
 			'~shared': './shared/',

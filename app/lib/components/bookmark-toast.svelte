@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { GalleryListItem } from '$lib/types';
 	import { Button } from './ui/button';
+	import type { GalleryItem } from '$lib/types';
 
 	type Props = {
-		gallery: GalleryListItem;
+		gallery: GalleryItem;
 		bookmarked: boolean;
 		collection: string;
 		onChange?: () => void;

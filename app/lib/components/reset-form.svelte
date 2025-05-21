@@ -2,13 +2,13 @@
 	import { page } from '$app/state';
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
+	import { toast } from 'svelte-sonner';
+	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 	import type { UserFormState } from '../models';
 	import { resetSchema, type ResetSchema } from '../schemas';
 	import { Button } from './ui/button';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { toast } from 'svelte-sonner';
-	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	type Props = {
 		data: SuperValidated<Infer<ResetSchema>>;
@@ -35,39 +35,39 @@
 	const { form: formData, enhance: enhance } = form;
 </script>
 
-<form action="/reset{page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
+<form class="flex flex-col space-y-3" action="/reset{page.url.search}" method="POST" use:enhance>
 	<div class="flex flex-col">
-		<Form.Field {form} name="password">
+		<Form.Field name="password" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>New Password</Form.Label>
 					<Input
 						{...props}
-						bind:value={$formData.password}
 						autocomplete="new-password"
 						type="password"
+						bind:value={$formData.password}
 					/>
 				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="confirmPassword">
+		<Form.Field name="confirmPassword" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Confirm Password</Form.Label>
 					<Input
 						{...props}
-						bind:value={$formData.confirmPassword}
 						autocomplete="new-password"
 						type="password"
+						bind:value={$formData.confirmPassword}
 					/>
 				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="code">
+		<Form.Field name="code" {form}>
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label>Recovery code</Form.Label>

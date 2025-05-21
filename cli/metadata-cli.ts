@@ -1,11 +1,4 @@
 import { getArchive } from '$lib/server/db/queries';
-import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
-import db from '../shared/db';
-import { jsonArrayFrom, like, now } from '../shared/db/helpers';
-import { generateFilename } from '../shared/utils';
-import { metadataSchema } from './metadata/faccina';
-import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
-import { queryIdRanges } from './utilts';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
@@ -15,6 +8,13 @@ import prompts from 'prompts';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 import config from '~shared/config';
+import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
+import db from '../shared/db';
+import { jsonArrayFrom, like, now } from '../shared/db/helpers';
+import { generateFilename } from '../shared/utils';
+import { metadataSchema } from './metadata/faccina';
+import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
+import { queryIdRanges } from './utilts';
 
 const henTagUrl = `https://hentag.com/api/v1/search/vault`;
 

@@ -177,6 +177,7 @@ dist
 # SvelteKit
 /.svelte-kit
 /build
+/web/build
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 

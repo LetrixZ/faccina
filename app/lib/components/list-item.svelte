@@ -4,25 +4,26 @@
 	import { page } from '$app/state';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { appState } from '$lib/stores.svelte';
 	import { cn } from '$lib/utils';
-	import type { GalleryListItem, ListPageType, Tag } from '../types';
-	import BookmarkToast from './bookmark-toast.svelte';
-	import Chip from './chip.svelte';
-	import { Button } from './ui/button';
 	import Bookmark from '@lucide/svelte/icons/bookmark';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { toast } from 'svelte-sonner';
+	import type { CollectionItem, GalleryItem, ListPageType, SiteConfig, Tag } from '../types';
+	import BookmarkToast from './bookmark-toast.svelte';
+	import Chip from './chip.svelte';
+	import { Button } from './ui/button';
 
 	type Props = {
-		gallery: GalleryListItem;
+		gallery: GalleryItem;
 		enableBookmark?: boolean;
 		imageBookmark?: boolean;
 		newTab?: boolean;
 		type: ListPageType;
 		bookmarked?: boolean;
 		onBookmark?: (bookmarked: boolean) => void;
+		siteConfig: SiteConfig;
+		userCollections: CollectionItem[] | undefined;
 	};
 
 	let {
@@ -33,15 +34,17 @@
 		type,
 		bookmarked,
 		onBookmark,
+		siteConfig,
+		userCollections,
 	}: Props = $props();
 
 	let collectionsOpen = $state(false);
-	let bookmarkGallery = $state<GalleryListItem>();
+	let bookmarkGallery = $state<GalleryItem>();
 
 	const _bookmarked = $derived(
 		bookmarked !== undefined
 			? bookmarked
-			: !!appState.userCollections
+			: !!userCollections
 					?.find((c) => c.protected)
 					?.archives.find((archive) => archive.id === gallery.id)
 	);
@@ -89,7 +92,7 @@
 			return;
 		}
 
-		const defaultCollection = appState.userCollections?.find((c) => c.protected);
+		const defaultCollection = userCollections?.find((c) => c.protected);
 
 		if (!defaultCollection) {
 			return;
@@ -107,6 +110,7 @@
 			.then((res) => res.json())
 			.then((result) => {
 				if (result.type === 'success') {
+					// @ts-ignore
 					toast(BookmarkToast, {
 						componentProps: {
 							gallery,
@@ -127,7 +131,7 @@
 	};
 </script>
 
-<div class="group h-auto w-auto space-y-2">
+<div class="group flex flex-col gap-1.5">
 	<a
 		href="/g/{gallery.id}{page.url.search}"
 		tabindex="-1"
@@ -139,13 +143,13 @@
 			}
 		}}
 	>
-		<div class="relative overflow-clip rounded-md shadow">
+		<div class="rounded-box relative overflow-hidden">
 			<img
-				alt="'{gallery.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt="'{gallery.title}' cover"
 				height={910}
 				loading="eager"
-				src="{appState.siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
+				src="{siteConfig.imageServer}/image/{gallery.hash}/{gallery.thumbnail}?type=cover"
 				width={640}
 			/>
 
@@ -174,7 +178,7 @@
 				<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
 					<Dialog.Content>
 						{#if bookmarkGallery}
-							<BookmarkDialog gallery={bookmarkGallery} />
+							<BookmarkDialog gallery={bookmarkGallery} {userCollections} />
 						{/if}
 					</Dialog.Content>
 				</Dialog.Root>
@@ -195,29 +199,27 @@
 		</div>
 	</a>
 
-	<div class="h-fit space-y-1.5">
-		<a
-			class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-			href="/g/{gallery.id}{page.url.search}"
-			title={gallery.title}
-			{...newTab && { target: '_blank' }}
-		>
-			{gallery.title}
-		</a>
+	<a
+		class="focus-visible:text-foreground group-hover:text-foreground line-clamp-2 pe-2 leading-6 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+		href="/g/{gallery.id}{page.url.search}"
+		title={gallery.title}
+		{...newTab && { target: '_blank' }}
+	>
+		{gallery.title}
+	</a>
 
-		<div class="flex flex-wrap gap-1.5">
-			{#each tags as tag}
-				<Chip {newTab} {tag} />
-			{/each}
+	<div class="flex flex-wrap gap-1.5">
+		{#each tags as tag}
+			<Chip {newTab} {tag} />
+		{/each}
 
-			{#if moreCount}
-				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
-					variant="secondary"
-				>
-					+ {moreCount}
-				</Button>
-			{/if}
-		</div>
+		{#if moreCount}
+			<Button
+				class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
+				variant="secondary"
+			>
+				+ {moreCount}
+			</Button>
+		{/if}
 	</div>
 </div>

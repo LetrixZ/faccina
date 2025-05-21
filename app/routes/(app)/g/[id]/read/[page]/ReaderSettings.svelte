@@ -6,18 +6,18 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { appState } from '$lib/stores.svelte';
-	import { type Gallery, type Image as GalleryImage } from '$lib/types';
+	import { type Gallery, type Image as GalleryImage, type SiteConfig } from '$lib/types';
 	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
+	import Image from '@lucide/svelte/icons/image';
+	import Info from '@lucide/svelte/icons/info';
 	import {
+		getTouchLayoutOptions,
 		readerState,
 		readingModeOptions,
 		reverseLayoutOptions,
 		scalingOptions,
 		type Scaling,
 	} from './reader.svelte';
-	import Image from '@lucide/svelte/icons/image';
-	import Info from '@lucide/svelte/icons/info';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	type Props = {
@@ -31,6 +31,7 @@
 		currentPage: number;
 		currentImage: GalleryImage;
 		scrollContainer?: HTMLDivElement;
+		siteConfig: SiteConfig;
 	};
 
 	let {
@@ -44,6 +45,7 @@
 		currentPage,
 		currentImage,
 		scrollContainer,
+		siteConfig,
 	}: Props = $props();
 
 	let containers = $state<HTMLButtonElement[]>([]);
@@ -86,17 +88,17 @@
 	}
 </script>
 
-<Dialog.Root bind:open {onOpenChange}>
+<Dialog.Root {onOpenChange} bind:open>
 	<Dialog.Content
-		class="bg-background/95 h-fit max-h-[90dvh] overflow-y-auto md:max-w-2xl"
+		class="h-fit max-h-[90dvh] overflow-y-auto bg-background/95 md:max-w-2xl"
 		overlayClass="bg-background/70"
 	>
 		{#if presets.length}
 			<p class="title">Image resampling</p>
 
 			<div
-				class="grid gap-4 max-md:!grid-cols-2"
 				style="grid-template-columns: repeat({Math.min(4, presets.length)}, minmax(0, 1fr));"
+				class="grid gap-4 max-md:!grid-cols-2"
 			>
 				{#each presets as preset}
 					<Button
@@ -166,15 +168,10 @@
 					>
 						<div>
 							<img
+								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								alt="{gallery.title} page {currentPage}"
 								height={currentImage.height}
-								src={getImageUrl(
-									currentPage,
-									gallery,
-									selectedPreset,
-									appState.siteConfig.imageServer
-								)}
-								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
+								src={getImageUrl(currentPage, gallery, selectedPreset, siteConfig.imageServer)}
 								width={currentImage.width}
 							/>
 						</div>
@@ -223,8 +220,8 @@
 					>
 						<Image class="size-12 text-neutral-500/50" />
 						<div
-							class="absolute inset-0 m-auto grid"
 							style="grid-template-columns: repeat({layout.rows[0]?.length}, minmax(0, 1fr))"
+							class="absolute inset-0 m-auto grid"
 						>
 							{#each layout.rows as row}
 								{#each row as column}
@@ -258,7 +255,7 @@
 
 				<div class="mt-1 flex items-center gap-4">
 					<Label class="w-full" for="preview">Preview layout</Label>
-					<Checkbox bind:checked={previewLayout} id="preview" />
+					<Checkbox id="preview" bind:checked={previewLayout} />
 				</div>
 			</div>
 		</div>
@@ -298,27 +295,30 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<style lang="postcss">
+<style>
 	.scaling-preview {
-		@apply text-sm font-medium;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 0.5rem;
+		font-size: var(--text-sm);
+		line-height: var(--tw-leading, var(--text-sm--line-height));
+		font-weight: 500;
 	}
 
 	.scaling-preview > button {
-		@apply rounded bg-neutral-900;
 		display: flex;
 		aspect-ratio: 16/9;
 		align-self: flex-start;
 		justify-content: center;
 		overflow: hidden;
 		width: 100%;
+		border-radius: var(--radius);
+		background-color: var(--color-neutral-900);
 	}
 
 	.scaling-preview > button.selected {
-		@apply ring ring-primary;
+		/* @apply ring-primary ring; */
 	}
 
 	.scaling-preview img {

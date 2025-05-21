@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { appState } from '$lib/stores.svelte';
-	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
-	import ChapterEndToast from './ChapterEndToast.svelte';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader.svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader.svelte';
+	import ChapterEndToast from './ChapterEndToast.svelte';
+	import TouchNavigation from './TouchNavigation.svelte';
+	import type { Gallery, Image, SiteConfig } from '$lib/types';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	type Props = {
@@ -26,6 +25,7 @@
 		onPrevious: () => void;
 		onNext: () => void;
 		onMenu: (value?: boolean) => void;
+		siteConfig: SiteConfig;
 	};
 
 	let {
@@ -43,6 +43,7 @@
 		onPrevious,
 		onNext,
 		onMenu,
+		siteConfig,
 	}: Props = $props();
 
 	let isMounted = $state(false);
@@ -59,7 +60,7 @@
 	);
 
 	const imageUrl = $derived(
-		getImageUrl(currentPage, gallery, selectedPreset, appState.siteConfig.imageServer)
+		getImageUrl(currentPage, gallery, selectedPreset, data.site.imageServer)
 	);
 
 	let scrollContainer: HTMLDivElement;
@@ -141,7 +142,7 @@
 			const imageEl = new Image(width, height);
 			imageEl.onload = () => (image.status = 'loaded');
 			imageEl.onerror = () => (image.status = 'loaded');
-			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, appState.siteConfig.imageServer);
+			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, siteConfig.imageServer);
 		}
 	}
 
@@ -169,31 +170,30 @@
 	onscroll={() => setPosition()}
 >
 	<div
+		style={getStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 		class={cn(
 			'relative mx-auto flex',
 			(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'h-full w-fit',
 			selectedScaling === 'fill-width' && 'w-full',
 			selectedScaling === 'fill-height' && 'h-full'
 		)}
-		style={getStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 	>
 		<img
-			alt="{gallery.title} page {currentPage}"
 			bind:this={imageElement}
+			style={getImageStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 			class={cn(
 				(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'my-auto w-fit',
 				selectedScaling === 'fill-width' && 'w-full',
 				selectedScaling === 'fill-height' && 'h-full max-h-dvh object-contain'
 			)}
+			alt="{gallery.title} page {currentPage}"
 			height={imageHeight}
 			src={imageUrl}
-			style={getImageStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 			width={imageWidth}
 		/>
 	</div>
 
 	<TouchNavigation
-		bind:ref={navContainer}
 		hasNext={true}
 		{hasPrevious}
 		{onMenu}
@@ -204,6 +204,7 @@
 				scrollContainer.scrollTo({ top: 0 });
 			} else {
 				onMenu(true);
+				// @ts-ignore
 				toast(ChapterEndToast, {
 					id: 'end-chapter',
 					position: toolbarPosition === 'top' ? 'bottom-center' : 'top-center',
@@ -224,5 +225,6 @@
 		}}
 		{previewLayout}
 		{selectedTouchLayoutOption}
+		bind:ref={navContainer}
 	/>
 </div>

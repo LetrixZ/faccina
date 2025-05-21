@@ -1,6 +1,6 @@
+import { z } from 'zod';
 import { type ArchiveMetadata } from '../../shared/metadata';
 import eze from './eze';
-import { z } from 'zod';
 
 const metadataSchema = z.object({
 	gallery_info: z.object({

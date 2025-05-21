@@ -1,31 +1,33 @@
 <script lang="ts">
 	import { cn, encodeURL } from '$lib/utils';
 	import type { Tag } from '../types';
-	import { Button } from './ui/button';
+	import type { ClassValue } from 'svelte/elements';
 
 	type Props = {
 		tag: Tag;
-		newTab?: boolean;
+		class?: ClassValue;
 	};
 
-	let { tag, newTab = false }: Props = $props();
+	let { tag, class: className }: Props = $props();
 
 	const classes = (() => {
 		switch (tag.namespace) {
+			case 'author':
 			case 'artist':
-				return 'bg-red-700 hover:bg-red-700/80';
+				return 'bg-red-700/40 hover:bg-red-700/60';
+			case 'group':
 			case 'circle':
-				return 'bg-orange-700 hover:bg-orange-700/80';
+				return 'bg-orange-700/40 hover:bg-orange-700/60';
 			case 'magazine':
-				return 'bg-blue-700 hover:bg-blue-700/80';
+				return 'bg-blue-700/40 hover:bg-blue-700/60';
 			case 'event':
-				return 'bg-rose-700 hover:bg-blue-700/80';
+				return 'bg-rose-700/40 hover:bg-blue-700/60';
 			case 'publisher':
-				return 'bg-sky-700 hover:bg-sky-700/80';
+				return 'bg-sky-700/40 hover:bg-sky-700/60';
 			case 'parody':
-				return 'bg-indigo-700 hover:bg-indigo-700/80';
-			case 'tag':
-				return 'bg-neutral-700 hover:bg-neutral-700/80';
+				return 'bg-indigo-700/40 hover:bg-indigo-700/60';
+			default:
+				return 'bg-zinc-500/40 hover:bg-zinc-500/60';
 		}
 	})();
 
@@ -43,19 +45,23 @@
 		}
 	});
 
-	const url = $derived(
-		`/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase()
-	);
+	const url = $derived.by(() => {
+		const params = new URLSearchParams();
+		params.set(
+			'q',
+			`${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase()
+		);
+		return `/?${params.toString()}`;
+	});
 </script>
 
-<Button
+<a
 	class={cn(
-		'h-fit w-fit px-1.5 py-0.5 text-sm font-medium text-neutral-50 dark:text-neutral-100',
-		classes
+		'flex rounded-2xl px-1.5 py-1 text-xs leading-3 font-semibold duration-100',
+		classes,
+		className
 	)}
 	href={url}
-	variant="secondary"
-	{...newTab && { target: '_blank' }}
 >
 	{label}
-</Button>
+</a>

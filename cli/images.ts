@@ -1,9 +1,3 @@
-import type { Preset } from '../app/lib/image-presets';
-import config from '../shared/config';
-import db from '../shared/db';
-import { jsonArrayFrom } from '../shared/db/helpers';
-import { leadingZeros } from '../shared/utils';
-import { queryIdRanges } from './utilts';
 import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
@@ -14,6 +8,12 @@ import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { imageDirectory } from '~shared/server.utils';
+import type { Preset } from '../app/lib/image-presets';
+import config from '../shared/config';
+import db from '../shared/db';
+import { jsonArrayFrom } from '../shared/db/helpers';
+import { leadingZeros } from '../shared/utils';
+import { queryIdRanges } from './utilts';
 
 type GenerateImagesOptions = {
 	ids?: string;

@@ -27,8 +27,8 @@
 
 <div
 	bind:this={ref}
-	class="absolute inset-x-0 grid h-full w-full"
 	style="grid-template-columns: repeat({selectedTouchLayoutOption.rows[0]?.length}, minmax(0, 1fr))"
+	class="absolute inset-x-0 grid h-full w-full"
 >
 	{#each selectedTouchLayoutOption.rows as row}
 		{#each row as column}

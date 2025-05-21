@@ -1,5 +1,5 @@
-import { type Order, type Sort } from './schemas';
 import { z } from 'zod';
+import { type Order, type Sort } from './schemas';
 
 export type TagNamespace =
 	| 'artist'
@@ -43,10 +43,8 @@ export type Gallery = {
 	tags: Tag[];
 	images: Image[];
 	sources: Source[];
-	series: {
-		id: number;
-		title: string;
-	}[];
+	series: { id: number; title: string }[];
+	favorite: boolean;
 };
 
 export type Archive = {
@@ -69,7 +67,7 @@ export type Archive = {
 	series: { title: string; order: number }[];
 };
 
-export type GalleryListItem = {
+export type GalleryItem = {
 	id: number;
 	hash: string;
 	title: string;
@@ -101,7 +99,7 @@ export type CollectionItem = {
 	name: string;
 	slug: string;
 	protected: boolean;
-	archives: Pick<Archive, 'id'>[];
+	archives: number[];
 };
 
 export type HistoryEntry = {
@@ -110,7 +108,7 @@ export type HistoryEntry = {
 	startedAt: string;
 	lastReadAt: string;
 	finishedAt: string | null;
-	archive: Pick<Archive, 'id' | 'title' | 'hash' | 'pages' | 'thumbnail' | 'deletedAt' | 'tags'>;
+	archive: Pick<Archive, 'id' | 'title' | 'hash' | 'pages' | 'thumbnail' | 'tags'>;
 };
 
 export type LibraryResponse<T> = {
@@ -121,11 +119,16 @@ export type LibraryResponse<T> = {
 	seed?: string;
 };
 
-export type GalleryLibraryResponse = LibraryResponse<GalleryListItem>;
+export type GalleryLibraryResponse = LibraryResponse<GalleryItem>;
+
+export type User = {
+	id: string;
+	username: string;
+	admin: boolean;
+};
 
 export type SiteConfig = {
 	name: string;
-	url?: string;
 	enableUsers: boolean;
 	enableCollections: boolean;
 	enableReadHistory: boolean;
@@ -163,4 +166,11 @@ export type ImageArchive = {
 	pageNumber: number;
 	width: number | null;
 	height: number | null;
+};
+
+export type Pagination<T> = {
+	data: T[];
+	page: number;
+	total: number;
+	limit: number;
 };
