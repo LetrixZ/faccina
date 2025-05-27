@@ -1,10 +1,10 @@
 import { rm } from 'node:fs/promises';
-import { Glob } from 'bun';
 import { sql } from 'kysely';
 import db from '../shared/db';
 import config from './config';
 import type { Image, Series, Source, Tag } from './metadata';
 import { leadingZeros } from './utils';
+import { createGlobMatcher } from './server.utils';
 
 /**
  * Upserts archive sources
@@ -69,10 +69,10 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 	const diff: Image[] = [];
 
 	for (const image of dbImages) {
-		const newImage = images.find((_image) => _image.pageNumber === image.pageNumber);
+		const newImage = images.find((_image) => _image.pageNumber === Number(image.pageNumber));
 
 		if (newImage && newImage.filename !== image.filename) {
-			diff.push({ filename: image.filename, pageNumber: image.pageNumber });
+			diff.push({ filename: image.filename, pageNumber: Number(image.pageNumber) });
 		}
 	}
 
@@ -80,12 +80,12 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 		const filenames = diff.reduce(
 			(acc, image) => [
 				...acc,
-				...Array.from(
-					new Glob(`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`).scanSync({
-						cwd: config.directories.images,
-						absolute: true,
-					})
-				),
+				...createGlobMatcher(
+					`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`
+				).scanSync({
+					cwd: config.directories.images,
+					absolute: true,
+				}),
 			],
 			[] as string[]
 		);
@@ -101,7 +101,7 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 			.values(
 				images.map(({ filename, pageNumber }) => ({
 					filename,
-					pageNumber,
+					pageNumber: BigInt(pageNumber),
 					archiveId: id,
 				}))
 			)
@@ -119,7 +119,7 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 	}
 
 	const toDelete = dbImages.filter(
-		(image) => !images?.some((i) => i.pageNumber === image.pageNumber)
+		(image) => !images?.some((i) => i.pageNumber === Number(image.pageNumber))
 	);
 
 	if (toDelete.length) {

@@ -73,3 +73,5 @@ export const escapeGlob = (str: string) =>
 		.replace(/\)/g, '\\)')
 		.replace(/\(/g, '\\(')
 		.replace(/!/g, '\\!');
+
+export const sleep = (time: number) => new Promise((r) => setTimeout(r, time));

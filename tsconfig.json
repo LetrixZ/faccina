@@ -8,8 +8,6 @@
 		"allowJs": true,
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
-		"verbatimModuleSyntax": true,
-		"isolatedModules": true,
 		"noEmit": true,
 		"strict": true,
 		"skipLibCheck": true,
@@ -18,7 +16,7 @@
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false,
 		"noUncheckedIndexedAccess": true,
-		"types": ["@types/bun"],
+		"types": ["@types/node"],
 		"rootDirs": ["./", "./.svelte-kit/types"],
 		"paths": {
 			"~shared": ["./shared"],
@@ -51,8 +49,8 @@
 		"./tests/**/*.js",
 		"./tests/**/*.ts",
 		"./tests/**/*.svelte",
-		"./scripts/*.ts",
-		"./serve.ts"
+		"./migrations/*.ts",
+		"./scripts/*.ts"
 	],
 	"exclude": [
 		"./node_modules/**",

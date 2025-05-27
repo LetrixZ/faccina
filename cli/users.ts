@@ -4,6 +4,7 @@ import { generateIdFromEntropySize } from 'lucia';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
 import { recoveryCode, sendRecoveryEmail } from '../shared/users';
+import { Algorithm, hashSync } from '@node-rs/argon2';
 
 export const generateLoginLink = async (username: string) => {
 	const db = (await import('../shared/db')).default;
@@ -23,7 +24,11 @@ export const generateLoginLink = async (username: string) => {
 				.values({
 					id: generateIdFromEntropySize(10),
 					username,
-					passwordHash: Bun.password.hashSync(randomBytes(24).toString('hex')),
+					passwordHash: hashSync(randomBytes(24).toString('hex'), {
+						algorithm: Algorithm.Argon2id,
+						memoryCost: 19456,
+						timeCost: 2,
+					}),
 				})
 				.returning('id')
 				.executeTakeFirstOrThrow();

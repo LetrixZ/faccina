@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import arraySupport from 'dayjs/plugin/arraySupport';
-import { parseStringSync } from 'xml2js';
+import { parseStringPromise } from 'xml2js';
 import { z } from 'zod';
 import config from '../../shared/config';
 import { type ArchiveMetadata } from '../../shared/metadata';
@@ -47,7 +47,7 @@ const metadataSchema = z
 	}));
 
 export default async (content: string, archive: ArchiveMetadata) => {
-	const parsed = parseStringSync(content, { explicitArray: false });
+	const parsed = await parseStringPromise(content, { explicitArray: false });
 	const { data, error } = metadataSchema.safeParse(parsed);
 
 	if (!data) {

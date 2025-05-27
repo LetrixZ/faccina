@@ -6,7 +6,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.alterTable('series').renameTo('series_old').execute();
 	await db.schema.alterTable('series_archive').renameTo('series_archive_old').execute();
 
-	if (config.database.vendor !== 'sqlite') {
+	if (config.database.vendor === 'postgresql') {
 		await db.schema
 			.alterTable('series_archive_old')
 			.dropConstraint('series_archive_pkey')

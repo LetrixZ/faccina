@@ -1,13 +1,13 @@
+import { dev } from '$app/environment';
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
-import { BunSQLiteAdapter } from '@lucia-auth/adapter-sqlite';
-import { Database } from 'bun:sqlite';
 import { Lucia } from 'lucia';
+import type { DatabaseSync } from 'node:sqlite';
 import type { Pool } from 'pg';
 import { match } from 'ts-pattern';
-import { dev } from '$app/environment';
 import config from '~shared/config';
 import { databaseType } from '~shared/db';
 import connection from '~shared/db/connection';
+import { NodeSQLiteAdapter } from './lucia-node-sqlite-adapter';
 
 let _lucia: Lucia<
 	Record<never, never>,
@@ -31,7 +31,7 @@ export const lucia = (): Lucia => {
 			.with(
 				'sqlite',
 				() =>
-					new BunSQLiteAdapter(connection as Database, {
+					new NodeSQLiteAdapter(connection as DatabaseSync, {
 						user: 'users',
 						session: 'user_sessions',
 					})

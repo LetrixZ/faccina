@@ -6,6 +6,7 @@ import { resetSchema } from '$lib/schemas';
 import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
+import { Algorithm, hash } from '@node-rs/argon2';
 
 export const load: PageServerLoad = async ({ url }) => {
 	if (!config.site.enableUsers) {
@@ -50,19 +51,13 @@ export const actions: Actions = {
 
 		await db.updateTable('userCodes').set({ consumedAt: now() }).where('code', '=', code).execute();
 
-		const hash = await Bun.password.hash(password, {
-			algorithm: 'argon2id',
+		const passwordHash = await hash(password, {
+			algorithm: Algorithm.Argon2id,
 			memoryCost: 19456,
 			timeCost: 2,
 		});
 
-		await db
-			.updateTable('users')
-			.set({
-				passwordHash: hash,
-			})
-			.where('id', '=', user.userId)
-			.execute();
+		await db.updateTable('users').set({ passwordHash }).where('id', '=', user.userId).execute();
 
 		return {
 			form,

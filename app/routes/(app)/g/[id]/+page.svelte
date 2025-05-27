@@ -503,7 +503,7 @@
 
 			{#if gallery.size}
 				<InfoSection name="Size">
-					<p class="text-sm">{humanFileSize(gallery.size)}</p>
+					<p class="text-sm">{humanFileSize(Number(gallery.size))}</p>
 				</InfoSection>
 			{/if}
 

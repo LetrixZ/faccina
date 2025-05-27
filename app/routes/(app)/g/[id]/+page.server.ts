@@ -318,7 +318,7 @@ export const actions = {
 				thumbnail,
 				releasedAt: dayjs(releasedAt).toISOString(),
 				language,
-				protected: isProtected,
+				protected: isProtected ? 1 : 0,
 				updatedAt: now(),
 			})
 			.where('id', '=', archive.id)

@@ -1,13 +1,13 @@
-import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { cp, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import pg, { Client } from 'pg';
 import { z } from 'zod';
 import config from '../shared/config';
 import db from '../shared/db';
-import { imageDirectory } from '~shared/server.utils';
+import { createFile, exists, createGlobMatcher, imageDirectory } from '~shared/server.utils';
+import { sleep } from '~shared/utils';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
@@ -62,8 +62,8 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 		await mkdir(join(newDirname, 'cover'), { recursive: true });
 		await mkdir(join(newDirname, 'thumbnail'), { recursive: true });
 
-		const glob = new Glob(`*.${format}`);
-		const files = Array.from(glob.scanSync({ cwd: dirname, absolute: true }));
+		const glob = createGlobMatcher(`*.${format}`);
+		const files = glob.scanSync({ cwd: dirname, absolute: true });
 
 		for (const filepath of files.filter((filename) => filename.includes('.c.'))) {
 			await cp(filepath, join(newDirname, 'cover', basename(filepath.replace('.c', ''))));
@@ -139,7 +139,7 @@ export const migrateDatabase = async (dbUrl: string) => {
 
 	if (count !== rows.length) {
 		const timestamp = new Date().getTime();
-		Bun.write(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
+		createFile(`lost_${timestamp}.json`, JSON.stringify(lostArchives));
 
 		console.info(
 			`Due to duplicated paths, only ${chalk.bold(count)} archives will be migrated.\nA list containing ${chalk.bold(lostArchives.length)} will be saved at ${chalk.bold(`lost_${timestamp}.json`)}.`

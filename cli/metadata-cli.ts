@@ -9,12 +9,14 @@ import { z } from 'zod';
 import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import db from '../shared/db';
 import { jsonArrayFrom, like, now } from '../shared/db/helpers';
-import { generateFilename } from '../shared/utils';
+import { generateFilename, sleep } from '../shared/utils';
 import { metadataSchema } from './metadata/faccina';
 import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
 import { queryIdRanges } from './utilts';
 import config from '~shared/config';
 import { getArchive } from '$lib/server/db/queries';
+import { createFile } from '~shared/server.utils';
+import { readFile } from 'node:fs/promises';
 
 const henTagUrl = `https://hentag.com/api/v1/search/vault`;
 
@@ -54,7 +56,7 @@ export const scrape = async (
 const scrapeHenTag = async ({
 	idRanges,
 	paths,
-	sleep,
+	sleep: sleepTime,
 	interaction,
 	verbose,
 }: {
@@ -158,12 +160,12 @@ const scrapeHenTag = async ({
 				if (verbose) {
 					multibar.log(
 						chalk.gray(
-							`[HenTag] Rate limited - Sleeping for ${chalk.bold(`${sleep}ms before retrying`)}\n`
+							`[HenTag] Rate limited - Sleeping for ${chalk.bold(`${sleepTime}ms before retrying`)}\n`
 						)
 					);
 				}
 
-				await Bun.sleep(sleep);
+				await sleep(sleepTime);
 
 				retries++;
 				res = await fetch(`${henTagUrl}/${type}`, { method: 'POST', body: JSON.stringify(body) });
@@ -331,14 +333,14 @@ const scrapeHenTag = async ({
 
 		count++;
 
-		if (archives.length > 1 && i !== archives.length - 1 && sleep) {
-			multibar.log(chalk.gray(`--- Sleeping for ${sleep}ms ---\n`));
-			await Bun.sleep(sleep);
+		if (archives.length > 1 && i !== archives.length - 1 && sleepTime) {
+			multibar.log(chalk.gray(`--- Sleeping for ${sleepTime}ms ---\n`));
+			await sleep(sleepTime);
 		}
 	}
 
 	await db.destroy();
-	await Bun.sleep(250);
+	await sleep(250);
 
 	multibar.stop();
 };
@@ -385,7 +387,7 @@ export const exportMetadata = async (path: string, opts?: ExportOptions) => {
 		files[filepath] = strToU8(JSON.stringify(parsed, null, 2));
 	}
 
-	await Bun.write(path, zipSync(files));
+	await createFile(path, zipSync(files));
 	const end = performance.now();
 
 	await db.destroy();
@@ -425,7 +427,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 		await db.deleteFrom('archives').execute();
 	}
 
-	const zip = await Bun.file(path).bytes();
+	const zip = await readFile(path);
 	const metadataFiles = unzipSync(zip, { filter: (file) => file.name.endsWith('.faccina.json') });
 
 	console.info(chalk.blue(`Importing ${chalk.bold(Object.keys(metadataFiles).length)} archives`));
@@ -459,7 +461,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 					thumbnail: data.thumbnail,
 					language: data.language ?? config.metadata.defaultLanguage,
 					size: data.size,
-					protected: data.protected,
+					protected: data.protected ? 1 : 0,
 					createdAt: data.created_at,
 					releasedAt: data.released_at,
 					deletedAt: data.deleted_at,
@@ -493,7 +495,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 					thumbnail: data.thumbnail,
 					language: data.language ?? config.metadata.defaultLanguage,
 					size: data.size,
-					protected: data.protected,
+					protected: data.protected ? 1 : 0,
 					createdAt: data.created_at,
 					releasedAt: data.released_at,
 					deletedAt: data.deleted_at,

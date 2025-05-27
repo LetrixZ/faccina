@@ -1,11 +1,12 @@
+import { loginSchema } from '$lib/schemas';
+import { lucia } from '$lib/server/auth';
+import { Algorithm, verify } from '@node-rs/argon2';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
-import { loginSchema } from '$lib/schemas';
-import { lucia } from '$lib/server/auth';
 import config from '~shared/config';
 import db from '~shared/db';
+import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
@@ -47,7 +48,9 @@ export const actions: Actions = {
 			});
 		}
 
-		const validPassword = await Bun.password.verify(password, user.passwordHash, 'argon2id');
+		const validPassword = await verify(user.passwordHash, password, {
+			algorithm: Algorithm.Argon2id,
+		});
 
 		if (!validPassword) {
 			return fail(400, {

@@ -1,13 +1,13 @@
-import { readdirSync } from 'node:fs';
-import { basename, dirname, extname, join, parse } from 'node:path';
-import { Glob } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { strFromU8 } from 'fflate';
-import { StreamZipAsync } from 'node-stream-zip';
+import StreamZip from 'node-stream-zip';
+import { readdirSync } from 'node:fs';
+import { basename, dirname, extname, join, parse } from 'node:path';
 import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
+import { createGlobMatcher, readText } from '~shared/server.utils';
 import type { ArchiveMetadata } from '../../shared/metadata';
 import type { IndexScan, MetadataScan } from '../archive';
 import { basenames } from '../utilts';
@@ -132,8 +132,8 @@ export const getJsonSchema = (content: string) => {
 	throw new Error('Failed to determine JSON metadata schema');
 };
 
-export const getXmlSchema = (content: string) => {
-	const parsed = XML2JS.parseStringSync(content);
+export const getXmlSchema = async (content: string) => {
+	const parsed = await XML2JS.parseStringPromise(content);
 
 	if ('ComicInfo' in parsed) {
 		return MetadataSchema.ComicInfo;
@@ -214,7 +214,7 @@ const handleMetadataFormat = async (
 		}
 
 		case MetadataFormat.XML: {
-			const schemaType = getXmlSchema(content);
+			const schemaType = await getXmlSchema(content);
 
 			switch (schemaType) {
 				case MetadataSchema.ComicInfo:
@@ -269,7 +269,7 @@ export const addExternalMetadata = async (
 
 	for (const path of paths) {
 		try {
-			const content = await Bun.file(path).text();
+			const content = await readText(path);
 			return await handleMetadataFormat(
 				content,
 				basename(path),
@@ -287,7 +287,7 @@ export const addExternalMetadata = async (
 };
 
 export const addEmbeddedZipMetadata = async (
-	zip: StreamZipAsync,
+	zip: StreamZip.StreamZipAsync,
 	archive: ArchiveMetadata,
 	pb: Logger
 ) => {
@@ -323,7 +323,7 @@ export const addEmbeddedDirMetadata = async (
 	archive = structuredClone(archive);
 
 	if (scan.metadata) {
-		const content = await Bun.file(scan.metadata).text();
+		const content = await readText(scan.metadata);
 		return handleMetadataFormat(
 			content,
 			basename(scan.metadata),
@@ -331,14 +331,12 @@ export const addEmbeddedDirMetadata = async (
 			archive
 		);
 	} else {
-		const metadataGlob = new Glob('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}');
-		const paths = Array.from(
-			metadataGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true })
-		);
+		const metadataGlob = createGlobMatcher('*/{info.{json,yml,yaml},ComicInfo.xml,booru.txt}');
+		const paths = metadataGlob.scanSync({ cwd: scan.path, absolute: true, followSymlinks: true });
 
 		for (const path of paths) {
 			try {
-				const content = await Bun.file(path).text();
+				const content = await readText(path);
 				return await handleMetadataFormat(
 					content,
 					basename(path),

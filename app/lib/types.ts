@@ -36,7 +36,7 @@ export type Gallery = {
 	pages: number;
 	thumbnail: number;
 	language: string | null;
-	size: number;
+	size: BigInt;
 	createdAt: string;
 	releasedAt: string | null;
 	deletedAt: string | null;

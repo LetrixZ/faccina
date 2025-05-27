@@ -19,7 +19,7 @@ export const load = async ({ locals }) => {
 			.values({
 				name: 'Bookmarks',
 				slug: `bookmarks-${locals.user.id}`,
-				protected: true,
+				protected: 1,
 				userId: locals.user.id,
 			})
 			.execute();

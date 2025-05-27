@@ -11,8 +11,9 @@ import { calculateDimensions, encodeImage } from '$lib/server/image';
 import type { ImageArchive } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
-import { exists, imageDirectory } from '~shared/server.utils';
+import { createFile, exists, imageDirectory } from '~shared/server.utils';
 import { leadingZeros } from '~shared/utils';
+import { readFile } from 'node:fs/promises';
 
 const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Array, string]> => {
 	const imagePath = join(
@@ -24,7 +25,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 	let extension: string;
 
 	try {
-		data = await Bun.file(imagePath).bytes();
+		data = await readFile(imagePath);
 		extension = extname(imagePath);
 	} catch {
 		if (!exists(archive.path)) {
@@ -47,10 +48,10 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 			extension = extname(archive.filename);
 
 			if (config.server.autoUnpack) {
-				Bun.write(imagePath, data);
+				createFile(imagePath, data);
 			}
 		} else {
-			data = await Bun.file(join(archive.path, archive.filename)).bytes();
+			data = await readFile(join(archive.path, archive.filename));
 			extension = extname(archive.filename);
 		}
 	}
@@ -114,10 +115,8 @@ const resampledImage = async (
 		`${leadingZeros(archive.pageNumber, archive.pages ?? 1)}.${preset.format}`
 	);
 
-	const file = Bun.file(imagePath);
-
-	if (await file.exists()) {
-		return [await file.bytes(), extname(imagePath)];
+	if (await exists(imagePath)) {
+		return [await readFile(imagePath), extname(imagePath)];
 	}
 
 	try {
@@ -144,6 +143,7 @@ const resampledImage = async (
 
 export const GET: RequestHandler = async ({ params, url, locals, setHeaders }) => {
 	if (!locals.user && !config.site.guestAccess) {
+		console.error('Guest not allowed');
 		return new Response(null, { status: 404 });
 	}
 
@@ -164,6 +164,7 @@ export const GET: RequestHandler = async ({ params, url, locals, setHeaders }) =
 		.executeTakeFirst();
 
 	if (!archive) {
+		console.error('Archive not found');
 		return new Response(null, { status: 404 });
 	}
 

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import config from '~shared/config';
-import { exists, imageDirectory } from '~shared/server.utils';
+import { exists, createGlobMatcher, imageDirectory } from '~shared/server.utils';
 
 const migrateImagesSubHashDirectory = async () => {
 	const folders = await readdir(config.directories.images);
@@ -52,7 +52,7 @@ const migrateImagesSubHashDirectory = async () => {
 		try {
 			await rename(oldPath, newPath);
 		} catch {
-			const res = await Array.fromAsync(new Bun.Glob('**/*').scan(oldPath));
+			const res = await createGlobMatcher('**/*').scan(oldPath);
 
 			for (const file of res) {
 				await mkdir(dirname(join(newPath, file)), { recursive: true }).catch(() => {});

@@ -1,4 +1,4 @@
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'path';
 import chalk from 'chalk';
 import StreamZip from 'node-stream-zip';
@@ -10,7 +10,7 @@ import type { Preset } from '$lib/image-presets';
 import config from '~shared/config';
 import db from '~shared/db';
 import { leadingZeros } from '~shared/utils';
-import { imageDirectory } from '~shared/server.utils';
+import { createFile, imageDirectory } from '~shared/server.utils';
 
 export type ImageEncodingArgs = {
 	archive: ImageArchive;
@@ -96,7 +96,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 	);
 
 	try {
-		data = await Bun.file(originalImagePath).bytes();
+		data = await readFile(originalImagePath);
 	} catch {
 		const info = await stat(args.archive.path);
 
@@ -106,10 +106,10 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 			await zip.close();
 
 			if (config.server.autoUnpack) {
-				Bun.write(originalImagePath, data);
+				createFile(originalImagePath, data);
 			}
 		} else {
-			data = await Bun.file(join(args.archive.path, args.archive.filename)).bytes();
+			data = await readFile(join(args.archive.path, args.archive.filename));
 		}
 	}
 
@@ -156,7 +156,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 	try {
 		if (config.image.storeResampledImages) {
-			await Bun.write(args.savePath, newImage);
+			await createFile(args.savePath, newImage);
 		}
 	} catch (err) {
 		console.error(

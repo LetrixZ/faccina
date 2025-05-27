@@ -1,3 +1,4 @@
+import { sha256 } from 'js-sha256';
 import { z } from 'zod';
 
 export const presetSchema = z
@@ -48,7 +49,7 @@ export type Preset = z.infer<typeof presetSchema> & {
 };
 
 export const generatePresetHash = (preset: Omit<Preset, 'name' | 'hash' | 'label'>) => {
-	const hasher = new Bun.CryptoHasher('sha256');
+	const hasher = sha256.create();
 
 	for (const [key, value] of Object.entries(preset)) {
 		if (['label'].includes(key)) {
@@ -60,5 +61,5 @@ export const generatePresetHash = (preset: Omit<Preset, 'name' | 'hash' | 'label
 		}
 	}
 
-	return hasher.digest().toString('hex').substring(0, 8);
+	return hasher.hex().substring(0, 8);
 };

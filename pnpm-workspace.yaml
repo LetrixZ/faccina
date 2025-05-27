@@ -1,0 +1,7 @@
+onlyBuiltDependencies:
+  - '@sveltejs/kit'
+  - esbuild
+  - sharp
+  - svelte-preprocess
+patchedDependencies:
+  kysely: patches/kysely.patch
