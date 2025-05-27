@@ -86,8 +86,21 @@
 
 			<div
 				class="grid gap-4 max-md:!grid-cols-2"
-				style="grid-template-columns: repeat({Math.min(4, presets.length)}, minmax(0, 1fr));"
+				style="grid-template-columns: repeat({Math.min(
+					4,
+					presets.length + (readerAllowOriginal ? 1 : 0)
+				)}, minmax(0, 1fr));"
 			>
+				{#if readerAllowOriginal}
+					<Button
+						class={cn('relative pe-8', selectedPreset === undefined && 'ring ring-primary')}
+						on:click={() => readerStore.setImagePreset(null)}
+						variant="outline"
+					>
+						<span class="truncate"> Original </span>
+					</Button>
+				{/if}
+
 				{#each presets as preset}
 					<Button
 						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring ring-primary')}
@@ -310,15 +323,15 @@
 		filter: brightness(0.75);
 	}
 
-	.scaling-preview .original {
+	:global(.scaling-preview .original) {
 		width: 70%;
 	}
 
-	.scaling-preview .fill-width {
+	:global(.scaling-preview .fill-width) {
 		width: 100%;
 	}
 
-	.scaling-preview .fill-height {
+	:global(.scaling-preview .fill-height) {
 		height: 100%;
 	}
 </style>
