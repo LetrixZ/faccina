@@ -1,0 +1,17 @@
+DROP TABLE "series_fts";
+DROP TABLE "series_archive";
+DROP TABLE "series";
+DROP TABLE "archives_fts";
+DROP TABLE "user_read_history";
+DROP TABLE "collection_archive";
+DROP TABLE "collection";
+DROP TABLE "user_blacklist";
+DROP TABLE "archive_tags";
+DROP TABLE "tags";
+DROP TABLE "user_codes";
+DROP TABLE "user_favorites";
+DROP TABLE "user_sessions";
+DROP TABLE "users";
+DROP TABLE "archive_images";
+DROP TABLE "archive_sources";
+DROP TABLE "archives";

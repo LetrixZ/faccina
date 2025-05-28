@@ -1,3 +1,6 @@
+import { dev } from '$app/environment';
+import { PUBLIC_API_URL } from '$env/static/public';
+import { presetSchema } from '$lib/image-presets';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { clsx, type ClassValue } from 'clsx';
@@ -6,17 +9,21 @@ import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { FastAverageColor } from 'fast-average-color';
 import { gunzipSync, strFromU8 } from 'fflate';
 import * as R from 'ramda';
 import _slugify from 'slugify';
 import { cubicOut } from 'svelte/easing';
-import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
-import { ImageSize, TouchLayout } from './models';
 import type { Gallery, Image, Tag } from './types';
+import { ImageSize, TouchLayout } from './models';
+import type { TransitionConfig } from 'svelte/transition';
 import type { ReaderPreset } from '~shared/config/image.schema';
-import { presetSchema } from '$lib/image-presets';
+
+export type RGBA = [number, number, number, number];
+
+export const apiUrl = dev ? '' : PUBLIC_API_URL;
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -36,10 +43,11 @@ type FlyAndScaleParams = {
 	duration?: number;
 };
 
-export const flyAndScale = (
-	node: Element,
-	params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 }
-): TransitionConfig => {
+export const flyAndScale = (node: Element, params?: FlyAndScaleParams): TransitionConfig => {
+	if (!params || !Object.keys(params).length) {
+		params = { y: -8, x: 0, start: 0.95, duration: 150 };
+	}
+
 	const style = getComputedStyle(node);
 	const transform = style.transform === 'none' ? '' : style.transform;
 
@@ -55,7 +63,9 @@ export const flyAndScale = (
 
 	const styleToString = (style: Record<string, number | string | undefined>): string => {
 		return Object.keys(style).reduce((str, key) => {
-			if (style[key] === undefined) return str;
+			if (style[key] === undefined) {
+				return str;
+			}
 			return str + `${key}:${style[key]};`;
 		}, '');
 	};
@@ -275,7 +285,9 @@ export const truncate = (str: string, max: number) => {
 };
 
 export const isTag = (tag: Pick<Tag, 'namespace'>) =>
-	!['artist', 'circle', 'magazine', 'event', 'publisher', 'parody'].includes(tag.namespace);
+	!['artist', 'author', 'circle', 'group', 'magazine', 'event', 'publisher', 'parody'].includes(
+		tag.namespace
+	);
 
 export const debounce = (callback: () => void, wait = 300) => {
 	let timeout: ReturnType<typeof setTimeout>;
@@ -369,3 +381,204 @@ export function getImageUrl(
 		? `${imageServer}/image/${gallery.hash}/${page}?type=${selectedPreset.hash}`
 		: `${imageServer}/image/${gallery.hash}/${page}`;
 }
+
+export const getDominantColor = (image: HTMLImageElement): RGBA => {
+	const canvas = document.createElement('canvas');
+	const ctx = canvas.getContext('2d');
+
+	if (!ctx) {
+		return [0, 0, 0, 1];
+	}
+
+	ctx.reset();
+	ctx.drawImage(image, 0, 0, 1, 1);
+
+	const color = ctx
+		.getImageData(0, 0, 1, 1)
+		.data.slice(0, 3)
+		.reduce((acc, c) => [...acc, c], [] as number[]);
+
+	canvas.remove();
+
+	return color as RGBA;
+};
+
+export const sleep = (time?: number) => new Promise<void>((r) => setTimeout(r, time));
+
+export const mainSortOptions = [
+	{ value: 'released_at', label: 'Date released' },
+	{ value: 'created_at', label: 'Date added' },
+	{ value: 'title', label: 'Title' },
+	{ value: 'pages', label: 'Pages' },
+	{ value: 'random', label: 'Random' },
+];
+
+export function getDisplayTags(infoContainer: HTMLElement, tags: Tag[], maxLines: number) {
+	const lineHeights = new Set<number>();
+
+	const displayTags: { tag: Tag; element: HTMLAnchorElement }[] = [];
+
+	const container = document.createElement('div');
+	container.classList.add(
+		'w-full',
+		'h-fit',
+		'flex',
+		'flex-wrap',
+		'gap-1',
+		'px-1.5',
+		'invisible',
+		'absolute'
+	);
+
+	infoContainer.appendChild(container);
+
+	for (const tag of tags) {
+		const tagElement = document.createElement('a');
+		tagElement.classList.add(
+			'flex',
+			'rounded-2xl',
+			'px-1.5',
+			'py-1',
+			'text-xs',
+			'leading-3',
+			'font-semibold',
+			'duration-100'
+		);
+
+		const namespace = [
+			'artist',
+			'circle',
+			'magazine',
+			'event',
+			'publisher',
+			'parody',
+			'tag',
+		].includes(tag.namespace)
+			? null
+			: tag.namespace;
+
+		let label: string;
+
+		if (namespace) {
+			label = `${namespace}:${tag.name}`;
+		} else {
+			label = tag.name;
+		}
+
+		tagElement.innerHTML = label;
+
+		container.appendChild(tagElement);
+
+		lineHeights.add(container.clientHeight);
+
+		if (lineHeights.size > maxLines) {
+			lineHeights.delete(container.clientHeight);
+			tagElement.remove();
+			break;
+		}
+
+		displayTags.push({ tag, element: tagElement });
+	}
+
+	const moreCount = tags.length - displayTags.length;
+
+	if (moreCount) {
+		const moreElement = document.createElement('span');
+		moreElement.classList.add('flex', 'px-2', 'py-1', 'text-xs', 'leading-3', 'font-semibold');
+		moreElement.innerHTML = `+ ${moreCount}`;
+
+		container.appendChild(moreElement);
+
+		lineHeights.add(container.clientHeight);
+
+		while (lineHeights.size > maxLines) {
+			lineHeights.delete(container.clientHeight);
+			displayTags[displayTags.length - 1]?.element.remove();
+			displayTags.splice(-1, 1);
+
+			lineHeights.add(container.clientHeight);
+		}
+	}
+
+	container.remove();
+
+	return displayTags.map(({ tag }) => tag);
+}
+
+export const isMonochrome = (rgb?: RGBA) => rgb?.every((c) => Math.abs(c - rgb[0]) <= 5);
+
+export const testSources = [
+	'FAKKU',
+	'Irodori Comics',
+	'Anchira',
+	'HentaiNexus',
+	'E-Hentai',
+	'ExHentai',
+	'Pixiv',
+	'Patreon',
+	'Project Hentai',
+	'HenTag',
+	'Koharu',
+].map((s) => ({ name: s }));
+
+type TRGB = { r: number; g: number; b: number };
+type TLCH = { l: number; c: number; h: number };
+
+const rgbToOklch = (rgb: TRGB): TLCH => {
+	const r = rgb.r / 255;
+	const g = rgb.g / 255;
+	const b = rgb.b / 255;
+
+	// Apply sRGB to Linear RGB conversion
+	const [linearR, linearG, linearB] = [r, g, b].map((c: number) =>
+		c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+	);
+
+	// Convert Linear RGB to CIE XYZ
+	let x: number = linearR! * 0.4124564 + linearG! * 0.3575761 + linearB! * 0.1804375;
+	let y: number = linearR! * 0.2126729 + linearG! * 0.7151522 + linearB! * 0.072175;
+	let z: number = linearR! * 0.0193339 + linearG! * 0.119192 + linearB! * 0.9503041;
+
+	// Convert CIE XYZ to CIELAB
+	[x, y, z] = [x, y, z].map((c: number) => (c > 0.008856 ? c ** (1 / 3) : (903.3 * c + 16) / 116));
+	let l: number = 116 * y - 16;
+	const a: number = 500 * (x - y);
+	const bStar: number = 200 * (y - z);
+
+	// Convert CIELAB to Oklch
+	//let c: number = Math.sqrt(a * a + bStar * bStar);
+	let h: number = Math.atan2(bStar, a) * (180 / Math.PI);
+	if (h < 0) {
+		h += 360;
+	}
+
+	// Assume c_max is the maximum chroma value observed or expected in your conversions
+	const c_max = 100; /* your determined or observed maximum chroma value */
+	// Adjusted part of the rgbToOklch function for calculating 'c'
+	let c: number = Math.sqrt(a * a + bStar * bStar);
+	c = (c / c_max) * 0.37; // Scale c to be within 0 and 0.37
+
+	// Scale and round values to match the specified ranges
+	l = Math.round(((l + 16) / 116) * 1000) / 1000; // Scale l to be between 0 and 1
+	c = Number(c.toFixed(2)); // Ensure c is correctly scaled, adjust if necessary based on your color space calculations
+	h = Number(h.toFixed(1)); // h is already within 0 to 360
+
+	return {
+		l,
+		c,
+		h,
+	};
+};
+
+export const rgbToOklchString = (rgb: TRGB): string => {
+	const { l, c, h } = rgbToOklch(rgb);
+	return `oklch(${l} ${c} ${h})`;
+};
+
+const fac = new FastAverageColor();
+
+export const getColor = (image: HTMLImageElement) => {
+	const color = fac.getColor(image, { algorithm: 'dominant' }).value;
+	const [r, g, b] = color;
+	return rgbToOklchString({ r, g, b });
+};

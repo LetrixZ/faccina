@@ -186,4 +186,5 @@ config.toml
 *.sqlite*
 docker-compose.yaml
 
-compile
+go/web/build
+faccina
