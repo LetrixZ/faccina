@@ -1,9 +1,9 @@
 <script lang="ts">
+	import * as Popover from '$lib/components/ui/popover';
 	import { createEventDispatcher } from 'svelte';
 	import { cn, slugify } from '../utils';
 	import { Button } from './ui/button';
 	import Input from './ui/input/input.svelte';
-	import * as Popover from '$lib/components/ui/popover';
 
 	export let chips: string[] = [];
 	export let id: string | undefined = undefined;
@@ -149,12 +149,13 @@
 			<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 
 			<Input
-				autocomplete="off"
-				bind:htmlInput={inputEl}
-				bind:value={input}
-				class="border-0 focus-visible:ring-0"
 				{id}
 				name="q"
+				class="border-0 focus-visible:ring-0"
+				autocomplete="off"
+				{placeholder}
+				bind:htmlInput={inputEl}
+				bind:value={input}
 				on:focus={() => {
 					isFocused = true;
 					popoverOpen = true;
@@ -210,19 +211,18 @@
 						selectPosition = inputEl.selectionStart ?? -1;
 					}, 1);
 				}}
-				{placeholder}
 			/>
 		</div>
 
-		<Popover.Content align="start" class="grid w-fit p-0">
+		<Popover.Content class="grid w-fit p-0" align="start">
 			{#each filteredTags as tag, i}
 				<Button
 					class={cn('justify-start', i === highligtedIndex && 'underline')}
+					variant="link"
 					on:click={() => {
 						inputEl.focus();
 						insertTag(inputEl, i);
 					}}
-					variant="link"
 				>
 					{tag}
 				</Button>
@@ -235,8 +235,8 @@
 			{#each chips as chip}
 				<button
 					class="rounded-md bg-secondary px-2 py-0.5 text-sm text-neutral-200 hover:bg-secondary/80 hover:text-white motion-safe:duration-150"
-					on:click={() => removeChip(chip)}
 					type="button"
+					on:click={() => removeChip(chip)}
 				>
 					{chip}
 				</button>

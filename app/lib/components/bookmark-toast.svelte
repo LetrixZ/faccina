@@ -19,5 +19,5 @@
 		{/if}
 	</div>
 
-	<Button class="text-xs" on:click={() => onChange()} size="sm" variant="outline">Change</Button>
+	<Button class="text-xs" size="sm" variant="outline" on:click={() => onChange()}>Change</Button>
 </div>

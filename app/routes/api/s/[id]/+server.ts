@@ -1,10 +1,10 @@
-import { json } from '@sveltejs/kit';
-import { sql } from 'kysely';
 import { libraryItems } from '$lib/server/db/queries.js';
 import { handleTags } from '$lib/server/utils.js';
+import { json } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 import { jsonArrayFrom } from '~shared/db/helpers';
+import { sql } from 'kysely';
 
 export const GET = async ({ params, locals }) => {
 	if (!locals.user && !config.site.guestAccess) {

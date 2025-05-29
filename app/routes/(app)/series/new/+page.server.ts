@@ -1,8 +1,8 @@
+import { createSeriesSchema } from '$lib/schemas';
 import { error, redirect } from '@sveltejs/kit';
+import db from '~shared/db';
 import { fail, message, setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { createSeriesSchema } from '$lib/schemas';
-import db from '~shared/db';
 
 export const load = async ({ locals }) => {
 	if (!locals.user?.admin) {

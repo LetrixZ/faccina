@@ -1,13 +1,13 @@
 <script lang="ts">
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Heart from 'lucide-svelte/icons/heart';
-	import LogIn from 'lucide-svelte/icons/log-in';
-	import LogOut from 'lucide-svelte/icons/log-out';
-	import Settings from 'lucide-svelte/icons/settings';
-	import User from 'lucide-svelte/icons/user';
-	import { Separator } from '$lib/components/ui/separator';
 	import { Button } from '$lib/components/ui/button';
+	import { Separator } from '$lib/components/ui/separator';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Heart from '@lucide/svelte/icons/heart';
+	import LogIn from '@lucide/svelte/icons/log-in';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Settings from '@lucide/svelte/icons/settings';
+	import User from '@lucide/svelte/icons/user';
 
 	export let data;
 </script>
@@ -69,7 +69,7 @@
 			<User class="size-4" />
 		</Button>
 
-		<form action="/logout?to=/panel" class="w-full" method="POST">
+		<form class="w-full" action="/logout?to=/panel" method="POST">
 			<Button
 				class="iteƒms-center flex w-full justify-between gap-2 text-neutral-200"
 				type="submit"

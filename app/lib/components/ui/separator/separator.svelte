@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Separator as SeparatorPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils';
+	import { Separator as SeparatorPrimitive } from 'bits-ui';
 
 	type $$Props = SeparatorPrimitive.Props;
 
@@ -16,7 +16,7 @@
 		orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]',
 		className
 	)}
-	{orientation}
 	{decorative}
+	{orientation}
 	{...$$restProps}
 />

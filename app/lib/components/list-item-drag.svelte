@@ -1,16 +1,16 @@
 <script lang="ts">
-	import AlignJustify from 'lucide-svelte/icons/align-justify';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
+	import { cn } from '$lib/utils';
+	import AlignJustify from '@lucide/svelte/icons/align-justify';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
 	import { dragHandle } from 'svelte-dnd-action';
 	import type { GalleryListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import Button from './ui/button/button.svelte';
-	import { cn } from '$lib/utils';
-	import { siteConfig } from '$lib/stores';
-	import { page } from '$app/stores';
 
 	export let gallery: GalleryListItem;
 	export let enableBookmark = false;
@@ -69,8 +69,8 @@
 	>
 		<div class="relative max-w-24 overflow-clip rounded-md shadow md:max-w-32">
 			<img
-				alt={`'${gallery.title}' cover`}
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt={`'${gallery.title}' cover`}
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
@@ -124,7 +124,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}
@@ -134,8 +134,8 @@
 	</div>
 
 	<div
-		aria-label="Drag {gallery.title}"
 		class="absolute inset-y-0 right-0 flex h-full items-center"
+		aria-label="Drag {gallery.title}"
 		use:dragHandle
 	>
 		<AlignJustify class="text-muted-foreground" />

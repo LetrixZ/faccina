@@ -1,11 +1,11 @@
-import crypto from 'crypto';
-import { fail, redirect } from '@sveltejs/kit';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
-import { slugify } from '$lib/utils';
 import { createCollectionSchema } from '$lib/schemas';
+import { slugify } from '$lib/utils';
+import { fail, redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
+import crypto from 'crypto';
+import { superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import type { ActionResult } from '@sveltejs/kit';
+	import { page } from '$app/stores';
+	import * as Form from '$lib/components/ui/form';
+	import { Input } from '$lib/components/ui/input';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
@@ -7,9 +9,7 @@
 	import type { UserFormState } from '../models';
 	import { recoverSchema, type RecoverSchema } from '../schemas';
 	import { Button } from './ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import * as Form from '$lib/components/ui/form';
-	import { page } from '$app/stores';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	export let data: SuperValidated<Infer<RecoverSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
@@ -33,10 +33,10 @@
 	const { form: formData, enhance } = form;
 </script>
 
-<form action="/recover{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
+<form class="flex flex-col space-y-3" action="/recover{$page.url.search}" method="POST" use:enhance>
 	{#if hasMailer}
 		<div class="flex flex-col">
-			<Form.Field {form} name="username">
+			<Form.Field name="username" {form}>
 				<Form.Control let:attrs>
 					<Form.Label>Username</Form.Label>
 					<Input {...attrs} bind:value={$formData.username} />
@@ -54,13 +54,13 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/login{$page.url.search}"
+			variant="link"
 			on:click={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('login');
 				}
 			}}
-			variant="link"
 		>
 			Login
 		</Button>
@@ -68,13 +68,13 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/register{$page.url.search}"
+			variant="link"
 			on:click={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
 				}
 			}}
-			variant="link"
 		>
 			Create an account
 		</Button>
@@ -85,13 +85,13 @@
 	<Button
 		class="mx-auto"
 		href="/reset{$page.url.search}"
+		variant="link"
 		on:click={(ev) => {
 			if (changeState && typeof changeState == 'function') {
 				ev.preventDefault();
 				changeState('reset');
 			}
 		}}
-		variant="link"
 	>
 		I already have a recovery code
 	</Button>

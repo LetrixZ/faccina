@@ -3,16 +3,16 @@ import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
-import StreamZip from 'node-stream-zip';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, rename, rm, stat } from 'node:fs/promises';
 import { dirname, extname, join, parse } from 'node:path';
+import StreamZip from 'node-stream-zip';
 import slugify from 'slugify';
+import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
 import config from '../shared/config';
 import { now } from '../shared/db/helpers';
-import type { ArchiveMetadata, Image } from '../shared/metadata';
 import { createFile, exists, createGlobMatcher, imageDirectory } from '../shared/server.utils';
 import { leadingZeros, sleep } from '../shared/utils';
 import {

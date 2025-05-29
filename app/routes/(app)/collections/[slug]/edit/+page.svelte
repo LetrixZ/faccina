@@ -1,13 +1,4 @@
 <script lang="ts">
-	import BookmarkPlus from 'lucide-svelte/icons/bookmark-plus';
-	import Save from 'lucide-svelte/icons/save';
-	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
-	import { toast } from 'svelte-sonner';
-	import { flip } from 'svelte/animate';
-	import { cubicIn } from 'svelte/easing';
-	import { fade } from 'svelte/transition';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { pushState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
@@ -17,8 +8,17 @@
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
 	import { createCollectionSchema } from '$lib/schemas';
-	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
+	import BookmarkPlus from '@lucide/svelte/icons/bookmark-plus';
+	import Save from '@lucide/svelte/icons/save';
+	import { flip } from 'svelte/animate';
+	import { cubicIn } from 'svelte/easing';
+	import { fade } from 'svelte/transition';
+	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
+	import type { GalleryListItem } from '$lib/types';
 
 	export let data;
 
@@ -70,13 +70,13 @@
 		use:enhance
 	>
 		<div class="flex w-full items-start gap-2">
-			<Form.Field class="flex-auto" {form} name="name">
+			<Form.Field name="name" class="flex-auto" {form}>
 				<Form.Control let:attrs>
 					<Input
 						{...attrs}
-						bind:value={$formData.name}
 						class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
 						placeholder="Collection name"
+						bind:value={$formData.name}
 					/>
 
 					{#if $errors.name}
@@ -100,8 +100,8 @@
 
 		{#if selectedGalleries.length}
 			<div
-				aria-label="Collection"
 				class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
+				aria-label="Collection"
 				on:consider={(e) => (selectedGalleries = e.detail.items)}
 				on:finalize={(e) => (selectedGalleries = e.detail.items)}
 				use:dragHandleZone={{
@@ -111,7 +111,7 @@
 				}}
 			>
 				{#each selectedGalleries as gallery (gallery.id)}
-					<div animate:flip={{ duration: 50 }} class="relative">
+					<div class="relative" animate:flip={{ duration: 50 }}>
 						<ListItemDrag {gallery} newTab />
 
 						{#if gallery[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
@@ -128,7 +128,7 @@
 		{:else}
 			<div class="flex flex-auto flex-col items-center justify-center gap-4">
 				<h3 class="text-2xl font-medium">No galleries added</h3>
-				<Button on:click={openSearch} variant="outline">Add galleries</Button>
+				<Button variant="outline" on:click={openSearch}>Add galleries</Button>
 			</div>
 		{/if}
 	</form>
@@ -139,6 +139,7 @@
 		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-2 pb-0 pt-2"
 	>
 		<CollectionArchiveSearch
+			selectedGalleries={selectedGalleries.map((gallery) => gallery.id)}
 			on:bookmark={(ev) => {
 				const { gallery, bookmark } = ev.detail;
 				if (bookmark) {
@@ -147,7 +148,6 @@
 					selectedGalleries = selectedGalleries.filter(({ id }) => id !== gallery.id);
 				}
 			}}
-			selectedGalleries={selectedGalleries.map((gallery) => gallery.id)}
 		/>
 	</Dialog.Content>
 </Dialog.Root>

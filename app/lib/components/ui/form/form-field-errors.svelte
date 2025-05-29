@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as FormPrimitive from 'formsnap';
 	import { cn } from '$lib/utils.js';
+	import * as FormPrimitive from 'formsnap';
 
 	type $$Props = FormPrimitive.FieldErrorsProps & {
 		errorClasses?: string | undefined | null;
@@ -14,11 +14,11 @@
 <FormPrimitive.FieldErrors
 	class={cn('text-sm font-medium text-destructive', className)}
 	{...$$restProps}
+	let:errorAttrs
 	let:errors
 	let:fieldErrorsAttrs
-	let:errorAttrs
 >
-	<slot {errors} {fieldErrorsAttrs} {errorAttrs}>
+	<slot {errorAttrs} {errors} {fieldErrorsAttrs}>
 		{#each errors as error}
 			<div {...errorAttrs} class={cn(errorClasses)}>{error}</div>
 		{/each}

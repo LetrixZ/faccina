@@ -1,10 +1,10 @@
-import { fail, redirect } from '@sveltejs/kit';
-import { setError, superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
 import { userDeleteSchema, userEditSchema } from '$lib/schemas';
+import { Algorithm, hash, verify } from '@node-rs/argon2';
+import { fail, redirect } from '@sveltejs/kit';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
-import { Algorithm, hash, verify } from '@node-rs/argon2';
+import { setError, superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {

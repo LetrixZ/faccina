@@ -14,7 +14,7 @@ export interface ArchiveImages {
 	archiveId: number;
 	filename: string;
 	height: number | null;
-	pageNumber: BigInt;
+	pageNumber: bigint;
 	width: number | null;
 }
 
@@ -30,7 +30,7 @@ export interface Archives {
 	path: string;
 	protected: Generated<number>;
 	releasedAt: string | null;
-	size: BigInt;
+	size: bigint;
 	thumbnail: Generated<number>;
 	title: string;
 	updatedAt: Generated<string>;

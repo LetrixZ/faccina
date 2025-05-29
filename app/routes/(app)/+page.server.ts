@@ -1,7 +1,7 @@
-import { redirect } from '@sveltejs/kit';
 import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries';
 import { parseSearchParams } from '$lib/server/utils';
 import { decompressBlacklist, randomString } from '$lib/utils';
+import { redirect } from '@sveltejs/kit';
 import config from '~shared/config.js';
 
 export const load = async ({ locals, cookies, url }) => {

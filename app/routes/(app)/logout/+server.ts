@@ -1,5 +1,5 @@
-import { error, redirect } from '@sveltejs/kit';
 import { lucia } from '$lib/server/auth';
+import { error, redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 
 export const POST = async ({ locals, cookies, url }) => {

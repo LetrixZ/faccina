@@ -1,10 +1,10 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
-	import { type SuperForm } from 'sveltekit-superforms';
-	import type { z } from 'zod';
 	import * as Form from '$lib/components/ui/form';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { type CreateSeriesSchema } from '$lib/schemas.js';
+	import Save from '@lucide/svelte/icons/save';
+	import { type SuperForm } from 'sveltekit-superforms';
+	import type { z } from 'zod';
 
 	export let form: SuperForm<z.infer<CreateSeriesSchema>, unknown>;
 
@@ -12,7 +12,7 @@
 </script>
 
 <form class="flex flex-grow flex-col gap-2" method="POST" use:enhance>
-	<Form.Field {form} name="title">
+	<Form.Field name="title" {form}>
 		<Form.Control let:attrs>
 			<Form.Label class="text-xl">Series title</Form.Label>
 			<Input {...attrs} bind:value={$formData.title} />

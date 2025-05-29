@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import type { Selected } from 'bits-ui';
-	import { siteConfig } from '../stores';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import { createEventDispatcher } from 'svelte';
+	import { siteConfig } from '../stores';
+	import type { Selected } from 'bits-ui';
 
 	export let pageLimits: number[];
 	export let value: number | undefined = undefined;
@@ -49,7 +49,7 @@
 	<div class="space-y-0.5 md:w-fit">
 		<Label class="text-end">Per page</Label>
 		<Select.Root items={options} {onSelectedChange} preventScroll={false} selected={limitOption}>
-			<Select.Trigger aria-label="Select page limit" class="w-20">
+			<Select.Trigger class="w-20" aria-label="Select page limit">
 				<Select.Value class="text-muted-foreground-light" />
 			</Select.Trigger>
 			<Select.Content>

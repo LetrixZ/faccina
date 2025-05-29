@@ -1,12 +1,12 @@
-import { error, fail } from '@sveltejs/kit';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
 import { resetSchema } from '$lib/schemas';
+import { Algorithm, hash } from '@node-rs/argon2';
+import { error, fail } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
-import { Algorithm, hash } from '@node-rs/argon2';
+import { superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
+import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => {
 	if (!config.site.enableUsers) {

@@ -1,19 +1,19 @@
 <script lang="ts">
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { siteConfig, userCollections } from '$lib/stores';
+	import { cn } from '$lib/utils';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { toast } from 'svelte-sonner';
 	import type { GalleryListItem, ListPageType, Tag } from '../types';
 	import BookmarkToast from './bookmark-toast.svelte';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { cn } from '$lib/utils';
-	import { siteConfig, userCollections } from '$lib/stores';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
-	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
-	import { browser } from '$app/environment';
 
 	export let gallery: GalleryListItem;
 	export let enableBookmark = false;
@@ -131,8 +131,8 @@
 	>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
-				alt={`'${gallery.title}' cover`}
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt={`'${gallery.title}' cover`}
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
@@ -200,7 +200,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

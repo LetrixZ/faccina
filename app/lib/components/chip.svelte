@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { cn, encodeURL } from '$lib/utils';
 	import type { Tag } from '../types';
 	import { Button } from './ui/button';
-	import { cn, encodeURL } from '$lib/utils';
 
 	export let tag: Tag;
 	export let newTab = false;

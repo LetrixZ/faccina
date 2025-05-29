@@ -1,16 +1,4 @@
 <script lang="ts">
-	import type { ActionResult } from '@sveltejs/kit';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Heart from 'lucide-svelte/icons/heart';
-	import Home from 'lucide-svelte/icons/house';
-	import LogIn from 'lucide-svelte/icons/log-in';
-	import LogOut from 'lucide-svelte/icons/log-out';
-	import Search from 'lucide-svelte/icons/search';
-	import Settings from 'lucide-svelte/icons/settings';
-	import User from 'lucide-svelte/icons/user';
-	import UserCircle from 'lucide-svelte/icons/user-round';
-	import Book from 'lucide-svelte/icons/book';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import LoginForm from '$lib/components/login-form.svelte';
@@ -22,9 +10,21 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
-	import type { UserFormState } from '$lib/models';
 	import { query, tagList, userCollections } from '$lib/stores';
 	import { cn } from '$lib/utils';
+	import Book from '@lucide/svelte/icons/book';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Heart from '@lucide/svelte/icons/heart';
+	import Home from '@lucide/svelte/icons/house';
+	import LogIn from '@lucide/svelte/icons/log-in';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Search from '@lucide/svelte/icons/search';
+	import Settings from '@lucide/svelte/icons/settings';
+	import User from '@lucide/svelte/icons/user';
+	import UserCircle from '@lucide/svelte/icons/user-round';
+	import type { UserFormState } from '$lib/models';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	export let data;
 
@@ -206,9 +206,9 @@
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 		href="/"
-		on:click={() => ($query = '')}
 		title="Go home"
 		variant="ghost"
+		on:click={() => ($query = '')}
 	>
 		<Home class="size-6" />
 	</Button>
@@ -216,9 +216,9 @@
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 		href="/series"
-		on:click={() => ($query = '')}
 		title="Series"
 		variant="ghost"
+		on:click={() => ($query = '')}
 	>
 		<Book class="size-6" />
 	</Button>
@@ -232,18 +232,20 @@
 			portal={formEl}
 		>
 			<form
-				action={formAction}
 				bind:this={formEl}
 				class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
+				action={formAction}
 				on:submit={() => (popoverOpen = false)}
 			>
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 				<Input
+					name="q"
+					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
 					autocomplete="off"
+					placeholder={data.site.searchPlaceholder}
+					type="search"
 					bind:htmlInput={inputEl}
 					bind:value={$query}
-					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
-					name="q"
 					on:blur={() => (isFocused = false)}
 					on:focus={() => {
 						isFocused = true;
@@ -300,20 +302,18 @@
 							selectPosition = inputEl.selectionStart ?? -1;
 						}, 1);
 					}}
-					placeholder={data.site.searchPlaceholder}
-					type="search"
 				/>
 
 				{#if sort}
-					<input class="hidden" name="sort" value={sort} />
+					<input name="sort" class="hidden" value={sort} />
 				{/if}
 
 				{#if order}
-					<input class="hidden" name="order" value={order} />
+					<input name="order" class="hidden" value={order} />
 				{/if}
 
 				{#if seed}
-					<input class="hidden" name="seed" value={seed} />
+					<input name="seed" class="hidden" value={seed} />
 				{/if}
 
 				<Button
@@ -326,18 +326,18 @@
 				</Button>
 			</form>
 
-			<Popover.Content align="start" class="grid w-fit p-0">
+			<Popover.Content class="grid w-fit p-0" align="start">
 				{#each filteredTags as tag, i}
 					{@const value =
 						`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
 
 					<Button
 						class={cn('justify-start', i === highligtedIndex && 'underline')}
+						variant="link"
 						on:click={() => {
 							inputEl.focus();
 							insertTag(inputEl, i);
 						}}
-						variant="link"
 					>
 						{value}
 					</Button>
@@ -351,8 +351,8 @@
 			<Button
 				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 				href="/panel"
-				on:click={(ev) => ev.preventDefault()}
 				variant="ghost"
+				on:click={(ev) => ev.preventDefault()}
 			>
 				<UserCircle class="size-6" />
 			</Button>

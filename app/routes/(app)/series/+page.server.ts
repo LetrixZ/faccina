@@ -1,12 +1,12 @@
-import { redirect } from '@sveltejs/kit';
 import { libraryItems, searchSeries } from '$lib/server/db/queries';
 import { handleTags } from '$lib/server/utils';
 import { parseSearchParams } from '$lib/server/utils.js';
-import type { SeriesListItem } from '$lib/types.js';
 import { randomString } from '$lib/utils.js';
+import { redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers';
 import db from '~shared/db/index.js';
+import type { SeriesListItem } from '$lib/types.js';
 
 export const load = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams, {

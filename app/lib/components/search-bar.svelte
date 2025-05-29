@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Search from 'lucide-svelte/icons/search';
-	import { createEventDispatcher } from 'svelte';
-	import type { Tag } from '../types';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Popover from '$lib/components/ui/popover';
 	import { cn } from '$lib/utils';
+	import Search from '@lucide/svelte/icons/search';
+	import { createEventDispatcher } from 'svelte';
+	import type { Tag } from '../types';
 
 	export let tags: Tag[];
 	export let searchPlaceholder = '';
@@ -150,11 +150,13 @@
 		>
 			<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 			<Input
+				name="q"
+				class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
 				autocomplete="off"
+				placeholder={searchPlaceholder}
+				type="search"
 				bind:htmlInput={inputEl}
 				bind:value={query}
-				class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
-				name="q"
 				on:blur={() => (isFocused = false)}
 				on:focus={() => {
 					isFocused = true;
@@ -211,16 +213,14 @@
 						selectPosition = inputEl.selectionStart ?? -1;
 					}, 1);
 				}}
-				placeholder={searchPlaceholder}
-				type="search"
 			/>
 
 			{#if sort}
-				<input class="hidden" name="sort" value={sort} />
+				<input name="sort" class="hidden" value={sort} />
 			{/if}
 
 			{#if order}
-				<input class="hidden" name="order" value={order} />
+				<input name="order" class="hidden" value={order} />
 			{/if}
 
 			<Button
@@ -233,18 +233,18 @@
 			</Button>
 		</form>
 
-		<Popover.Content align="start" class="grid w-fit p-0">
+		<Popover.Content class="grid w-fit p-0" align="start">
 			{#each filteredTags as tag, i}
 				{@const value =
 					`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
 
 				<Button
 					class={cn('justify-start', i === highligtedIndex && 'underline')}
+					variant="link"
 					on:click={() => {
 						inputEl.focus();
 						insertTag(inputEl, i);
 					}}
-					variant="link"
 				>
 					{value}
 				</Button>

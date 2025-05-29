@@ -1,12 +1,12 @@
 <script lang="ts">
-	import CircleCheck from 'lucide-svelte/icons/circle-check';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import type { GalleryListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
 
 	export let gallery: GalleryListItem;
 	export let onSelect: (gallery: GalleryListItem) => void;
@@ -32,7 +32,7 @@
 			}
 
 			if (width < maxWidth) {
-				const tagWidth = 12 + pixelWidth(tag.name, { font: 'inter', size: 12 });
+				const tagWidth = 12 + pixelWidth(tag.name, { font: 'open sans', size: 12 });
 
 				width += tagWidth;
 				reduced.push(tag);
@@ -50,8 +50,8 @@
 	<a href={`/g/${gallery.id}${$page.url.search}`} on:click|preventDefault={() => onSelect(gallery)}>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
-				alt={`'${gallery.title}' cover`}
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt={`'${gallery.title}' cover`}
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
@@ -90,13 +90,13 @@
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
-			{#each tags as tag}
+			{#each tags as tag, i (i)}
 				<Chip newTab {tag} />
 			{/each}
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

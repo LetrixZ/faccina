@@ -1,9 +1,9 @@
-import { error } from '@sveltejs/kit';
 import { getGallery } from '$lib/server/db/queries';
-import type { Gallery } from '$lib/types';
 import { getMetadata } from '$lib/utils';
+import { error } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
+import type { Gallery } from '$lib/types';
 
 export const GET = async ({ locals, setHeaders }) => {
 	if (!locals.user) {

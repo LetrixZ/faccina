@@ -43,8 +43,10 @@ export type Gallery = {
 	tags: Tag[];
 	images: Image[];
 	sources: Source[];
-	series: { id: number; title: string }[];
-	favorite: boolean;
+	series: {
+		id: number;
+		title: string;
+	}[];
 };
 
 export type Archive = {
@@ -67,7 +69,7 @@ export type Archive = {
 	series: { title: string; order: number }[];
 };
 
-export type GalleryItem = {
+export type GalleryListItem = {
 	id: number;
 	hash: string;
 	title: string;
@@ -99,7 +101,7 @@ export type CollectionItem = {
 	name: string;
 	slug: string;
 	protected: boolean;
-	archives: number[];
+	archives: Pick<Archive, 'id'>[];
 };
 
 export type HistoryEntry = {
@@ -108,7 +110,7 @@ export type HistoryEntry = {
 	startedAt: string;
 	lastReadAt: string;
 	finishedAt: string | null;
-	archive: Pick<Archive, 'id' | 'title' | 'hash' | 'pages' | 'thumbnail' | 'tags'>;
+	archive: Pick<Archive, 'id' | 'title' | 'hash' | 'pages' | 'thumbnail' | 'deletedAt' | 'tags'>;
 };
 
 export type LibraryResponse<T> = {
@@ -119,17 +121,13 @@ export type LibraryResponse<T> = {
 	seed?: string;
 };
 
-export type GalleryLibraryResponse = LibraryResponse<GalleryItem>;
-
-export type User = {
-	id: string;
-	username: string;
-	admin: boolean;
-};
+export type GalleryLibraryResponse = LibraryResponse<GalleryListItem>;
 
 export type SiteConfig = {
 	name: string;
+	url?: string;
 	enableUsers: boolean;
+	disableRegistration: boolean;
 	enableCollections: boolean;
 	enableReadHistory: boolean;
 	hasMailer: boolean;
@@ -166,11 +164,4 @@ export type ImageArchive = {
 	pageNumber: number;
 	width: number | null;
 	height: number | null;
-};
-
-export type Pagination<T> = {
-	data: T[];
-	page: number;
-	total: number;
-	limit: number;
 };

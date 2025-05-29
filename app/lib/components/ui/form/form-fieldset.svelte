@@ -1,12 +1,12 @@
-<script lang="ts" context="module">
+<script context="module" lang="ts">
 	import type { FormPath, SuperForm } from 'sveltekit-superforms';
 	type T = Record<string, unknown>;
 	type U = FormPath<T>;
 </script>
 
-<script lang="ts" generics="T extends Record<string, unknown>, U extends FormPath<T>">
-	import * as FormPrimitive from 'formsnap';
+<script generics="T extends Record<string, unknown>, U extends FormPath<T>" lang="ts">
 	import { cn } from '$lib/utils.js';
+	import * as FormPrimitive from 'formsnap';
 
 	type $$Props = FormPrimitive.FieldsetProps<T, U>;
 
@@ -18,13 +18,13 @@
 </script>
 
 <FormPrimitive.Fieldset
-	{form}
 	{name}
+	class={cn('space-y-2', className)}
+	{form}
 	let:constraints
 	let:errors
 	let:tainted
 	let:value
-	class={cn('space-y-2', className)}
 >
 	<slot {constraints} {errors} {tainted} {value} />
 </FormPrimitive.Fieldset>

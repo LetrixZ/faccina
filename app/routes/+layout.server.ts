@@ -1,5 +1,5 @@
-import type { SiteConfig } from '$lib/types';
 import config from '~shared/config';
+import type { SiteConfig } from '$lib/types';
 
 export const load = ({ locals }) => {
 	return {

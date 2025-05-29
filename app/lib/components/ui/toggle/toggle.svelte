@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { cn } from '$lib/utils';
 	import { Toggle as TogglePrimitive } from 'bits-ui';
 	import { type Size, type Variant, toggleVariants } from './index';
-	import { cn } from '$lib/utils';
 
 	type $$Props = TogglePrimitive.Props & {
 		variant?: Variant;
@@ -17,8 +17,8 @@
 </script>
 
 <TogglePrimitive.Root
-	bind:pressed
 	class={cn(toggleVariants({ variant, size, className }))}
+	bind:pressed
 	{...$$restProps}
 	on:click
 >

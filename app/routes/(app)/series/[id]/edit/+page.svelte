@@ -1,13 +1,4 @@
 <script lang="ts">
-	import OctagonAlert from 'lucide-svelte/icons/octagon-alert';
-	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
-	import { toast } from 'svelte-sonner';
-	import { flip } from 'svelte/animate';
-	import { cubicIn } from 'svelte/easing';
-	import { fade } from 'svelte/transition';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SeriesForm from '../../series-form.svelte';
 	import { pushState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import GallerySearchModal from '$lib/components/gallery-search-modal.svelte';
@@ -17,8 +8,17 @@
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { createSeriesSchema } from '$lib/schemas.js';
 	import { siteConfig } from '$lib/stores';
-	import type { GalleryListItem } from '$lib/types';
 	import { cn } from '$lib/utils';
+	import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
+	import { flip } from 'svelte/animate';
+	import { cubicIn } from 'svelte/easing';
+	import { fade } from 'svelte/transition';
+	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
+	import SeriesForm from '../../series-form.svelte';
+	import type { GalleryListItem } from '$lib/types';
 
 	export let data;
 
@@ -78,16 +78,16 @@
 	<div class="flex gap-2">
 		<div class="relative h-fit w-fit max-w-64 overflow-clip rounded-md bg-neutral-900">
 			<img
-				alt="Cover"
 				class={cn('aspect-[45/64] object-contain', !cover && 'invisible')}
+				alt="Cover"
 				height={910}
 				src={cover}
 				width={640}
 			/>
 			{#if !cover}
 				<img
-					alt="Placeholder"
 					class="pointer-events-none absolute inset-0 m-auto blur-2xl brightness-[0.15]"
+					alt="Placeholder"
 					src="/favicon.png"
 					width="150"
 				/>
@@ -100,15 +100,15 @@
 	<div class="relative flex flex-auto flex-col gap-2">
 		<div class="flex items-center justify-between">
 			<p class="text-xl">Chapters</p>
-			<Button on:click={openSearch} variant="outline">Add galleries</Button>
+			<Button variant="outline" on:click={openSearch}>Add galleries</Button>
 		</div>
 
 		<Separator />
 
 		{#if selected.length}
 			<div
-				aria-label="Collection"
 				class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
+				aria-label="Collection"
 				on:consider={(e) => (selected = e.detail.items)}
 				on:finalize={(e) => (selected = e.detail.items)}
 				use:dragHandleZone={{
@@ -118,7 +118,7 @@
 				}}
 			>
 				{#each selected as gallery (gallery.id)}
-					<div animate:flip={{ duration: 50 }} class="relative">
+					<div class="relative" animate:flip={{ duration: 50 }}>
 						<ListItemDrag {gallery} newTab />
 
 						{#if gallery[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
@@ -137,7 +137,7 @@
 				class="my-auto flex h-fit w-full flex-grow flex-col items-center justify-center gap-4 py-10"
 			>
 				<h3 class="text-2xl font-medium">No galleries added</h3>
-				<Button on:click={openSearch} variant="outline">Add galleries</Button>
+				<Button variant="outline" on:click={openSearch}>Add galleries</Button>
 			</div>
 		{/if}
 	</div>

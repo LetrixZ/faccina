@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import type { Scaling, TouchLayoutOption } from './reader';
 	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { siteConfig } from '$lib/stores';
-	import type { Gallery, Image } from '$lib/types';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
+	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import type { Scaling, TouchLayoutOption } from './reader';
+	import TouchNavigation from './TouchNavigation.svelte';
+	import type { Gallery, Image } from '$lib/types';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let gallery: Gallery;
@@ -182,10 +182,10 @@
 </script>
 
 <div
-	bind:clientHeight
-	bind:clientWidth
 	bind:this={scrollContainer}
 	class="relative h-full w-full overflow-y-auto"
+	bind:clientHeight
+	bind:clientWidth
 	on:scroll={onScroll}
 >
 	<div class="relative h-80 w-full">
@@ -199,12 +199,6 @@
 	{#each gallery.images as image, index (image.pageNumber)}
 		<div
 			bind:this={containers[index]}
-			class={cn(
-				'relative mx-auto',
-				(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'w-fit',
-				selectedScaling === 'fill-width' && 'w-full',
-				selectedScaling === 'fill-height' && 'max-h-full'
-			)}
 			style="margin-bottom: {index !== gallery.pages - 1 ? verticalGap : 0}px; {getStyle(
 				image,
 				selectedPreset,
@@ -214,18 +208,24 @@
 				minWidth,
 				maxWidth
 			)}"
+			class={cn(
+				'relative mx-auto',
+				(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'w-fit',
+				selectedScaling === 'fill-width' && 'w-full',
+				selectedScaling === 'fill-height' && 'max-h-full'
+			)}
 		>
 			{#if hasWidth && shouldRender(index, visiblePage)}
 				<img
-					alt="{gallery.title} page {image.pageNumber}"
+					style={getImageStyle(image, selectedPreset, selectedScaling, minWidth)}
 					class={cn(
 						(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'w-fit',
 						selectedScaling === 'fill-width' && 'w-full',
 						selectedScaling === 'fill-height' && 'h-full max-h-dvh'
 					)}
-					in:fade={{ duration: 100 }}
+					alt="{gallery.title} page {image.pageNumber}"
 					src={getImageUrl(image.pageNumber, gallery, selectedPreset, $siteConfig.imageServer)}
-					style={getImageStyle(image, selectedPreset, selectedScaling, minWidth)}
+					in:fade={{ duration: 100 }}
 				/>
 			{/if}
 		</div>
@@ -241,7 +241,6 @@
 	</div>
 
 	<TouchNavigation
-		bind:navContainer
 		{hasNext}
 		{hasPrevious}
 		{onMenu}
@@ -249,5 +248,6 @@
 		{onPrevious}
 		{previewLayout}
 		{selectedTouchLayoutOption}
+		bind:navContainer
 	/>
 </div>

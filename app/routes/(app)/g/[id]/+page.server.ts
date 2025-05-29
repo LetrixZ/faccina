@@ -1,20 +1,20 @@
-import { join } from 'node:path';
-import { rm } from 'node:fs/promises';
-import { error, fail } from '@sveltejs/kit';
-import dayjs from 'dayjs';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
-import { z } from 'zod';
-import type { PageServerLoad } from './$types';
 import { editArchiveSchema, editTagsSchema } from '$lib/schemas';
 import { getArchive, getGallery } from '$lib/server/db/queries';
-import type { Archive, HistoryEntry } from '$lib/types';
+import { error, fail } from '@sveltejs/kit';
 import { upsertSources, upsertTags } from '~shared/archive';
 import config from '~shared/config';
 import db from '~shared/db';
 import { now } from '~shared/db/helpers';
-import { leadingZeros } from '~shared/utils';
 import { imageDirectory } from '~shared/server.utils';
+import { leadingZeros } from '~shared/utils';
+import dayjs from 'dayjs';
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
+import { z } from 'zod';
+import type { PageServerLoad } from './$types';
+import type { Archive, HistoryEntry } from '$lib/types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user && !config.site.guestAccess) {

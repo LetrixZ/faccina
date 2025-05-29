@@ -3,7 +3,7 @@ import { PUBLIC_API_URL } from '$env/static/public';
 import { presetSchema } from '$lib/image-presets';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
-import { clsx, type ClassValue } from 'clsx';
+import { type ClassValue, clsx } from 'clsx';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
@@ -18,8 +18,8 @@ import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
 import type { Gallery, Image, Tag } from './types';
 import { ImageSize, TouchLayout } from './models';
-import type { TransitionConfig } from 'svelte/transition';
 import type { ReaderPreset } from '~shared/config/image.schema';
+import type { TransitionConfig } from 'svelte/transition';
 
 export type RGBA = [number, number, number, number];
 

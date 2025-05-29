@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { HTMLAnchorAttributes } from 'svelte/elements';
-	import { cn } from '../utils';
 	import Anchira from '../../assets/anchira.webp';
 	import ExHentai from '../../assets/exhentai.ico';
 	import Fakku from '../../assets/fakku.svg';
@@ -11,6 +9,8 @@
 	import Patreon from '../../assets/patreon.webp';
 	import Pixiv from '../../assets/pixiv.webp';
 	import ProjectHentai from '../../assets/project-hentai.webp';
+	import { cn } from '../utils';
+	import type { HTMLAnchorAttributes } from 'svelte/elements';
 
 	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
 
@@ -72,12 +72,12 @@
 </script>
 
 <a
+	{style}
 	class={cn(
 		'flex size-6 items-center justify-center overflow-clip rounded-md bg-neutral-400',
 		className
 	)}
 	href={source.url}
-	{style}
 	target="_blank"
 	title={source.name}
 >

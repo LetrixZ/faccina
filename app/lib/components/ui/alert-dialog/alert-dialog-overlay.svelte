@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { cn } from '$lib/utils.js';
 	import { AlertDialog as AlertDialogPrimitive } from 'bits-ui';
 	import { fade } from 'svelte/transition';
-	import { cn } from '$lib/utils.js';
 
 	type $$Props = AlertDialogPrimitive.OverlayProps;
 
@@ -14,8 +14,8 @@
 </script>
 
 <AlertDialogPrimitive.Overlay
+	class={cn('fixed inset-0 z-50 bg-background/80 backdrop-blur-sm ', className)}
 	{transition}
 	{transitionConfig}
-	class={cn('fixed inset-0 z-50 bg-background/80 backdrop-blur-sm ', className)}
 	{...$$restProps}
 />

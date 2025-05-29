@@ -1,12 +1,12 @@
 <script lang="ts">
-	import ChevronFirst from 'lucide-svelte/icons/chevron-first';
-	import ChevronLast from 'lucide-svelte/icons/chevron-last';
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import ChevronFirst from '@lucide/svelte/icons/chevron-first';
+	import ChevronLast from '@lucide/svelte/icons/chevron-last';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import Menu from '@lucide/svelte/icons/menu';
 	import { linear } from 'svelte/easing';
 	import { slide } from 'svelte/transition';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	import Menu from 'lucide-svelte/icons/menu';
 	import type { ToolbarPosition } from './reader';
 
 	export let currentPage: number;
@@ -29,8 +29,8 @@
 
 {#if visible}
 	<div
-		class="fixed flex h-12 w-full justify-between bg-neutral-950/95 px-1 text-neutral-100 shadow-lg md:px-2"
 		{style}
+		class="fixed flex h-12 w-full justify-between bg-neutral-950/95 px-1 text-neutral-100 shadow-lg md:px-2"
 		transition:slide={{ easing: linear, duration: 75 }}
 	>
 		<button on:click={onBack}>

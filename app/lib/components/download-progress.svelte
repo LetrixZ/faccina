@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { Readable } from 'svelte/store';
-	import Save from 'lucide-svelte/icons/save';
+	import { cn } from '$lib/utils';
+	import Save from '@lucide/svelte/icons/save';
 	import Button from './ui/button/button.svelte';
 	import Progress from './ui/progress/progress.svelte';
-	import { cn } from '$lib/utils';
 	import type { Task } from '$lib/models';
+	import type { Readable } from 'svelte/store';
 
 	export let task: Readable<Task>;
 	export let save: () => unknown;

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Calendar as CalendarPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
+	import { Calendar as CalendarPrimitive } from 'bits-ui';
 
 	type $$Props = CalendarPrimitive.HeadingProps;
 
@@ -9,8 +9,8 @@
 </script>
 
 <CalendarPrimitive.Heading
-	let:headingValue
 	class={cn('text-sm font-medium', className)}
+	let:headingValue
 	{...$$restProps}
 >
 	<slot {headingValue}>

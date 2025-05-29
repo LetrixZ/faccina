@@ -1,8 +1,8 @@
 <script lang="ts">
-	import FileQuestion from 'lucide-svelte/icons/file-question';
-	import type { Collection } from '../types';
 	import { siteConfig } from '$lib/stores';
 	import { cn } from '$lib/utils';
+	import FileQuestion from '@lucide/svelte/icons/file-question';
+	import type { Collection } from '../types';
 
 	export let collection: Collection;
 
@@ -38,14 +38,14 @@
 					archives.length === 3 && 'w-[90%]'
 				)}
 			>
-				{#each archives as archive, i}
+				{#each archives as archive, i (archive.id)}
 					<img
-						alt={`'${archive.title}' cover`}
+						style={getStyle(i)}
 						class="absolute mb-2 aspect-[45/64] rounded shadow duration-150"
+						alt={`'${archive.title}' cover`}
 						height={910}
 						loading="eager"
 						src={`${$siteConfig.imageServer}/image/${archive.hash}/${archive.thumbnail}?type=cover`}
-						style={getStyle(i)}
 						width={640}
 					/>
 				{/each}

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as FormPrimitive from 'formsnap';
 	import { cn } from '$lib/utils.js';
+	import * as FormPrimitive from 'formsnap';
 
 	type $$Props = FormPrimitive.LegendProps;
 

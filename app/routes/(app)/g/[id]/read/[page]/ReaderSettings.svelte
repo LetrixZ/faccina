@@ -1,14 +1,4 @@
 <script lang="ts">
-	import Image from 'lucide-svelte/icons/image';
-	import Info from 'lucide-svelte/icons/info';
-	import {
-		readerStore,
-		readingModeOptions,
-		reverseLayoutOptions,
-		scalingOptions,
-		touchLayoutOptions,
-		type Scaling,
-	} from './reader';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -19,6 +9,16 @@
 	import { siteConfig } from '$lib/stores';
 	import { type Gallery, type Image as GalleryImage } from '$lib/types';
 	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
+	import Image from '@lucide/svelte/icons/image';
+	import Info from '@lucide/svelte/icons/info';
+	import {
+		readerStore,
+		readingModeOptions,
+		reverseLayoutOptions,
+		scalingOptions,
+		touchLayoutOptions,
+		type Scaling,
+	} from './reader';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let open = false;
@@ -85,17 +85,17 @@
 			<p class="title">Image resampling</p>
 
 			<div
-				class="grid gap-4 max-md:!grid-cols-2"
 				style="grid-template-columns: repeat({Math.min(
 					4,
 					presets.length + (readerAllowOriginal ? 1 : 0)
 				)}, minmax(0, 1fr));"
+				class="grid gap-4 max-md:!grid-cols-2"
 			>
 				{#if readerAllowOriginal}
 					<Button
 						class={cn('relative pe-8', selectedPreset === undefined && 'ring ring-primary')}
-						on:click={() => readerStore.setImagePreset(null)}
 						variant="outline"
+						on:click={() => readerStore.setImagePreset(null)}
 					>
 						<span class="truncate"> Original </span>
 					</Button>
@@ -104,11 +104,11 @@
 				{#each presets as preset}
 					<Button
 						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring ring-primary')}
+						variant="outline"
 						on:click={() =>
 							selectedPreset?.hash === preset.hash
 								? readerAllowOriginal && readerStore.setImagePreset(null)
 								: readerStore.setImagePreset(preset)}
-						variant="outline"
 					>
 						<span class="truncate"> {preset.label} </span>
 
@@ -135,8 +135,8 @@
 			{#each readingModeOptions as option}
 				<Button
 					class={cn('relative pe-8', option.value === selectedReadingMode && 'ring ring-primary')}
-					on:click={() => readerStore.setReadingMode(option.value)}
 					variant="outline"
+					on:click={() => readerStore.setReadingMode(option.value)}
 				>
 					<span class="truncate"> {option.label} </span>
 				</Button>
@@ -148,9 +148,9 @@
 			<Input
 				disabled={$readerStore?.readingMode !== 'continuous-vertical'}
 				min="0"
-				on:change={(ev) => readerStore.setVerticalGap(parseInt(ev.currentTarget.value))}
 				type="number"
 				value={$readerStore?.verticalGap}
+				on:change={(ev) => readerStore.setVerticalGap(parseInt(ev.currentTarget.value))}
 			/>
 		</div>
 
@@ -169,10 +169,10 @@
 					>
 						<div>
 							<img
+								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								alt="{gallery.title} page {currentPage}"
 								height={currentImage.height}
 								src={getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer)}
-								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								width={currentImage.width}
 							/>
 						</div>
@@ -189,9 +189,9 @@
 				<Input
 					disabled={$readerStore?.scaling !== 'original'}
 					min="0"
-					on:input={(ev) => readerStore.setMinWidth(parseInt(ev.currentTarget.value))}
 					type="number"
 					value={$readerStore?.minWidth}
+					on:input={(ev) => readerStore.setMinWidth(parseInt(ev.currentTarget.value))}
 				/>
 			</div>
 
@@ -200,9 +200,9 @@
 				<Input
 					disabled={$readerStore?.scaling !== 'original'}
 					min="0"
-					on:input={(ev) => readerStore.setMaxWidth(parseInt(ev.currentTarget.value))}
 					type="number"
 					value={$readerStore?.maxWidth}
+					on:input={(ev) => readerStore.setMaxWidth(parseInt(ev.currentTarget.value))}
 				/>
 			</div>
 		</div>
@@ -221,8 +221,8 @@
 					>
 						<Image class="size-12 text-neutral-500/50" />
 						<div
-							class="absolute inset-0 m-auto grid"
 							style="grid-template-columns: repeat({layout.rows[0]?.length}, minmax(0, 1fr))"
+							class="absolute inset-0 m-auto grid"
 						>
 							{#each layout.rows as row}
 								{#each row as column}
@@ -256,7 +256,7 @@
 
 				<div class="mt-1 flex items-center gap-4">
 					<Label class="w-full" for="preview">Preview layout</Label>
-					<Checkbox bind:checked={previewLayout} id="preview" />
+					<Checkbox id="preview" bind:checked={previewLayout} />
 				</div>
 			</div>
 		</div>

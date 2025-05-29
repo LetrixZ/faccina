@@ -90,7 +90,9 @@ export class SQLiteAdapter implements Adapter {
 			`SELECT * FROM ${this.escapedSessionTableName} WHERE id = ?`,
 			[sessionId]
 		);
-		if (!result) return null;
+		if (!result) {
+			return null;
+		}
 		return transformIntoDatabaseSession(result);
 	}
 
@@ -99,7 +101,9 @@ export class SQLiteAdapter implements Adapter {
 			`SELECT ${this.escapedUserTableName}.* FROM ${this.escapedSessionTableName} INNER JOIN ${this.escapedUserTableName} ON ${this.escapedUserTableName}.id = ${this.escapedSessionTableName}.user_id WHERE ${this.escapedSessionTableName}.id = ?`,
 			[sessionId]
 		);
-		if (!result) return null;
+		if (!result) {
+			return null;
+		}
 		return transformIntoDatabaseUser(result);
 	}
 }

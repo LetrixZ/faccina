@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { TouchLayoutOption } from './reader';
 	import { cn } from '$lib/utils';
+	import type { TouchLayoutOption } from './reader';
 
 	export let selectedTouchLayoutOption: TouchLayoutOption;
 	export let previewLayout: boolean;
@@ -17,8 +17,8 @@
 
 <div
 	bind:this={navContainer}
-	class="absolute inset-x-0 grid h-full w-full"
 	style="grid-template-columns: repeat({selectedTouchLayoutOption.rows[0]?.length}, minmax(0, 1fr))"
+	class="absolute inset-x-0 grid h-full w-full"
 >
 	{#each selectedTouchLayoutOption.rows as row}
 		{#each row as column}
@@ -27,23 +27,23 @@
 					class={cn('outline-none', previewLayout && 'bg-red-500/60')}
 					disabled={!hasPrevious}
 					draggable="false"
-					on:click={onPrevious}
 					tabindex="-1"
+					on:click={onPrevious}
 				></button>
 			{:else if column === 'n'}
 				<button
 					class={cn('outline-none', previewLayout && 'bg-green-500/60')}
 					disabled={!hasNext}
 					draggable="false"
-					on:click={onNext}
 					tabindex="-1"
+					on:click={onNext}
 				></button>
 			{:else}
 				<button
 					class={cn('outline-none', previewLayout && 'bg-neutral-500/60')}
 					draggable="false"
-					on:click={() => onMenu()}
 					tabindex="-1"
+					on:click={() => onMenu()}
 				></button>
 			{/if}
 		{/each}

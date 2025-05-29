@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { cn } from '$lib/utils.js';
 	// @ts-nocheck
 	import { Calendar as CalendarPrimitive } from 'bits-ui';
 	import * as Calendar from './index.js';
-	import { cn } from '$lib/utils.js';
 
 	type $$Props = CalendarPrimitive.Props;
 
@@ -17,10 +17,10 @@
 </script>
 
 <CalendarPrimitive.Root
+	class={cn('p-3', className)}
+	{weekdayFormat}
 	bind:value
 	bind:placeholder
-	{weekdayFormat}
-	class={cn('p-3', className)}
 	{...$$restProps}
 	on:keydown
 	let:months

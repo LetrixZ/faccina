@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Check from 'lucide-svelte/icons/check';
-	import { Select as SelectPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils';
+	import Check from '@lucide/svelte/icons/check';
+	import { Select as SelectPrimitive } from 'bits-ui';
 
 	type $$Props = SelectPrimitive.ItemProps;
 	type $$Events = SelectPrimitive.ItemEvents;
@@ -14,13 +14,13 @@
 </script>
 
 <SelectPrimitive.Item
-	{value}
-	{disabled}
-	{label}
 	class={cn(
 		'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50',
 		className
 	)}
+	{disabled}
+	{label}
+	{value}
 	{...$$restProps}
 	on:click
 	on:keydown

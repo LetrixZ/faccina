@@ -1,8 +1,4 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
-	import { toast } from 'svelte-sonner';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
@@ -10,6 +6,10 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { createCollectionSchema } from '$lib/schemas';
 	import { cn } from '$lib/utils';
+	import Save from '@lucide/svelte/icons/save';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	export let data;
 
@@ -31,13 +31,13 @@
 <main class="container flex flex-auto flex-col gap-2 overflow-hidden">
 	<form method="POST" use:enhance>
 		<div class="flex items-start gap-2">
-			<Form.Field class="flex-auto" {form} name="name">
+			<Form.Field name="name" class="flex-auto" {form}>
 				<Form.Control let:attrs>
 					<Input
 						{...attrs}
-						bind:value={$formData.name}
 						class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
 						placeholder="Collection name"
+						bind:value={$formData.name}
 					/>
 
 					{#if $errors.name}
@@ -61,6 +61,7 @@
 	<Separator />
 
 	<CollectionArchiveSearch
+		selectedGalleries={$formData.archives}
 		on:bookmark={(ev) => {
 			const { gallery, bookmark } = ev.detail;
 			if (bookmark) {
@@ -69,6 +70,5 @@
 				$formData.archives = $formData.archives.filter((id) => id !== gallery.id);
 			}
 		}}
-		selectedGalleries={$formData.archives}
 	/>
 </main>

@@ -1,10 +1,10 @@
-import { error } from '@sveltejs/kit';
-import { fail, message, setError, superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
-import { sortArchiveTags } from '$lib/server/utils.js';
 import { createSeriesSchema } from '$lib/schemas';
+import { sortArchiveTags } from '$lib/server/utils.js';
+import { error } from '@sveltejs/kit';
 import db from '~shared/db';
 import { jsonArrayFrom, now } from '~shared/db/helpers';
+import { fail, message, setError, superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
 
 export const load = async ({ params, locals }) => {
 	if (!locals.user?.admin) {

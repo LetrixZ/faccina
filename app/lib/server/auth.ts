@@ -1,13 +1,13 @@
 import { dev } from '$app/environment';
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
-import { Lucia } from 'lucia';
-import type { DatabaseSync } from 'node:sqlite';
-import type { Pool } from 'pg';
-import { match } from 'ts-pattern';
 import config from '~shared/config';
 import { databaseType } from '~shared/db';
 import connection from '~shared/db/connection';
+import { Lucia } from 'lucia';
+import { match } from 'ts-pattern';
 import { NodeSQLiteAdapter } from './lucia-node-sqlite-adapter';
+import type { DatabaseSync } from 'node:sqlite';
+import type { Pool } from 'pg';
 
 let _lucia: Lucia<
 	Record<never, never>,

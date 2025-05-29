@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Button } from './ui/button';
 	import { enhance } from '$app/forms';
 	import { userCollections } from '$lib/stores';
+	import { Button } from './ui/button';
 	import type { Gallery } from '$lib/types';
 
 	export let gallery: Pick<Gallery, 'id'>;
@@ -9,7 +9,7 @@
 
 {#if $userCollections?.length}
 	<ul class="grid gap-2">
-		{#each $userCollections as collection}
+		{#each $userCollections as collection (collection.id)}
 			{@const archives = collection.archives}
 			<li class="flex items-center justify-between">
 				<div class="flex gap-2">
@@ -32,14 +32,14 @@
 
 				{#if archives.some(({ id }) => id === gallery.id)}
 					<form action="/g/{gallery.id}/?/removeCollection" method="POST" use:enhance>
-						<input class="hidden" name="collection" value={collection.id} />
-						<input class="hidden" name="archive" value={gallery.id} />
+						<input name="collection" class="hidden" value={collection.id} />
+						<input name="archive" class="hidden" value={gallery.id} />
 						<Button class="ms-auto" size="sm" type="submit" variant="destructive">Remove</Button>
 					</form>
 				{:else}
 					<form action="/g/{gallery.id}/?/addCollection" method="POST" use:enhance>
-						<input class="hidden" name="collection" value={collection.id} />
-						<input class="hidden" name="archive" value={gallery.id} />
+						<input name="collection" class="hidden" value={collection.id} />
+						<input name="archive" class="hidden" value={gallery.id} />
 						<Button class="ms-auto" size="sm" type="submit" variant="indigo">Add</Button>
 					</form>
 				{/if}

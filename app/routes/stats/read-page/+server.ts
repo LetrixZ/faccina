@@ -1,8 +1,8 @@
-import type { RequestHandler } from '@sveltejs/kit';
 import { readStatSchema } from '$lib/types';
 import config from '~shared/config';
 import db from '~shared/db';
 import { max, now } from '~shared/db/helpers';
+import type { RequestHandler } from '@sveltejs/kit';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { data } = readStatSchema.safeParse(await request.json());

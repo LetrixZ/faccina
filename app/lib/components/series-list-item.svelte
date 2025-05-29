@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { siteConfig } from '$lib/stores';
 	import pixelWidth from 'string-pixel-width';
 	import type { SeriesListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { siteConfig } from '$lib/stores';
 
 	export let series: SeriesListItem;
 
@@ -45,8 +45,8 @@
 	<a href="/series/{series.id}">
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
-				alt="'{series.title}' cover"
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt="'{series.title}' cover"
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${series.hash}/${series.thumbnail}?type=cover`}
@@ -78,7 +78,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

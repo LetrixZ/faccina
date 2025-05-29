@@ -1,9 +1,9 @@
+import { userDeleteSchema } from '$lib/schemas';
+import { Algorithm, verify } from '@node-rs/argon2';
 import { fail, redirect } from '@sveltejs/kit';
+import db from '~shared/db';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { userDeleteSchema } from '$lib/schemas';
-import db from '~shared/db';
-import { Algorithm, verify } from '@node-rs/argon2';
 
 export const actions = {
 	default: async (event) => {

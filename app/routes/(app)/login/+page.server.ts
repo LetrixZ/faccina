@@ -2,10 +2,10 @@ import { loginSchema } from '$lib/schemas';
 import { lucia } from '$lib/server/auth';
 import { Algorithm, verify } from '@node-rs/argon2';
 import { error, fail, redirect } from '@sveltejs/kit';
-import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
 import config from '~shared/config';
 import db from '~shared/db';
+import { superValidate } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import type { ActionResult } from '@sveltejs/kit';
+	import { page } from '$app/stores';
+	import * as Form from '$lib/components/ui/form';
+	import { Input } from '$lib/components/ui/input';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
@@ -7,9 +9,7 @@
 	import type { UserFormState } from '../models';
 	import { loginSchema, type LoginSchema } from '../schemas';
 	import { Button } from './ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { page } from '$app/stores';
-	import * as Form from '$lib/components/ui/form';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	export let data: SuperValidated<Infer<LoginSchema>>;
 	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
@@ -33,9 +33,9 @@
 	const { form: formData, enhance } = form;
 </script>
 
-<form action="/login{$page.url.search}" class="space-y-3" method="POST" use:enhance>
+<form class="space-y-3" action="/login{$page.url.search}" method="POST" use:enhance>
 	<div class="flex flex-col">
-		<Form.Field {form} name="username">
+		<Form.Field name="username" {form}>
 			<Form.Control let:attrs>
 				<Form.Label>Username</Form.Label>
 				<Input {...attrs} autocomplete="username" bind:value={$formData.username} />
@@ -43,14 +43,14 @@
 			<Form.FieldErrors />
 		</Form.Field>
 
-		<Form.Field {form} name="password">
+		<Form.Field name="password" {form}>
 			<Form.Control let:attrs>
 				<Form.Label>Password</Form.Label>
 				<Input
 					{...attrs}
 					autocomplete="current-password"
-					bind:value={$formData.password}
 					type="password"
+					bind:value={$formData.password}
 				/>
 			</Form.Control>
 			<Form.FieldErrors />
@@ -61,13 +61,13 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href="/register{$page.url.search}"
+			variant="link"
 			on:click={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
 				}
 			}}
-			variant="link"
 		>
 			Create an account
 		</Button>
@@ -75,13 +75,13 @@
 		<Button
 			class="h-fit p-0 text-sm"
 			href={hasMailer ? `/recover${$page.url.search}` : `/reset${$page.url.search}`}
+			variant="link"
 			on:click={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState(hasMailer ? 'recover' : 'reset');
 				}
 			}}
-			variant="link"
 		>
 			Recover access
 		</Button>

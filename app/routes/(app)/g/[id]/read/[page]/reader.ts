@@ -1,8 +1,8 @@
+import { browser } from '$app/environment';
 import Cookie from 'cookie';
 import dayjs from 'dayjs';
 import { derived, writable } from 'svelte/store';
 import { z } from 'zod';
-import { browser } from '$app/environment';
 import type { ReaderPreset } from '~shared/config/image.schema';
 
 export const readingModes = ['paged', 'continuous-vertical'] as const;

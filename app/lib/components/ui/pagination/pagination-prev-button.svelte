@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Pagination as PaginationPrimitive } from 'bits-ui';
-	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import { Button } from '$lib/components/ui/button/index';
 	import { cn } from '$lib/utils';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import { Pagination as PaginationPrimitive } from 'bits-ui';
 
 	type $$Props = PaginationPrimitive.PrevButtonProps;
 	type $$Events = PaginationPrimitive.PrevButtonEvents;
@@ -13,9 +13,9 @@
 
 <PaginationPrimitive.PrevButton asChild let:builder>
 	<Button
-		variant="ghost"
 		class={cn('gap-1 pl-2.5', className)}
 		builders={[builder]}
+		variant="ghost"
 		on:click
 		{...$$restProps}
 	>

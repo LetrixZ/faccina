@@ -1,8 +1,8 @@
-import type { Dirent, GlobOptionsWithFileTypes, PathLike } from 'node:fs';
-import fs, { readFile } from 'node:fs/promises';
 import fsSync from 'node:fs';
+import fs, { readFile } from 'node:fs/promises';
 import filepath, { join } from 'node:path';
 import config from './config';
+import type { Dirent, GlobOptionsWithFileTypes, PathLike } from 'node:fs';
 
 export const imageDirectory = (hash: string) =>
 	filepath.join(config.directories.images, hash.substring(0, 2), hash.substring(2, 4), hash);

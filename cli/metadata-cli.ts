@@ -1,8 +1,12 @@
-import { dirname, join, parse } from 'node:path';
+import { getArchive } from '$lib/server/db/queries';
+import config from '~shared/config';
+import { createFile } from '~shared/server.utils';
+import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { extract, partial_ratio } from 'fuzzball';
-import chalk from 'chalk';
+import { readFile } from 'node:fs/promises';
+import { dirname, join, parse } from 'node:path';
 import prompts from 'prompts';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -13,10 +17,6 @@ import { generateFilename, sleep } from '../shared/utils';
 import { metadataSchema } from './metadata/faccina';
 import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
 import { queryIdRanges } from './utilts';
-import config from '~shared/config';
-import { getArchive } from '$lib/server/db/queries';
-import { createFile } from '~shared/server.utils';
-import { readFile } from 'node:fs/promises';
 
 const henTagUrl = `https://hentag.com/api/v1/search/vault`;
 

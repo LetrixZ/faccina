@@ -1,24 +1,24 @@
 <script lang="ts">
-	import type { ActionResult } from '@sveltejs/kit';
-	import Plus from 'lucide-svelte/icons/plus';
-	import Save from 'lucide-svelte/icons/save';
-	import Trash from 'lucide-svelte/icons/trash';
+	import * as Form from '$lib/components/ui/form';
+	import { Input } from '$lib/components/ui/input';
+	import { siteConfig } from '$lib/stores';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Save from '@lucide/svelte/icons/save';
+	import Trash from '@lucide/svelte/icons/trash';
 	import prettyBytes from 'pretty-bytes';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, intProxy, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
 	import type { Archive } from '../types';
+	import { editArchiveSchema, type EditArchiveSchema } from '../schemas';
 	import { cn } from '../utils';
 	import GallerySource from './gallery-source.svelte';
 	import { Button } from './ui/button';
 	import { Checkbox } from './ui/checkbox';
 	import { Separator } from './ui/separator';
 	import { Textarea } from './ui/textarea';
-	import { Input } from '$lib/components/ui/input';
-	import * as Form from '$lib/components/ui/form';
-	import { siteConfig } from '$lib/stores';
+	import type { ActionResult } from '@sveltejs/kit';
 
 	export let data: SuperValidated<Infer<EditArchiveSchema>>;
 	export let archive: Archive;
@@ -49,19 +49,19 @@
 </script>
 
 <form
-	action="?/editInfo"
 	class="space-y-4"
+	action="?/editInfo"
 	method="POST"
 	on:submit={(ev) => ev.preventDefault()}
 	use:enhance
 >
 	<div class="flex gap-4">
-		<button aria-hidden="true" class="hidden" disabled type="submit"></button>
+		<button class="hidden" aria-hidden="true" disabled type="submit"></button>
 
 		<div class="flex max-w-52 flex-col items-center">
 			<img
-				alt={`'${archive.title}' cover`}
 				class="aspect-[45/64] w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
+				alt={`'${archive.title}' cover`}
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${archive.hash}/${thumbnail}?type=thumb`}
@@ -79,7 +79,7 @@
 		</div>
 
 		<div class="flex-auto">
-			<Form.Field {form} name="title">
+			<Form.Field name="title" {form}>
 				<Form.Control let:attrs>
 					<Form.Label>Title</Form.Label>
 					<Input {...attrs} bind:value={$formData.title} />
@@ -87,7 +87,7 @@
 				<Form.FieldErrors />
 			</Form.Field>
 
-			<Form.Field {form} name="description">
+			<Form.Field name="description" {form}>
 				<Form.Control let:attrs>
 					<Form.Label>Description</Form.Label>
 					<Textarea {...attrs} bind:value={$formData.description} />
@@ -96,29 +96,29 @@
 			</Form.Field>
 
 			<div class="grid grid-cols-3 gap-4">
-				<Form.Field {form} name="thumbnail">
+				<Form.Field name="thumbnail" {form}>
 					<Form.Control let:attrs>
 						<Form.Label>Thumbnail page</Form.Label>
 						<Input
 							{...attrs}
-							bind:value={$thumbnailProxy}
 							max={archive.pages}
 							min={1}
 							type="number"
+							bind:value={$thumbnailProxy}
 						/>
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field {form} name="releasedAt">
+				<Form.Field name="releasedAt" {form}>
 					<Form.Control let:attrs>
 						<Form.Label>Released At</Form.Label>
-						<Input {...attrs} bind:value={$formData.releasedAt} type="datetime-local" />
+						<Input {...attrs} type="datetime-local" bind:value={$formData.releasedAt} />
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field {form} name="language">
+				<Form.Field name="language" {form}>
 					<Form.Control let:attrs>
 						<Form.Label>Language</Form.Label>
 						<Input {...attrs} bind:value={$formData.language} />
@@ -128,9 +128,9 @@
 			</div>
 
 			<Form.Field
+				name="protected"
 				class="flex flex-row items-start space-x-3 space-y-0 py-2"
 				{form}
-				name="protected"
 			>
 				<Form.Control let:attrs>
 					<Checkbox {...attrs} bind:checked={$formData.protected} />
@@ -141,7 +141,7 @@
 							during indexing. If enabled, only path, hash, size and images will be updated.
 						</Form.Description>
 					</div>
-					<input hidden name={attrs.name} value={$formData.protected} />
+					<input name={attrs.name} hidden value={$formData.protected} />
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -180,20 +180,20 @@
 
 	<div>
 		<div class="flex flex-col gap-2">
-			{#each $formData.sources as source, i}
+			{#each $formData.sources as source, i (i)}
 				{@const errors = $errors.sources?.[i]}
 				<div class="flex flex-col gap-1">
 					<div class="flex gap-2">
 						<GallerySource class="my-auto size-8 flex-shrink-0" {source} />
 						<Input
-							bind:value={source.name}
 							class={cn('h-9 w-32', errors?.name && 'border-destructive')}
+							bind:value={source.name}
 						/>
-						<Input bind:value={source.url} class={cn('h-9', errors?.url && 'border-destructive')} />
+						<Input class={cn('h-9', errors?.url && 'border-destructive')} bind:value={source.url} />
 						<Button
 							class="size-9 flex-shrink-0 p-2"
-							on:click={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
 							variant="outline"
+							on:click={() => ($formData.sources = $formData.sources.filter((_, _i) => _i !== i))}
 						>
 							<Trash />
 						</Button>
@@ -216,8 +216,8 @@
 
 			<Button
 				disabled={!sourcesValid}
-				on:click={() => ($formData.sources = [...$formData.sources, { name: '' }])}
 				variant="outline"
+				on:click={() => ($formData.sources = [...$formData.sources, { name: '' }])}
 			>
 				<Plus class="me-2 size-5" /> Add source
 			</Button>
@@ -227,7 +227,7 @@
 	<Separator />
 
 	<div class="flex justify-between">
-		<Button on:click={() => dispatch('close')} variant="outline">Discard changes</Button>
+		<Button variant="outline" on:click={() => dispatch('close')}>Discard changes</Button>
 		<Button class="gap-x-2 bg-green-700 hover:bg-green-700/80" on:click={() => form.submit()}>
 			<Save class="size-5" />
 			<span>Save changes</span>

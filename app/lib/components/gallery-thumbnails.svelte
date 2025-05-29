@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { Gallery } from '../types';
-	import { Button } from './ui/button';
 	import { page } from '$app/stores';
 	import { siteConfig } from '$lib/stores';
 	import { cn, isSpread } from '$lib/utils';
+	import type { Gallery } from '../types';
+	import { Button } from './ui/button';
 
 	export let archive: Gallery;
 
@@ -26,11 +26,11 @@
 			{#each filteredImages as image (image.pageNumber)}
 				<a class="relative" href={`./${archive.id}/read/${image.pageNumber}${$page.url.search}`}>
 					<img
-						alt={`Page ${image.pageNumber}`}
 						class={cn(
 							'aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow',
 							isSpread(image) && 'object-contain'
 						)}
+						alt={`Page ${image.pageNumber}`}
 						height={455}
 						loading="eager"
 						src={`${$siteConfig.imageServer}/image/${archive.hash}/${image.pageNumber}?type=thumb`}
@@ -50,8 +50,8 @@
 
 	{#if filteredImages.length < archive.images.length}
 		<div class="grid grid-cols-2 gap-2">
-			<Button on:click={() => (maxCount += 12)} variant="indigo-outline">Show more</Button>
-			<Button on:click={() => (maxCount = archive.images.length)} variant="blue-outline">
+			<Button variant="indigo-outline" on:click={() => (maxCount += 12)}>Show more</Button>
+			<Button variant="blue-outline" on:click={() => (maxCount = archive.images.length)}>
 				Show all
 			</Button>
 		</div>

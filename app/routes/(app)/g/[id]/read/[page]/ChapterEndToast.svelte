@@ -12,11 +12,11 @@
 	<Button
 		class="h-fit py-0"
 		href="/g/{gallery.id}{$page.url.search}"
+		variant="link"
 		on:click={(ev) => {
 			ev.preventDefault();
 			onBack();
 		}}
-		variant="link"
 	>
 		Go back
 	</Button>

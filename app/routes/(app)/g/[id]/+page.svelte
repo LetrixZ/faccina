@@ -1,19 +1,4 @@
 <script lang="ts">
-	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import BookOpenText from 'lucide-svelte/icons/book-open-text';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Download from 'lucide-svelte/icons/download';
-	import Eye from 'lucide-svelte/icons/eye';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import Heart from 'lucide-svelte/icons/heart';
-	import Info from 'lucide-svelte/icons/info';
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Tag from 'lucide-svelte/icons/tag';
-	import Trash2 from 'lucide-svelte/icons/trash-2';
-	import pMap from 'p-map';
-	import { MetaTags } from 'svelte-meta-tags';
-	import { toast } from 'svelte-sonner';
-	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -29,11 +14,26 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Separator } from '$lib/components/ui/separator';
-	import type { Preset } from '$lib/image-presets';
 	import { type Task } from '$lib/models';
 	import { siteConfig, userCollections } from '$lib/stores';
 	import { cn, dateTimeFormat, getMetadata, humanFileSize, isTag, randomString } from '$lib/utils';
+	import BookOpenText from '@lucide/svelte/icons/book-open-text';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Download from '@lucide/svelte/icons/download';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import Heart from '@lucide/svelte/icons/heart';
+	import Info from '@lucide/svelte/icons/info';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Tag from '@lucide/svelte/icons/tag';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { generateFilename } from '~shared/utils';
+	import { strToU8, Zip, ZipPassThrough } from 'fflate';
+	import pMap from 'p-map';
+	import { writable } from 'svelte/store';
+	import { MetaTags } from 'svelte-meta-tags';
+	import { toast } from 'svelte-sonner';
+	import type { Preset } from '$lib/image-presets';
 
 	export let data;
 
@@ -227,8 +227,8 @@
 		<div class="w-full">
 			<a href={`./${gallery.id}/read/1/${$page.url.search}`}>
 				<img
-					alt={`'${gallery.title}' cover`}
 					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
+					alt={`'${gallery.title}' cover`}
 					height={910}
 					loading="eager"
 					src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
@@ -281,9 +281,9 @@
 
 				<Button
 					class="flex w-full bg-red-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-red-700/80"
+					type="submit"
 					on:click={() =>
 						$siteConfig.admin.deleteRequireConfirmation ? (removeArchiveOpen = true) : remove()}
-					type="submit"
 				>
 					<Trash2 class="size-5 shrink-0" />
 					<span class="flex-auto"> Delete </span>
@@ -296,7 +296,7 @@
 		<div class="grid gap-2 @xs:grid-cols-2">
 			{#if !data.readEntry || data.readEntry.finishedAt}
 				<Button
-					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
 					href={`./${gallery.id}/read/1${$page.url.search}`}
 					variant="secondary"
 				>
@@ -305,7 +305,7 @@
 				</Button>
 			{:else}
 				<Button
-					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
+					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
 					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
 					variant="secondary"
 				>
@@ -321,8 +321,8 @@
 						!canDownload && 'pointer-events-none opacity-50'
 					)}
 					href="/g/{gallery.id}/download"
-					on:click={startDownload}
 					variant="secondary"
+					on:click={startDownload}
 				>
 					<Download class="size-5 shrink-0" />
 					<span class="flex-auto"> Download </span>

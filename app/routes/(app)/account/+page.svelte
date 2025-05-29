@@ -1,14 +1,14 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
-	import { toast } from 'svelte-sonner';
-	import { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
 	import { Separator } from '$lib/components/ui/separator';
 	import { userDeleteSchema, userEditSchema } from '$lib/schemas';
+	import Save from '@lucide/svelte/icons/save';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
 
 	export let data;
 
@@ -46,15 +46,15 @@
 
 <main class="container relative flex max-w-screen-md flex-col gap-y-2">
 	<form class="flex flex-col gap-3" method="POST" use:enhance>
-		<input autocomplete="username" bind:value={$formData.username} class="hidden" />
+		<input class="hidden" autocomplete="username" bind:value={$formData.username} />
 
 		<div class="space-y-3">
-			<Form.Field {form} name="email">
+			<Form.Field name="email" {form}>
 				<Form.Control let:attrs>
 					<Form.Label>
 						Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
 					</Form.Label>
-					<Input {...attrs} autocomplete="email" bind:value={$formData.email} type="email" />
+					<Input {...attrs} autocomplete="email" type="email" bind:value={$formData.email} />
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -63,41 +63,41 @@
 
 			<p class="font-medium">Change password</p>
 
-			<Form.Field {form} name="currentPassword">
+			<Form.Field name="currentPassword" {form}>
 				<Form.Control let:attrs>
 					<Form.Label>Current password</Form.Label>
 					<Input
 						{...attrs}
 						autocomplete="current-password"
-						bind:value={$formData.currentPassword}
 						type="password"
+						bind:value={$formData.currentPassword}
 					/>
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<div class="grid gap-3 sm:grid-cols-2">
-				<Form.Field {form} name="newPassword">
+				<Form.Field name="newPassword" {form}>
 					<Form.Control let:attrs>
 						<Form.Label>New password</Form.Label>
 						<Input
 							{...attrs}
 							autocomplete="new-password"
-							bind:value={$formData.newPassword}
 							type="password"
+							bind:value={$formData.newPassword}
 						/>
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field {form} name="confirmNewPassword">
+				<Form.Field name="confirmNewPassword" {form}>
 					<Form.Control let:attrs>
 						<Form.Label>Confirm new password</Form.Label>
 						<Input
 							{...attrs}
 							autocomplete="new-password"
-							bind:value={$formData.confirmNewPassword}
 							type="password"
+							bind:value={$formData.confirmNewPassword}
 						/>
 					</Form.Control>
 					<Form.FieldErrors />
@@ -115,11 +115,11 @@
 
 			<Button
 				href="/account/delete"
+				variant="link"
 				on:click={(ev) => {
 					ev.preventDefault();
 					deleteOpen = true;
 				}}
-				variant="link"
 			>
 				Delete your account
 			</Button>
@@ -139,14 +139,14 @@
 
 		{#if showPasswordInput}
 			<form action="/account/delete" method="POST" use:deleteEnhance>
-				<Form.Field form={deleteForm} name="currentPassword">
+				<Form.Field name="currentPassword" form={deleteForm}>
 					<Form.Control let:attrs>
 						<Form.Label>Current password</Form.Label>
 						<Input
 							{...attrs}
 							autocomplete="current-password"
-							bind:value={$deleteFormData.currentPassword}
 							type="password"
+							bind:value={$deleteFormData.currentPassword}
 						/>
 					</Form.Control>
 					<Form.FieldErrors />
@@ -158,6 +158,7 @@
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
 			<AlertDialog.Action asChild>
 				<Button
+					variant="destructive"
 					on:click={() => {
 						if (showPasswordInput) {
 							deleteForm.submit();
@@ -165,7 +166,6 @@
 							showPasswordInput = true;
 						}
 					}}
-					variant="destructive"
 				>
 					{#if showPasswordInput}
 						Delete

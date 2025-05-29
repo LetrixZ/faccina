@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { Pagination as PaginationPrimitive } from 'bits-ui';
-
 	import { cn } from '$lib/utils';
+	import { Pagination as PaginationPrimitive } from 'bits-ui';
 
 	type $$Props = PaginationPrimitive.Props;
 	type $$Events = PaginationPrimitive.Events;
@@ -17,6 +16,7 @@
 </script>
 
 <PaginationPrimitive.Root
+	asChild
 	{count}
 	{perPage}
 	{siblingCount}
@@ -24,10 +24,9 @@
 	let:builder
 	let:pages
 	let:range
-	asChild
 	{...$$restProps}
 >
 	<nav {...builder} class={cn('mx-auto flex w-full flex-col items-center', className)}>
-		<slot {pages} {range} {currentPage} />
+		<slot {currentPage} {pages} {range} />
 	</nav>
 </PaginationPrimitive.Root>

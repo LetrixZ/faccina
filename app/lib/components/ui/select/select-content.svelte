@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { cn, flyAndScale } from '$lib/utils';
 	import { Select as SelectPrimitive } from 'bits-ui';
 	import { scale } from 'svelte/transition';
-	import { cn, flyAndScale } from '$lib/utils';
 
 	type $$Props = SelectPrimitive.ContentProps;
 	type $$Events = SelectPrimitive.ContentEvents;
@@ -21,15 +21,15 @@
 </script>
 
 <SelectPrimitive.Content
+	class={cn(
+		'relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-muted-foreground-light shadow-md outline-none',
+		className
+	)}
 	{inTransition}
 	{inTransitionConfig}
 	{outTransition}
 	{outTransitionConfig}
 	{sideOffset}
-	class={cn(
-		'relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-muted-foreground-light shadow-md outline-none',
-		className
-	)}
 	{...$$restProps}
 	on:keydown
 >

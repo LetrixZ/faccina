@@ -5,13 +5,13 @@ import {
 	ParseJSONResultsPlugin,
 	PostgresDialect,
 } from 'kysely';
-import type { IGenericSqlite } from 'kysely-generic-sqlite';
 import { buildQueryFn, GenericSqliteDialect, parseBigInt } from 'kysely-generic-sqlite';
 import { DatabaseSync } from 'node:sqlite';
+import type { DB } from './types';
 import config from '../config';
 import connection from './connection';
 import { migrateToLatest } from './migrations';
-import type { DB } from './types';
+import type { IGenericSqlite } from 'kysely-generic-sqlite';
 
 export const databaseType = config.database.vendor;
 

@@ -1,14 +1,14 @@
 <script lang="ts">
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import ChevronUp from 'lucide-svelte/icons/chevron-up';
-	import { createEventDispatcher } from 'svelte';
-	import type { Order, Sort } from '../schemas';
-	import { cn, randomString } from '../utils';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import { createEventDispatcher } from 'svelte';
+	import type { Order, Sort } from '../schemas';
+	import { cn, randomString } from '../utils';
 	import type { ListPageType } from '$lib/types';
 
 	export let type: ListPageType = 'main';
@@ -155,7 +155,7 @@
 			preventScroll={false}
 			selected={sortOption}
 		>
-			<Select.Trigger aria-label="Select sorting option" class="w-full sm:w-48">
+			<Select.Trigger class="w-full sm:w-48" aria-label="Select sorting option">
 				<Select.Value class="text-muted-foreground-light" />
 			</Select.Trigger>
 			<Select.Content>
@@ -172,6 +172,7 @@
 			sortValue === 'random' && 'pointer-events-none opacity-50'
 		)}
 		href="?{newOrderQuery()}"
+		variant="ghost"
 		on:click={(ev) => {
 			ev.preventDefault();
 
@@ -183,7 +184,6 @@
 			query.set('order', orderValue === 'desc' ? 'asc' : 'desc');
 			goto(`?${query.toString()}`);
 		}}
-		variant="ghost"
 	>
 		{#if orderValue === 'desc'}
 			<span class="sr-only">Set ascending order</span>

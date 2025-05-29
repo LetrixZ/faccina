@@ -1,5 +1,5 @@
-import { sql, type Kysely } from 'kysely';
 import config from '~shared/config';
+import { sql, type Kysely } from 'kysely';
 
 export async function up(db: Kysely<any>): Promise<void> {
 	if (config.database.vendor === 'sqlite') {

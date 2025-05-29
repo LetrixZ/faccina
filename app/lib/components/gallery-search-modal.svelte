@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import { siteConfig, tagList } from '../stores';
-	import GalleryListItemC from './gallery-list-item.svelte';
-	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SearchBar from '$lib/components/search-bar.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { type Order, type Sort } from '$lib/schemas';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import { siteConfig, tagList } from '../stores';
+	import GalleryListItemC from './gallery-list-item.svelte';
+	import { Switch } from './ui/switch';
 	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
 
 	export let selected: GalleryListItem[] = [];
@@ -94,32 +94,34 @@
 
 <div class="flex gap-2">
 	<SearchBar
+		searchPlaceholder={$siteConfig.searchPlaceholder}
+		tags={$tagList}
 		on:search={(ev) => {
 			ev.preventDefault();
 			searchQuery = { ...searchQuery, page: 1, query: ev.detail };
 			search();
 		}}
-		searchPlaceholder={$siteConfig.searchPlaceholder}
-		tags={$tagList}
 	/>
 </div>
 
 <div class="grid items-end gap-2 lg:flex">
 	<div class="flex flex-wrap items-end gap-2">
 		<LimitOptions
+			pageLimits={$siteConfig.pageLimits}
+			value={searchQuery.limit}
 			on:change={(ev) => {
 				ev.preventDefault();
 				searchQuery = { ...searchQuery, limit: ev.detail };
 				search();
 			}}
-			pageLimits={$siteConfig.pageLimits}
-			value={searchQuery.limit}
 		/>
 
 		<div class="max-xs:flex-auto">
 			<SortOptions
 				defaultOrder={$siteConfig.defaultOrder}
 				defaultSort={$siteConfig.defaultSort}
+				order={searchQuery.order}
+				sort={searchQuery.sort}
 				on:order={(ev) => {
 					ev.preventDefault();
 					searchQuery = { ...searchQuery, order: ev.detail };
@@ -130,16 +132,14 @@
 					searchQuery = { ...searchQuery, sort: ev.detail.sort, seed: ev.detail.seed };
 					search();
 				}}
-				order={searchQuery.order}
-				sort={searchQuery.sort}
 			/>
 		</div>
 
 		<div class="flex items-center gap-2 py-1 max-xs:w-full">
 			<Switch
-				bind:checked={filterSelected}
-				disabled={!selected.length}
 				id="show-selected"
+				disabled={!selected.length}
+				bind:checked={filterSelected}
 				on:click={() => (searchQuery.page = 1)}
 			/>
 			<Label class="w-full" for="show-selected">Show only selected</Label>
@@ -150,13 +150,13 @@
 		<ListPagination
 			class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
 			limit={library.limit}
+			total={library.total}
+			value={searchQuery.page}
 			on:navigate={(ev) => {
 				ev.preventDefault();
 				searchQuery = { ...searchQuery, page: ev.detail };
 				search();
 			}}
-			total={library.total}
-			value={searchQuery.page}
 		/>
 	{/if}
 </div>

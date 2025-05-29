@@ -2,8 +2,8 @@
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
-	import type { Sort } from '$lib/schemas';
 	import { siteConfig } from '$lib/stores';
+	import type { Sort } from '$lib/schemas';
 	import type { LibraryResponse, ListPageType } from '$lib/types';
 
 	export let library: LibraryResponse<unknown>;

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import cookie from 'cookie';
-	import { toast } from 'svelte-sonner';
 	import { browser } from '$app/environment';
 	import InputChip from '$lib/components/input-chip.svelte';
+	import cookie from 'cookie';
+	import { toast } from 'svelte-sonner';
 
 	export let data;
 
@@ -43,13 +43,13 @@
 		<p class="text-sm font-medium">You can use the same tag syntax as the search.</p>
 
 		<InputChip
-			chips={blacklist}
 			id="tags"
+			chips={blacklist}
+			tags={data.tags.map((tag) => `${tag.namespace}:${tag.name}`)}
 			on:update={(ev) => {
 				blacklist = ev.detail;
 				save();
 			}}
-			tags={data.tags.map((tag) => `${tag.namespace}:${tag.name}`)}
 		/>
 	</div>
 </main>

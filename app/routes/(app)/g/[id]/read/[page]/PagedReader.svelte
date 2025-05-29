@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import ChapterEndToast from './ChapterEndToast.svelte';
-	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import { siteConfig } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import type { Gallery, Image } from '$lib/types';
+	import { siteConfig } from '$lib/stores';
 	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
+	import ChapterEndToast from './ChapterEndToast.svelte';
+	import TouchNavigation from './TouchNavigation.svelte';
+	import type { Gallery, Image } from '$lib/types';
 	import type { ReaderPreset } from '~shared/config/image.schema';
 
 	export let gallery: Gallery;
@@ -152,31 +152,30 @@
 	on:scroll={() => setPosition()}
 >
 	<div
+		style={getStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 		class={cn(
 			'relative mx-auto flex',
 			(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'h-full w-fit',
 			selectedScaling === 'fill-width' && 'w-full',
 			selectedScaling === 'fill-height' && 'h-full'
 		)}
-		style={getStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 	>
 		<img
-			alt="{gallery.title} page {currentPage}"
 			bind:this={imageElement}
+			style={getImageStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 			class={cn(
 				(selectedScaling === 'original' || selectedScaling === 'fill-height') && 'my-auto w-fit',
 				selectedScaling === 'fill-width' && 'w-full',
 				selectedScaling === 'fill-height' && 'h-full max-h-dvh object-contain'
 			)}
+			alt="{gallery.title} page {currentPage}"
 			height={imageHeight}
 			src={imageUrl}
-			style={getImageStyle(currentImage, selectedPreset, selectedScaling, minWidth, maxWidth)}
 			width={imageWidth}
 		/>
 	</div>
 
 	<TouchNavigation
-		bind:navContainer
 		hasNext={true}
 		{hasPrevious}
 		{onMenu}
@@ -207,5 +206,6 @@
 		}}
 		{previewLayout}
 		{selectedTouchLayoutOption}
+		bind:navContainer
 	/>
 </div>

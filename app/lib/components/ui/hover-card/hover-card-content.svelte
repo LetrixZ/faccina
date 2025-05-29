@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { LinkPreview as HoverCardPrimitive } from 'bits-ui';
 	import { cn, flyAndScale } from '$lib/utils.js';
+	import { LinkPreview as HoverCardPrimitive } from 'bits-ui';
 
 	type $$Props = HoverCardPrimitive.ContentProps;
 
@@ -13,14 +13,14 @@
 </script>
 
 <HoverCardPrimitive.Content
-	{transition}
-	{transitionConfig}
-	{align}
-	{sideOffset}
 	class={cn(
 		'z-50 mt-3 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none',
 		className
 	)}
+	{align}
+	{sideOffset}
+	{transition}
+	{transitionConfig}
 	{...$$restProps}
 >
 	<slot />

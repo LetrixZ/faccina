@@ -1,14 +1,14 @@
 <script lang="ts">
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Trash from 'lucide-svelte/icons/trash';
+	import { enhance } from '$app/forms';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { enhance } from '$app/forms';
+	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Trash from '@lucide/svelte/icons/trash';
 
 	export let data;
 
@@ -45,11 +45,11 @@
 						</Dialog.Header>
 
 						<div class="flex w-full gap-2">
-							<Button class="flex-auto" on:click={() => (deleteOpen = false)} variant="secondary">
+							<Button class="flex-auto" variant="secondary" on:click={() => (deleteOpen = false)}>
 								Cancel
 							</Button>
 
-							<form action="?/remove" class="flex-auto" method="POST" use:enhance>
+							<form class="flex-auto" action="?/remove" method="POST" use:enhance>
 								<Button class="w-full" type="submit" variant="destructive">Remove</Button>
 							</form>
 						</div>

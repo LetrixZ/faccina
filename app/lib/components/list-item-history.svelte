@@ -1,17 +1,17 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import { siteConfig } from '$lib/stores';
+	import { cn, relativeDate } from '$lib/utils';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import BookOpenCheck from '@lucide/svelte/icons/book-open-check';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import dayjs from 'dayjs';
-	import BookOpen from 'lucide-svelte/icons/book-open';
-	import BookOpenCheck from 'lucide-svelte/icons/book-open-check';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import pixelWidth from 'string-pixel-width';
 	import { createEventDispatcher } from 'svelte';
 	import type { HistoryEntry, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import Button from './ui/button/button.svelte';
-	import { cn, relativeDate } from '$lib/utils';
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
 
 	export let entry: HistoryEntry;
 	export let enableBookmark = false;
@@ -72,8 +72,8 @@
 	>
 		<div class="relative max-w-24 overflow-clip rounded-md shadow md:max-w-32">
 			<img
-				alt={`'${gallery.title}' cover`}
 				class="aspect-[45/64] bg-neutral-800 object-contain"
+				alt={`'${gallery.title}' cover`}
 				height={910}
 				loading="eager"
 				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
@@ -127,7 +127,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

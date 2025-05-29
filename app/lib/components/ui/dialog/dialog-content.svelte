@@ -17,12 +17,12 @@
 <Dialog.Portal>
 	<Dialog.Overlay class={overlayClass} />
 	<DialogPrimitive.Content
-		{transition}
-		{transitionConfig}
 		class={cn(
 			'fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90dvw] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg md:w-full md:max-w-lg',
 			className
 		)}
+		{transition}
+		{transitionConfig}
 		{...$$restProps}
 	>
 		<slot />

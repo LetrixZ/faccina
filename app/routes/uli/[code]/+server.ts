@@ -1,8 +1,8 @@
-import { error, redirect } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
 import { lucia } from '$lib/server/auth';
+import { error, redirect } from '@sveltejs/kit';
 import config from '~shared/config';
 import db from '~shared/db';
+import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const code = params.code;

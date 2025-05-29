@@ -1,19 +1,19 @@
-import { stat } from 'fs/promises';
-import { extname, join } from 'node:path';
+import { calculateDimensions, encodeImage } from '$lib/server/image';
+import config from '~shared/config';
+import db from '~shared/db';
+import { createFile, exists, imageDirectory } from '~shared/server.utils';
+import { leadingZeros } from '~shared/utils';
 import chalk from 'chalk';
+import { stat } from 'fs/promises';
 import { filetypemime } from 'magic-bytes.js';
+import { readFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
 import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { calculateDimensions, encodeImage } from '$lib/server/image';
 import type { ImageArchive } from '$lib/types';
-import config from '~shared/config';
-import db from '~shared/db';
-import { createFile, exists, imageDirectory } from '~shared/server.utils';
-import { leadingZeros } from '~shared/utils';
-import { readFile } from 'node:fs/promises';
 
 const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Array, string]> => {
 	const imagePath = join(
