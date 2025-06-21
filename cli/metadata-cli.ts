@@ -257,7 +257,7 @@ const scrapeHenTag = async ({
 							...(res.maleTags ?? []).map((t) => `male:${t}`),
 							...(res.femaleTags ?? []).map((t) => `female:${t}`),
 							...(res.characters ?? []).map((t) => `character:${t}`),
-							...(res.otherTags ?? []).map((t) => `misc:${t}`),
+							...(res.otherTags ?? []).map((t) => `tag:${t}`),
 						].join(
 							', '
 						)}\n [similarity: ${partial_ratio(res.title, filename, {})}] (${res.locations?.filter((s) => !s.includes('hentag.com')).join(', ')})`,
