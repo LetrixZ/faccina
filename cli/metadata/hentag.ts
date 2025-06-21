@@ -74,7 +74,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	}
 
 	if (data.otherTags) {
-		archive.tags.push(...data.otherTags.map((tag) => ({ namespace: 'misc', name: tag })));
+		archive.tags.push(...data.otherTags.map((tag) => ({ namespace: 'tag', name: tag })));
 	}
 
 	if (data.locations) {
