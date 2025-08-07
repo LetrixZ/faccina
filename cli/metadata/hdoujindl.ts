@@ -34,6 +34,8 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		archive.title = data.title;
 	}
 
+	archive.description = data.description;
+
 	archive.language = data.language?.[0];
 
 	archive.tags = [];
