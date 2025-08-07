@@ -48,6 +48,10 @@ export default async (content: string, archive: ArchiveMetadata) => {
 
 	archive.tags.push(...Array.from(artists).map((tag) => ({ namespace: 'artist', name: tag })));
 
+	if (data.publisher) {
+		archive.tags.push({ namespace: 'publisher', name: data.publisher });
+	}
+
 	if (data.tags) {
 		archive.tags = [];
 
