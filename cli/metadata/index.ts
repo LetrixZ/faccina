@@ -115,7 +115,9 @@ export const getYamlSchema = (content: string) => {
 export const getJsonSchema = (content: string) => {
 	const minified = JSON.stringify(JSON.parse(content));
 
-	if (minified.match(/"tags":\[.*?"namespace".*?\]/)) {
+	if (minified.match(/"type":/) && minified.match(/"url":/)) {
+		return MetadataSchema.HDoujinDL;
+	} else if (minified.match(/"tags":\[.*?"namespace".*?\]/)) {
 		return MetadataSchema.Faccina;
 	} else if (minified.match(/("coverImageUrl"|"maleTags"|"femaleTags")/)) {
 		return MetadataSchema.HenTag;
@@ -129,8 +131,6 @@ export const getJsonSchema = (content: string) => {
 		return MetadataSchema.Eze;
 	} else if (minified.match(/"tags":\[.*?(artist|group|parody|character|language):(.*?)\],/)) {
 		return MetadataSchema.GalleryDL;
-	} else if (minified.match(/"type":/)) {
-		return MetadataSchema.HDoujinDL;
 	}
 
 	throw new Error('Failed to determine JSON metadata schema');
