@@ -8,11 +8,13 @@ const metadataSchema = z.object({
 		tags: z.record(z.string(), z.array(z.string())).optional(),
 		language: z.string().optional(),
 		upload_date: z.array(z.number()).optional(),
-		source: z.object({
-			site: z.string(),
-			gid: z.number(),
-			token: z.string(),
-		}),
+		source: z
+			.object({
+				site: z.string(),
+				gid: z.number(),
+				token: z.string(),
+			})
+			.optional(),
 	}),
 });
 

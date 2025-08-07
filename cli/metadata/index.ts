@@ -23,6 +23,7 @@ import hentag from './hentag';
 import hentainexus from './hentainexus';
 import koharu from './koharu';
 import koromo from './koromo';
+import hdoujindl from './hdoujindl';
 
 export enum MetadataFormat {
 	JSON = 'JSON',
@@ -44,6 +45,7 @@ export enum MetadataSchema {
 	Booru = 'Booru',
 	ComicInfo = 'ComicInfo',
 	Faccina = 'Faccina',
+	HDoujinDL = 'HDoujinDownloader',
 }
 
 export const getYamlSchema = (content: string) => {
@@ -127,6 +129,8 @@ export const getJsonSchema = (content: string) => {
 		return MetadataSchema.Eze;
 	} else if (minified.match(/"tags":\[.*?(artist|group|parody|character|language):(.*?)\],/)) {
 		return MetadataSchema.GalleryDL;
+	} else if (minified.match(/"type":/)) {
+		return MetadataSchema.HDoujinDL;
 	}
 
 	throw new Error('Failed to determine JSON metadata schema');
@@ -198,6 +202,9 @@ const handleMetadataFormat = async (
 					break;
 				case MetadataSchema.Faccina:
 					archive = await faccina(content, archive);
+					break;
+				case MetadataSchema.HDoujinDL:
+					archive = await hdoujindl(content, archive);
 					break;
 			}
 
