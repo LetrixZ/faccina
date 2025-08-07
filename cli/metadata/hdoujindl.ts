@@ -53,8 +53,6 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	}
 
 	if (data.tags) {
-		archive.tags = [];
-
 		if (data.tags['artist']) {
 			archive.tags.push(...data.tags['artist'].map((tag) => ({ namespace: 'artist', name: tag })));
 		}
