@@ -2,6 +2,7 @@
 	import { cn, type WithElementRef, type WithoutChildren } from '$lib/utils.js';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
 	import type { HTMLAttributes } from 'svelte/elements';
+
 	let {
 		ref = $bindable(null),
 		class: className,
@@ -13,7 +14,7 @@
 	aria-hidden="true"
 	bind:this={ref}
 	class={cn(
-		"size-9 items-center justify-center [&_svg:not([class*='size-'])]:size-4 flex",
+		"size-9 items-center justify-center [&_svg:not([class*='size-'])]:size-4 flex items-center justify-center",
 		className
 	)}
 	data-slot="pagination-ellipsis"

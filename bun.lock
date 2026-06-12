@@ -114,6 +114,7 @@
     },
   },
   "patchedDependencies": {
+    "kysely@0.29.2": "patches/kysely@0.29.2.patch",
     "xml2js@0.6.2": "patches/xml2js@0.6.2.patch",
     "@types/xml2js@0.4.14": "patches/@types%2Fxml2js@0.4.14.patch",
   },

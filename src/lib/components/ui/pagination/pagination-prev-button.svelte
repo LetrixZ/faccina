@@ -16,6 +16,7 @@
 	<ChevronLeftIcon class={cn('size-4', className)} />
 	<span>Previous</span>
 {/snippet}
+
 <PaginationPrimitive.PrevButton
 	aria-label="Go to previous page"
 	bind:ref

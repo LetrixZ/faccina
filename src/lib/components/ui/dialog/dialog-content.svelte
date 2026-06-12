@@ -7,18 +7,15 @@
 	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import type { Snippet } from 'svelte';
 	import type { ComponentProps } from 'svelte';
-	import type { ClassValue } from 'svelte/elements';
 
 	let {
 		ref = $bindable(null),
 		class: className,
-		overlayClass,
 		portalProps,
 		children,
 		showCloseButton = true,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
-		overlayClass?: ClassValue;
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
 		children: Snippet;
 		showCloseButton?: boolean;
@@ -26,7 +23,7 @@
 </script>
 
 <DialogPortal {...portalProps}>
-	<Dialog.Overlay class={overlayClass} />
+	<Dialog.Overlay />
 	<DialogPrimitive.Content
 		bind:ref
 		class={cn(

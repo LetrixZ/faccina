@@ -3,6 +3,7 @@
 	import PopoverPortal from './popover-portal.svelte';
 	import { Popover as PopoverPrimitive } from 'bits-ui';
 	import type { ComponentProps } from 'svelte';
+
 	let {
 		ref = $bindable(null),
 		class: className,

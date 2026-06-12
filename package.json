@@ -3,14 +3,9 @@
 	"version": "2.0.4",
 	"private": true,
 	"scripts": {
-		"prepare": "svelte-kit sync",
 		"dev": "bunx --bun vite dev",
 		"build": "rm -rf build && bunx --bun vite build",
-		"preview": "bunx --bun vite preview",
-		"start": "bun ./serve.ts",
-		"cluster": "bun ./cluster.ts",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"start": "bun ./build/index.js",
 		"fix": "prettier -w src cli shared && eslint --fix src cli shared",
 		"kysely": "bunx --bun kysely",
 		"cli": "NODE_ENV=production bun ./cli/index.ts",
@@ -125,8 +120,8 @@
 		"zod-urlsearchparams": "^0.0.16"
 	},
 	"patchedDependencies": {
+		"kysely@0.29.2": "patches/kysely@0.29.2.patch",
 		"xml2js@0.6.2": "patches/xml2js@0.6.2.patch",
-		"@types/xml2js@0.4.14": "patches/@types%2Fxml2js@0.4.14.patch",
-		"kysely@0.27.5": "patches/kysely@0.27.5.patch"
+		"@types/xml2js@0.4.14": "patches/@types%2Fxml2js@0.4.14.patch"
 	}
 }

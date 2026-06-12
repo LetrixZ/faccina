@@ -24,6 +24,7 @@ export {
 	Content,
 	Description,
 	Media,
+	//
 	Root as AlertDialog,
 	Title as AlertDialogTitle,
 	Action as AlertDialogAction,

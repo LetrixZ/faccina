@@ -11,26 +11,27 @@ import Trigger from './select-trigger.svelte';
 import Root from './select.svelte';
 
 export {
-	Content,
-	Group,
-	GroupHeading,
-	Item,
-	Label,
-	Portal,
 	Root,
+	Group,
+	Label,
+	Item,
+	Content,
+	Trigger,
+	Separator,
 	ScrollDownButton,
 	ScrollUpButton,
+	GroupHeading,
+	Portal,
+	//
 	Root as Select,
-	Content as SelectContent,
 	Group as SelectGroup,
-	GroupHeading as SelectGroupHeading,
-	Item as SelectItem,
 	Label as SelectLabel,
-	Portal as SelectPortal,
+	Item as SelectItem,
+	Content as SelectContent,
+	Trigger as SelectTrigger,
+	Separator as SelectSeparator,
 	ScrollDownButton as SelectScrollDownButton,
 	ScrollUpButton as SelectScrollUpButton,
-	Separator as SelectSeparator,
-	Trigger as SelectTrigger,
-	Separator,
-	Trigger
+	GroupHeading as SelectGroupHeading,
+	Portal as SelectPortal
 };
