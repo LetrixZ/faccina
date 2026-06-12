@@ -5,15 +5,6 @@ import adapter from 'svelte-adapter-bun';
 const config = {
 	preprocess: vitePreprocess(),
 	kit: {
-		files: {
-			appTemplate: 'app/app.html',
-			errorTemplate: 'app/error.html',
-			lib: 'app/lib',
-			routes: 'app/routes',
-			hooks: {
-				server: 'app/hooks.server.ts',
-			},
-		},
 		adapter: adapter({
 			reusePort: true,
 		}),

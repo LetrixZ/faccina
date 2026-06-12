@@ -7,7 +7,7 @@ import StreamZip from 'node-stream-zip';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import type { Preset } from '../app/lib/image-presets';
+import type { Preset } from '../src/lib/image-presets';
 import config from '../shared/config';
 import db from '../shared/db';
 import { jsonArrayFrom } from '../shared/db/helpers';
