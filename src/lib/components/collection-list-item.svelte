@@ -1,12 +1,17 @@
 <script lang="ts">
-	import FileQuestion from 'lucide-svelte/icons/file-question';
-	import type { Collection } from '../types';
-	import { siteConfig } from '$lib/stores';
-	import { cn } from '$lib/utils';
+	import type { Collection } from '$lib/types.js';
+	import { cn } from '$lib/utils.js';
+	import FileQuestion from '@lucide/svelte/icons/file-question';
 
-	export let collection: Collection;
+	let {
+		collection,
+		imageServer
+	}: {
+		collection: Collection;
+		imageServer: string;
+	} = $props();
 
-	$: archives = collection.archives.slice(0, 3).reverse();
+	const archives = $derived(collection.archives.slice(0, 3).reverse());
 
 	const getStyle = (index: number) => {
 		if (archives.length === 2) {
@@ -29,22 +34,22 @@
 </script>
 
 <a class="flex w-full flex-col items-center gap-4 rounded" href="/collections/{collection.slug}">
-	<div class="flex aspect-[45/64] w-full">
+	<div class="flex aspect-45/64 w-full">
 		{#if archives.length}
 			<div
 				class={cn(
-					'relative m-auto aspect-[45/64] w-full',
+					'relative m-auto aspect-45/64 w-full',
 					archives.length === 2 && 'w-[95%]',
 					archives.length === 3 && 'w-[90%]'
 				)}
 			>
-				{#each archives as archive, i}
+				{#each archives as archive, i (archive.id)}
 					<img
 						alt={`'${archive.title}' cover`}
-						class="absolute mb-2 aspect-[45/64] rounded shadow duration-150"
+						class="absolute mb-2 aspect-45/64 rounded shadow duration-150"
 						height={910}
 						loading="eager"
-						src={`${$siteConfig.imageServer}/image/${archive.hash}/${archive.thumbnail}?type=cover`}
+						src={`${imageServer}/image/${archive.hash}/${archive.thumbnail}?type=cover`}
 						style={getStyle(i)}
 						width={640}
 					/>
@@ -52,7 +57,7 @@
 			</div>
 		{:else}
 			<div
-				class="flex aspect-[46/64] h-full items-center justify-center rounded bg-secondary opacity-40 shadow-sm"
+				class="flex aspect-46/64 h-full items-center justify-center rounded bg-secondary opacity-40 shadow-sm"
 			>
 				<FileQuestion class="size-12 text-white opacity-20" />
 			</div>

@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '$lib/utils';
+	import type { WithElementRef } from '$lib/utils.js';
+	import type { HTMLLiAttributes } from 'svelte/elements';
 
-	type $$Props = HTMLAttributes<HTMLLIElement>;
-	let className: $$Props['class'] = undefined;
-
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		children,
+		...restProps
+	}: WithElementRef<HTMLLiAttributes> = $props();
 </script>
 
-<li class={cn('text-muted-foreground-light', className)} {...$$restProps}>
-	<slot />
+<li bind:this={ref} data-slot="pagination-item" {...restProps}>
+	{@render children?.()}
 </li>

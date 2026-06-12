@@ -1,45 +1,53 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input';
+	import type { UserFormState } from '../models.js';
+	import { recoverSchema, type RecoverSchema } from '../schemas.js';
+	import { Button } from './ui/button/index.js';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import type { UserFormState } from '../models';
-	import { recoverSchema, type RecoverSchema } from '../schemas';
-	import { Button } from './ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import * as Form from '$lib/components/ui/form';
-	import { page } from '$app/stores';
 
-	export let data: SuperValidated<Infer<RecoverSchema>>;
-	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
-	export let hasMailer: boolean;
+	let {
+		form: initialForm,
+		hasMailer,
+		changeState = undefined,
+		onResult
+	}: {
+		form: SuperValidated<Infer<RecoverSchema>>;
+		hasMailer: boolean;
+		changeState?: (state: UserFormState) => void;
+		onResult?: (value: ActionResult) => void;
+	} = $props();
 
-	const dispatch = createEventDispatcher<{ result: ActionResult }>();
-
-	let form = superForm(data, {
+	// svelte-ignore state_referenced_locally
+	let form = superForm(initialForm, {
 		validators: zodClient(recoverSchema),
 		onResult: ({ result }) => {
-			dispatch('result', result);
+			onResult?.(result);
 
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
 			} else if (result.type === 'success' || result.type === 'redirect') {
 				toast.info('An email with a recovery code will be sent if the user is found.');
 			}
-		},
+		}
 	});
 
 	const { form: formData, enhance } = form;
 </script>
 
-<form action="/recover{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
+<form action="/recover{page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
 	{#if hasMailer}
 		<div class="flex flex-col">
 			<Form.Field {form} name="username">
-				<Form.Control let:attrs>
-					<Form.Label>Username</Form.Label>
-					<Input {...attrs} bind:value={$formData.username} />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Username</Form.Label>
+						<Input {...props} bind:value={$formData.username} />
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -53,8 +61,8 @@
 	<div class="flex justify-between">
 		<Button
 			class="h-fit p-0 text-sm"
-			href="/login{$page.url.search}"
-			on:click={(ev) => {
+			href="/login{page.url.search}"
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('login');
@@ -67,8 +75,8 @@
 
 		<Button
 			class="h-fit p-0 text-sm"
-			href="/register{$page.url.search}"
-			on:click={(ev) => {
+			href="/register{page.url.search}"
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
@@ -84,8 +92,8 @@
 
 	<Button
 		class="mx-auto"
-		href="/reset{$page.url.search}"
-		on:click={(ev) => {
+		href="/reset{page.url.search}"
+		onclick={(ev) => {
 			if (changeState && typeof changeState == 'function') {
 				ev.preventDefault();
 				changeState('reset');

@@ -1,8 +1,8 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { mapMultiField, multiTextField } from './schemas.js';
 import dayjs from 'dayjs';
 import YAML from 'yaml';
-import { z } from 'zod';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { mapMultiField, multiTextField } from './schemas';
+import { z } from 'zod/v3';
 
 const multiIdField = z.union([z.number(), z.string()]);
 
@@ -35,7 +35,7 @@ const metadataSchema = z.object({
 	Id: z.record(z.string(), multiIdField).optional(),
 	Released: z.number().optional(),
 	ThumbnailIndex: z.number().optional(),
-	Files: z.array(z.string()).optional(),
+	Files: z.array(z.string()).optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -86,14 +86,14 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		for (const [name, id] of Object.entries(data.Id)) {
 			archive.sources.push({
 				name,
-				url: parseSourceId(name, id),
+				url: parseSourceId(name, id)
 			});
 		}
 	}
 
 	archive.imageOrder = data.Files?.map((filename, i) => ({
 		filename,
-		pageNumber: i + 1,
+		pageNumber: i + 1
 	}));
 
 	return archive;

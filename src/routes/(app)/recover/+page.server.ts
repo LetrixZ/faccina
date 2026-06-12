@@ -1,10 +1,10 @@
+import { recoverSchema } from '$lib/schemas.js';
+import type { Actions } from './$types';
 import { error, fail } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions } from './$types';
-import { recoverSchema } from '$lib/schemas';
-import config from '~shared/config';
-import db from '~shared/db';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 import { recoveryCode, sendRecoveryEmail } from '~shared/users';
 
 export const load = async () => {
@@ -13,7 +13,7 @@ export const load = async () => {
 	}
 
 	return {
-		form: await superValidate(zod(recoverSchema)),
+		form: await superValidate(zod(recoverSchema))
 	};
 };
 
@@ -40,13 +40,13 @@ export const actions: Actions = {
 		if (!config.mailer) {
 			return fail(400, {
 				message: 'Contact the administrator for a recovery code.',
-				form,
+				form
 			});
 		}
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -55,7 +55,7 @@ export const actions: Actions = {
 		recoverAccess(username);
 
 		return {
-			form,
+			form
 		};
-	},
+	}
 };

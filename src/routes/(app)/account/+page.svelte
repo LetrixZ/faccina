@@ -1,20 +1,21 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { userDeleteSchema, userEditSchema } from '$lib/schemas.js';
+	import Save from '@lucide/svelte/icons/save';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button } from '$lib/components/ui/button';
-	import * as Form from '$lib/components/ui/form';
-	import { Input } from '$lib/components/ui/input';
-	import { Separator } from '$lib/components/ui/separator';
-	import { userDeleteSchema, userEditSchema } from '$lib/schemas';
 
-	export let data;
+	let { data } = $props();
 
-	let deleteOpen = false;
-	let showPasswordInput = false;
+	let deleteOpen = $state(false);
+	let showPasswordInput = $state(false);
 
+	// svelte-ignore state_referenced_locally
 	let form = superForm(data.userForm, {
 		dataType: 'json',
 		validators: zodClient(userEditSchema),
@@ -25,11 +26,12 @@
 			} else if (result.type === 'success' || result.type === 'redirect') {
 				toast.success('Account edited successfully.');
 			}
-		},
+		}
 	});
 
 	const { form: formData, enhance } = form;
 
+	// svelte-ignore state_referenced_locally
 	let deleteForm = superForm(data.deleteForm, {
 		validators: zodClient(userDeleteSchema),
 		onResult: ({ result }) => {
@@ -38,23 +40,25 @@
 			} else if (result.type === 'success' || result.type === 'redirect') {
 				toast.success('Account deleted successfully.');
 			}
-		},
+		}
 	});
 
 	const { form: deleteFormData, enhance: deleteEnhance } = deleteForm;
 </script>
 
-<main class="container relative flex max-w-screen-md flex-col gap-y-2">
+<main class="container relative flex max-w-3xl flex-col gap-y-2">
 	<form class="flex flex-col gap-3" method="POST" use:enhance>
 		<input autocomplete="username" bind:value={$formData.username} class="hidden" />
 
 		<div class="space-y-3">
 			<Form.Field {form} name="email">
-				<Form.Control let:attrs>
-					<Form.Label>
-						Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
-					</Form.Label>
-					<Input {...attrs} autocomplete="email" bind:value={$formData.email} type="email" />
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>
+							Email <span class="text-sm font-normal text-neutral-500">(optional)</span>
+						</Form.Label>
+						<Input {...props} autocomplete="email" bind:value={$formData.email} type="email" />
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
@@ -64,41 +68,47 @@
 			<p class="font-medium">Change password</p>
 
 			<Form.Field {form} name="currentPassword">
-				<Form.Control let:attrs>
-					<Form.Label>Current password</Form.Label>
-					<Input
-						{...attrs}
-						autocomplete="current-password"
-						bind:value={$formData.currentPassword}
-						type="password"
-					/>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Current password</Form.Label>
+						<Input
+							{...props}
+							autocomplete="current-password"
+							bind:value={$formData.currentPassword}
+							type="password"
+						/>
+					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
 			</Form.Field>
 
 			<div class="grid gap-3 sm:grid-cols-2">
 				<Form.Field {form} name="newPassword">
-					<Form.Control let:attrs>
-						<Form.Label>New password</Form.Label>
-						<Input
-							{...attrs}
-							autocomplete="new-password"
-							bind:value={$formData.newPassword}
-							type="password"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>New password</Form.Label>
+							<Input
+								{...props}
+								autocomplete="new-password"
+								bind:value={$formData.newPassword}
+								type="password"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
 
 				<Form.Field {form} name="confirmNewPassword">
-					<Form.Control let:attrs>
-						<Form.Label>Confirm new password</Form.Label>
-						<Input
-							{...attrs}
-							autocomplete="new-password"
-							bind:value={$formData.confirmNewPassword}
-							type="password"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Confirm new password</Form.Label>
+							<Input
+								{...props}
+								autocomplete="new-password"
+								bind:value={$formData.confirmNewPassword}
+								type="password"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
@@ -115,7 +125,7 @@
 
 			<Button
 				href="/account/delete"
-				on:click={(ev) => {
+				onclick={(ev) => {
 					ev.preventDefault();
 					deleteOpen = true;
 				}}
@@ -140,14 +150,16 @@
 		{#if showPasswordInput}
 			<form action="/account/delete" method="POST" use:deleteEnhance>
 				<Form.Field form={deleteForm} name="currentPassword">
-					<Form.Control let:attrs>
-						<Form.Label>Current password</Form.Label>
-						<Input
-							{...attrs}
-							autocomplete="current-password"
-							bind:value={$deleteFormData.currentPassword}
-							type="password"
-						/>
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Current password</Form.Label>
+							<Input
+								{...props}
+								autocomplete="current-password"
+								bind:value={$deleteFormData.currentPassword}
+								type="password"
+							/>
+						{/snippet}
 					</Form.Control>
 					<Form.FieldErrors />
 				</Form.Field>
@@ -156,23 +168,26 @@
 
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action asChild>
-				<Button
-					on:click={() => {
-						if (showPasswordInput) {
-							deleteForm.submit();
-						} else {
-							showPasswordInput = true;
-						}
-					}}
-					variant="destructive"
-				>
-					{#if showPasswordInput}
-						Delete
-					{:else}
-						Continue
-					{/if}
-				</Button>
+			<AlertDialog.Action>
+				{#snippet child({ props })}
+					<Button
+						{...props}
+						onclick={() => {
+							if (showPasswordInput) {
+								deleteForm.submit();
+							} else {
+								showPasswordInput = true;
+							}
+						}}
+						variant="destructive"
+					>
+						{#if showPasswordInput}
+							Delete
+						{:else}
+							Continue
+						{/if}
+					</Button>
+				{/snippet}
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

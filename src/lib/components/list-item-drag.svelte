@@ -1,26 +1,34 @@
 <script lang="ts">
-	import AlignJustify from 'lucide-svelte/icons/align-justify';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import pixelWidth from 'string-pixel-width';
-	import { createEventDispatcher } from 'svelte';
-	import { dragHandle } from 'svelte-dnd-action';
-	import type { GalleryListItem, Tag } from '../types';
+	import { page } from '$app/state';
+	import type { GalleryListItem, Tag } from '$lib/types.js';
+	import { cn } from '$lib/utils.js';
 	import Chip from './chip.svelte';
 	import Button from './ui/button/button.svelte';
-	import { cn } from '$lib/utils';
-	import { siteConfig } from '$lib/stores';
-	import { page } from '$app/stores';
+	import AlignJustify from '@lucide/svelte/icons/align-justify';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import pixelWidth from 'string-pixel-width';
+	import { dragHandle } from 'svelte-dnd-action';
 
-	export let gallery: GalleryListItem;
-	export let enableBookmark = false;
-	export let bookmarked = false;
-	export let imageBookmark = false;
-	export let newTab = false;
+	let {
+		gallery,
+		enableBookmark = false,
+		bookmarked = false,
+		imageBookmark = false,
+		newTab = false,
+		imageServer,
+		onBookmark = undefined
+	}: {
+		gallery: GalleryListItem;
+		enableBookmark?: boolean;
+		bookmarked?: boolean;
+		imageBookmark?: boolean;
+		newTab?: boolean;
+		imageServer: string;
+		onBookmark?: (bookmarked: boolean) => void;
+	} = $props();
 
-	const dispatch = createEventDispatcher<{ bookmark: boolean; dropItem: [number, number] }>();
-
-	$: [reducedTags, moreCount] = (() => {
+	const [reducedTags, moreCount] = $derived.by(() => {
 		const maxWidth = 290;
 
 		const tags = gallery.tags;
@@ -48,51 +56,51 @@
 			}
 		}
 
-		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+		return [reduced, tagCount] as const;
+	});
 </script>
 
 <div class="group relative flex justify-between gap-2 rounded bg-background/70 pe-6">
 	<a
-		href={`/g/${gallery.id}${$page.url.search}`}
+		href={`/g/${gallery.id}${page.url.search}`}
 		tabindex="-1"
 		{...newTab && { target: '_blank' }}
-		class="flex-shrink-0"
-		on:click={(ev) => {
+		class="shrink-0"
+		onclick={(ev) => {
 			if (enableBookmark && imageBookmark) {
 				ev.preventDefault();
-				dispatch('bookmark', !bookmarked);
+				onBookmark?.(!bookmarked);
 			}
 		}}
 	>
 		<div class="relative max-w-24 overflow-clip rounded-md shadow md:max-w-32">
 			<img
 				alt={`'${gallery.title}' cover`}
-				class="aspect-[45/64] bg-neutral-800 object-contain"
+				class="aspect-45/64 bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src={`${imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
 
 			{#if enableBookmark}
-				<div class={cn('absolute end-1 top-1 hidden group-hover:block', bookmarked && 'block')}>
+				<div class={cn('absolute inset-e-1 top-1 hidden group-hover:block', bookmarked && 'block')}>
 					<button
 						class={cn(
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
 							bookmarked && 'opacity-90'
 						)}
-						on:click|preventDefault|stopPropagation={() => {
-							dispatch('bookmark', !bookmarked);
+						onclick={(ev) => {
+							ev.preventDefault();
+							ev.stopPropagation();
+							onBookmark?.(!bookmarked);
 						}}
 					>
 						<Bookmark class={cn(bookmarked && 'fill-white')} />
 					</button>
 				</div>
 			{/if}
-			<div class="absolute bottom-1 end-1 flex gap-1">
+			<div class="absolute bottom-1 inset-e-1 flex gap-1">
 				{#if gallery.deletedAt}
 					<div
 						class="flex aspect-square size-6 items-center justify-center rounded-md bg-slate-700 p-1 text-xs font-bold text-white opacity-85"
@@ -110,7 +118,7 @@
 	<div class="h-fit flex-auto space-y-1.5">
 		<a
 			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
-			href={`/g/${gallery.id}${$page.url.search}`}
+			href={`/g/${gallery.id}${page.url.search}`}
 			title={gallery.title}
 			{...newTab && { target: '_blank' }}
 		>
@@ -118,13 +126,13 @@
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
-			{#each tags as tag}
+			{#each reducedTags as tag (`${tag.namespace}:${tag.name}`)}
 				<Chip {newTab} {tag} />
 			{/each}
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

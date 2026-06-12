@@ -1,10 +1,10 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { parseFilename } from './utils.js';
 import dayjs from 'dayjs';
 import arraySupport from 'dayjs/plugin/arraySupport';
 import { parseStringSync } from 'xml2js';
-import { z } from 'zod';
-import config from '../../shared/config';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { parseFilename } from './utils';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 dayjs.extend(arraySupport);
 
@@ -31,8 +31,8 @@ const metadataSchema = z
 			LanguageISO: z.string().optional(),
 			Year: z.coerce.number().optional(),
 			Month: z.coerce.number().optional(),
-			Day: z.coerce.number().optional(),
-		}),
+			Day: z.coerce.number().optional()
+		})
 	})
 	.transform((val) => val.ComicInfo)
 	.transform((val) => ({
@@ -43,7 +43,7 @@ const metadataSchema = z
 			}
 
 			return dayjs(`${val.Year}-${val.Month}-${val.Day}`, 'YYYY-MM-DD').toDate();
-		})(),
+		})()
 	}));
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -274,5 +274,5 @@ const isoTable = [
 	{ language: 'Yiddish', code: 'yi' },
 	{ language: 'Yoruba', code: 'yo' },
 	{ language: 'Zhuang, Chuang', code: 'za' },
-	{ language: 'Zulu', code: 'zu' },
+	{ language: 'Zulu', code: 'zu' }
 ];

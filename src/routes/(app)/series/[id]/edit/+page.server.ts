@@ -1,10 +1,10 @@
+import { createSeriesSchema } from '$lib/schemas.js';
+import { sortArchiveTags } from '$lib/server/utils.js';
 import { error } from '@sveltejs/kit';
 import { fail, message, setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { sortArchiveTags } from '$lib/server/utils.js';
-import { createSeriesSchema } from '$lib/schemas';
-import db from '~shared/db';
-import { jsonArrayFrom, now } from '~shared/db/helpers';
+import { jsonArrayFrom, now } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ params, locals }) => {
 	if (!locals.user?.admin) {
@@ -40,11 +40,11 @@ export const load = async ({ params, locals }) => {
 								.select(['tags.namespace', 'tags.name'])
 								.whereRef('archives.id', '=', 'archiveId')
 								.orderBy('archiveTags.createdAt asc')
-						).as('tags'),
+						).as('tags')
 					])
 					.orderBy('order asc')
 					.whereRef('seriesId', '=', 'series.id')
-			).as('chapters'),
+			).as('chapters')
 		])
 		.where('id', '=', id)
 		.executeTakeFirst();
@@ -60,10 +60,10 @@ export const load = async ({ params, locals }) => {
 		form: await superValidate(
 			{
 				title: series.title,
-				chapters: series.chapters.map((chapter) => chapter.id),
+				chapters: series.chapters.map((chapter) => chapter.id)
 			},
 			zod(createSeriesSchema)
-		),
+		)
 	};
 };
 
@@ -140,12 +140,12 @@ export const actions = {
 							archiveId: id,
 							seriesId: series.id,
 							order: i,
-							updatedAt: now(),
+							updatedAt: now()
 						}))
 					)
 					.onConflict((oc) =>
 						oc.columns(['seriesId', 'archiveId']).doUpdateSet((eb) => ({
-							order: eb.ref('excluded.order'),
+							order: eb.ref('excluded.order')
 						}))
 					)
 					.execute();
@@ -153,5 +153,5 @@ export const actions = {
 		});
 
 		return { form };
-	},
+	}
 };

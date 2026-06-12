@@ -6,9 +6,9 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 
-	export let data;
+	let { data } = $props();
 
-	$: library = data.libraryPage;
+	const library = $derived(data.libraryPage);
 </script>
 
 <main class="container relative flex flex-auto flex-col gap-y-2">
@@ -24,8 +24,11 @@
 
 	<div class="grid items-end gap-2 md:flex">
 		<ListNavbar
+			defaultOrder={data.site.defaultOrder}
+			defaultPageLimit={data.site.defaultPageLimit}
 			defaultSort="updated_at"
 			{library}
+			pageLimits={data.site.pageLimits}
 			sortOptions={['updated_at', 'created_at', 'title']}
 		/>
 	</div>
@@ -35,7 +38,7 @@
 	{#if library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
 			{#each library.data as series (series.id)}
-				<SeriesListItem {series} />
+				<SeriesListItem imageServer={data.site.imageServer} {series} />
 			{/each}
 		</div>
 	{:else}
@@ -45,7 +48,7 @@
 	<Separator />
 
 	<ListPagination
-		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
+		class="mx-auto w-fit md:mx-0 md:ms-auto md:grow-0"
 		limit={library.limit}
 		total={library.total}
 	/>

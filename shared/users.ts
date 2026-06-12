@@ -1,9 +1,9 @@
-import { randomBytes } from 'crypto';
+import config from './config.js';
+import { now } from './db/helpers.js';
+import db from './db/index.js';
+import { transporter } from './mailer.js';
 import chalk from 'chalk';
-import config from './config';
-import db from './db';
-import { now } from './db/helpers';
-import { transporter } from './mailer';
+import { randomBytes } from 'crypto';
 
 /**
  * Generates a new recovery code for the user,
@@ -27,7 +27,7 @@ export const recoveryCode = async (id: string) => {
 		.values({
 			userId: id,
 			code,
-			type: 'recovery',
+			type: 'recovery'
 		})
 		.execute();
 
@@ -84,7 +84,7 @@ export const sendRecoveryEmail = async (email: string, code: string, username: s
 		from: config.mailer.from,
 		to: email,
 		subject: `${config.site.siteName} | Account Recovery`,
-		html,
+		html
 	});
 
 	console.info(

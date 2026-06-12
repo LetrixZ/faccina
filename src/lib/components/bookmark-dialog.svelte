@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { Button } from './ui/button';
 	import { enhance } from '$app/forms';
-	import { userCollections } from '$lib/stores';
-	import type { Gallery } from '$lib/types';
+	import { appState } from '$lib/app.svelte';
+	import type { Gallery } from '$lib/types.js';
+	import { Button } from './ui/button/index.js';
 
-	export let gallery: Pick<Gallery, 'id'>;
+	let { gallery }: { gallery: Pick<Gallery, 'id'> } = $props();
 </script>
 
-{#if $userCollections?.length}
+{#if appState.collections?.length}
 	<ul class="grid gap-2">
-		{#each $userCollections as collection}
+		{#each appState.collections as collection (collection.id)}
 			{@const archives = collection.archives}
 			<li class="flex items-center justify-between">
 				<div class="flex gap-2">

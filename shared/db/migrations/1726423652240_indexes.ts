@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	await db.schema.createIndex('archive_description').on('archives').column('description').execute();
 	await db.schema.createIndex('archive_released_at').on('archives').column('released_at').execute();
 	await db.schema.createIndex('archive_created_at').on('archives').column('created_at').execute();
@@ -34,7 +34,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	await db.schema.dropIndex('archive_description').execute();
 	await db.schema.dropIndex('archive_released_at').execute();
 	await db.schema.dropIndex('archive_created_at').execute();

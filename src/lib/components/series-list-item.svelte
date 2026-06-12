@@ -1,13 +1,18 @@
 <script lang="ts">
-	import pixelWidth from 'string-pixel-width';
 	import type { SeriesListItem, Tag } from '../types';
 	import Chip from './chip.svelte';
 	import { Button } from './ui/button';
-	import { siteConfig } from '$lib/stores';
+	import pixelWidth from 'string-pixel-width';
 
-	export let series: SeriesListItem;
+	let {
+		series,
+		imageServer
+	}: {
+		series: SeriesListItem;
+		imageServer: string;
+	} = $props();
 
-	$: [reducedTags, moreCount] = (() => {
+	const [reducedTags, moreCount] = $derived.by(() => {
 		const tags = series.tags;
 
 		const maxWidth = 290;
@@ -36,9 +41,7 @@
 		}
 
 		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+	});
 </script>
 
 <div class="group h-auto w-auto space-y-2">
@@ -46,14 +49,14 @@
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
 				alt="'{series.title}' cover"
-				class="aspect-[45/64] bg-neutral-800 object-contain"
+				class="aspect-45/64 bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${series.hash}/${series.thumbnail}?type=cover`}
+				src={`${imageServer}/image/${series.hash}/${series.thumbnail}?type=cover`}
 				width={640}
 			/>
 
-			<div class="absolute bottom-1 end-1 flex gap-1">
+			<div class="absolute bottom-1 inset-e-1 flex gap-1">
 				<div class="w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70">
 					{series.chapterCount}C
 				</div>
@@ -72,13 +75,13 @@
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
-			{#each tags as tag}
+			{#each reducedTags as tag (`${tag.namespace}:${tag.name}`)}
 				<Chip {tag} />
 			{/each}
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

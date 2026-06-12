@@ -1,8 +1,8 @@
-import { sql, type Kysely } from 'kysely';
 import { id, now } from '../helpers';
-import config from '~shared/config';
+import { sql, type Kysely } from 'kysely';
+import config from '~shared/config.js';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	await db.schema.alterTable('series').renameTo('series_old').execute();
 	await db.schema.alterTable('series_archive').renameTo('series_archive_old').execute();
 
@@ -32,7 +32,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 					id: series.id,
 					title: series.title,
 					createdAt: series.createdAt,
-					updatedAt: series.updatedAt,
+					updatedAt: series.updatedAt
 				}))
 			)
 			.execute();
@@ -65,7 +65,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 				archiveId: seriesArchive.archiveId,
 				order: seriesArchive.order,
 				createdAt: seriesArchive.createdAt,
-				updatedAt: seriesArchive.updatedAt,
+				updatedAt: seriesArchive.updatedAt
 			})
 			.execute();
 	}

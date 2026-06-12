@@ -1,18 +1,33 @@
 <script lang="ts">
-	import { Command as CommandPrimitive } from 'cmdk-sv';
 	import { cn } from '$lib/utils.js';
-	type $$Props = CommandPrimitive.GroupProps;
+	import { Command as CommandPrimitive, useId } from 'bits-ui';
 
-	let className: string | undefined | null = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		heading,
+		value,
+		...restProps
+	}: CommandPrimitive.GroupProps & {
+		heading?: string;
+	} = $props();
 </script>
 
 <CommandPrimitive.Group
+	bind:ref
 	class={cn(
-		'overflow-hidden p-1 text-foreground [&_[data-cmdk-group-heading]]:px-2 [&_[data-cmdk-group-heading]]:py-1.5 [&_[data-cmdk-group-heading]]:text-xs [&_[data-cmdk-group-heading]]:font-medium [&_[data-cmdk-group-heading]]:text-muted-foreground',
+		'text-foreground **:[[cmdk-group-heading]]:text-muted-foreground overflow-hidden p-1 **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium',
 		className
 	)}
-	{...$$restProps}
+	data-slot="command-group"
+	value={value ?? heading ?? `----${useId()}`}
+	{...restProps}
 >
-	<slot />
+	{#if heading}
+		<CommandPrimitive.GroupHeading class="text-muted-foreground px-2 py-1.5 text-xs font-medium">
+			{heading}
+		</CommandPrimitive.GroupHeading>
+	{/if}
+	<CommandPrimitive.GroupItems {children} />
 </CommandPrimitive.Group>

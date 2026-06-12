@@ -1,8 +1,8 @@
+import { userCollections } from '$lib/server/db/queries.js';
+import type { Collection } from '$lib/types.js';
 import { redirect } from '@sveltejs/kit';
-import { userCollections } from '$lib/server/db/queries';
-import type { Collection } from '$lib/types';
-import config from '~shared/config';
-import db from '~shared/db';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {
@@ -20,7 +20,7 @@ export const load = async ({ locals }) => {
 				name: 'Bookmarks',
 				slug: `bookmarks-${locals.user.id}`,
 				protected: true,
-				userId: locals.user.id,
+				userId: locals.user.id
 			})
 			.execute();
 	}
@@ -28,6 +28,6 @@ export const load = async ({ locals }) => {
 	collections = await userCollections(locals.user.id);
 
 	return {
-		collections: collections satisfies Collection[],
+		collections: collections satisfies Collection[]
 	};
 };

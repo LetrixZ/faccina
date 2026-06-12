@@ -33,38 +33,38 @@ export const taxonomyTables: {
 	{
 		relationId: 'artist_id',
 		relationTable: 'archive_artists',
-		referenceTable: 'artists',
+		referenceTable: 'artists'
 	},
 	{
 		relationId: 'circle_id',
 		relationTable: 'archive_circles',
-		referenceTable: 'circles',
+		referenceTable: 'circles'
 	},
 	{
 		relationId: 'magazine_id',
 		relationTable: 'archive_magazines',
-		referenceTable: 'magazines',
+		referenceTable: 'magazines'
 	},
 	{
 		relationId: 'event_id',
 		relationTable: 'archive_events',
-		referenceTable: 'events',
+		referenceTable: 'events'
 	},
 	{
 		relationId: 'publisher_id',
 		relationTable: 'archive_publishers',
-		referenceTable: 'publishers',
+		referenceTable: 'publishers'
 	},
 	{
 		relationId: 'parody_id',
 		relationTable: 'archive_parodies',
-		referenceTable: 'parodies',
+		referenceTable: 'parodies'
 	},
 	{
 		relationId: 'tag_id',
 		relationTable: 'archive_tags',
-		referenceTable: 'tags',
-	},
+		referenceTable: 'tags'
+	}
 ];
 
 export enum TaxonomyType {
@@ -74,7 +74,7 @@ export enum TaxonomyType {
 	Event = 'e',
 	Publisher = 'ps',
 	Parody = 'p',
-	Tag = 't',
+	Tag = 't'
 }
 
 export const relationId = (type: TaxonomyType | string): RelationshipId => {

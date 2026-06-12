@@ -1,8 +1,8 @@
+import { userDeleteSchema } from '$lib/schemas.js';
 import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { userDeleteSchema } from '$lib/schemas';
-import db from '~shared/db';
+import db from '~shared/db/index.js';
 
 export const actions = {
 	default: async (event) => {
@@ -10,7 +10,7 @@ export const actions = {
 
 		if (!user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
@@ -32,5 +32,5 @@ export const actions = {
 		await db.deleteFrom('users').where('id', '=', user.id).execute();
 
 		redirect(301, '/');
-	},
+	}
 };

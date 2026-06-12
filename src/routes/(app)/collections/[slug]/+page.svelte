@@ -1,28 +1,27 @@
 <script lang="ts">
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Trash from 'lucide-svelte/icons/trash';
-	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Trash from '@lucide/svelte/icons/trash';
+	import { toast } from 'svelte-sonner';
 
-	export let data;
-	export let form;
+	let { data, form } = $props();
 
-	let deleteOpen = false;
+	let deleteOpen = $state(false);
 
-	$: library = data.libraryPage;
+	const library = $derived(data.libraryPage);
 
-	$: {
+	$effect(() => {
 		if (form?.message && form.type === 'error') {
 			toast.error(form.message);
 		}
-	}
+	});
 </script>
 
 <svelte:head>
@@ -61,7 +60,7 @@
 						</Dialog.Header>
 
 						<div class="flex w-full gap-2">
-							<Button class="flex-auto" on:click={() => (deleteOpen = false)} variant="secondary">
+							<Button class="flex-auto" onclick={() => (deleteOpen = false)} variant="secondary">
 								Cancel
 							</Button>
 
@@ -76,7 +75,14 @@
 	</div>
 
 	<div class="grid items-end gap-2 md:flex">
-		<ListNavbar {library} type="collection" />
+		<ListNavbar
+			defaultOrder={data.site.defaultOrder}
+			defaultPageLimit={data.site.defaultPageLimit}
+			defaultSort={data.site.defaultSort}
+			{library}
+			pageLimits={data.site.pageLimits}
+			type="collection"
+		/>
 	</div>
 
 	<Separator />
@@ -84,7 +90,12 @@
 	{#if library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
 			{#each library.data as archive (archive.id)}
-				<ListItem gallery={archive} type="collection" />
+				<ListItem
+					collections={data.userCollections}
+					gallery={archive}
+					imageServer={data.site.imageServer}
+					type="collection"
+				/>
 			{/each}
 		</div>
 	{:else}
@@ -94,7 +105,7 @@
 	<Separator />
 
 	<ListPagination
-		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
+		class="mx-auto w-fit md:mx-0 md:ms-auto md:grow-0"
 		limit={library.limit}
 		total={library.total}
 	/>

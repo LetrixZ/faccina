@@ -1,21 +1,30 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
-	import { type SuperForm } from 'sveltekit-superforms';
-	import type { z } from 'zod';
-	import * as Form from '$lib/components/ui/form';
-	import Input from '$lib/components/ui/input/input.svelte';
-	import { type CreateSeriesSchema } from '$lib/schemas.js';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import type { createSeriesSchema } from '$lib/schemas.js';
+	import Save from '@lucide/svelte/icons/save';
+	import { superForm } from 'sveltekit-superforms';
+	import z from 'zod/v3';
 
-	export let form: SuperForm<z.infer<CreateSeriesSchema>, unknown>;
+	type Form = ReturnType<typeof superForm<z.infer<typeof createSeriesSchema>>>;
 
+	let {
+		form
+	}: {
+		form: Form;
+	} = $props();
+
+	// svelte-ignore state_referenced_locally
 	const { form: formData, enhance } = form;
 </script>
 
-<form class="flex flex-grow flex-col gap-2" method="POST" use:enhance>
+<form class="flex grow flex-col gap-2" method="POST" use:enhance>
 	<Form.Field {form} name="title">
-		<Form.Control let:attrs>
-			<Form.Label class="text-xl">Series title</Form.Label>
-			<Input {...attrs} bind:value={$formData.title} />
+		<Form.Control>
+			{#snippet children({ props })}
+				<Form.Label class="text-xl">Series title</Form.Label>
+				<Input {...props} bind:value={$formData.title} />
+			{/snippet}
 		</Form.Control>
 		<Form.FieldErrors />
 	</Form.Field>

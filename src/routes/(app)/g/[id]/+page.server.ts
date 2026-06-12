@@ -1,22 +1,21 @@
-import { join } from 'node:path';
-import { rm } from 'node:fs/promises';
+import { editArchiveSchema, editTagsSchema } from '$lib/schemas.js';
+import { getArchive, getGallery } from '$lib/server/db/queries.js';
+import type { Archive, HistoryEntry } from '$lib/types.js';
 import { error, fail } from '@sveltejs/kit';
 import dayjs from 'dayjs';
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { z } from 'zod';
-import type { PageServerLoad } from './$types';
-import { editArchiveSchema, editTagsSchema } from '$lib/schemas';
-import { getArchive, getGallery } from '$lib/server/db/queries';
-import type { Archive, HistoryEntry } from '$lib/types';
-import { upsertSources, upsertTags } from '~shared/archive';
-import config from '~shared/config';
-import db from '~shared/db';
-import { now } from '~shared/db/helpers';
-import { leadingZeros } from '~shared/utils';
-import { imageDirectory } from '~shared/server.utils';
+import { z } from 'zod/v3';
+import { upsertSources, upsertTags } from '~shared/archive.js';
+import config from '~shared/config.js';
+import { now } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
+import { imageDirectory } from '~shared/server.utils.js';
+import { leadingZeros } from '~shared/utils.js';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load = async ({ params, locals }) => {
 	if (!locals.user && !config.site.guestAccess) {
 		throw error(404, { message: 'Not found', status: 404 });
 	}
@@ -81,14 +80,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 							? dayjs(archive.releasedAt).format('YYYY-MM-DD[T]HH:mm')
 							: undefined,
 						sources: archive.sources.map(({ name, url }) => ({ name, url: url ?? undefined })),
-						protected: !!archive.protected,
+						protected: !!archive.protected
 					},
 					zod(editArchiveSchema)
 				)
 			: undefined,
 		editTagsForm: archive
 			? await superValidate({ tags: archive.tags }, zod(editTagsSchema))
-			: undefined,
+			: undefined
 	};
 };
 
@@ -96,7 +95,7 @@ export const actions = {
 	addFavorite: async ({ locals, params }) => {
 		if (!locals.user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
@@ -104,14 +103,14 @@ export const actions = {
 			.insertInto('userFavorites')
 			.values({
 				userId: locals.user.id,
-				archiveId: parseInt(params.id),
+				archiveId: parseInt(params.id)
 			})
 			.execute();
 	},
 	removeFavorite: async ({ locals, params }) => {
 		if (!locals.user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
@@ -148,7 +147,7 @@ export const actions = {
 		await db
 			.updateTable('archives')
 			.set({
-				deletedAt: null,
+				deletedAt: null
 			})
 			.where('id', '=', parseInt(id))
 			.execute();
@@ -156,13 +155,13 @@ export const actions = {
 	addCollection: async ({ request, locals }) => {
 		if (!locals.user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
 		if (!config.site.enableCollections) {
 			return fail(400, {
-				message: 'Collections are not enabled',
+				message: 'Collections are not enabled'
 			});
 		}
 
@@ -171,11 +170,11 @@ export const actions = {
 		const { data } = z
 			.object({
 				collection: z.coerce.number(),
-				archive: z.coerce.number(),
+				archive: z.coerce.number()
 			})
 			.safeParse({
 				collection: formData.get('collection'),
-				archive: formData.get('archive'),
+				archive: formData.get('archive')
 			});
 
 		if (!data) {
@@ -191,7 +190,7 @@ export const actions = {
 
 		if (!collection) {
 			return fail(404, {
-				message: 'This collection does not exists',
+				message: 'This collection does not exists'
 			});
 		}
 
@@ -207,25 +206,25 @@ export const actions = {
 			.values({
 				collectionId: collection.id,
 				archiveId: data.archive,
-				order: lastArchive ? lastArchive.order + 1 : 0,
+				order: lastArchive ? lastArchive.order + 1 : 0
 			})
 			.execute();
 
 		return {
 			message: 'Gallery added to the collection',
-			type: 'success',
+			type: 'success'
 		};
 	},
 	removeCollection: async ({ request, locals }) => {
 		if (!locals.user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
 		if (!config.site.enableCollections) {
 			return fail(400, {
-				message: 'Collections are not enabled',
+				message: 'Collections are not enabled'
 			});
 		}
 
@@ -234,11 +233,11 @@ export const actions = {
 		const { data } = z
 			.object({
 				collection: z.coerce.number(),
-				archive: z.coerce.number(),
+				archive: z.coerce.number()
 			})
 			.safeParse({
 				collection: formData.get('collection'),
-				archive: formData.get('archive'),
+				archive: formData.get('archive')
 			});
 
 		if (!data) {
@@ -254,7 +253,7 @@ export const actions = {
 
 		if (!collection) {
 			return fail(404, {
-				message: 'This collection does not exists',
+				message: 'This collection does not exists'
 			});
 		}
 
@@ -263,14 +262,14 @@ export const actions = {
 			.where((eb) =>
 				eb.and({
 					collectionId: collection.id,
-					archiveId: data.archive,
+					archiveId: data.archive
 				})
 			)
 			.execute();
 
 		return {
 			message: 'Gallery removed from the collection',
-			type: 'success',
+			type: 'success'
 		};
 	},
 	editInfo: async (event) => {
@@ -296,7 +295,7 @@ export const actions = {
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -307,7 +306,7 @@ export const actions = {
 			releasedAt,
 			language,
 			sources,
-			protected: isProtected,
+			protected: isProtected
 		} = form.data;
 
 		await db
@@ -319,7 +318,7 @@ export const actions = {
 				releasedAt: dayjs(releasedAt).toISOString(),
 				language,
 				protected: isProtected,
-				updatedAt: now(),
+				updatedAt: now()
 			})
 			.where('id', '=', archive.id)
 			.executeTakeFirst();
@@ -342,7 +341,7 @@ export const actions = {
 		}
 
 		return {
-			form,
+			form
 		};
 	},
 	editTags: async (event) => {
@@ -368,7 +367,7 @@ export const actions = {
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -389,7 +388,7 @@ export const actions = {
 		}
 
 		return {
-			form,
+			form
 		};
-	},
+	}
 };

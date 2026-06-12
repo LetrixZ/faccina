@@ -1,70 +1,80 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import type { UserFormState } from '../models.js';
+	import { resetSchema, type ResetSchema } from '../schemas.js';
+	import { Button } from './ui/button/index.js';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import type { UserFormState } from '../models';
-	import { resetSchema, type ResetSchema } from '../schemas';
-	import { Button } from './ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { page } from '$app/stores';
-	import * as Form from '$lib/components/ui/form';
 
-	export let data: SuperValidated<Infer<ResetSchema>>;
-	export let changeState: ((state: UserFormState) => void) | undefined = undefined;
+	let {
+		form: initialForm,
+		changeState = undefined,
+		onResult
+	}: {
+		form: SuperValidated<Infer<ResetSchema>>;
+		changeState?: (state: UserFormState) => void;
+		onResult: (value: ActionResult) => void;
+	} = $props();
 
-	const dispatch = createEventDispatcher<{ result: ActionResult }>();
-
-	let form = superForm(data, {
+	let form = superForm(initialForm, {
 		validators: zodClient(resetSchema),
 		invalidateAll: false,
 		onResult: ({ result }) => {
-			dispatch('result', result);
+			onResult(result);
 
 			if (result.type === 'failure' && result.data?.message) {
 				toast.error(result.data?.message);
 			} else if (result.type === 'success' || result.type === 'redirect') {
 				toast.success('Password reset successful.');
 			}
-		},
+		}
 	});
 
 	const { form: formData, enhance: enhance } = form;
 </script>
 
-<form action="/reset{$page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
+<form action="/reset{page.url.search}" class="flex flex-col space-y-3" method="POST" use:enhance>
 	<div class="flex flex-col">
 		<Form.Field {form} name="password">
-			<Form.Control let:attrs>
-				<Form.Label>New Password</Form.Label>
-				<Input
-					{...attrs}
-					autocomplete="new-password"
-					bind:value={$formData.password}
-					type="password"
-				/>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>New Password</Form.Label>
+					<Input
+						{...props}
+						autocomplete="new-password"
+						bind:value={$formData.password}
+						type="password"
+					/>
+				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="confirmPassword">
-			<Form.Control let:attrs>
-				<Form.Label>Confirm Password</Form.Label>
-				<Input
-					{...attrs}
-					autocomplete="new-password"
-					bind:value={$formData.confirmPassword}
-					type="password"
-				/>
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Confirm Password</Form.Label>
+					<Input
+						{...props}
+						autocomplete="new-password"
+						bind:value={$formData.confirmPassword}
+						type="password"
+					/>
+				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
 
 		<Form.Field {form} name="code">
-			<Form.Control let:attrs>
-				<Form.Label>Recovery code</Form.Label>
-				<Input {...attrs} bind:value={$formData.code} />
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Recovery code</Form.Label>
+					<Input {...props} bind:value={$formData.code} />
+				{/snippet}
 			</Form.Control>
 			<Form.FieldErrors />
 		</Form.Field>
@@ -73,8 +83,8 @@
 	<div class="flex justify-between">
 		<Button
 			class="h-fit p-0 text-sm"
-			href="/login{$page.url.search}"
-			on:click={(ev) => {
+			href="/login{page.url.search}"
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('login');
@@ -86,8 +96,8 @@
 		</Button>
 		<Button
 			class="h-fit p-0 text-sm"
-			href="/register{$page.url.search}"
-			on:click={(ev) => {
+			href="/register{page.url.search}"
+			onclick={(ev) => {
 				if (changeState && typeof changeState == 'function') {
 					ev.preventDefault();
 					changeState('register');
@@ -103,8 +113,8 @@
 
 	<Button
 		class="mx-auto"
-		href="/recover{$page.url.search}"
-		on:click={(ev) => {
+		href="/recover{page.url.search}"
+		onclick={(ev) => {
 			if (changeState && typeof changeState == 'function') {
 				ev.preventDefault();
 				changeState('recover');

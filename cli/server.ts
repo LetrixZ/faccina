@@ -27,7 +27,7 @@ export const heapStats = async ({ hostname, port }: { hostname: string; port: st
 export const runGC = async ({
 	sync,
 	hostname,
-	port,
+	port
 }: {
 	sync: boolean;
 	hostname: string;

@@ -1,31 +1,27 @@
 <script lang="ts">
-	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
+	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
 
-	type $$Props = DropdownMenuPrimitive.ItemProps & {
+	let {
+		ref = $bindable(null),
+		class: className,
+		inset,
+		variant = 'default',
+		...restProps
+	}: DropdownMenuPrimitive.ItemProps & {
 		inset?: boolean;
-	};
-	type $$Events = DropdownMenuPrimitive.ItemEvents;
-
-	let className: $$Props['class'] = undefined;
-	export let inset: $$Props['inset'] = undefined;
-	export { className as class };
+		variant?: 'default' | 'destructive';
+	} = $props();
 </script>
 
 <DropdownMenuPrimitive.Item
+	bind:ref
 	class={cn(
-		'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm font-medium outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-primary data-[disabled]:opacity-50',
-		inset && 'pl-8',
+		'cn-dropdown-menu-item group/dropdown-menu-item relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-inset:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0',
 		className
 	)}
-	{...$$restProps}
-	on:click
-	on:keydown
-	on:focusin
-	on:focusout
-	on:pointerdown
-	on:pointerleave
-	on:pointermove
->
-	<slot />
-</DropdownMenuPrimitive.Item>
+	data-inset={inset}
+	data-slot="dropdown-menu-item"
+	data-variant={variant}
+	{...restProps}
+/>

@@ -1,20 +1,20 @@
-import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
-import { basename, join } from 'node:path';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
+import { cp, exists, mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import pg, { Client } from 'pg';
-import { z } from 'zod';
-import config from '../shared/config';
-import db from '../shared/db';
-import { imageDirectory } from '~shared/server.utils';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
+import { imageDirectory } from '~shared/server.utils.js';
 
 export const dbUrlSchema = z.string().startsWith('postgres://');
 
 export const migrateImagesSchema = z.object({
 	dataDir: z.string(),
 	format: z.enum(['webp', 'jpeg', 'png', 'avif', 'jxl']),
-	dbUrl: dbUrlSchema,
+	dbUrl: dbUrlSchema
 });
 
 type MigrateImagesOpts = z.infer<typeof migrateImagesSchema>;
@@ -34,7 +34,7 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 
 	const query = {
 		text: 'SELECT hash FROM archives',
-		rowMode: 'array',
+		rowMode: 'array'
 	};
 
 	const result = await client.query(query);
@@ -43,7 +43,7 @@ export const migrateImages = async (opts: MigrateImagesOpts) => {
 		archives: 0,
 		thumbnails: 0,
 		covers: 0,
-		skip: 0,
+		skip: 0
 	};
 
 	const start = performance.now();
@@ -148,7 +148,7 @@ export const migrateDatabase = async (dbUrl: string) => {
 		count = rows.length;
 	}
 
-	const db = (await import('../shared/db')).default;
+	const db = (await import('~shared/db')).default;
 
 	await db
 		.insertInto('archives')
@@ -158,7 +158,7 @@ export const migrateDatabase = async (dbUrl: string) => {
 				created_at: new Date(row.created_at).toISOString(),
 				updated_at: new Date(row.updated_at).toISOString(),
 				released_at: row.released_at ? new Date(row.released_at).toISOString() : null,
-				deleted_at: row.deleted_at ? new Date(row.deleted_at).toISOString() : null,
+				deleted_at: row.deleted_at ? new Date(row.deleted_at).toISOString() : null
 			}))
 		)
 		.execute();
@@ -184,7 +184,7 @@ export const migratePresetHash = async () => {
 	const multibar = new cliProgress.MultiBar({
 		clearOnComplete: true,
 		format: ` {bar} - (ID: {id}) {title} - {value}/{total}`,
-		linewrap: true,
+		linewrap: true
 	});
 	const progress = multibar.create(archives.length, 0);
 

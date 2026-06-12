@@ -1,10 +1,10 @@
-import { json } from '@sveltejs/kit';
-import { sql } from 'kysely';
 import { libraryItems } from '$lib/server/db/queries.js';
 import { handleTags } from '$lib/server/utils.js';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom } from '~shared/db/helpers';
+import { json } from '@sveltejs/kit';
+import { sql } from 'kysely';
+import config from '~shared/config.js';
+import { jsonArrayFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const GET = async ({ params, locals }) => {
 	if (!locals.user && !config.site.guestAccess) {
@@ -39,11 +39,11 @@ export const GET = async ({ params, locals }) => {
 						'archives.title',
 						sql<number>`${eb.ref('seriesArchive.order')} + 1`.as('number'),
 						'archives.pages',
-						'archives.releasedAt',
+						'archives.releasedAt'
 					])
 					.orderBy('seriesArchive.order asc')
 					.whereRef('seriesArchive.seriesId', '=', 'series.id')
-			).as('chapters'),
+			).as('chapters')
 		])
 		.where('series.id', '=', id)
 		.groupBy('series.id')
@@ -65,6 +65,6 @@ export const GET = async ({ params, locals }) => {
 	return json({
 		...series,
 		pages: series.chapters.reduce((acc, chapter) => acc + chapter.pages, 0),
-		tags: handleTags(Array.from(uniqueTags.values())),
+		tags: handleTags(Array.from(uniqueTags.values()))
 	});
 };

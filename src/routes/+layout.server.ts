@@ -1,5 +1,5 @@
-import type { SiteConfig } from '$lib/types';
-import config from '~shared/config';
+import type { SiteConfig } from '$lib/types.js';
+import config from '~shared/config.js';
 
 export const load = ({ locals }) => {
 	return {
@@ -22,12 +22,12 @@ export const load = ({ locals }) => {
 			defaultPageLimit: config.site.galleryListing.defaultPageLimit,
 			imageServer: config.site.imageServer,
 			admin: {
-				deleteRequireConfirmation: config.site.admin.deleteRequireConfirmation,
+				deleteRequireConfirmation: config.site.admin.deleteRequireConfirmation
 			},
 			galleryShowAllPreviews: config.site.gallery.showAllPreviews,
 			galleryAutoLoadMorePreviews: config.site.gallery.autoLoadMorePreviews,
 			galleryPreviewsCount: config.site.gallery.previewsCount,
-			downloadArchiveExtension: config.server.downloadArchiveExtension,
-		} satisfies SiteConfig,
+			downloadArchiveExtension: config.server.downloadArchiveExtension
+		} satisfies SiteConfig
 	};
 };

@@ -1,20 +1,20 @@
+import { type Order, type Sort } from '$lib/schemas.js';
+import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types.js';
+import { shuffle } from '$lib/utils.js';
+import { log, type SearchParams, sortArchiveTags } from '../utils';
 import chalk from 'chalk';
 import {
 	type Expression,
 	type OrderByExpression,
 	type SelectQueryBuilder,
 	sql,
-	type SqlBool,
+	type SqlBool
 } from 'kysely';
 import naturalCompare from 'natural-compare-lite';
-import { z } from 'zod';
-import { log, type SearchParams, sortArchiveTags } from '../utils';
-import { type Order, type Sort } from '$lib/schemas';
-import type { Archive, Collection, Gallery, GalleryListItem, Tag } from '$lib/types';
-import { shuffle } from '$lib/utils';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom, like } from '~shared/db/helpers';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
+import { jsonArrayFrom, like } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 import type { DB } from '~shared/db/types';
 
 export type QueryOptions = {
@@ -73,7 +73,7 @@ export const getGallery = (
 					.innerJoin('series', 'series.id', 'seriesArchive.seriesId')
 					.select(['series.id', 'series.title'])
 					.whereRef('archives.id', '=', 'archiveId')
-			).as('series'),
+			).as('series')
 		])
 		.where('id', '=', id);
 
@@ -129,7 +129,7 @@ export const getArchive = (id: number): Promise<Archive | undefined> => {
 					.innerJoin('series', 'series.id', 'seriesArchive.seriesId')
 					.select(['series.title', 'seriesArchive.order'])
 					.whereRef('seriesArchive.archiveId', '=', 'archives.id')
-			).as('series'),
+			).as('series')
 		])
 		.where('id', '=', id)
 		.executeTakeFirst();
@@ -253,7 +253,7 @@ export const parseQuery = (query: string) => {
 			tagNamespaceQuantity.push({
 				namespace: match[1],
 				expression: match[2],
-				quantity: parseInt(match[3]),
+				quantity: parseInt(match[3])
 			});
 		}
 	}
@@ -264,24 +264,24 @@ export const parseQuery = (query: string) => {
 		titleMatch,
 		pagesMatch: {
 			number: pagesNumber,
-			expression: pagesExpression,
+			expression: pagesExpression
 		},
 		tagsQuantityMatch: {
 			quantity: tagsQuantity,
-			expression: tagsQuantityExpression,
+			expression: tagsQuantityExpression
 		},
 		sourcesQuantityMatch: {
 			quantity: sourcesQuantity,
-			expression: sourcesQuantityExpression,
+			expression: sourcesQuantityExpression
 		},
 		size: {
 			number: sizeNumber,
-			expression: sizeExpression,
+			expression: sizeExpression
 		},
 		tagNamespaceQuantity,
 		urlMatch,
 		sourceMatch,
-		languageMatch: languageMatch.map((match) => match?.[1]).filter((match) => match !== undefined),
+		languageMatch: languageMatch.map((match) => match?.[1]).filter((match) => match !== undefined)
 	};
 
 	const tagMatches: TagMatch[] = [];
@@ -324,7 +324,7 @@ export const parseQuery = (query: string) => {
 			namespace,
 			name,
 			negate,
-			or,
+			or
 		});
 	}
 
@@ -436,7 +436,7 @@ export const searchArchives = async (
 		tagNamespaceQuantity,
 		languageMatch,
 		urlMatch,
-		sourceMatch,
+		sourceMatch
 	} = parseQuery(params.query);
 
 	log(
@@ -483,7 +483,7 @@ export const searchArchives = async (
 				namespace,
 				name,
 				negate: true,
-				or: false,
+				or: false
 			});
 		}
 	}
@@ -781,7 +781,7 @@ export const searchArchives = async (
 	if (!allIds.length) {
 		return {
 			ids: [],
-			total: allIds.length,
+			total: allIds.length
 		};
 	}
 
@@ -793,7 +793,7 @@ export const searchArchives = async (
 		ids: options.skipPagination
 			? allIds
 			: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
-		total: allIds.length,
+		total: allIds.length
 	};
 };
 
@@ -821,7 +821,7 @@ export const libraryItems = async (
 					.select(['namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
-			).as('tags'),
+			).as('tags')
 		])
 		.where('archives.id', 'in', ids)
 		.execute()) satisfies GalleryListItem[];
@@ -875,7 +875,7 @@ export const userCollections = (userId: string): Promise<Collection[]> =>
 					.select(['id', 'title', 'hash', 'thumbnail', 'deletedAt'])
 					.orderBy('collectionArchive.order asc')
 					.whereRef('collection.id', '=', 'collectionId')
-			).as('archives'),
+			).as('archives')
 		])
 		.where('userId', '=', userId)
 		.groupBy('collection.id')
@@ -912,7 +912,7 @@ export const searchSeries = async (
 		const archives = await searchArchives(params, {
 			...options,
 			skipPagination: true,
-			showHidden: true,
+			showHidden: true
 		});
 
 		ids = archives.ids;
@@ -988,7 +988,7 @@ export const searchSeries = async (
 	if (!allIds.length) {
 		return {
 			ids: [],
-			total: allIds.length,
+			total: allIds.length
 		};
 	}
 
@@ -1000,6 +1000,6 @@ export const searchSeries = async (
 		ids: options.skipPagination
 			? allIds
 			: allIds.slice((params.page - 1) * params.limit, params.page * params.limit),
-		total: allIds.length,
+		total: allIds.length
 	};
 };

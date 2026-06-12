@@ -1,7 +1,7 @@
-import type { Kysely } from 'kysely';
 import { now } from '../helpers';
+import type { Kysely } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	await db.schema
 		.createTable('user_codes')
 		.addColumn('user_id', 'text', (col) => col.references('users.id').onDelete('cascade').notNull())
@@ -18,7 +18,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	await db.schema.dropIndex('user_codes_code_type').execute();
 	await db.schema.dropTable('user_codes').execute();
 }

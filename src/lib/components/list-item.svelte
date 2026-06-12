@@ -1,46 +1,59 @@
 <script lang="ts">
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import pixelWidth from 'string-pixel-width';
-	import { toast } from 'svelte-sonner';
-	import type { GalleryListItem, ListPageType, Tag } from '../types';
+	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
+	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { cn } from '$lib/utils.js';
+	import type { CollectionItem, GalleryListItem, ListPageType, Tag } from '../types.js';
 	import BookmarkToast from './bookmark-toast.svelte';
 	import Chip from './chip.svelte';
-	import { Button } from './ui/button';
-	import { cn } from '$lib/utils';
-	import { siteConfig, userCollections } from '$lib/stores';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
-	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
-	import { browser } from '$app/environment';
+	import { Button } from './ui/button/index.js';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import pixelWidth from 'string-pixel-width';
+	import { toast } from 'svelte-sonner';
 
-	export let gallery: GalleryListItem;
-	export let enableBookmark = false;
-	export let imageBookmark = false;
-	export let newTab = false;
-	export let type: ListPageType;
+	let {
+		gallery,
+		bookmarked = undefined,
+		enableBookmark = false,
+		imageBookmark = false,
+		newTab = false,
+		type,
+		imageServer,
+		collections,
+		onBookmark = undefined
+	}: {
+		gallery: GalleryListItem;
+		bookmarked?: boolean;
+		enableBookmark?: boolean;
+		imageBookmark?: boolean;
+		newTab?: boolean;
+		type: ListPageType;
+		imageServer: string;
+		collections: CollectionItem[] | undefined;
+		onBookmark?: (bookmarked: boolean) => void;
+	} = $props();
 
-	export let bookmarked: boolean | undefined = undefined;
-	export let onBookmark: ((bookmarked: boolean) => void) | undefined = undefined;
+	let collectionsOpen = $state(false);
+	let bookmarkGallery: GalleryListItem | null = $state(null);
 
-	let collectionsOpen = false;
-	let bookmarkGallery: GalleryListItem | null = null;
-
-	$: _bookmarked =
+	const _bookmarked = $derived(
 		bookmarked !== undefined
 			? bookmarked
-			: !!$userCollections
+			: !!collections
 					?.find((c) => c.protected)
-					?.archives.find((archive) => archive.id === gallery.id);
+					?.archives.find((archive) => archive.id === gallery.id)
+	);
 
-	$: {
+	$effect(() => {
 		if (!collectionsOpen) {
 			bookmarkGallery = null;
 		}
-	}
+	});
 
-	$: [reducedTags, moreCount] = (() => {
+	const [reducedTags, moreCount] = $derived.by(() => {
 		const tags = gallery.tags;
 
 		const maxWidth = 290;
@@ -69,9 +82,7 @@
 		}
 
 		return [reduced, tagCount];
-	})();
-
-	$: tags = reducedTags;
+	});
 
 	const handleBookmark = (bookmarked: boolean) => {
 		if (onBookmark) {
@@ -79,7 +90,7 @@
 			return;
 		}
 
-		const defaultCollection = $userCollections?.find((c) => c.protected);
+		const defaultCollection = collections?.find((c) => c.protected);
 
 		if (!defaultCollection) {
 			return;
@@ -92,7 +103,7 @@
 		fetch(`/g/${gallery.id}/?/${bookmarked ? 'addCollection' : 'removeCollection'}`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: formData,
+			body: formData
 		})
 			.then((res) => res.json())
 			.then((result) => {
@@ -105,10 +116,10 @@
 							onChange: () => {
 								bookmarkGallery = gallery;
 								collectionsOpen = true;
-							},
+							}
 						},
 						duration: 5000,
-						id: `bookmark-${gallery.id}`,
+						id: `bookmark-${gallery.id}`
 					});
 				}
 
@@ -119,30 +130,31 @@
 
 <div class="group h-auto w-auto space-y-2">
 	<a
-		href={`/g/${gallery.id}${$page.url.search}`}
-		tabindex="-1"
 		{...newTab && { target: '_blank' }}
-		on:click={(ev) => {
+		class="block"
+		href={`/g/${gallery.id}${page.url.search}`}
+		onclick={(ev) => {
 			if (enableBookmark && imageBookmark) {
 				ev.preventDefault();
 				handleBookmark(!_bookmarked);
 			}
 		}}
+		tabindex="-1"
 	>
 		<div class="relative overflow-clip rounded-md shadow">
 			<img
 				alt={`'${gallery.title}' cover`}
-				class="aspect-[45/64] bg-neutral-800 object-contain"
+				class="aspect-45/64 bg-neutral-800 object-contain"
 				height={910}
 				loading="eager"
-				src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+				src={`${imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
 				width={640}
 			/>
 
 			{#if browser && enableBookmark}
 				<div
 					class={cn(
-						'absolute end-1 top-1 hidden group-hover:block',
+						'absolute inset-e-1 top-1 hidden group-hover:block',
 						_bookmarked && type === 'collection' && 'block'
 					)}
 				>
@@ -151,7 +163,9 @@
 							'flex size-9 items-center justify-center rounded-md bg-indigo-700 p-2 opacity-85 hover:opacity-95 active:opacity-100',
 							_bookmarked && 'opacity-90'
 						)}
-						on:click|preventDefault|stopPropagation={() => {
+						onclick={(ev) => {
+							ev.preventDefault();
+							ev.stopPropagation();
 							handleBookmark(!_bookmarked);
 						}}
 					>
@@ -168,7 +182,7 @@
 				</Dialog.Root>
 			{/if}
 
-			<div class="absolute bottom-1 end-1 flex gap-1">
+			<div class="absolute bottom-1 inset-e-1 flex gap-1">
 				{#if gallery.deletedAt}
 					<div
 						class="flex aspect-square size-6 items-center justify-center rounded-md bg-slate-700 p-1 text-xs font-bold text-white opacity-85"
@@ -183,10 +197,10 @@
 		</div>
 	</a>
 
-	<div class="h-fit space-y-1.5">
+	<div class="h-fit space-y-2">
 		<a
 			class="line-clamp-2 pe-2 font-medium leading-6 underline-offset-4 hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none group-hover:text-foreground"
-			href={`/g/${gallery.id}${$page.url.search}`}
+			href={`/g/${gallery.id}${page.url.search}`}
 			title={gallery.title}
 			{...newTab && { target: '_blank' }}
 		>
@@ -194,13 +208,13 @@
 		</a>
 
 		<div class="flex flex-wrap gap-1.5">
-			{#each tags as tag}
+			{#each reducedTags as tag (`${tag.namespace}:${tag.name}`)}
 				<Chip {newTab} {tag} />
 			{/each}
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

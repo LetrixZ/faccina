@@ -1,12 +1,11 @@
+import config from '../config.js';
 import { Database } from 'bun:sqlite';
 import pg from 'pg';
 import { match } from 'ts-pattern';
-import config from '../config';
 
 const connection = match(config.database)
 	.with({ vendor: 'postgresql' }, (data) => {
 		pg.types.setTypeParser(pg.types.builtins.INT8, (value) => parseInt(value));
-
 		return new pg.Pool(data);
 	})
 	.with({ vendor: 'sqlite' }, (data) => {

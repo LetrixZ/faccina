@@ -1,16 +1,16 @@
+import type { Preset } from '$lib/image-presets';
+import type { ImageArchive } from '$lib/types.js';
+import chalk from 'chalk';
+import imageSize from 'image-size';
+import StreamZip from 'node-stream-zip';
 import { stat } from 'node:fs/promises';
 import { extname, join } from 'path';
-import chalk from 'chalk';
-import StreamZip from 'node-stream-zip';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import imageSize from 'image-size';
-import type { ImageArchive } from '$lib/types';
-import type { Preset } from '$lib/image-presets';
-import config from '~shared/config';
-import db from '~shared/db';
-import { leadingZeros } from '~shared/utils';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 import { imageDirectory } from '~shared/server.utils';
+import { leadingZeros } from '~shared/utils';
 
 export type ImageEncodingArgs = {
 	archive: ImageArchive;
@@ -63,7 +63,7 @@ export const calculateDimensions = async (args: ImageDimensionsArgs) => {
 		.updateTable('archiveImages')
 		.set({
 			width: args.dimensions.width,
-			height: args.dimensions.height,
+			height: args.dimensions.height
 		})
 		.where('archiveId', '=', args.archive.id)
 		.where('pageNumber', '=', args.page)
@@ -140,7 +140,7 @@ export const encodeImage = async (args: ImageEncodingArgs) => {
 
 		pipeline = pipeline.resize({
 			width: Math.round(preset.width),
-			height: newHeight ? Math.round(newHeight) : undefined,
+			height: newHeight ? Math.round(newHeight) : undefined
 		});
 	}
 

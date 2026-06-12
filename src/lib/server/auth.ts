@@ -1,13 +1,13 @@
+import { dev } from '$app/environment';
 import { NodePostgresAdapter } from '@lucia-auth/adapter-postgresql';
 import { BunSQLiteAdapter } from '@lucia-auth/adapter-sqlite';
 import { Database } from 'bun:sqlite';
 import { Lucia } from 'lucia';
 import type { Pool } from 'pg';
 import { match } from 'ts-pattern';
-import { dev } from '$app/environment';
-import config from '~shared/config';
-import { databaseType } from '~shared/db';
-import connection from '~shared/db/connection';
+import config from '~shared/config.js';
+import connection from '~shared/db/connection.js';
+import { databaseType } from '~shared/db/index.js';
 
 let _lucia: Lucia<
 	Record<never, never>,
@@ -25,7 +25,7 @@ export const lucia = (): Lucia => {
 				() =>
 					new NodePostgresAdapter(connection as Pool, {
 						user: 'users',
-						session: 'user_sessions',
+						session: 'user_sessions'
 					})
 			)
 			.with(
@@ -33,7 +33,7 @@ export const lucia = (): Lucia => {
 				() =>
 					new BunSQLiteAdapter(connection as Database, {
 						user: 'users',
-						session: 'user_sessions',
+						session: 'user_sessions'
 					})
 			)
 			.exhaustive();
@@ -41,15 +41,15 @@ export const lucia = (): Lucia => {
 		_lucia = new Lucia(adapter, {
 			sessionCookie: {
 				attributes: {
-					secure: !dev,
-				},
+					secure: !dev
+				}
 			},
 			getUserAttributes: (attributes) => {
 				return {
 					username: attributes.username,
-					admin: config.site.adminUsers.includes(attributes.username),
+					admin: config.site.adminUsers.includes(attributes.username)
 				};
-			},
+			}
 		});
 	}
 

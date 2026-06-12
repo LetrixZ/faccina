@@ -1,10 +1,17 @@
 <script lang="ts">
-	import { cn } from '$lib/utils';
+	import { cn } from '$lib/utils.js';
+	import type { Snippet } from 'svelte';
+	import type { ClassValue } from 'svelte/elements';
 
-	let className: string | null | undefined = undefined;
-
-	export let name: string | undefined = undefined;
-	export { className as class };
+	let {
+		class: className,
+		name,
+		children
+	}: {
+		name?: string;
+		class?: ClassValue;
+		children: Snippet;
+	} = $props();
 </script>
 
 <div
@@ -17,5 +24,5 @@
 		<p class="pb-1 text-xs font-medium uppercase tracking-wide">{name}</p>
 	{/if}
 
-	<slot />
+	{@render children()}
 </div>

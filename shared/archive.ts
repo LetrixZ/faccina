@@ -1,10 +1,10 @@
-import { rm } from 'node:fs/promises';
-import { Glob } from 'bun';
-import { sql } from 'kysely';
-import db from '../shared/db';
 import config from './config';
 import type { Image, Series, Source, Tag } from './metadata';
 import { leadingZeros } from './utils';
+import { Glob } from 'bun';
+import { sql } from 'kysely';
+import { rm } from 'node:fs/promises';
+import db from '~shared/db/index.js';
 
 /**
  * Upserts archive sources
@@ -36,7 +36,7 @@ export const upsertSources = async (id: number, metadataSources: Source[]) => {
 
 		return {
 			name: mapping?.name ?? source.name,
-			url: source.url,
+			url: source.url
 		};
 	});
 
@@ -83,9 +83,9 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 				...Array.from(
 					new Glob(`${hash}/**/${leadingZeros(image.pageNumber, dbImages.length)}.*`).scanSync({
 						cwd: config.directories.images,
-						absolute: true,
+						absolute: true
 					})
-				),
+				)
 			],
 			[] as string[]
 		);
@@ -102,14 +102,14 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 				images.map(({ filename, pageNumber }) => ({
 					filename,
 					pageNumber,
-					archiveId: id,
+					archiveId: id
 				}))
 			)
 			.onConflict((oc) =>
 				oc.columns(['archiveId', 'pageNumber']).doUpdateSet((eb) => ({
 					filename: eb.ref('excluded.filename'),
 					width: eb.ref('excluded.width'),
-					height: eb.ref('excluded.height'),
+					height: eb.ref('excluded.height')
 				}))
 			)
 			.returning(['filename', 'pageNumber', 'width', 'height'])
@@ -143,7 +143,7 @@ export const upsertImages = async (id: number, images: Image[], hash: string) =>
 export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 	metadataTags = metadataTags.map(({ namespace, name }) => ({
 		namespace: namespace.length ? namespace.toLowerCase() : 'tag',
-		name,
+		name
 	}));
 
 	let uniqueTags: Tag[] = [];
@@ -172,7 +172,7 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 			namespace: mapping?.namespace?.length
 				? mapping.namespace.toLowerCase()
 				: tag.namespace.toLowerCase(),
-			name: mapping?.name ?? tag.name,
+			name: mapping?.name ?? tag.name
 		};
 	});
 
@@ -200,7 +200,7 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 			.onConflict((oc) =>
 				oc.columns(['namespace', 'name']).doUpdateSet((eb) => ({
 					name: eb.ref('excluded.name'),
-					namespace: eb.ref('excluded.namespace'),
+					namespace: eb.ref('excluded.namespace')
 				}))
 			)
 			.execute();
@@ -236,7 +236,7 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 	);
 
 	const relationIdsInsert = relationInsert.map((tag) => ({
-		tagId: tags.find((_tag) => _tag.namespace === tag.namespace && _tag.name === tag.name)!.id,
+		tagId: tags.find((_tag) => _tag.namespace === tag.namespace && _tag.name === tag.name)!.id
 	}));
 
 	if (relationIdsInsert.length) {
@@ -245,7 +245,7 @@ export const upsertTags = async (id: number, metadataTags: Tag[]) => {
 			.values(
 				relationIdsInsert.map(({ tagId }) => ({
 					archiveId: id,
-					tagId,
+					tagId
 				}))
 			)
 			.execute();
@@ -304,7 +304,7 @@ export const upsertSeries = async (id: number, seriesList: Series[]) => {
 
 	const relationIdsInsert = relationInsert.map((series) => ({
 		seriesId: existingSeries.find((_series) => _series.title === series.title)!.id,
-		order: seriesList.find((_series) => _series.title === series.title)!.order,
+		order: seriesList.find((_series) => _series.title === series.title)!.order
 	}));
 
 	if (relationIdsInsert.length) {
@@ -314,7 +314,7 @@ export const upsertSeries = async (id: number, seriesList: Series[]) => {
 				relationIdsInsert.map(({ seriesId, order }) => ({
 					seriesId,
 					archiveId: id,
-					order,
+					order
 				}))
 			)
 			.execute();

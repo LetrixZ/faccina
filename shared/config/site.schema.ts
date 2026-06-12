@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { orderTypes, sortTypes } from './sort';
-import { stringOrStringArray } from './common';
+import { stringOrStringArray } from './common.js';
+import { orderTypes, sortTypes } from './sort.js';
+import { z } from 'zod/v3';
 
 const usernameSchema = z
 	.string()
@@ -13,13 +13,13 @@ const tagWeightSchema = z.object({
 	name: stringOrStringArray.optional(),
 	namespace: z.string().optional(),
 	weight: z.number(),
-	ignore_case: z.boolean().default(false).optional(),
+	ignore_case: z.boolean().default(false).optional()
 });
 
 const tagExcludeSchema = z.object({
 	name: stringOrStringArray.optional(),
 	namespace: z.string().optional(),
-	ignore_case: z.boolean().default(false).optional(),
+	ignore_case: z.boolean().default(false).optional()
 });
 
 const listingSchema = z
@@ -29,7 +29,7 @@ const listingSchema = z
 		tag_weight: z.array(tagWeightSchema).default([]),
 		tag_exclude: z.array(tagExcludeSchema).default([]),
 		use_default_tag_weight: z.boolean().default(true),
-		use_default_tag_exclude: z.boolean().default(true),
+		use_default_tag_exclude: z.boolean().default(true)
 	})
 	.transform((val) => ({
 		...val,
@@ -41,7 +41,7 @@ const listingSchema = z
 					{ namespace: 'artist', weight: 1000 },
 					{ namespace: 'circle', weight: 999 },
 					{ namespace: 'parody', weight: 998 },
-					...val.tag_weight,
+					...val.tag_weight
 				]
 			: val.tag_weight,
 		tag_exclude: val.use_default_tag_exclude
@@ -50,15 +50,15 @@ const listingSchema = z
 					{ namespace: 'magazine' },
 					{ namespace: 'event' },
 					{ namespace: 'publisher' },
-					...val.tag_exclude,
+					...val.tag_exclude
 				]
-			: val.tag_exclude,
+			: val.tag_exclude
 	}));
 
 const gallerySchema = z.object({
 	show_all_previews: z.boolean().default(false),
 	auto_load_more_previews: z.boolean().default(false),
-	previews_count: z.number().default(12),
+	previews_count: z.number().default(12)
 });
 
 const schema = z.object({
@@ -80,11 +80,11 @@ const schema = z.object({
 	image_server: z.string().default(''),
 	admin: z
 		.object({
-			delete_require_confirmation: z.boolean().default(true),
+			delete_require_confirmation: z.boolean().default(true)
 		})
 		.default({}),
 	gallery_listing: listingSchema.default({}),
-	gallery: gallerySchema.default({}),
+	gallery: gallerySchema.default({})
 });
 
 export default schema;

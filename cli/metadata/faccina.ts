@@ -1,7 +1,7 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
 import dayjs from 'dayjs';
 import YAML from 'yaml';
-import { z } from 'zod';
-import { type ArchiveMetadata } from '../../shared/metadata';
+import { z } from 'zod/v3';
 
 export const metadataSchema = z.object({
 	id: z.number().optional(),
@@ -20,7 +20,7 @@ export const metadataSchema = z.object({
 	tags: z.array(
 		z.object({
 			namespace: z.string(),
-			name: z.string(),
+			name: z.string()
 		})
 	),
 	images: z
@@ -29,7 +29,7 @@ export const metadataSchema = z.object({
 				filename: z.string(),
 				pageNumber: z.number(),
 				width: z.number().nullish(),
-				height: z.number().nullish(),
+				height: z.number().nullish()
 			})
 		)
 		.optional(),
@@ -40,7 +40,7 @@ export const metadataSchema = z.object({
 				url: z
 					.string()
 					.nullish()
-					.transform((val) => (val === null ? undefined : val)),
+					.transform((val) => (val === null ? undefined : val))
 			})
 		)
 		.optional(),
@@ -48,10 +48,10 @@ export const metadataSchema = z.object({
 		.array(
 			z.object({
 				title: z.string(),
-				order: z.number(),
+				order: z.number()
 			})
 		)
-		.optional(),
+		.optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -79,7 +79,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		.map((image) => ({ filename: image.filename, pageNumber: image.pageNumber }));
 	archive.sources = data.sources?.map((source) => ({
 		name: source.name,
-		url: source.url ?? undefined,
+		url: source.url ?? undefined
 	}));
 	archive.series = data.series;
 

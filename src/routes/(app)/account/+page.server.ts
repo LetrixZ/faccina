@@ -1,9 +1,9 @@
+import { userDeleteSchema, userEditSchema } from '$lib/schemas.js';
 import { fail, redirect } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { userDeleteSchema, userEditSchema } from '$lib/schemas';
-import db from '~shared/db';
-import { now } from '~shared/db/helpers';
+import { now } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {
@@ -21,11 +21,11 @@ export const load = async ({ locals }) => {
 		userForm: await superValidate(
 			{
 				username: user.username,
-				email: user.email ?? undefined,
+				email: user.email ?? undefined
 			},
 			zod(userEditSchema)
 		),
-		deleteForm: await superValidate(zod(userDeleteSchema)),
+		deleteForm: await superValidate(zod(userDeleteSchema))
 	};
 };
 
@@ -35,7 +35,7 @@ export const actions = {
 
 		if (!user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
@@ -45,7 +45,7 @@ export const actions = {
 
 		const update: { email: string | null; passwordHash?: string } = {
 			email: null,
-			passwordHash: undefined,
+			passwordHash: undefined
 		};
 
 		if (email?.length) {
@@ -59,7 +59,7 @@ export const actions = {
 			if (existingEmail) {
 				return fail(400, {
 					message: 'An user with the same email already exists.',
-					form,
+					form
 				});
 			}
 
@@ -82,7 +82,7 @@ export const actions = {
 			const newPasswordHash = await Bun.password.hash(newPassword, {
 				algorithm: 'argon2id',
 				memoryCost: 19456,
-				timeCost: 2,
+				timeCost: 2
 			});
 
 			update.passwordHash = newPasswordHash;
@@ -92,13 +92,13 @@ export const actions = {
 			.updateTable('users')
 			.set({
 				...update,
-				updatedAt: now(),
+				updatedAt: now()
 			})
 			.where('id', '=', user.id)
 			.execute();
 
 		return {
-			form,
+			form
 		};
-	},
+	}
 };

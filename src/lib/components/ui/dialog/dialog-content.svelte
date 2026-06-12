@@ -1,30 +1,51 @@
 <script lang="ts">
-	import { cn, flyAndScale } from '$lib/utils';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { cn, type WithoutChildrenOrChild } from '$lib/utils.js';
+	import DialogPortal from './dialog-portal.svelte';
+	import * as Dialog from './index.js';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { Dialog as DialogPrimitive } from 'bits-ui';
-	import * as Dialog from './index';
+	import type { Snippet } from 'svelte';
+	import type { ComponentProps } from 'svelte';
+	import type { ClassValue } from 'svelte/elements';
 
-	type $$Props = DialogPrimitive.ContentProps & { overlayClass?: string | null | undefined };
-
-	let className: $$Props['class'] = undefined;
-	export let overlayClass: $$Props['overlayClass'] = undefined;
-	export let transition: $$Props['transition'] = flyAndScale;
-	export let transitionConfig: $$Props['transitionConfig'] = {
-		duration: 200,
-	};
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		overlayClass,
+		portalProps,
+		children,
+		showCloseButton = true,
+		...restProps
+	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
+		overlayClass?: ClassValue;
+		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
+		children: Snippet;
+		showCloseButton?: boolean;
+	} = $props();
 </script>
 
-<Dialog.Portal>
+<DialogPortal {...portalProps}>
 	<Dialog.Overlay class={overlayClass} />
 	<DialogPrimitive.Content
-		{transition}
-		{transitionConfig}
+		bind:ref
 		class={cn(
-			'fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90dvw] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg md:w-full md:max-w-lg',
+			'bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-6 rounded-xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none',
 			className
 		)}
-		{...$$restProps}
+		data-slot="dialog-content"
+		{...restProps}
 	>
-		<slot />
+		{@render children?.()}
+		{#if showCloseButton}
+			<DialogPrimitive.Close data-slot="dialog-close">
+				{#snippet child({ props })}
+					<Button class="absolute top-4 right-4" size="icon-sm" variant="ghost" {...props}>
+						<XIcon />
+						<span class="sr-only">Close</span>
+					</Button>
+				{/snippet}
+			</DialogPrimitive.Close>
+		{/if}
 	</DialogPrimitive.Content>
-</Dialog.Portal>
+</DialogPortal>

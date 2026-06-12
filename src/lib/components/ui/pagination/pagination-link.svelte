@@ -1,34 +1,43 @@
 <script lang="ts">
+	import { buttonVariants, type ButtonSize } from '$lib/components/ui/button/index.js';
+	import { cn } from '$lib/utils.js';
 	import { Pagination as PaginationPrimitive } from 'bits-ui';
-	import { cn } from '$lib/utils';
-	import { type Props, buttonVariants } from '$lib/components/ui/button/index';
 
-	type $$Props = PaginationPrimitive.PageProps &
-		Props & {
-			isActive: boolean;
-		};
-
-	type $$Events = PaginationPrimitive.PageEvents;
-
-	let className: $$Props['class'] = undefined;
-	export let page: $$Props['page'];
-	export let size: $$Props['size'] = 'icon';
-	export let isActive: $$Props['isActive'] = false;
-
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		size = 'icon',
+		isActive,
+		page,
+		children,
+		...restProps
+	}: PaginationPrimitive.PageProps & {
+		size?: ButtonSize;
+		isActive: boolean;
+	} = $props();
 </script>
 
+{#snippet Fallback()}
+	{page.value}
+{/snippet}
+
 <PaginationPrimitive.Page
-	bind:page
+	aria-current={isActive ? 'page' : undefined}
+	bind:ref
 	class={cn(
-		buttonVariants({
-			variant: isActive ? 'outline' : 'ghost',
-			size,
-		}),
+		buttonVariants({ size, variant: isActive ? 'outline' : 'ghost' }),
+		'cn-pagination-link',
 		className
 	)}
-	{...$$restProps}
-	on:click
+	data-active={isActive}
+	data-size={size}
+	data-slot="pagination-link"
+	{page}
+	{...restProps}
 >
-	<slot>{page.value}</slot>
+	{#if children}
+		{@render children?.()}
+	{:else}
+		{@render Fallback()}
+	{/if}
 </PaginationPrimitive.Page>

@@ -1,35 +1,43 @@
 <script lang="ts">
+	import { cn, type WithoutChildrenOrChild } from '$lib/utils.js';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import MinusIcon from '@lucide/svelte/icons/minus';
 	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
-	import Check from 'lucide-svelte/icons/check';
-	import { cn } from '$lib/utils.js';
-
-	type $$Props = DropdownMenuPrimitive.CheckboxItemProps;
-	type $$Events = DropdownMenuPrimitive.CheckboxItemEvents;
-
-	let className: $$Props['class'] = undefined;
-	export let checked: $$Props['checked'] = undefined;
-	export { className as class };
+	import type { Snippet } from 'svelte';
+	let {
+		ref = $bindable(null),
+		checked = $bindable(false),
+		indeterminate = $bindable(false),
+		class: className,
+		children: childrenProp,
+		...restProps
+	}: WithoutChildrenOrChild<DropdownMenuPrimitive.CheckboxItemProps> & {
+		children?: Snippet;
+	} = $props();
 </script>
 
 <DropdownMenuPrimitive.CheckboxItem
 	bind:checked
+	bind:indeterminate
+	bind:ref
 	class={cn(
-		'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50',
+		"focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm data-inset:pl-8 [&_svg:not([class*='size-'])]:size-4 relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		className
 	)}
-	{...$$restProps}
-	on:click
-	on:keydown
-	on:focusin
-	on:focusout
-	on:pointerdown
-	on:pointerleave
-	on:pointermove
+	data-slot="dropdown-menu-checkbox-item"
+	{...restProps}
 >
-	<span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-		<DropdownMenuPrimitive.CheckboxIndicator>
-			<Check class="h-4 w-4" />
-		</DropdownMenuPrimitive.CheckboxIndicator>
-	</span>
-	<slot />
+	{#snippet children({ checked, indeterminate })}
+		<span
+			class="absolute right-2 flex items-center justify-center pointer-events-none"
+			data-slot="dropdown-menu-checkbox-item-indicator"
+		>
+			{#if indeterminate}
+				<MinusIcon />
+			{:else if checked}
+				<CheckIcon />
+			{/if}
+		</span>
+		{@render childrenProp?.()}
+	{/snippet}
 </DropdownMenuPrimitive.CheckboxItem>

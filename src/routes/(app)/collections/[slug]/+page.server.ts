@@ -1,10 +1,10 @@
+import { libraryItems, searchArchives } from '$lib/server/db/queries.js';
+import { parseSearchParams } from '$lib/server/utils.js';
+import { randomString } from '$lib/utils.js';
 import { error, fail, redirect } from '@sveltejs/kit';
-import { libraryItems, searchArchives } from '$lib/server/db/queries';
-import { parseSearchParams } from '$lib/server/utils';
-import { randomString } from '$lib/utils';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom } from '~shared/db/helpers';
+import config from '~shared/config.js';
+import { jsonArrayFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ params, url, locals }) => {
 	if (!locals.user) {
@@ -15,7 +15,7 @@ export const load = async ({ params, url, locals }) => {
 
 	const searchParams = parseSearchParams(url.searchParams, {
 		sort: 'collection_order',
-		order: 'asc',
+		order: 'asc'
 	});
 
 	if (searchParams.sort === 'random' && !searchParams.seed) {
@@ -52,13 +52,13 @@ export const load = async ({ params, url, locals }) => {
 
 	if (!collection) {
 		throw error(404, {
-			message: 'Collection not found',
+			message: 'Collection not found'
 		});
 	}
 
 	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
-		matchIds: collection.archives.map((archive) => archive.archiveId),
+		matchIds: collection.archives.map((archive) => archive.archiveId)
 	});
 
 	return {
@@ -68,12 +68,12 @@ export const load = async ({ params, url, locals }) => {
 				sortingIds:
 					sort === 'collection_order'
 						? collection.archives.map((archive) => archive.archiveId)
-						: undefined,
+						: undefined
 			}),
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
-		},
+			total
+		}
 	};
 };
 
@@ -94,19 +94,19 @@ export const actions = {
 		if (!collection) {
 			return fail(404, {
 				message: 'This collection does not exists',
-				type: 'error',
+				type: 'error'
 			});
 		}
 
 		if (collection.protected) {
 			return fail(400, {
 				message: `This collection can't be deleted`,
-				type: 'error',
+				type: 'error'
 			});
 		}
 
 		await db.deleteFrom('collection').where('id', '=', collection.id).execute();
 
 		redirect(301, '/collections');
-	},
+	}
 };

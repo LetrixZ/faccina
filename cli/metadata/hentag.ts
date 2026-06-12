@@ -1,7 +1,7 @@
-import { z } from 'zod';
-import config from '../../shared/config';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { parseFilename } from './utils';
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { parseFilename } from './utils.js';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 export const metadataSchema = z.object({
 	title: z.string(),
@@ -15,7 +15,7 @@ export const metadataSchema = z.object({
 	language: z.string().optional(),
 	createdAt: z.number().optional(),
 	publishedOn: z.number().optional(),
-	locations: z.array(z.string()).optional(),
+	locations: z.array(z.string()).optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -83,7 +83,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		for (const location of data.locations) {
 			archive.sources.push({
 				name: location,
-				url: location,
+				url: location
 			});
 		}
 	}

@@ -1,11 +1,10 @@
 {
-	"editor.formatOnSave": true,
-	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "always"
+	"files.associations": {
+		"*.css": "tailwindcss"
 	},
-	"prettier.prettierPath": "./node_modules/prettier",
-	"eslint.validate": ["javascript", "svelte"],
-	"[go]": { "editor.codeActionsOnSave": {
-			"source.organizeImports": "never"
-		} }
+	"eslint.useFlatConfig": true,
+	"eslint.validate": ["javascript", "typescript", "svelte"],
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit"
+	}
 }

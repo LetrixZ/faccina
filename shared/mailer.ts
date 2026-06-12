@@ -1,5 +1,5 @@
-import nodemailer, { type Transporter } from 'nodemailer';
 import config from './config';
+import nodemailer, { type Transporter } from 'nodemailer';
 
 let _transporter: Transporter | undefined = undefined;
 
@@ -17,8 +17,8 @@ export const transporter = () => {
 			secure,
 			auth: {
 				user,
-				pass,
-			},
+				pass
+			}
 		});
 	}
 

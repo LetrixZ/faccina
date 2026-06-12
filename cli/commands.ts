@@ -1,12 +1,12 @@
+import { version } from '../package.json';
+import * as archive from './archive.js';
+import * as images from './images.js';
+import * as metadataCli from './metadata-cli.js';
+import * as migrate from './migrate.js';
+import * as server from './server.js';
+import * as users from './users.js';
 import chalk from 'chalk';
 import { Argument, Command, Option } from 'commander';
-import { version } from '../package.json';
-import * as archive from './archive';
-import * as images from './images';
-import * as metadataCli from './metadata-cli';
-import * as migrate from './migrate';
-import * as users from './users';
-import * as server from './server';
 
 const program = new Command();
 
@@ -38,7 +38,7 @@ program
 		}) =>
 			archive.indexArchives({
 				...options,
-				force: options.reindex === true ? true : options.force,
+				force: options.reindex === true ? true : options.force
 			})
 	);
 

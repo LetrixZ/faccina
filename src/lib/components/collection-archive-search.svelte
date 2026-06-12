@@ -1,29 +1,43 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import { siteConfig, tagList } from '../stores';
-	import { Switch } from './ui/switch';
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SearchBar from '$lib/components/search-bar.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
 	import { Label } from '$lib/components/ui/label';
-	import { type Order, type Sort } from '$lib/schemas';
-	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types';
+	import { type Order, type Sort } from '$lib/schemas.js';
+	import type { GalleryLibraryResponse, GalleryListItem } from '$lib/types.js';
+	import type { Tag } from '$lib/types.js';
+	import { Switch } from './ui/switch';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
-	export let selectedGalleries: number[] = [];
+	let {
+		selectedGalleries = [],
+		onBookmark,
+		imageServer,
+		searchPlaceholder = '',
+		pageLimits,
+		defaultSort,
+		defaultOrder,
+		tags
+	}: {
+		selectedGalleries?: number[];
+		onBookmark?: (detail: { gallery: GalleryListItem; bookmark: boolean }) => void;
+		imageServer: string;
+		searchPlaceholder?: string;
+		pageLimits: number[];
+		defaultSort: Sort;
+		defaultOrder: Order;
+		tags: Tag[];
+	} = $props();
 
-	const dispatch = createEventDispatcher<{
-		bookmark: { gallery: GalleryListItem; bookmark: boolean };
-	}>();
+	let isMounted = $state(false);
+	let showSelected = $state(false);
 
-	let isMounted = false;
-	let showSelected = false;
+	let library = $state<GalleryLibraryResponse | null>(null);
 
-	let library: GalleryLibraryResponse | null = null;
-
-	let searchQuery: {
+	let searchQuery = $derived<{
 		query: string;
 		page: number;
 		limit: number;
@@ -31,14 +45,14 @@
 		order: Order;
 		ids: number[];
 		seed?: string;
-	} = {
+	}>({
 		query: '',
 		page: 1,
-		limit: $siteConfig.pageLimits[0] ?? 24,
-		sort: $siteConfig.defaultSort,
-		order: $siteConfig.defaultOrder,
-		ids: [],
-	};
+		limit: pageLimits[0] ?? 24,
+		sort: defaultSort,
+		order: defaultOrder,
+		ids: []
+	});
 
 	const search = async () => {
 		const { query, page, limit, sort, order, ids, seed } = searchQuery;
@@ -48,7 +62,7 @@
 			page: page.toString(),
 			limit: limit.toString(),
 			sort,
-			order,
+			order
 		});
 
 		if (seed) {
@@ -61,8 +75,8 @@
 
 		const res = await fetch(`/internal?${params.toString()}`, {
 			headers: {
-				Accept: 'application/json',
-			},
+				Accept: 'application/json'
+			}
 		});
 
 		if (res.ok) {
@@ -74,13 +88,13 @@
 		}
 	};
 
-	$: {
+	$effect(() => {
 		searchQuery.ids = showSelected ? selectedGalleries : [];
 
 		if (isMounted) {
 			search();
 		}
-	}
+	});
 
 	onMount(() => {
 		isMounted = true;
@@ -89,41 +103,41 @@
 
 <div class="flex gap-2">
 	<SearchBar
-		on:search={(ev) => {
-			ev.preventDefault();
-			searchQuery = { ...searchQuery, page: 1, query: ev.detail };
+		onSearch={(query) => {
+			searchQuery = { ...searchQuery, page: 1, query };
 			search();
 		}}
-		searchPlaceholder={$siteConfig.searchPlaceholder}
-		tags={$tagList}
+		{searchPlaceholder}
+		{tags}
 	/>
 </div>
 
 <div class="grid items-end gap-2 lg:flex">
 	<div class="flex flex-wrap items-end gap-2">
 		<LimitOptions
-			on:change={(ev) => {
-				ev.preventDefault();
-				searchQuery = { ...searchQuery, limit: ev.detail };
+			defaultPageLimit={pageLimits[0] ?? 24}
+			onChange={(limit) => {
+				searchQuery = { ...searchQuery, limit };
 				search();
+				return true;
 			}}
-			pageLimits={$siteConfig.pageLimits}
+			{pageLimits}
 			value={searchQuery.limit}
 		/>
 
 		<div class="max-xs:flex-auto">
 			<SortOptions
-				defaultOrder={$siteConfig.defaultOrder}
-				defaultSort={$siteConfig.defaultSort}
-				on:order={(ev) => {
-					ev.preventDefault();
-					searchQuery = { ...searchQuery, order: ev.detail };
+				{defaultOrder}
+				{defaultSort}
+				onOrder={(order) => {
+					searchQuery = { ...searchQuery, order };
 					search();
+					return true;
 				}}
-				on:sort={(ev) => {
-					ev.preventDefault();
-					searchQuery = { ...searchQuery, sort: ev.detail.sort, seed: ev.detail.seed };
+				onSort={(detail) => {
+					searchQuery = { ...searchQuery, sort: detail.sort, seed: detail.seed };
 					search();
+					return true;
 				}}
 				order={searchQuery.order}
 				sort={searchQuery.sort}
@@ -134,7 +148,7 @@
 			<Switch
 				bind:checked={showSelected}
 				id="show-selected"
-				on:click={() => (searchQuery.page = 1)}
+				onclick={() => (searchQuery.page = 1)}
 			/>
 			<Label class="w-full" for="show-selected">Show only selected</Label>
 		</div>
@@ -144,9 +158,8 @@
 		<ListPagination
 			class="mx-auto w-full sm:w-fit md:mx-0 md:ms-auto"
 			limit={library.limit}
-			on:navigate={(ev) => {
-				ev.preventDefault();
-				searchQuery = { ...searchQuery, page: ev.detail };
+			onNavigate={(page) => {
+				searchQuery = { ...searchQuery, page };
 				search();
 			}}
 			total={library.total}
@@ -163,11 +176,13 @@
 			{#each library.data as gallery (gallery.id)}
 				<ListItem
 					bookmarked={selectedGalleries.includes(gallery.id)}
+					collections={undefined}
 					enableBookmark
 					{gallery}
 					imageBookmark
+					{imageServer}
 					newTab
-					onBookmark={(bookmarked) => dispatch('bookmark', { gallery, bookmark: bookmarked })}
+					onBookmark={(bookmarked) => onBookmark?.({ gallery, bookmark: bookmarked })}
 					type="collection"
 				/>
 			{/each}

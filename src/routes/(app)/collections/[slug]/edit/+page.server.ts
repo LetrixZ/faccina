@@ -1,11 +1,11 @@
+import { createCollectionSchema } from '$lib/schemas.js';
+import { sortArchiveTags } from '$lib/server/utils.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { sortArchiveTags } from '$lib/server/utils';
-import { createCollectionSchema } from '$lib/schemas';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom, now } from '~shared/db/helpers';
+import config from '~shared/config.js';
+import { jsonArrayFrom, now } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -41,11 +41,11 @@ export const load = async ({ params, locals }) => {
 								.select(['tags.namespace', 'tags.name'])
 								.whereRef('archives.id', '=', 'archiveId')
 								.orderBy('archiveTags.createdAt asc')
-						).as('tags'),
+						).as('tags')
 					])
 					.orderBy('order asc')
 					.whereRef('collectionId', '=', 'collection.id')
-			).as('archives'),
+			).as('archives')
 		])
 		.where('slug', '=', slug);
 
@@ -57,7 +57,7 @@ export const load = async ({ params, locals }) => {
 
 	if (!collection) {
 		error(404, {
-			message: 'Collection not found',
+			message: 'Collection not found'
 		});
 	}
 
@@ -67,10 +67,10 @@ export const load = async ({ params, locals }) => {
 		collection,
 		editForm: await superValidate(
 			{
-				name: collection.name,
+				name: collection.name
 			},
 			zod(createCollectionSchema)
-		),
+		)
 	};
 };
 
@@ -78,13 +78,13 @@ export const actions = {
 	default: async (event) => {
 		if (!event.locals.user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
 		if (!config.site.enableCollections) {
 			return fail(400, {
-				message: 'Collections are not enabled',
+				message: 'Collections are not enabled'
 			});
 		}
 
@@ -99,7 +99,7 @@ export const actions = {
 
 		if (!collection) {
 			return fail(404, {
-				message: 'This collection does not exists',
+				message: 'This collection does not exists'
 			});
 		}
 
@@ -107,7 +107,7 @@ export const actions = {
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -117,7 +117,7 @@ export const actions = {
 			.updateTable('collection')
 			.set({
 				name,
-				updatedAt: now(),
+				updatedAt: now()
 			})
 			.where('id', '=', collection.id)
 			.executeTakeFirstOrThrow();
@@ -152,19 +152,19 @@ export const actions = {
 						archiveId: id,
 						collectionId: collection.id,
 						order: i,
-						updatedAt: now(),
+						updatedAt: now()
 					}))
 				)
 				.onConflict((oc) =>
 					oc.columns(['collectionId', 'archiveId']).doUpdateSet((eb) => ({
-						order: eb.ref('excluded.order'),
+						order: eb.ref('excluded.order')
 					}))
 				)
 				.execute();
 		}
 
 		return {
-			form,
+			form
 		};
-	},
+	}
 };

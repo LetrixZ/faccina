@@ -1,7 +1,7 @@
-import { Kysely, sql } from 'kysely';
 import config from '../../config';
+import { Kysely, sql } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
 		await sql`DROP TABLE archive_fts;`.execute(db);
 		await sql`DROP FUNCTION update_archive_fts CASCADE;`.execute(db);
@@ -61,7 +61,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 	}
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
 		await sql`ALTER TABLE archives DROP COLUMN fts;`.execute(db);
 	}

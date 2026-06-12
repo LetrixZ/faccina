@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const usernameSchema = z
 	.string()
@@ -13,7 +13,7 @@ const passwordSchema = z
 
 export const loginSchema = z.object({
 	username: usernameSchema,
-	password: passwordSchema,
+	password: passwordSchema
 });
 
 export type LoginSchema = typeof loginSchema;
@@ -23,14 +23,14 @@ export const registerSchema = z
 		username: usernameSchema,
 		password: passwordSchema,
 		confirmPassword: passwordSchema,
-		email: z.string().email().optional(),
+		email: z.string().email().optional()
 	})
 	.superRefine(({ confirmPassword, password }, ctx) => {
 		if (confirmPassword !== password) {
 			ctx.addIssue({
 				code: 'custom',
 				message: "The passwords don't match",
-				path: ['confirmPassword'],
+				path: ['confirmPassword']
 			});
 		}
 	});
@@ -38,7 +38,7 @@ export const registerSchema = z
 export type RegisterSchema = typeof registerSchema;
 
 export const recoverSchema = z.object({
-	username: usernameSchema,
+	username: usernameSchema
 });
 
 export type RecoverSchema = typeof recoverSchema;
@@ -47,14 +47,14 @@ export const resetSchema = z
 	.object({
 		code: z.string().length(32, 'Invalid recovery code'),
 		password: passwordSchema,
-		confirmPassword: passwordSchema,
+		confirmPassword: passwordSchema
 	})
 	.superRefine(({ confirmPassword, password }, ctx) => {
 		if (confirmPassword !== password) {
 			ctx.addIssue({
 				code: 'custom',
 				message: "The passwords don't match",
-				path: ['confirmPassword'],
+				path: ['confirmPassword']
 			});
 		}
 	});
@@ -74,17 +74,17 @@ export const editArchiveSchema = z
 		sources: z.array(
 			z.object({
 				name: z.string().min(1, "Source name can't be empty"),
-				url: z.string().url('The given URL is not valid').optional().or(z.literal('')),
+				url: z.string().url('The given URL is not valid').optional().or(z.literal(''))
 			})
 		),
-		protected: z.boolean(),
+		protected: z.boolean()
 	})
 	.superRefine(({ pages, thumbnail }, ctx) => {
 		if (thumbnail > pages) {
 			ctx.addIssue({
 				code: 'custom',
 				message: "The thumbnail can't be bigger than the number of pages",
-				path: ['thumbnail'],
+				path: ['thumbnail']
 			});
 		}
 	});
@@ -92,7 +92,7 @@ export const editArchiveSchema = z
 export type EditArchiveSchema = typeof editArchiveSchema;
 
 export const editTagsSchema = z.object({
-	tags: z.array(z.object({ namespace: z.string(), name: z.string() })),
+	tags: z.array(z.object({ namespace: z.string(), name: z.string() }))
 });
 
 export type EditTagsSchema = typeof editTagsSchema;
@@ -106,7 +106,7 @@ export const sortSchema = z.enum([
 	'random',
 	'saved_at',
 	'collection_order',
-	'series_order',
+	'series_order'
 ]);
 
 export type Sort = z.infer<typeof sortSchema>;
@@ -120,7 +120,7 @@ export const createCollectionSchema = z.object({
 		.string()
 		.min(1, `Collection name can't be empty`)
 		.max(500, `Collection name should be 500 less than characters`),
-	archives: z.array(z.number()).default([]),
+	archives: z.array(z.number()).default([])
 });
 
 export const userEditSchema = z
@@ -129,14 +129,14 @@ export const userEditSchema = z
 		email: z.union([z.literal('').optional(), z.string().email()]),
 		currentPassword: z.string().optional(),
 		newPassword: z.union([z.literal('').optional(), passwordSchema]),
-		confirmNewPassword: z.union([z.literal('').optional(), passwordSchema]),
+		confirmNewPassword: z.union([z.literal('').optional(), passwordSchema])
 	})
 	.superRefine(({ currentPassword, confirmNewPassword, newPassword }, ctx) => {
 		if (currentPassword?.length && newPassword?.length && currentPassword === newPassword) {
 			ctx.addIssue({
 				code: 'custom',
 				message: 'The new password is the same as the current one',
-				path: ['newPassword'],
+				path: ['newPassword']
 			});
 
 			return;
@@ -146,18 +146,18 @@ export const userEditSchema = z
 			ctx.addIssue({
 				code: 'custom',
 				message: "The new passwords don't match",
-				path: ['confirmNewPassword'],
+				path: ['confirmNewPassword']
 			});
 		}
 	});
 
 export const userDeleteSchema = z.object({
-	currentPassword: z.string(),
+	currentPassword: z.string()
 });
 
 export const createSeriesSchema = z.object({
 	title: z.string().min(1, { message: 'A title for the series is required' }).max(1000),
-	chapters: z.array(z.number()),
+	chapters: z.array(z.number())
 });
 
 export type CreateSeriesSchema = typeof createSeriesSchema;

@@ -1,19 +1,19 @@
-import { stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { queryIdRanges } from './utilts.js';
 import { sleep } from 'bun';
 import chalk from 'chalk';
 import { MultiBar, Presets } from 'cli-progress';
 import StreamZip from 'node-stream-zip';
+import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import pMap from 'p-map';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import type { Preset } from '../src/lib/image-presets';
-import config from '../shared/config';
-import db from '../shared/db';
-import { jsonArrayFrom } from '../shared/db/helpers';
-import { leadingZeros } from '../shared/utils';
-import { queryIdRanges } from './utilts';
-import { imageDirectory } from '~shared/server.utils';
+import config from '~shared/config.js';
+import { jsonArrayFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
+import type { Preset } from '~shared/image-presets.js';
+import { imageDirectory } from '~shared/server.utils.js';
+import { leadingZeros } from '~shared/utils.js';
 
 type GenerateImagesOptions = {
 	ids?: string;
@@ -43,7 +43,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					.selectFrom('archiveImages')
 					.select(['filename', 'pageNumber'])
 					.whereRef('archiveId', '=', 'id')
-			).as('images'),
+			).as('images')
 		])
 		.orderBy(options.reverse ? 'id desc' : 'id asc');
 
@@ -78,7 +78,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						filename: image.filename,
 						pageNumber: image.pageNumber,
 						savePath,
-						preset: coverPreset,
+						preset: coverPreset
 					});
 					imageCount++;
 				}
@@ -93,7 +93,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 					filename: image.filename,
 					pageNumber: image.pageNumber,
 					savePath,
-					preset: thumbnailPreset,
+					preset: thumbnailPreset
 				});
 				imageCount++;
 			}
@@ -122,7 +122,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 						filename: image.filename,
 						pageNumber: image.pageNumber,
 						savePath,
-						preset,
+						preset
 					});
 					imageCount++;
 				}
@@ -133,7 +133,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 			archivesEncode.push({
 				id: archive.id,
 				path: archive.path,
-				images,
+				images
 			});
 		}
 	}
@@ -146,7 +146,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 		{
 			clearOnComplete: true,
 			format: ` {bar} | ETA: {eta}s | {value}/{total}`,
-			linewrap: true,
+			linewrap: true
 		},
 		Presets.shades_grey
 	);
@@ -203,7 +203,7 @@ export const generateImages = async (options: GenerateImagesOptions) => {
 
 						pipeline = pipeline.resize({
 							width: Math.round(image.preset.width),
-							height: newHeight ? Math.round(newHeight) : undefined,
+							height: newHeight ? Math.round(newHeight) : undefined
 						});
 					}
 

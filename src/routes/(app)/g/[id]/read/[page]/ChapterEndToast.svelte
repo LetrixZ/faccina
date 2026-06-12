@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import type { Gallery } from '$lib/types';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import type { Gallery } from '$lib/types.js';
 
-	export let gallery: Gallery;
-	export let onBack: () => void;
+	let {
+		gallery,
+		onBack
+	}: {
+		gallery: Gallery;
+		onBack?: () => void;
+	} = $props();
 </script>
 
 <div class="flex items-center justify-between">
@@ -12,9 +17,9 @@
 	<Button
 		class="h-fit py-0"
 		href="/g/{gallery.id}{$page.url.search}"
-		on:click={(ev) => {
+		onclick={(ev) => {
 			ev.preventDefault();
-			onBack();
+			onBack?.();
 		}}
 		variant="link"
 	>

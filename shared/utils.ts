@@ -1,4 +1,4 @@
-import type { Tag } from './metadata';
+import type { Tag } from './metadata.js';
 
 export const leadingZeros = <T extends number | string | bigint>(
 	number: T,

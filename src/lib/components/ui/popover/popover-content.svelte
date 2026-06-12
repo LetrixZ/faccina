@@ -1,22 +1,30 @@
 <script lang="ts">
+	import { cn, type WithoutChildrenOrChild } from '$lib/utils.js';
+	import PopoverPortal from './popover-portal.svelte';
 	import { Popover as PopoverPrimitive } from 'bits-ui';
-	import { cn, flyAndScale } from '$lib/utils';
-
-	type $$Props = PopoverPrimitive.ContentProps;
-	let className: $$Props['class'] = undefined;
-	export let transition: $$Props['transition'] = flyAndScale;
-	export let transitionConfig: $$Props['transitionConfig'] = undefined;
-	export { className as class };
+	import type { ComponentProps } from 'svelte';
+	let {
+		ref = $bindable(null),
+		class: className,
+		sideOffset = 4,
+		align = 'center',
+		portalProps,
+		...restProps
+	}: PopoverPrimitive.ContentProps & {
+		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof PopoverPortal>>;
+	} = $props();
 </script>
 
-<PopoverPrimitive.Content
-	{transition}
-	{transitionConfig}
-	class={cn(
-		'z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none',
-		className
-	)}
-	{...$$restProps}
->
-	<slot />
-</PopoverPrimitive.Content>
+<PopoverPortal {...portalProps}>
+	<PopoverPrimitive.Content
+		{align}
+		bind:ref
+		class={cn(
+			'bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 flex flex-col gap-4 rounded-md p-4 text-sm shadow-md ring-1 duration-100 data-[side=inline-start]:slide-in-from-right-2 data-[side=inline-end]:slide-in-from-left-2 z-50 w-72 origin-(--transform-origin) outline-hidden',
+			className
+		)}
+		data-slot="popover-content"
+		{sideOffset}
+		{...restProps}
+	/>
+</PopoverPortal>

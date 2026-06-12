@@ -1,5 +1,16 @@
 <script lang="ts">
-	import OctagonAlert from 'lucide-svelte/icons/octagon-alert';
+	import { pushState } from '$app/navigation';
+	import { page } from '$app/state';
+	import GallerySearchModal from '$lib/components/gallery-search-modal.svelte';
+	import ListItemDrag from '$lib/components/list-item-drag.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { createSeriesSchema } from '$lib/schemas.js';
+	import type { GalleryListItem } from '$lib/types.js';
+	import { cn } from '$lib/utils.js';
+	import SeriesForm from '../series-form.svelte';
+	import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
 	import { dragHandleZone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
@@ -7,21 +18,10 @@
 	import { fade } from 'svelte/transition';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import SeriesForm from '../series-form.svelte';
-	import { pushState } from '$app/navigation';
-	import { page } from '$app/stores';
-	import GallerySearchModal from '$lib/components/gallery-search-modal.svelte';
-	import ListItemDrag from '$lib/components/list-item-drag.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import { createSeriesSchema } from '$lib/schemas.js';
-	import { siteConfig } from '$lib/stores';
-	import type { GalleryListItem } from '$lib/types';
-	import { cn } from '$lib/utils';
 
-	export let data;
+	let { data } = $props();
 
+	// svelte-ignore state_referenced_locally
 	const form = superForm(data.form, {
 		validators: zodClient(createSeriesSchema),
 		dataType: 'json',
@@ -29,27 +29,31 @@
 			if (event.result.type === 'failure' && event.result.data?.form.message) {
 				toast.error(event.result.data.form.message);
 			}
-		},
+		}
 	});
 
 	const { form: formData } = form;
 
-	let selected: (GalleryListItem & {
-		[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
-	})[] = [];
+	let selected = $state(
+		[] as (GalleryListItem & {
+			[SHADOW_ITEM_MARKER_PROPERTY_NAME]?: unknown;
+		})[]
+	);
 
-	$: searchOpen = !!$page.state.searchOpen;
-	$: mainGallery = selected[0];
-	$: cover = mainGallery
-		? `${$siteConfig.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
-		: null;
+	const searchOpen = $derived(!!page.state.searchOpen);
+	const mainGallery = $derived(selected[0]);
+	const cover = $derived(
+		mainGallery
+			? `${data.site.imageServer}/image/${mainGallery.hash}/${mainGallery.thumbnail}?type=cover`
+			: null
+	);
 
-	$: {
+	$effect(() => {
 		$formData.chapters = selected.map((selected) => selected.id);
-	}
+	});
 
 	const openSearch = () => {
-		if (!$page.state.searchOpen) {
+		if (!page.state.searchOpen) {
 			pushState('', { searchOpen: true });
 		}
 	};
@@ -64,7 +68,7 @@
 </script>
 
 <svelte:head>
-	<title>Create series | {$siteConfig.name}</title>
+	<title>Create series | {data.site.name}</title>
 </svelte:head>
 
 <main class="container flex flex-auto flex-col gap-4">
@@ -72,7 +76,7 @@
 		<div class="relative h-fit w-fit max-w-64 overflow-clip rounded-md bg-neutral-900">
 			<img
 				alt="Cover"
-				class={cn('aspect-[45/64] object-contain', !cover && 'invisible')}
+				class={cn('aspect-45/64 object-contain', !cover && 'invisible')}
 				height={910}
 				src={cover}
 				width={640}
@@ -93,7 +97,7 @@
 	<div class="relative flex flex-auto flex-col gap-2">
 		<div class="flex items-center justify-between">
 			<p class="text-xl">Chapters</p>
-			<Button on:click={openSearch} variant="outline">Add galleries</Button>
+			<Button onclick={openSearch} variant="outline">Add galleries</Button>
 		</div>
 
 		<Separator />
@@ -102,35 +106,33 @@
 			<div
 				aria-label="Collection"
 				class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
-				on:consider={(e) => (selected = e.detail.items)}
-				on:finalize={(e) => (selected = e.detail.items)}
+				onconsider={(e) => (selected = e.detail.items)}
+				onfinalize={(e) => (selected = e.detail.items)}
 				use:dragHandleZone={{
 					items: selected,
 					flipDurationMs: 50,
-					dropTargetStyle: {},
+					dropTargetStyle: {}
 				}}
 			>
 				{#each selected as gallery (gallery.id)}
 					<div animate:flip={{ duration: 50 }} class="relative">
-						<ListItemDrag {gallery} newTab />
+						<ListItemDrag {gallery} imageServer={data.site.imageServer} newTab />
 
 						{#if gallery[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
 							<div
 								class="visible absolute inset-0 m-0 rounded opacity-50"
 								in:fade={{ duration: 200, easing: cubicIn }}
 							>
-								<ListItemDrag {gallery} newTab />
+								<ListItemDrag {gallery} imageServer={data.site.imageServer} newTab />
 							</div>
 						{/if}
 					</div>
 				{/each}
 			</div>
 		{:else}
-			<div
-				class="my-auto flex h-fit w-full flex-grow flex-col items-center justify-center gap-4 py-10"
-			>
+			<div class="my-auto flex h-fit w-full grow flex-col items-center justify-center gap-4 py-10">
 				<h3 class="text-2xl font-medium">No galleries added</h3>
-				<Button on:click={openSearch} variant="outline">Add galleries</Button>
+				<Button onclick={openSearch} variant="outline">Add galleries</Button>
 			</div>
 		{/if}
 	</div>
@@ -138,8 +140,17 @@
 
 <Dialog.Root onOpenChange={(open) => !open && history.back()} open={searchOpen}>
 	<Dialog.Content
-		class="flex h-full !max-h-[95dvh] !max-w-[95dvw] flex-col overflow-y-auto px-3 pb-0 pt-3"
+		class="flex h-full max-h-[95dvh]! max-w-[95dvw]! flex-col overflow-y-auto px-3 pb-0 pt-3"
 	>
-		<GallerySearchModal {onSelect} {selected} />
+		<GallerySearchModal
+			defaultOrder={data.site.defaultOrder}
+			defaultSort={data.site.defaultSort}
+			imageServer={data.site.imageServer}
+			{onSelect}
+			pageLimits={data.site.pageLimits}
+			searchPlaceholder={data.site.searchPlaceholder}
+			{selected}
+			tags={data.tagList}
+		/>
 	</Dialog.Content>
 </Dialog.Root>

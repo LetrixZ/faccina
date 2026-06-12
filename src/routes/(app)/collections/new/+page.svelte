@@ -1,18 +1,19 @@
 <script lang="ts">
-	import Save from 'lucide-svelte/icons/save';
+	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { createCollectionSchema } from '$lib/schemas.js';
+	import { cn } from '$lib/utils.js';
+	import Save from '@lucide/svelte/icons/save';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import CollectionArchiveSearch from '$lib/components/collection-archive-search.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import * as Form from '$lib/components/ui/form';
-	import { Input } from '$lib/components/ui/input';
-	import { Separator } from '$lib/components/ui/separator';
-	import { createCollectionSchema } from '$lib/schemas';
-	import { cn } from '$lib/utils';
 
-	export let data;
+	let { data } = $props();
 
+	// svelte-ignore state_referenced_locally
 	let form = superForm(data.createForm, {
 		validators: zodClient(createCollectionSchema),
 		dataType: 'json',
@@ -22,7 +23,7 @@
 			} else if (result.type === 'success' || result.type === 'redirect') {
 				toast.success('Collection created succesfully.');
 			}
-		},
+		}
 	});
 
 	const { form: formData, enhance, errors } = form;
@@ -32,17 +33,19 @@
 	<form method="POST" use:enhance>
 		<div class="flex items-start gap-2">
 			<Form.Field class="flex-auto" {form} name="name">
-				<Form.Control let:attrs>
-					<Input
-						{...attrs}
-						bind:value={$formData.name}
-						class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
-						placeholder="Collection name"
-					/>
+				<Form.Control>
+					{#snippet children({ props })}
+						<Input
+							{...props}
+							bind:value={$formData.name}
+							class={cn('text-xl font-semibold placeholder:font-medium placeholder:opacity-50')}
+							placeholder="Collection name"
+						/>
 
-					{#if $errors.name}
-						<Form.FieldErrors />
-					{/if}
+						{#if $errors.name}
+							<Form.FieldErrors />
+						{/if}
+					{/snippet}
 				</Form.Control>
 			</Form.Field>
 
@@ -61,14 +64,20 @@
 	<Separator />
 
 	<CollectionArchiveSearch
-		on:bookmark={(ev) => {
-			const { gallery, bookmark } = ev.detail;
+		defaultOrder={data.site.defaultOrder}
+		defaultSort={data.site.defaultSort}
+		imageServer={data.site.imageServer}
+		onBookmark={(detail) => {
+			const { gallery, bookmark } = detail;
 			if (bookmark) {
 				$formData.archives = [...$formData.archives, gallery.id];
 			} else {
 				$formData.archives = $formData.archives.filter((id) => id !== gallery.id);
 			}
 		}}
+		pageLimits={data.site.pageLimits}
+		searchPlaceholder={data.site.searchPlaceholder}
 		selectedGalleries={$formData.archives}
+		tags={data.tagList}
 	/>
 </main>

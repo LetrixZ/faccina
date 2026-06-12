@@ -1,7 +1,7 @@
+import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries.js';
+import { parseSearchParams } from '$lib/server/utils.js';
+import { decompressBlacklist, randomString } from '$lib/utils.js';
 import { redirect } from '@sveltejs/kit';
-import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries';
-import { parseSearchParams } from '$lib/server/utils';
-import { decompressBlacklist, randomString } from '$lib/utils';
 import config from '~shared/config.js';
 
 export const load = async ({ locals, cookies, url }) => {
@@ -13,8 +13,8 @@ export const load = async ({ locals, cookies, url }) => {
 				data: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total: 0,
-			},
+				total: 0
+			}
 		};
 	}
 
@@ -34,7 +34,7 @@ export const load = async ({ locals, cookies, url }) => {
 	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
 		tagBlacklist: blacklist,
-		matchIds: searchParams.ids,
+		matchIds: searchParams.ids
 	});
 
 	return {
@@ -42,7 +42,7 @@ export const load = async ({ locals, cookies, url }) => {
 			data: await libraryItems(ids),
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
-		},
+			total
+		}
 	};
 };

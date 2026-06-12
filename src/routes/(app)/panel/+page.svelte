@@ -1,15 +1,15 @@
 <script lang="ts">
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Heart from 'lucide-svelte/icons/heart';
-	import LogIn from 'lucide-svelte/icons/log-in';
-	import LogOut from 'lucide-svelte/icons/log-out';
-	import Settings from 'lucide-svelte/icons/settings';
-	import User from 'lucide-svelte/icons/user';
-	import { Separator } from '$lib/components/ui/separator';
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Heart from '@lucide/svelte/icons/heart';
+	import LogIn from '@lucide/svelte/icons/log-in';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Settings from '@lucide/svelte/icons/settings';
+	import User from '@lucide/svelte/icons/user';
 
-	export let data;
+	let { data } = $props();
 </script>
 
 <main class="container relative flex flex-col items-center space-y-2 md:w-96">
@@ -23,7 +23,7 @@
 	</Button>
 
 	{#if data.user}
-		<Separator class="!mb-1 !mt-3" />
+		<Separator class="mb-1! mt-3!" />
 
 		<Button
 			class="flex w-full items-center justify-between gap-2 text-neutral-200"
@@ -58,7 +58,7 @@
 	{/if}
 
 	{#if data.user}
-		<Separator class="!mb-1 !mt-3" />
+		<Separator class="mb-1! mt-3!" />
 
 		<Button
 			class="flex w-full items-center justify-between gap-2 text-neutral-200"
@@ -80,7 +80,7 @@
 			</Button>
 		</form>
 	{:else if data.site.enableUsers}
-		<Separator class="!mb-1 !mt-3" />
+		<Separator class="mb-1! mt-3!" />
 
 		<Button
 			class="flex w-full items-center justify-between gap-2 text-neutral-200"

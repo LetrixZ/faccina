@@ -1,10 +1,10 @@
 <script lang="ts">
 	import CollectionListItem from '$lib/components/collection-list-item.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Separator } from '$lib/components/ui/separator';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 
-	export let data;
+	let { data } = $props();
 </script>
 
 <main class="container flex flex-auto flex-col space-y-2">
@@ -29,7 +29,7 @@
 			class="grid w-full grid-cols-2 gap-4 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7"
 		>
 			{#each data.collections as collection (collection.id)}
-				<CollectionListItem {collection} />
+				<CollectionListItem {collection} imageServer={data.site.imageServer} />
 			{/each}
 		</div>
 	{:else}

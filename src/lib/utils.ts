@@ -1,3 +1,5 @@
+import { ImageSize, TouchLayout } from './models.js';
+import type { Gallery, Image, Tag } from './types.js';
 import { error } from '@sveltejs/kit';
 import chalk from 'chalk';
 import { clsx, type ClassValue } from 'clsx';
@@ -12,11 +14,18 @@ import _slugify from 'slugify';
 import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 import { twMerge } from 'tailwind-merge';
-import { z } from 'zod';
-import { ImageSize, TouchLayout } from './models';
-import type { Gallery, Image, Tag } from './types';
-import type { ReaderPreset } from '~shared/config/image.schema';
-import { presetSchema } from '$lib/image-presets';
+import { z } from 'zod/v3';
+import type { ReaderPreset } from '~shared/config/image.schema.js';
+import { presetSchema } from '~shared/image-presets.js';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
+export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
+export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
+	ref?: U | null;
+};
 
 _slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -55,7 +64,9 @@ export const flyAndScale = (
 
 	const styleToString = (style: Record<string, number | string | undefined>): string => {
 		return Object.keys(style).reduce((str, key) => {
-			if (style[key] === undefined) return str;
+			if (style[key] === undefined) {
+				return str;
+			}
 			return str + `${key}:${style[key]};`;
 		}, '');
 	};
@@ -70,10 +81,10 @@ export const flyAndScale = (
 
 			return styleToString({
 				transform: `${transform} translate3d(${x}px, ${y}px, 0) scale(${scale})`,
-				opacity: t,
+				opacity: t
 			});
 		},
-		easing: cubicOut,
+		easing: cubicOut
 	};
 };
 
@@ -149,7 +160,7 @@ export const getMetadata = (gallery: Gallery, origin: string) => {
 		URL: gallery.sources.map((source) => source.url),
 		Released:
 			gallery.releasedAt !== null ? new Date(gallery.releasedAt).getTime() / 1000 : undefined,
-		Thumbnail: gallery.thumbnail - 1,
+		Thumbnail: gallery.thumbnail - 1
 	};
 };
 
@@ -159,7 +170,7 @@ export const preferencesSchema = z.object({
 	minWidth: z.number().optional(),
 	maxWidth: z.number().optional().default(1280),
 	barPlacement: z.enum(['top', 'bottom']).catch('bottom'),
-	preset: presetSchema.and(z.object({ name: z.string() })).optional(),
+	preset: presetSchema.and(z.object({ name: z.string() })).optional()
 });
 
 export interface ReaderPreferences {

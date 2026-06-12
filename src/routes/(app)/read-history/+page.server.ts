@@ -1,9 +1,9 @@
+import { sortArchiveTags } from '$lib/server/utils.js';
+import type { HistoryEntry } from '$lib/types.js';
 import { redirect } from '@sveltejs/kit';
-import { sortArchiveTags } from '$lib/server/utils';
-import type { HistoryEntry } from '$lib/types';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers';
+import config from '~shared/config.js';
+import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ locals }) => {
 	if (!locals.user || !config.site.enableReadHistory) {
@@ -36,12 +36,12 @@ export const load = async ({ locals }) => {
 									.select(['tags.namespace', 'tags.name'])
 									.whereRef('archives.id', '=', 'archiveId')
 									.orderBy('archiveTags.createdAt asc')
-							).as('tags'),
+							).as('tags')
 						])
 						.whereRef('archiveId', '=', 'archives.id')
 				)
 					.$notNull()
-					.as('archive'),
+					.as('archive')
 			])
 			.where('userId', '=', locals.user.id)
 			.orderBy('lastReadAt desc')
@@ -49,6 +49,6 @@ export const load = async ({ locals }) => {
 	).map((entry) => ({ ...entry, archive: sortArchiveTags(entry.archive) }));
 
 	return {
-		entries: historyEntries,
+		entries: historyEntries
 	};
 };

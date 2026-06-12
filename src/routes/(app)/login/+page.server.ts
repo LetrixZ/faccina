@@ -1,11 +1,11 @@
+import { loginSchema } from '$lib/schemas.js';
+import { lucia } from '$lib/server/auth.js';
+import type { Actions, PageServerLoad } from './$types';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
-import { loginSchema } from '$lib/schemas';
-import { lucia } from '$lib/server/auth';
-import config from '~shared/config';
-import db from '~shared/db';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!config.site.enableUsers) {
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	return {
-		form: await superValidate(zod(loginSchema)),
+		form: await superValidate(zod(loginSchema))
 	};
 };
 
@@ -27,7 +27,7 @@ export const actions: Actions = {
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -43,7 +43,7 @@ export const actions: Actions = {
 		if (!user) {
 			return fail(400, {
 				message: 'Incorrect username or password',
-				form,
+				form
 			});
 		}
 
@@ -52,7 +52,7 @@ export const actions: Actions = {
 		if (!validPassword) {
 			return fail(400, {
 				message: 'Incorrect username or password',
-				form,
+				form
 			});
 		}
 
@@ -62,7 +62,7 @@ export const actions: Actions = {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
-			secure: config.site.secureSessionCookie,
+			secure: config.site.secureSessionCookie
 		});
 
 		const redirectTo = event.url.searchParams.get('to');
@@ -72,7 +72,7 @@ export const actions: Actions = {
 		}
 
 		return {
-			form,
+			form
 		};
-	},
+	}
 };

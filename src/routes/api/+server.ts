@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import config from '~shared/config';
+import config from '~shared/config.js';
 
 declare const PKG: {
 	version: string;

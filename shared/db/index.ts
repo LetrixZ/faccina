@@ -1,17 +1,17 @@
+import config from '../config.js';
+import connection from './connection.js';
+import migrations from './migrations.js';
+import type { DB } from './types.js';
 import { Database } from 'bun:sqlite';
 import {
 	CamelCasePlugin,
 	type Dialect,
 	Kysely,
 	ParseJSONResultsPlugin,
-	PostgresDialect,
+	PostgresDialect
 } from 'kysely';
 import { BunSqliteDialect } from 'kysely-bun-sqlite';
 import { Pool } from 'pg';
-import config from '../config';
-import type { DB } from './types';
-import connection from './connection';
-import migrations from './migrations';
 
 export const databaseType = config.database.vendor;
 
@@ -29,7 +29,7 @@ if (!dialect) {
 
 const db = new Kysely<DB>({
 	dialect,
-	plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()],
+	plugins: [new CamelCasePlugin(), new ParseJSONResultsPlugin()]
 });
 
 await migrations(db);

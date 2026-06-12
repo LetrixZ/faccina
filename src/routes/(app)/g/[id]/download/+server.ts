@@ -1,9 +1,9 @@
+import { getGallery } from '$lib/server/db/queries.js';
+import { getMetadata } from '$lib/utils.js';
 import { error } from '@sveltejs/kit';
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
-import { getGallery } from '$lib/server/db/queries';
-import { getMetadata } from '$lib/utils';
-import config from '~shared/config';
-import { generateFilename } from '~shared/utils';
+import config from '~shared/config.js';
+import { generateFilename } from '~shared/utils.js';
 
 export const GET = async ({ params, locals, fetch, setHeaders }) => {
 	if (!config.site.guestDownloads && !locals.user) {
@@ -26,7 +26,7 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 
 	setHeaders({
 		'Content-Type': 'application/zip',
-		'Content-Disposition': `attachment;filename=${encodeURIComponent(generateFilename(gallery.title, gallery.tags))}.${config.server.downloadArchiveExtension}`,
+		'Content-Disposition': `attachment;filename=${encodeURIComponent(generateFilename(gallery.title, gallery.tags))}.${config.server.downloadArchiveExtension}`
 	});
 
 	const zip = new Zip();
@@ -70,7 +70,7 @@ export const GET = async ({ params, locals, fetch, setHeaders }) => {
 			},
 			cancel() {
 				zip.terminate();
-			},
+			}
 		})
 	);
 };

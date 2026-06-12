@@ -1,18 +1,18 @@
-import { z } from 'zod';
-import { stringOrStringArray } from './common';
+import { stringOrStringArray } from './common.js';
+import { z } from 'zod/v3';
 
 const tagMappingSchema = z.object({
 	match: stringOrStringArray,
 	match_namespace: z.string().optional(),
 	namespace: z.string().optional(),
 	name: z.string().optional(),
-	ignore_case: z.boolean().default(false).optional(),
+	ignore_case: z.boolean().default(false).optional()
 });
 
 const sourceMappingSchema = z.object({
 	match: z.string(),
 	name: z.string(),
-	ignore_case: z.boolean().default(false).optional(),
+	ignore_case: z.boolean().default(false).optional()
 });
 
 type SourceMapping = z.infer<typeof sourceMappingSchema>;
@@ -32,7 +32,7 @@ const defaultSourceMappings: SourceMapping[] = [
 	{ match: 'projecth', name: 'Project Hentai', ignore_case: true },
 	{ match: 'projectxxx', name: 'Project Hentai', ignore_case: true },
 	{ match: 'project-xxx', name: 'Project Hentai', ignore_case: true },
-	{ match: 'schale', name: 'Koharu', ignore_case: true },
+	{ match: 'schale', name: 'Koharu', ignore_case: true }
 ];
 
 const schema = z.object({
@@ -51,7 +51,7 @@ const schema = z.object({
 				}
 				return [...sources, source];
 			}, [] as SourceMapping[])
-		),
+		)
 });
 
 export default schema;

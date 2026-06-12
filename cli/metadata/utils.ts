@@ -21,13 +21,13 @@ export function parseFilename(
 		return [
 			captures[1],
 			captures[0]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
-			undefined,
+			undefined
 		];
 	} else {
 		return [
 			captures.length > 2 ? captures[2] : undefined,
 			captures?.[1]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
-			captures[0]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, '')),
+			captures[0]?.split(',').map((s) => s.trim().replace(/[[\]()]/g, ''))
 		];
 	}
 }

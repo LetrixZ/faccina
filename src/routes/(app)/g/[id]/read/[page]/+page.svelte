@@ -1,62 +1,63 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { MetaTags } from 'svelte-meta-tags';
+	import { goto, pushState, replaceState } from '$app/navigation';
+	import { page } from '$app/state';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import type { ReadStat } from '$lib/types.js';
 	import PagedReader from './PagedReader.svelte';
+	import { reader, scalingOptions } from './reader.svelte.js';
 	import Settings from './ReaderSettings.svelte';
 	import Toolbar from './ReaderToolbar.svelte';
 	import VerticalReader from './VerticalReader.svelte';
-	import { readerStore, scalingOptions, touchLayoutOptions } from './reader.js';
-	import type { ReadStat } from '$lib/types';
-	import { siteConfig, user } from '$lib/stores';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { page } from '$app/stores';
-	import { goto, pushState, replaceState } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { MetaTags } from 'svelte-meta-tags';
 
-	export let data;
+	let { data } = $props();
 
-	let scrollContainer: HTMLDivElement | undefined;
+	let scrollContainer: HTMLDivElement | undefined = $state(undefined);
 
-	let previewLayout = false;
-	let toolbarVisible = true;
-	let isMouted = false;
+	let previewLayout = $state(false);
+	let toolbarVisible = $state(true);
+	let isMouted = $state(false);
 
-	$: readerAllowOriginal = data.readerAllowOriginal;
+	const readerAllowOriginal = $derived(data.readerAllowOriginal);
 
-	$: currentPage = $page.state.page || parseInt($page.params.page!);
-	$: currentImage = data.gallery.images[currentPage - 1]!;
+	const currentPage = $derived(page.state.page || parseInt(page.params.page!));
+	const currentImage = $derived(data.gallery.images[currentPage - 1]!);
 
-	$: hasPrevious = currentPage > 1;
-	$: hasNext = currentPage < data.gallery.pages;
+	const hasPrevious = $derived(currentPage > 1);
+	const hasNext = $derived(currentPage < data.gallery.pages);
 
-	$: reader = $readerStore!;
+	const selectedPreset = $derived(
+		data.presets.find((preset) => preset.hash === reader.current?.preset)
+	);
 
-	$: selectedPreset = data.presets.find((preset) => preset.hash === reader.preset);
+	const selectedScaling = $derived(reader.current?.scaling ?? 'original');
+	const selectedScalingOption = $derived(
+		scalingOptions.find((option) => option.value === selectedScaling)!
+	);
 
-	$: selectedScaling = reader.scaling;
-	$: selectedScalingOption = scalingOptions.find((option) => option.value === selectedScaling)!;
+	const selectedTouchLayout = $derived(reader.current?.touchLayout ?? 'sides');
+	const selectedTouchLayoutOption = $derived(
+		reader.touchLayoutOptions.find((layout) => layout.name === selectedTouchLayout)!
+	);
 
-	$: selectedTouchLayout = reader.touchLayout;
-	$: selectedTouchLayoutOption = $touchLayoutOptions.find(
-		(layout) => layout.name === selectedTouchLayout
-	)!;
+	const settingsOpen = $derived(page.state.settingsOpen === true);
 
-	$: settingsOpen = $page.state.settingsOpen === true;
-
-	let scrollTo: ((page: number) => void) | undefined;
+	let scrollTo: ((page: number, skipNavigation?: boolean) => void) | undefined = $state(undefined);
 
 	function gotoPage(pageNumber: number) {
 		if (isMouted) {
-			replaceState(`/g/${data.gallery.id}/read/${pageNumber}${$page.url.search}`, {
-				page: pageNumber,
+			replaceState(`/g/${data.gallery.id}/read/${pageNumber}${page.url.search}`, {
+				page: pageNumber
 			});
 		}
 	}
 
-	function onPage(page: number) {
+	function onPage(pageNumber: number) {
 		if (scrollTo) {
-			scrollTo(page);
+			scrollTo(pageNumber);
 		} else {
-			gotoPage(page);
+			gotoPage(pageNumber);
 		}
 	}
 
@@ -86,8 +87,8 @@
 		}
 	}
 
-	function stateReadPage(page: number) {
-		if (!$siteConfig.enableReadHistory || !$user) {
+	function stateReadPage(pageNumber: number) {
+		if (!data.site.enableReadHistory || !data.user) {
 			return;
 		}
 
@@ -95,10 +96,10 @@
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				pageNumber: page,
-				isLastPage: data.gallery.pages === page,
-				archiveId: data.gallery.id,
-			} satisfies ReadStat),
+				pageNumber: pageNumber,
+				isLastPage: data.gallery.pages === pageNumber,
+				archiveId: data.gallery.id
+			} satisfies ReadStat)
 		});
 	}
 
@@ -139,16 +140,16 @@
 		isMouted = true;
 	});
 
-	$: {
+	$effect(() => {
 		stateReadPage(currentPage);
-	}
+	});
 </script>
 
 <svelte:head>
 	<title>Page {currentPage} • {data.gallery.title} • {data.site.name}</title>
 </svelte:head>
 
-<svelte:window on:keydown={keydown} />
+<svelte:window onkeydown={keydown} />
 
 <MetaTags
 	canonical={data.site.url}
@@ -158,7 +159,7 @@
 		description: data.gallery.description ?? undefined,
 		type: 'article',
 		images: [{ url: `${data.site.url}/api/og/g/${data.gallery.id}` }],
-		siteName: data.site.name,
+		siteName: data.site.name
 	}}
 	title={`Page ${currentPage} - ${data.gallery.title}`}
 	titleTemplate={`%s - ${data.site.name}`}
@@ -166,18 +167,19 @@
 		cardType: 'summary_large_image',
 		description: data.gallery.description ?? undefined,
 		image: `${data.site.url}/api/og/g/${data.gallery.id}`,
-		title: `Page ${currentPage} - ${data.gallery.title} - ${data.site.name}`,
+		title: `Page ${currentPage} - ${data.gallery.title} - ${data.site.name}`
 	}}
 />
 
-{#if reader.readingMode === 'paged'}
+{#if reader.current?.readingMode === 'paged'}
 	<PagedReader
 		{currentPage}
 		gallery={data.gallery}
 		{hasNext}
 		{hasPrevious}
-		maxWidth={reader.maxWidth}
-		minWidth={reader.minWidth}
+		imageServer={data.site.imageServer}
+		maxWidth={reader.current?.maxWidth ?? 0}
+		minWidth={reader.current?.minWidth ?? 0}
 		{onMenu}
 		{onNext}
 		{onPrevious}
@@ -185,9 +187,9 @@
 		{selectedPreset}
 		{selectedScalingOption}
 		{selectedTouchLayoutOption}
-		toolbarPosition={reader.toolbarPosition}
+		toolbarPosition={reader.current?.toolbarPosition ?? 'bottom'}
 	/>
-{:else if reader.readingMode === 'continuous-vertical'}
+{:else if reader.current?.readingMode === 'continuous-vertical'}
 	<VerticalReader
 		bind:scrollTo
 		{currentPage}
@@ -195,8 +197,9 @@
 		{gotoPage}
 		{hasNext}
 		{hasPrevious}
-		maxWidth={reader.maxWidth}
-		minWidth={reader.minWidth}
+		imageServer={data.site.imageServer}
+		maxWidth={reader.current?.maxWidth ?? 0}
+		minWidth={reader.current?.minWidth ?? 0}
 		{onMenu}
 		{onNext}
 		{onPrevious}
@@ -204,17 +207,17 @@
 		{selectedPreset}
 		{selectedScaling}
 		{selectedTouchLayoutOption}
-		verticalGap={reader.verticalGap}
+		verticalGap={reader.current?.verticalGap ?? 0}
 	/>
 {/if}
 
 <Toolbar
 	{currentPage}
-	onBack={() => goto(`/g/${data.gallery.id}${$page.url.search}`)}
-	onMenu={() => pushState('', { settingsOpen: true, page: $page.state.page })}
+	onBack={() => goto(`/g/${data.gallery.id}${page.url.search}`)}
+	onMenu={() => pushState('', { settingsOpen: true, page: page.state.page })}
 	{onPage}
 	pages={data.gallery.pages}
-	position={reader.toolbarPosition}
+	position={reader.current?.toolbarPosition ?? 'bottom'}
 	visible={toolbarVisible}
 />
 
@@ -223,6 +226,7 @@
 	{currentImage}
 	{currentPage}
 	gallery={data.gallery}
+	imageServer={data.site.imageServer}
 	onOpenChange={(open) => {
 		if (!open) {
 			history.back();

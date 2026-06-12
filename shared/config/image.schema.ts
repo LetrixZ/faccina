@@ -1,11 +1,11 @@
 import { omit } from 'ramda';
-import { z } from 'zod';
-import { generatePresetHash, presetSchema, type Preset } from '$lib/image-presets';
+import { z } from 'zod/v3';
+import { generatePresetHash, presetSchema, type Preset } from '~shared/image-presets.js';
 
 const cachingSchema = z.object({
 	page: z.number().default(365 * 24 * 3600),
 	thumbnail: z.number().default(2 * 24 * 3600),
-	cover: z.number().default(5 * 24 * 3600),
+	cover: z.number().default(5 * 24 * 3600)
 });
 
 const schema = z
@@ -35,7 +35,7 @@ const schema = z
 				}
 
 				return val;
-			}),
+			})
 	})
 	.superRefine((val, ctx) => {
 		if (val.cover_preset === 'cover' && (!val.preset || !('cover' in val.preset))) {
@@ -44,14 +44,14 @@ const schema = z
 				cover: {
 					format: 'webp',
 					width: 540,
-					label: 'Cover',
-				},
+					label: 'Cover'
+				}
 			};
 		} else if (!val.preset || !(val.cover_preset in val.preset)) {
 			ctx.addIssue({
 				code: 'custom',
 				path: ['encoding', 'preset'],
-				message: `Preset '${val.cover_preset}' was not defined as a preset`,
+				message: `Preset '${val.cover_preset}' was not defined as a preset`
 			});
 		}
 
@@ -61,14 +61,14 @@ const schema = z
 				thumbnail: {
 					format: 'webp',
 					width: 360,
-					label: 'Thumbnail',
-				},
+					label: 'Thumbnail'
+				}
 			};
 		} else if (!val.preset || !(val.thumbnail_preset in val.preset)) {
 			ctx.addIssue({
 				code: 'custom',
 				path: ['encoding', 'preset'],
-				message: `Preset '${val.thumbnail_preset}' was not defined as a preset`,
+				message: `Preset '${val.thumbnail_preset}' was not defined as a preset`
 			});
 		}
 	})
@@ -77,10 +77,10 @@ const schema = z
 		preset: Object.entries(val.preset).reduce(
 			(acc, [name, preset]) => ({
 				...acc,
-				[name]: { ...preset, name, label: preset.label ?? name, hash: generatePresetHash(preset) },
+				[name]: { ...preset, name, label: preset.label ?? name, hash: generatePresetHash(preset) }
 			}),
 			{} as { [key: string]: Preset }
-		),
+		)
 	}))
 	.transform((val) => ({
 		...val,
@@ -101,6 +101,7 @@ const schema = z
 
 			for (const [label, presets] of labels
 				.entries()
+
 				.filter(([_, presets]) => presets.length > 1)) {
 				for (const preset of presets) {
 					val.preset[preset]!.label = `${label} (${preset})`;
@@ -108,7 +109,7 @@ const schema = z
 			}
 
 			return val.preset;
-		})(),
+		})()
 	}))
 	.transform((val) => {
 		const presets = Object.entries(val.preset).reduce((acc, [name, preset]) => {
@@ -142,7 +143,7 @@ const schema = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['images'],
-				message: `You need to specify images presets for the reader if original images aren't allowed in the reader`,
+				message: `You need to specify images presets for the reader if original images aren't allowed in the reader`
 			});
 		}
 
@@ -150,7 +151,7 @@ const schema = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['images'],
-				message: `You need to specify images presets for the downloads if original images aren't allowed for downloads`,
+				message: `You need to specify images presets for the downloads if original images aren't allowed for downloads`
 			});
 		}
 
@@ -163,7 +164,7 @@ const schema = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['images'],
-				message: `The default reader preset was not found in the reader presets array.`,
+				message: `The default reader preset was not found in the reader presets array.`
 			});
 		}
 
@@ -176,7 +177,7 @@ const schema = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['images'],
-				message: `The default download preset was not found in the download presets array.`,
+				message: `The default download preset was not found in the download presets array.`
 			});
 		}
 	})
@@ -187,7 +188,7 @@ const schema = z
 			: undefined,
 		download_default_preset: val.download_default_preset
 			? val.presets.find((preset) => preset.name === val.download_default_preset)
-			: undefined,
+			: undefined
 	}));
 
 export type ReaderPreset = z.infer<typeof schema>['reader_presets'][number];

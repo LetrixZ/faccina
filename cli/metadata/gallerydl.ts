@@ -1,8 +1,8 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { parseFilename } from './utils.js';
 import dayjs from 'dayjs';
-import { z } from 'zod';
-import config from '../../shared/config';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { parseFilename } from './utils';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 const metadataSchema = z.object({
 	title: z.string(),
@@ -11,7 +11,7 @@ const metadataSchema = z.object({
 	tags: z.array(z.string()).optional(),
 	category: z.string().optional(),
 	gallery_id: z.number().optional(),
-	gallery_token: z.string().optional(),
+	gallery_token: z.string().optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -49,7 +49,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 
 			archive.tags.push({
 				namespace: name ? (namespace === 'other' ? 'misc' : namespace) : 'misc',
-				name: name ?? namespace,
+				name: name ?? namespace
 			});
 		}
 	}
@@ -60,8 +60,8 @@ export default async (content: string, archive: ArchiveMetadata) => {
 		archive.sources = [
 			{
 				name: data.category,
-				url,
-			},
+				url
+			}
 		];
 	}
 

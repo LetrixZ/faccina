@@ -1,8 +1,8 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { stringOrNumberArray } from './schemas.js';
 import dayjs from 'dayjs';
 import YAML from 'yaml';
-import { z } from 'zod';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { stringOrNumberArray } from './schemas';
+import { z } from 'zod/v3';
 
 const metadataSchema = z.object({
 	Title: z.string(),
@@ -17,7 +17,7 @@ const metadataSchema = z.object({
 	Parody: stringOrNumberArray,
 	Tags: stringOrNumberArray,
 	Thumbnail: z.number().optional(),
-	Released: z.number().optional(),
+	Released: z.number().optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {

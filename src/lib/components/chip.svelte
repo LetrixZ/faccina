@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { Tag } from '../types';
-	import { Button } from './ui/button';
-	import { cn, encodeURL } from '$lib/utils';
+	import { cn, encodeURL } from '$lib/utils.js';
+	import type { Tag } from '../types.js';
+	import { Button } from './ui/button/index.js';
 
-	export let tag: Tag;
-	export let newTab = false;
+	let { tag, newTab = false }: { tag: Tag; newTab?: boolean } = $props();
 
 	const classes = (() => {
 		switch (tag.namespace) {
@@ -25,23 +24,23 @@
 		}
 	})();
 
-	$: namespace = ['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(
-		tag.namespace
-	)
-		? null
-		: tag.namespace;
+	const namespace = $derived(
+		['artist', 'circle', 'magazine', 'event', 'publisher', 'parody', 'tag'].includes(tag.namespace)
+			? null
+			: tag.namespace
+	);
 
-	$: label = (() => {
+	const label = $derived.by(() => {
 		if (namespace) {
 			return `${namespace}:${tag.name}`;
 		} else {
 			return tag.name;
 		}
-	})();
+	});
 
-	$: url = (() => {
-		return `/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase();
-	})();
+	const url = $derived.by(() =>
+		`/?q=${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${encodeURL(tag.name)}"` : encodeURL(tag.name)}`.toLowerCase()
+	);
 </script>
 
 <Button

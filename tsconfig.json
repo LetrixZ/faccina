@@ -1,66 +1,21 @@
 {
+	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
-		"lib": ["ESNext", "DOM", "DOM.Iterable"],
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleDetection": "force",
-		"jsx": "react-jsx",
+		"rewriteRelativeImportExtensions": true,
 		"allowJs": true,
-		"moduleResolution": "bundler",
-		"allowImportingTsExtensions": true,
-		"verbatimModuleSyntax": true,
-		"isolatedModules": true,
-		"noEmit": true,
-		"strict": true,
+		"checkJs": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
 		"skipLibCheck": true,
-		"noFallthroughCasesInSwitch": true,
-		"noUnusedLocals": false,
-		"noUnusedParameters": false,
-		"noPropertyAccessFromIndexSignature": false,
-		"noUncheckedIndexedAccess": true,
-		"types": ["@types/bun"],
-		"rootDirs": ["./", "./.svelte-kit/types"],
-		"paths": {
-			"~shared": ["./shared"],
-			"~shared/*": ["./shared/*"],
-			"$lib": ["./src/lib"],
-			"$lib/*": ["./src/lib/*"]
-		}
-	},
-	"include": [
-		"./src/**/*.js",
-		"./src/**/*.ts",
-		"./src/**/*.svelte",
-		".svelte-kit/ambient.d.ts",
-		"./cli/**/*.ts",
-		"./shared/**/*.ts",
-		"./.svelte-kit/ambient.d.ts",
-		"./.svelte-kit/non-ambient.d.ts",
-		"./.svelte-kit/types/**/$types.d.ts",
-		"./vite.config.js",
-		"./vite.config.ts",
-		"./src/routes/**/*.js",
-		"./src/routes/**/*.ts",
-		"./src/routes/**/*.svelte",
-		"./src/lib/**/*.js",
-		"./src/lib/**/*.ts",
-		"./src/lib/**/*.svelte",
-		"./src/**/*.js",
-		"./src/**/*.ts",
-		"./src/**/*.svelte",
-		"./tests/**/*.js",
-		"./tests/**/*.ts",
-		"./tests/**/*.svelte",
-		"./scripts/*.ts",
-		"./serve.ts"
-	],
-	"exclude": [
-		"./node_modules/**",
-		"./src/service-worker.js",
-		"./src/service-worker/**/*.js",
-		"./src/service-worker.ts",
-		"./src/service-worker/**/*.ts",
-		"./src/service-worker.d.ts",
-		"./src/service-worker/**/*.d.ts"
-	]
+		"sourceMap": true,
+		"strict": true,
+		"moduleResolution": "bundler",
+		"types": ["@types/bun"]
+	}
+	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
+	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
+	//
+	// To make changes to top-level options such as include and exclude, we recommend extending
+	// the generated config; see https://svelte.dev/docs/kit/configuration#typescript
 }

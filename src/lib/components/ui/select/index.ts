@@ -1,33 +1,36 @@
-import { Select as SelectPrimitive } from 'bits-ui';
 import Content from './select-content.svelte';
+import GroupHeading from './select-group-heading.svelte';
+import Group from './select-group.svelte';
 import Item from './select-item.svelte';
 import Label from './select-label.svelte';
+import Portal from './select-portal.svelte';
+import ScrollDownButton from './select-scroll-down-button.svelte';
+import ScrollUpButton from './select-scroll-up-button.svelte';
 import Separator from './select-separator.svelte';
 import Trigger from './select-trigger.svelte';
-
-const Root = SelectPrimitive.Root;
-const Group = SelectPrimitive.Group;
-const Input = SelectPrimitive.Input;
-const Value = SelectPrimitive.Value;
+import Root from './select.svelte';
 
 export {
 	Content,
 	Group,
-	Input,
+	GroupHeading,
 	Item,
 	Label,
+	Portal,
 	Root,
-	//
+	ScrollDownButton,
+	ScrollUpButton,
 	Root as Select,
 	Content as SelectContent,
 	Group as SelectGroup,
-	Input as SelectInput,
+	GroupHeading as SelectGroupHeading,
 	Item as SelectItem,
 	Label as SelectLabel,
+	Portal as SelectPortal,
+	ScrollDownButton as SelectScrollDownButton,
+	ScrollUpButton as SelectScrollUpButton,
 	Separator as SelectSeparator,
 	Trigger as SelectTrigger,
-	Value as SelectValue,
 	Separator,
-	Trigger,
-	Value,
+	Trigger
 };

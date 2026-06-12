@@ -37,5 +37,5 @@ export default {
 	'1733882129483_sqlite-fts5': _1733882129483_sqlite_fts5,
 	'1735711099148_series': _1735711099148_series,
 	'1736898399488_series-fts': _1736898399488_series_fts,
-	'1742056575576_postgres-archive-size': _1742056575576_postgres_archive_size,
+	'1742056575576_postgres-archive-size': _1742056575576_postgres_archive_size
 };

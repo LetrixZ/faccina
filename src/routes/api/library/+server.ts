@@ -1,11 +1,11 @@
+import { libraryItems, searchArchives, searchSeries } from '$lib/server/db/queries.js';
+import { handleTags, parseSearchParams } from '$lib/server/utils.js';
+import type { RequestHandler } from './$types.js';
 import { json } from '@sveltejs/kit';
 import { sql } from 'kysely';
-import type { RequestHandler } from './$types';
-import { libraryItems, searchArchives, searchSeries } from '$lib/server/db/queries';
-import { handleTags, parseSearchParams } from '$lib/server/utils';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom } from '~shared/db/helpers';
+import config from '~shared/config.js';
+import { jsonArrayFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams);
@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				series: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total: 0,
+				total: 0
 			});
 		}
 
@@ -27,7 +27,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				series: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total,
+				total
 			});
 		}
 
@@ -53,11 +53,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 							'archives.title',
 							sql<number>`${eb.ref('seriesArchive.order')} + 1`.as('number'),
 							'archives.pages',
-							'archives.releasedAt',
+							'archives.releasedAt'
 						])
 						.orderBy('seriesArchive.order asc')
 						.whereRef('seriesArchive.seriesId', '=', 'series.id')
-				).as('chapters'),
+				).as('chapters')
 			])
 			.groupBy('series.id')
 			.where('series.id', 'in', ids)
@@ -81,7 +81,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			seriesList.push({
 				...series,
 				pages: series.chapters.reduce((acc, chapter) => acc + chapter.pages, 0),
-				tags: handleTags(Array.from(uniqueTags.values())),
+				tags: handleTags(Array.from(uniqueTags.values()))
 			});
 		}
 
@@ -89,7 +89,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			series: seriesList,
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
+			total
 		});
 	} else {
 		if (!locals.user && !config.site.guestAccess) {
@@ -97,12 +97,12 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				archives: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total: 0,
+				total: 0
 			});
 		}
 
 		const { ids, total } = await searchArchives(searchParams, {
-			showHidden: !!locals.user?.admin,
+			showHidden: !!locals.user?.admin
 		});
 
 		if (!ids.length) {
@@ -110,7 +110,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				archives: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total,
+				total
 			});
 		}
 
@@ -134,7 +134,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 						.select(['namespace', 'name'])
 						.whereRef('archives.id', '=', 'archiveId')
 						.orderBy('archiveTags.createdAt asc')
-				).as('tags'),
+				).as('tags')
 			])
 			.where('archives.id', 'in', ids)
 			.execute();
@@ -145,7 +145,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			archives,
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
+			total
 		});
 	}
 };

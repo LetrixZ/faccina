@@ -1,7 +1,7 @@
 import { sql, type Kysely } from 'kysely';
-import config from '~shared/config';
+import config from '~shared/config.js';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'sqlite') {
 		await sql`CREATE VIRTUAL TABLE archives_fts USING fts5 (title, tags)`.execute(db);
 		await sql`
@@ -46,7 +46,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 	}
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'sqlite') {
 		await sql`DROP TABLE archives_fts`.execute(db);
 		await sql`DROP TRIGGER trigger_insert_fts_archives;`.execute(db);

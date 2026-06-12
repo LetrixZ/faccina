@@ -1,15 +1,15 @@
+import { getGallery } from '$lib/server/db/queries.js';
+import { readStream } from '$lib/server/utils.js';
+import { error, redirect } from '@sveltejs/kit';
+import dayjs from 'dayjs';
+import imageSize from 'image-size';
+import StreamZip from 'node-stream-zip';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { error, redirect } from '@sveltejs/kit';
-import imageSize from 'image-size';
-import StreamZip from 'node-stream-zip';
-import { z } from 'zod';
-import dayjs from 'dayjs';
-import { readStream } from '$lib/server/utils';
-import { getGallery } from '$lib/server/db/queries';
+import { z } from 'zod/v3';
 import config from '~shared/config.js';
-import db from '~shared/db';
+import db from '~shared/db/index.js';
 
 export const load = async ({ params, locals, cookies }) => {
 	if (!locals.user && !config.site.guestAccess) {
@@ -78,7 +78,7 @@ export const load = async ({ params, locals, cookies }) => {
 
 					const stream = createReadStream(join(archive.path, image.filename), {
 						start: 0,
-						end: 128 * 1024,
+						end: 128 * 1024
 					});
 
 					const data = await readStream(stream);
@@ -133,7 +133,7 @@ export const load = async ({ params, locals, cookies }) => {
 			path: '/',
 			expires: dayjs().add(1, 'year').toDate(),
 			httpOnly: false,
-			secure: false,
+			secure: false
 		});
 	} catch (error) {
 		console.error(error);
@@ -141,11 +141,11 @@ export const load = async ({ params, locals, cookies }) => {
 			path: '/',
 			expires: dayjs().add(1, 'year').toDate(),
 			httpOnly: false,
-			secure: false,
+			secure: false
 		});
 	}
 
 	return {
-		gallery,
+		gallery
 	};
 };

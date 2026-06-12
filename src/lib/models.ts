@@ -101,12 +101,12 @@ export interface Task {
 export enum ImageSize {
 	Original = 'original',
 	FillWidth = 'fill-width',
-	FillHeight = 'fill-height',
+	FillHeight = 'fill-height'
 }
 
 export enum TouchLayout {
 	LeftToRight = 'ltr',
-	RightToLeft = 'rtl',
+	RightToLeft = 'rtl'
 }
 
 export interface TaxonomyTypes {

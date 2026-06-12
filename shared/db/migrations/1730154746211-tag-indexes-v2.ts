@@ -1,7 +1,7 @@
-import { sql, type Kysely } from 'kysely';
 import config from '../../config';
+import { sql, type Kysely } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	await db.schema.dropIndex('tags_namespace').execute();
 	await db.schema.dropIndex('tags_name').execute();
 
@@ -26,7 +26,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.createIndex('archive_tags_tag_id').on('archive_tags').column('tag_id').execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	await db.schema.dropIndex('archive_tags_tag_id').execute();
 	await db.schema.dropIndex('archive_tags_archive_id').execute();
 	await db.schema.dropIndex('tags_namespace').execute();

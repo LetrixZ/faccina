@@ -1,31 +1,43 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { cn, isSpread } from '$lib/utils.js';
+	import type { Gallery } from '../types.js';
+	import { Button } from './ui/button/index.js';
 	import { onMount } from 'svelte';
-	import type { Gallery } from '../types';
-	import { Button } from './ui/button';
-	import { page } from '$app/stores';
-	import { siteConfig } from '$lib/stores';
-	import { cn, isSpread } from '$lib/utils';
 
-	export let archive: Gallery;
+	let {
+		gallery,
+		galleryPreviewsCount,
+		galleryShowAllPreviews,
+		galleryAutoLoadMorePreviews,
+		imageServer
+	}: {
+		gallery: Gallery;
+		galleryPreviewsCount: number;
+		galleryShowAllPreviews: boolean;
+		galleryAutoLoadMorePreviews: boolean;
+		imageServer: string;
+	} = $props();
 
-	let buttonsContainer: HTMLDivElement | null;
+	let buttonsContainer: HTMLDivElement | null = $state(null);
 
-	let maxCount = $siteConfig.galleryPreviewsCount;
+	let maxCount = $derived(galleryPreviewsCount);
 
-	$: filteredImages = $siteConfig.galleryShowAllPreviews
-		? archive.images
-		: archive?.images.slice(0, maxCount);
+	const filteredImages = $derived(
+		galleryShowAllPreviews ? gallery.images : gallery.images.slice(0, maxCount)
+	);
 
-	$: wideImages =
-		archive.images.reduce(
+	const wideImages = $derived(
+		gallery.images.reduce(
 			(acc, image) => acc + (image.width && image.height ? image.width / image.height : 0),
 			0
 		) /
-			archive.images.length >=
-		1;
+			gallery.images.length >=
+			1
+	);
 
 	const checkVisibility = () => {
-		if (!$siteConfig.galleryAutoLoadMorePreviews || !buttonsContainer) {
+		if (!galleryAutoLoadMorePreviews || !buttonsContainer) {
 			return;
 		}
 
@@ -36,8 +48,8 @@
 			rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
 			rect.right <= (window.innerWidth || document.documentElement.clientWidth);
 
-		if (isInViewport && maxCount < archive.images.length) {
-			maxCount += $siteConfig.galleryPreviewsCount;
+		if (isInViewport && maxCount < gallery.images.length) {
+			maxCount += galleryPreviewsCount;
 			setTimeout(checkVisibility, 100);
 		}
 	};
@@ -47,22 +59,22 @@
 	});
 </script>
 
-<svelte:window on:resize={checkVisibility} on:scroll={checkVisibility} />
+<svelte:window onresize={checkVisibility} onscroll={checkVisibility} />
 
-<div class="flex-grow space-y-2">
+<div class="grow space-y-2">
 	<div class="@container">
 		<div class="grid grid-cols-2 gap-2 @2xl:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6">
 			{#each filteredImages as image (image.pageNumber)}
-				<a class="relative" href={`./${archive.id}/read/${image.pageNumber}${$page.url.search}`}>
+				<a class="relative" href={`./${gallery.id}/read/${image.pageNumber}${page.url.search}`}>
 					<img
 						alt={`Page ${image.pageNumber}`}
 						class={cn(
-							'aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow',
+							'aspect-45/64 h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow',
 							isSpread(image) && 'object-contain'
 						)}
 						height={455}
 						loading="lazy"
-						src={`${$siteConfig.imageServer}/image/${archive.hash}/${image.pageNumber}?type=thumb`}
+						src={`${imageServer}/image/${gallery.hash}/${image.pageNumber}?type=thumb`}
 						width={320}
 					/>
 					{#if !wideImages && isSpread(image)}
@@ -77,13 +89,13 @@
 		</div>
 	</div>
 
-	{#if !$siteConfig.galleryShowAllPreviews}
-		{#if filteredImages.length < archive.images.length}
+	{#if !galleryShowAllPreviews}
+		{#if filteredImages.length < gallery.images.length}
 			<div bind:this={buttonsContainer} class="grid grid-cols-2 gap-2">
-				<Button on:click={() => (maxCount += $siteConfig.galleryPreviewsCount)} variant="indigo-outline">
+				<Button onclick={() => (maxCount += galleryPreviewsCount)} variant="indigo-outline">
 					Show more
 				</Button>
-				<Button on:click={() => (maxCount = archive.images.length)} variant="blue-outline">
+				<Button onclick={() => (maxCount = gallery.images.length)} variant="blue-outline">
 					Show all
 				</Button>
 			</div>

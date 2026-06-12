@@ -1,9 +1,9 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { mapMultiField, multiTextField } from './schemas.js';
+import { parseFilename } from './utils.js';
 import dayjs from 'dayjs';
-import { z } from 'zod';
-import config from '../../shared/config';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { mapMultiField, multiTextField } from './schemas';
-import { parseFilename } from './utils';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 const metadataSchema = z.object({
 	Title: z.string(),
@@ -27,7 +27,7 @@ const metadataSchema = z.object({
 	Tags: multiTextField.nullable().optional(),
 	Thumbnail: z.number().nullable().optional(),
 	Released: z.number().nullable().optional(),
-	Published: z.number().nullable().optional(),
+	Published: z.number().nullable().optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {
@@ -86,7 +86,7 @@ export default async (content: string, archive: ArchiveMetadata) => {
 	for (const tag of [
 		...mapMultiField(data.Parody),
 		...mapMultiField(data.Parodies),
-		...mapMultiField(data.Series),
+		...mapMultiField(data.Series)
 	]) {
 		archive.tags.push({ namespace: 'parody', name: tag });
 	}

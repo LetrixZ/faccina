@@ -1,16 +1,16 @@
-import { stat } from 'fs/promises';
-import { extname, join } from 'node:path';
+import { calculateDimensions, encodeImage } from '$lib/server/image';
+import type { ImageArchive } from '$lib/types.js';
+import type { RequestHandler } from './$types';
 import chalk from 'chalk';
+import { stat } from 'fs/promises';
 import { filetypemime } from 'magic-bytes.js';
 import StreamZip from 'node-stream-zip';
+import { extname, join } from 'node:path';
 import sharp from 'sharp';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
-import type { RequestHandler } from './$types';
-import { calculateDimensions, encodeImage } from '$lib/server/image';
-import type { ImageArchive } from '$lib/types';
-import config from '~shared/config';
-import db from '~shared/db';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 import { exists, imageDirectory } from '~shared/server.utils';
 import { leadingZeros } from '~shared/utils';
 
@@ -63,7 +63,7 @@ const originalImage = async (archive: ImageArchive): Promise<[Buffer | Uint8Arra
 					calculateDimensions({
 						archive,
 						page: archive.pageNumber,
-						dimensions: { width, height },
+						dimensions: { width, height }
 					});
 				}
 			});
@@ -76,7 +76,7 @@ const resampledImage = async (
 	archive: ImageArchive,
 	type: string
 ): Promise<[Buffer | Uint8Array, string]> => {
-	let presetName: string | undefined = undefined;
+	let presetName: string;
 
 	const presets = config.image.presets;
 
@@ -85,7 +85,7 @@ const resampledImage = async (
 			'cover',
 			'thumb',
 			...presets.map((preset) => preset.name),
-			...presets.map((preset) => preset.hash),
+			...presets.map((preset) => preset.hash)
 		])
 		.safeParse(type);
 
@@ -126,7 +126,7 @@ const resampledImage = async (
 			page: archive.pageNumber,
 			savePath: imagePath,
 			preset,
-			allowAspectRatioSimilar,
+			allowAspectRatioSimilar
 		});
 
 		return [encodedImage, extname(imagePath)];
@@ -138,7 +138,7 @@ const resampledImage = async (
 			err
 		);
 
-		throw new Error('Failed to encode image');
+		throw new Error('Failed to encode image', { cause: err });
 	}
 };
 
@@ -190,21 +190,21 @@ export const GET: RequestHandler = async ({ params, url, locals, setHeaders }) =
 		switch (imageType) {
 			case 'cover':
 				setHeaders({
-					'Cache-Control': `public, max-age=${config.image.caching.cover}, immutable`,
+					'Cache-Control': `public, max-age=${config.image.caching.cover}, immutable`
 				});
 				break;
 			case 'thumbnail':
 				setHeaders({
-					'Cache-Control': `public, max-age=${config.image.caching.thumbnail}, immutable`,
+					'Cache-Control': `public, max-age=${config.image.caching.thumbnail}, immutable`
 				});
 				break;
 			default:
 				setHeaders({
-					'Cache-Control': `public, max-age=${config.image.caching.page}, immutable`,
+					'Cache-Control': `public, max-age=${config.image.caching.page}, immutable`
 				});
 				break;
 		}
 	}
 
-	return new Response(image);
+	return new Response(new Uint8Array(image));
 };

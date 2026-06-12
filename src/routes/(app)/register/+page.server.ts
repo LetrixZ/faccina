@@ -1,14 +1,13 @@
+import { registerSchema } from '$lib/schemas.js';
+import { lucia } from '$lib/server/auth.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { generateIdFromEntropySize } from 'lucia';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import type { Actions, PageServerLoad } from './$types';
-import config from '~shared/config';
-import db from '~shared/db';
-import { lucia } from '$lib/server/auth';
-import { registerSchema } from '$lib/schemas';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load = async ({ locals }) => {
 	if (!config.site.enableUsers) {
 		error(404, { message: 'Not Found' });
 	} else if (config.site.disableRegistration) {
@@ -20,29 +19,29 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	return {
-		form: await superValidate(zod(registerSchema)),
+		form: await superValidate(zod(registerSchema))
 	};
 };
 
-export const actions: Actions = {
+export const actions = {
 	default: async (event) => {
 		const form = await superValidate(event, zod(registerSchema));
 
 		if (!config.site.enableUsers) {
 			return fail(400, {
 				message: 'Users are disabled',
-				form,
+				form
 			});
 		} else if (config.site.disableRegistration) {
 			return fail(400, {
 				message: 'Registration are disabled',
-				form,
+				form
 			});
 		}
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -54,7 +53,7 @@ export const actions: Actions = {
 		const passwordHash = await Bun.password.hash(password, {
 			algorithm: 'argon2id',
 			memoryCost: 19456,
-			timeCost: 2,
+			timeCost: 2
 		});
 
 		const existingUser = await db
@@ -68,7 +67,7 @@ export const actions: Actions = {
 		if (existingUser) {
 			return fail(400, {
 				message: 'An user with the same username or email already exists.',
-				form,
+				form
 			});
 		}
 
@@ -78,7 +77,7 @@ export const actions: Actions = {
 				id: userId,
 				username: username,
 				passwordHash: passwordHash,
-				email,
+				email
 			})
 			.execute();
 
@@ -87,7 +86,7 @@ export const actions: Actions = {
 		event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			path: '.',
 			...sessionCookie.attributes,
-			secure: config.site.secureSessionCookie,
+			secure: config.site.secureSessionCookie
 		});
 
 		await db
@@ -96,7 +95,7 @@ export const actions: Actions = {
 				name: 'Bookmarks',
 				slug: `bookmarks-${userId}`,
 				protected: true,
-				userId,
+				userId
 			})
 			.execute();
 
@@ -107,7 +106,7 @@ export const actions: Actions = {
 		}
 
 		return {
-			form,
+			form
 		};
-	},
+	}
 };

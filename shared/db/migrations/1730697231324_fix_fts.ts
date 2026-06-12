@@ -1,7 +1,7 @@
-import { Kysely, sql } from 'kysely';
 import config from '../../config';
+import { Kysely, sql } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
 		await db.schema.dropTable('archive_fts').execute();
 
@@ -75,4 +75,4 @@ export async function up(db: Kysely<any>): Promise<void> {
 	}
 }
 
-export async function down(_db: Kysely<any>): Promise<void> {}
+export async function down(_db: Kysely<unknown>): Promise<void> {}

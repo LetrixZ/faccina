@@ -1,9 +1,9 @@
+import { lucia } from '$lib/server/auth.js';
+import { log } from '$lib/server/utils.js';
+import { runMigrations } from './migrations.js';
 import { type Handle } from '@sveltejs/kit';
 import chalk from 'chalk';
-import { runMigrations } from './migrations';
-import { lucia } from '$lib/server/auth';
-import { log } from '$lib/server/utils';
-import config from '~shared/config';
+import config from '~shared/config.js';
 
 await runMigrations();
 
@@ -22,7 +22,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
 				path: '.',
 				...sessionCookie.attributes,
-				secure: config.site.secureSessionCookie,
+				secure: config.site.secureSessionCookie
 			});
 		}
 
@@ -31,7 +31,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			event.cookies.set(sessionCookie.name, sessionCookie.value, {
 				path: '.',
 				...sessionCookie.attributes,
-				secure: config.site.secureSessionCookie,
+				secure: config.site.secureSessionCookie
 			});
 		}
 

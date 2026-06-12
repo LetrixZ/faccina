@@ -1,29 +1,31 @@
 <script lang="ts">
 	import ListItemHistory from '$lib/components/list-item-history.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Separator } from '$lib/components/ui/separator';
-	import type { HistoryEntry } from '$lib/types';
-	import { relativeDate } from '$lib/utils';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import type { HistoryEntry } from '$lib/types.js';
+	import { relativeDate } from '$lib/utils.js';
 
-	export let data;
+	let { data } = $props();
 
-	$: groupedEntries = data.entries.reduce(
-		(acc, entry) => {
-			const date = relativeDate(entry.lastReadAt);
+	const groupedEntries = $derived(
+		data.entries.reduce(
+			(acc, entry) => {
+				const date = relativeDate(entry.lastReadAt);
 
-			let dateEntry = acc.find((entry) => entry.date === date);
+				let dateEntry = acc.find((entry) => entry.date === date);
 
-			if (!dateEntry) {
-				dateEntry = { date, entries: [] };
-				acc.push(dateEntry);
-			}
+				if (!dateEntry) {
+					dateEntry = { date, entries: [] };
+					acc.push(dateEntry);
+				}
 
-			dateEntry.entries.push(entry);
+				dateEntry.entries.push(entry);
 
-			return acc;
-		},
-		[] as { date: string; entries: HistoryEntry[] }[]
+				return acc;
+			},
+			[] as { date: string; entries: HistoryEntry[] }[]
+		)
 	);
 </script>
 
@@ -34,7 +36,7 @@
 
 	{#if groupedEntries.length}
 		<div class="grid gap-2">
-			{#each groupedEntries as group}
+			{#each groupedEntries as group (group.date)}
 				<div class="flex flex-col gap-2">
 					<p class="font-medium">{group.date}</p>
 
@@ -42,9 +44,9 @@
 						aria-label="Collection"
 						class="relative grid gap-2 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4"
 					>
-						{#each group.entries as entry}
+						{#each group.entries as entry (entry.archive.id)}
 							<div>
-								<ListItemHistory {entry} />
+								<ListItemHistory {entry} imageServer={data.site.imageServer} />
 							</div>
 						{/each}
 					</div>

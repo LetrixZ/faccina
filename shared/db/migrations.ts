@@ -1,7 +1,8 @@
+import migrations from './migration-list.js';
+import type { DB } from './types.js';
 import chalk from 'chalk';
-import { Kysely, Migrator } from 'kysely';
-import type { DB } from './types';
-import migrations from './migration-list';
+import { Kysely } from 'kysely';
+import { Migrator } from 'kysely/migration';
 
 export default async (db: Kysely<DB>) => {
 	const shouldMigrate = await (async () => {
@@ -18,8 +19,8 @@ export default async (db: Kysely<DB>) => {
 		const migrator = new Migrator({
 			db,
 			provider: {
-				getMigrations: async () => migrations,
-			},
+				getMigrations: async () => migrations
+			}
 		});
 
 		const { error, results } = await migrator.migrateToLatest();

@@ -3,11 +3,9 @@
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 
-	export let data;
-
-	$: library = data.library;
+	let { data } = $props();
 </script>
 
 <svelte:head>
@@ -15,18 +13,31 @@
 </svelte:head>
 
 <main class="container relative flex flex-auto flex-col gap-y-2">
-	<PageTitle>Browse ({library.total})</PageTitle>
+	<PageTitle>Browse ({data.library.total})</PageTitle>
 
 	<div class="grid items-end gap-2 md:flex">
-		<ListNavbar {library} type="main" />
+		<ListNavbar
+			defaultOrder={data.site.defaultOrder}
+			defaultPageLimit={data.site.defaultPageLimit}
+			defaultSort={data.site.defaultSort}
+			library={data.library}
+			pageLimits={data.site.pageLimits}
+			type="main"
+		/>
 	</div>
 
 	<Separator />
 
-	{#if library.data.length}
+	{#if data.library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-			{#each library.data as archive (archive.id)}
-				<ListItem enableBookmark={!!data.user} gallery={archive} type="main" />
+			{#each data.library.data as archive (archive.id)}
+				<ListItem
+					collections={data.userCollections}
+					enableBookmark={!!data.user}
+					gallery={archive}
+					imageServer={data.site.imageServer}
+					type="main"
+				/>
 			{/each}
 		</div>
 	{:else}
@@ -36,8 +47,8 @@
 	<Separator />
 
 	<ListPagination
-		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
-		limit={library.limit}
-		total={library.total}
+		class="mx-auto w-fit md:mx-0 md:ms-auto md:grow-0"
+		limit={data.library.limit}
+		total={data.library.total}
 	/>
 </main>

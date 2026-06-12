@@ -1,27 +1,31 @@
 <script lang="ts">
+	import { cn } from '$lib/utils.js';
+	import { buttonVariants } from '../button/index.js';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Pagination as PaginationPrimitive } from 'bits-ui';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import { Button } from '$lib/components/ui/button/index';
-	import { cn } from '$lib/utils';
 
-	type $$Props = PaginationPrimitive.NextButtonProps;
-	type $$Events = PaginationPrimitive.NextButtonEvents;
-
-	let className: $$Props['class'] = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		...restProps
+	}: PaginationPrimitive.NextButtonProps = $props();
 </script>
 
-<PaginationPrimitive.NextButton asChild let:builder>
-	<Button
-		variant="ghost"
-		class={cn('gap-1 pr-2.5', className)}
-		builders={[builder]}
-		on:click
-		{...$$restProps}
-	>
-		<slot>
-			<span>Next</span>
-			<ChevronRight class="h-4 w-4" />
-		</slot>
-	</Button>
+{#snippet Fallback()}
+	<span>Next</span>
+	<ChevronRightIcon class={cn('size-4', className)} />
+{/snippet}
+
+<PaginationPrimitive.NextButton
+	aria-label="Go to next page"
+	bind:ref
+	class={cn(buttonVariants({ variant: 'ghost' }), 'pr-2!', className)}
+	{...restProps}
+>
+	{#if children}
+		{@render children?.()}
+	{:else}
+		{@render Fallback()}
+	{/if}
 </PaginationPrimitive.NextButton>

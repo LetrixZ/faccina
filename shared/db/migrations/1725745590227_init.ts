@@ -1,10 +1,10 @@
-import chalk from 'chalk';
-import { type Kysely, sql } from 'kysely';
 import config from '../../config';
 import { taxonomyTables } from '../../taxonomy';
 import { id, now } from '../helpers';
+import chalk from 'chalk';
+import { type Kysely, sql } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
 		const tableExists = Boolean(
 			await db
@@ -310,7 +310,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 	}
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
 		await db.schema.dropTable('archive_fts').ifExists().execute();
 		await sql`

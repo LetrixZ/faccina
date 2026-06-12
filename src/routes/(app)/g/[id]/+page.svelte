@@ -1,22 +1,7 @@
 <script lang="ts">
-	import { strToU8, Zip, ZipPassThrough } from 'fflate';
-	import BookOpenText from 'lucide-svelte/icons/book-open-text';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Download from 'lucide-svelte/icons/download';
-	import Eye from 'lucide-svelte/icons/eye';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
-	import Heart from 'lucide-svelte/icons/heart';
-	import Info from 'lucide-svelte/icons/info';
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Tag from 'lucide-svelte/icons/tag';
-	import Trash2 from 'lucide-svelte/icons/trash-2';
-	import pMap from 'p-map';
-	import { MetaTags } from 'svelte-meta-tags';
-	import { toast } from 'svelte-sonner';
-	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import ArchiveEditForm from '$lib/components/archive-edit-form.svelte';
 	import ArchiveTagsEditForm from '$lib/components/archive-tag-edit-form.svelte';
 	import BookmarkDialog from '$lib/components/bookmark-dialog.svelte';
@@ -26,58 +11,82 @@
 	import GalleryThumbnails from '$lib/components/gallery-thumbnails.svelte';
 	import InfoSection from '$lib/components/info-section.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import { Separator } from '$lib/components/ui/separator';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 	import type { Preset } from '$lib/image-presets';
 	import { type Task } from '$lib/models';
-	import { siteConfig, userCollections } from '$lib/stores';
-	import { cn, dateTimeFormat, getMetadata, humanFileSize, isTag, randomString } from '$lib/utils';
+	import {
+		cn,
+		dateTimeFormat,
+		getMetadata,
+		humanFileSize,
+		isTag,
+		randomString
+	} from '$lib/utils.js';
+	import BookOpenText from '@lucide/svelte/icons/book-open-text';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Download from '@lucide/svelte/icons/download';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import Heart from '@lucide/svelte/icons/heart';
+	import Info from '@lucide/svelte/icons/info';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Tag from '@lucide/svelte/icons/tag';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { strToU8, Zip, ZipPassThrough } from 'fflate';
+	import pMap from 'p-map';
+	import { MetaTags } from 'svelte-meta-tags';
+	import { toast } from 'svelte-sonner';
+	import { writable } from 'svelte/store';
 	import { generateFilename } from '~shared/utils';
 
-	export let data;
+	let { data } = $props();
 
-	let editOpen = false;
-	let editTaxonomyOpen = false;
-	let collectionsOpen = false;
-	let removeArchiveOpen = false;
+	const canDownload = $derived(data.site.guestDownloads || !!data.user);
 
-	$: canDownload = data.site.guestDownloads || !!data.user;
-	$: gallery = data.gallery;
-	$: archive = data.archive;
+	const artists = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'artist'));
+	const circles = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'circle'));
+	const magazines = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'magazine'));
+	const events = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'event'));
+	const publishers = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'publisher'));
+	const parodies = $derived(data.gallery.tags.filter((tag) => tag.namespace === 'parody'));
+	const tags = $derived(data.gallery.tags.filter(isTag));
 
-	$: artists = gallery.tags.filter((tag) => tag.namespace === 'artist');
-	$: circles = gallery.tags.filter((tag) => tag.namespace === 'circle');
-	$: magazines = gallery.tags.filter((tag) => tag.namespace === 'magazine');
-	$: events = gallery.tags.filter((tag) => tag.namespace === 'event');
-	$: publishers = gallery.tags.filter((tag) => tag.namespace === 'publisher');
-	$: parodies = gallery.tags.filter((tag) => tag.namespace === 'parody');
-	$: tags = gallery.tags.filter(isTag);
+	const defaultPresetName = $derived(
+		data.defaultPreset?.name ?? (data.allowOriginal ? '[original]' : data.presets[0]?.name)
+	);
 
-	$: defaultPresetName =
-		data.defaultPreset?.name ?? (data.allowOriginal ? '[original]' : data.presets[0]?.name);
+	const isBookmarked = $derived(
+		!!data.userCollections?.find((c) => c.protected)?.archives.find((a) => a.id === data.gallery.id)
+	);
+
+	let editOpen = $state(false);
+	let editTaxonomyOpen = $state(false);
+	let collectionsOpen = $state(false);
+	let removeArchiveOpen = $state(false);
 
 	const startDownload = async (ev: MouseEvent, preset?: Preset) => {
-		if (!$siteConfig.clientSideDownloads) {
+		if (!data.site.clientSideDownloads) {
 			return;
 		} else {
 			ev.preventDefault();
 		}
 
 		const task = writable<Task>({
-			gallery: gallery,
+			gallery: data.gallery,
 			progress: 0,
-			total: gallery.images.length,
-			complete: false,
+			total: data.gallery.images.length,
+			complete: false
 		});
 
-		const chunks: Uint8Array[] = [];
+		const chunks: BlobPart[] = [];
 
 		const save = (blob: Blob) => {
 			const url = URL.createObjectURL(blob);
 			const anchor = document.createElement('a');
 			anchor.href = url;
-			anchor.download = `${generateFilename(gallery.title, gallery.tags)}.${$siteConfig.downloadArchiveExtension}`;
+			anchor.download = `${generateFilename(data.gallery.title, data.gallery.tags)}.${data.site.downloadArchiveExtension}`;
 			anchor.click();
 			URL.revokeObjectURL(url);
 		};
@@ -108,20 +117,20 @@
 				const metadataFile = new ZipPassThrough('info.json');
 				zip.add(metadataFile);
 				metadataFile.push(
-					strToU8(JSON.stringify(getMetadata(gallery, location.origin), null, 2)),
+					strToU8(JSON.stringify(getMetadata(data.gallery, location.origin), null, 2)),
 					true
 				);
 
 				pMap(
-					gallery.images,
+					data.gallery.images,
 					async (image) => {
 						let presetName = preset?.name ?? defaultPresetName;
 						let url: string;
 
 						if (presetName && presetName !== '[original]') {
-							url = `/image/${gallery.hash}/${image.pageNumber}?type=${presetName}`;
+							url = `/image/${data.gallery.hash}/${image.pageNumber}?type=${presetName}`;
 						} else {
-							url = `/image/${gallery.hash}/${image.pageNumber}`;
+							url = `/image/${data.gallery.hash}/${image.pageNumber}`;
 						}
 
 						const response = await fetch(url);
@@ -158,9 +167,9 @@
 			id,
 			componentProps: {
 				task,
-				save: () => save(new Blob(chunks, { type: 'application/zip' })),
+				save: () => save(new Blob(chunks, { type: 'application/zip' }))
 			},
-			loading: DownloadProgress,
+			loading: () => DownloadProgress,
 			success: () => DownloadProgress,
 			error: () => {
 				setTimeout(() => toast.dismiss(id), 5000);
@@ -168,16 +177,12 @@
 				return 'Download failed';
 			},
 			position: 'bottom-center',
-			duration: 10000,
+			duration: 10000
 		});
 	};
 
-	$: isBookmarked = !!$userCollections
-		?.find((c) => c.protected)
-		?.archives.find((a) => a.id === gallery.id);
-
 	const remove = async () => {
-		toast.promise(fetch(`/internal/${gallery.id}/remove`, { method: 'DELETE' }), {
+		toast.promise(fetch(`/internal/${data.gallery.id}/remove`, { method: 'DELETE' }), {
 			loading: 'Deleting archive',
 			success: () => {
 				goto('/');
@@ -193,45 +198,45 @@
 				return 'Failed to delete archive';
 			},
 			position: 'bottom-center',
-			duration: 10000,
+			duration: 10000
 		});
 	};
 </script>
 
 <svelte:head>
-	<title>{gallery.title} • {data.site.name}</title>
+	<title>{data.gallery.title} • {data.site.name}</title>
 </svelte:head>
 
 <MetaTags
 	canonical={data.site.url}
-	description={gallery.description ?? undefined}
+	description={data.gallery.description ?? undefined}
 	openGraph={{
-		url: `${data.site.url}/g/${gallery.id}`,
-		description: gallery.description ?? undefined,
+		url: `${data.site.url}/g/${data.gallery.id}`,
+		description: data.gallery.description ?? undefined,
 		type: 'article',
-		images: [{ url: `${data.site.url}/api/og/g/${gallery.id}` }],
-		siteName: data.site.name,
+		images: [{ url: `${data.site.url}/api/og/g/${data.gallery.id}` }],
+		siteName: data.site.name
 	}}
-	title={gallery.title}
+	title={data.gallery.title}
 	titleTemplate={`%s - ${data.site.name}`}
 	twitter={{
 		cardType: 'summary_large_image',
-		description: gallery.description ?? undefined,
-		image: `${data.site.url}/api/og/g/${gallery.id}`,
-		title: `${gallery.title} - ${data.site.name}`,
+		description: data.gallery.description ?? undefined,
+		image: `${data.site.url}/api/og/g/${data.gallery.id}`,
+		title: `${data.gallery.title} - ${data.site.name}`
 	}}
 />
 
 <main class="container flex flex-col gap-2 md:flex-row">
 	<div class="w-full space-y-2 @container md:w-80">
 		<div class="w-full">
-			<a href={`./${gallery.id}/read/1/${$page.url.search}`}>
+			<a href={`./${data.gallery.id}/read/1${page.url.search}`}>
 				<img
-					alt={`'${gallery.title}' cover`}
-					class="aspect-[45/64] h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
+					alt={`'${data.gallery.title}' cover`}
+					class="aspect-45/64 h-full w-full rounded-md bg-neutral-800 object-contain shadow-md shadow-shadow"
 					height={910}
 					loading="eager"
-					src={`${$siteConfig.imageServer}/image/${gallery.hash}/${gallery.thumbnail}?type=cover`}
+					src={`${data.site.imageServer}/image/${data.gallery.hash}/${data.gallery.thumbnail}?type=cover`}
 					width={640}
 				/>
 			</a>
@@ -243,7 +248,7 @@
 			<div class="grid gap-2 @xs:grid-cols-2">
 				<Button
 					class="flex w-full bg-sky-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-sky-700/80"
-					on:click={() => (editOpen = true)}
+					onclick={() => (editOpen = true)}
 				>
 					<Pencil class="size-5 shrink-0" />
 					<span class="flex-auto"> Edit info </span>
@@ -251,13 +256,13 @@
 
 				<Button
 					class="flex w-full bg-orange-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-orange-700/80"
-					on:click={() => (editTaxonomyOpen = true)}
+					onclick={() => (editTaxonomyOpen = true)}
 				>
 					<Tag class="size-5 shrink-0" />
 					<span class="flex-auto"> Edit tags </span>
 				</Button>
 
-				{#if archive?.deletedAt}
+				{#if data.archive?.deletedAt}
 					<form action="?/show" method="POST" use:enhance>
 						<Button
 							class="flex w-full bg-slate-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-slate-700/80"
@@ -281,8 +286,8 @@
 
 				<Button
 					class="flex w-full bg-red-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-red-700/80"
-					on:click={() =>
-						$siteConfig.admin.deleteRequireConfirmation ? (removeArchiveOpen = true) : remove()}
+					onclick={() =>
+						data.site.admin.deleteRequireConfirmation ? (removeArchiveOpen = true) : remove()}
 					type="submit"
 				>
 					<Trash2 class="size-5 shrink-0" />
@@ -296,8 +301,8 @@
 		<div class="grid gap-2 @xs:grid-cols-2">
 			{#if !data.readEntry || data.readEntry.finishedAt}
 				<Button
-					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
-					href={`./${gallery.id}/read/1${$page.url.search}`}
+					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
+					href={`./${data.gallery.id}/read/1${page.url.search}`}
 					variant="secondary"
 				>
 					<BookOpenText class="size-5 shrink-0" />
@@ -305,8 +310,8 @@
 				</Button>
 			{:else}
 				<Button
-					class={'flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80'}
-					href={`./${gallery.id}/read/${data.readEntry.lastPage}${$page.url.search}`}
+					class="flex w-full bg-indigo-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-indigo-700/80"
+					href={`./${data.gallery.id}/read/${data.readEntry.lastPage}${page.url.search}`}
 					variant="secondary"
 				>
 					<BookOpenText class="size-5 shrink-0" />
@@ -320,8 +325,8 @@
 						'flex w-full bg-green-700 text-center font-semibold text-white shadow shadow-shadow hover:bg-green-700/80',
 						!canDownload && 'pointer-events-none opacity-50'
 					)}
-					href="/g/{gallery.id}/download"
-					on:click={startDownload}
+					href="/g/{data.gallery.id}/download"
+					onclick={startDownload}
 					variant="secondary"
 				>
 					<Download class="size-5 shrink-0" />
@@ -364,7 +369,7 @@
 						{/if}
 					</div>
 
-					{#if $siteConfig.enableCollections}
+					{#if data.site.enableCollections}
 						<Dialog.Root onOpenChange={(open) => (collectionsOpen = open)} open={collectionsOpen}>
 							<Dialog.Trigger>
 								<Button
@@ -380,7 +385,7 @@
 								</Button>
 							</Dialog.Trigger>
 							<Dialog.Content>
-								<BookmarkDialog {gallery} />
+								<BookmarkDialog gallery={data.gallery} />
 							</Dialog.Content>
 						</Dialog.Root>
 					{/if}
@@ -390,22 +395,22 @@
 
 		<div class="overflow-clip rounded shadow-md shadow-shadow">
 			<InfoSection class="space-y-1">
-				<p class="text-lg font-semibold leading-6">{gallery.title}</p>
+				<p class="text-lg font-semibold leading-6">{data.gallery.title}</p>
 				<p class="text-sm text-muted-foreground-light">
-					{generateFilename(gallery.title, gallery.tags)}
+					{generateFilename(data.gallery.title, data.gallery.tags)}
 				</p>
 			</InfoSection>
 
-			{#if gallery.description?.length}
+			{#if data.gallery.description?.length}
 				<InfoSection name="Description">
-					<p class="text-sm">{gallery.description}</p>
+					<p class="text-sm">{data.gallery.description}</p>
 				</InfoSection>
 			{/if}
 
 			{#if artists.length}
 				<InfoSection name="Artists">
 					<div class="flex flex-wrap gap-2">
-						{#each artists as artist}
+						{#each artists as artist (`${artist.namespace}:${artist.name}`)}
 							<Chip tag={artist} />
 						{/each}
 					</div>
@@ -415,7 +420,7 @@
 			{#if circles.length}
 				<InfoSection name="Circles">
 					<div class="flex flex-wrap gap-2">
-						{#each circles as circle}
+						{#each circles as circle (`${circle.namespace}:${circle.name}`)}
 							<Chip tag={circle} />
 						{/each}
 					</div>
@@ -425,7 +430,7 @@
 			{#if magazines.length}
 				<InfoSection name="Magazines">
 					<div class="flex flex-wrap gap-2">
-						{#each magazines as magazine}
+						{#each magazines as magazine (`${magazine.namespace}:${magazine.name}`)}
 							<Chip tag={magazine} />
 						{/each}
 					</div>
@@ -435,7 +440,7 @@
 			{#if events.length}
 				<InfoSection name="Events">
 					<div class="flex flex-wrap gap-2">
-						{#each events as event}
+						{#each events as event (`${event.namespace}:${event.name}`)}
 							<Chip tag={event} />
 						{/each}
 					</div>
@@ -445,7 +450,7 @@
 			{#if publishers.length}
 				<InfoSection name="Publishers">
 					<div class="flex flex-wrap gap-2">
-						{#each publishers as publisher}
+						{#each publishers as publisher (`${publisher.namespace}:${publisher.name}`)}
 							<Chip tag={publisher} />
 						{/each}
 					</div>
@@ -455,7 +460,7 @@
 			{#if parodies.length}
 				<InfoSection name="Parodies">
 					<div class="flex flex-wrap gap-2">
-						{#each parodies as parody}
+						{#each parodies as parody (`${parody.namespace}:${parody.name}`)}
 							<Chip tag={parody} />
 						{/each}
 					</div>
@@ -465,26 +470,26 @@
 			{#if tags.length}
 				<InfoSection name="Tags">
 					<div class="flex flex-wrap gap-2">
-						{#each tags as tag}
+						{#each tags as tag (`${tag.namespace}:${tag.name}`)}
 							<Chip {tag} />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if gallery.sources?.length}
+			{#if data.gallery.sources?.length}
 				<InfoSection name="Sources">
 					<div class="flex flex-wrap gap-2">
-						{#each gallery.sources as source}
+						{#each data.gallery.sources as source (`${source.name}:${source.url}`)}
 							<GallerySource {source} />
 						{/each}
 					</div>
 				</InfoSection>
 			{/if}
 
-			{#if gallery.series.length}
+			{#if data.gallery.series.length}
 				<InfoSection name="Series">
-					{#each gallery.series as series}
+					{#each data.gallery.series as series (series.id)}
 						<p class="text-sm">
 							• <a
 								class="font-medium hover:underline hover:underline-offset-4"
@@ -498,48 +503,54 @@
 			{/if}
 
 			<InfoSection name="Length">
-				<p class="text-sm">{gallery.pages} pages</p>
+				<p class="text-sm">{data.gallery.pages} pages</p>
 			</InfoSection>
 
-			{#if gallery.size}
+			{#if data.gallery.size}
 				<InfoSection name="Size">
-					<p class="text-sm">{humanFileSize(gallery.size)}</p>
+					<p class="text-sm">{humanFileSize(data.gallery.size)}</p>
 				</InfoSection>
 			{/if}
 
-			{#if gallery.releasedAt}
+			{#if data.gallery.releasedAt}
 				<InfoSection name="Released">
 					<p class="text-sm">
-						{dateTimeFormat(gallery.releasedAt)}
+						{dateTimeFormat(data.gallery.releasedAt)}
 					</p>
 				</InfoSection>
 			{/if}
 
 			<InfoSection name="Added">
 				<p class="text-sm">
-					{dateTimeFormat(gallery.createdAt)}
+					{dateTimeFormat(data.gallery.createdAt)}
 				</p>
 			</InfoSection>
 		</div>
 	</div>
 
-	<GalleryThumbnails archive={gallery} />
+	<GalleryThumbnails
+		gallery={data.gallery}
+		galleryAutoLoadMorePreviews={data.site.galleryAutoLoadMorePreviews}
+		galleryPreviewsCount={data.site.galleryPreviewsCount}
+		galleryShowAllPreviews={data.site.galleryShowAllPreviews}
+		imageServer={data.site.imageServer}
+	/>
 </main>
 
-<Dialog.Root
-	closeOnEscape={false}
-	closeOnOutsideClick={false}
-	onOpenChange={(open) => (editOpen = open)}
-	open={editOpen}
->
-	<Dialog.Content class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl">
-		{#if archive && data.editForm}
+<Dialog.Root onOpenChange={(open) => (editOpen = open)} open={editOpen}>
+	<Dialog.Content
+		class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl"
+		escapeKeydownBehavior="ignore"
+		interactOutsideBehavior="ignore"
+	>
+		{#if data.archive && data.editForm}
 			<ArchiveEditForm
-				{archive}
-				data={data.editForm}
-				on:close={() => (editOpen = false)}
-				on:result={({ detail }) => {
-					if (detail.type === 'success') {
+				archive={data.archive}
+				form={data.editForm}
+				imageServer={data.site.imageServer}
+				onClose={() => (editOpen = false)}
+				onResult={(result) => {
+					if (result.type === 'success') {
 						editOpen = false;
 					}
 				}}
@@ -548,22 +559,22 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root
-	closeOnEscape={false}
-	closeOnOutsideClick={false}
-	onOpenChange={(open) => (editTaxonomyOpen = open)}
-	open={editTaxonomyOpen}
->
-	<Dialog.Content class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl">
-		{#if archive && data.editTagsForm}
+<Dialog.Root onOpenChange={(open) => (editTaxonomyOpen = open)} open={editTaxonomyOpen}>
+	<Dialog.Content
+		class="max-h-[95dvh] overflow-auto md:w-[95dvw] md:max-w-5xl"
+		escapeKeydownBehavior="ignore"
+		interactOutsideBehavior="ignore"
+	>
+		{#if data.archive && data.editTagsForm}
 			<ArchiveTagsEditForm
-				data={data.editTagsForm}
-				on:close={() => (editTaxonomyOpen = false)}
-				on:result={({ detail }) => {
-					if (detail.type === 'success') {
+				form={data.editTagsForm}
+				onClose={() => (editTaxonomyOpen = false)}
+				onResult={(result) => {
+					if (result.type === 'success') {
 						editTaxonomyOpen = false;
 					}
 				}}
+				tagList={data.tagList}
 			/>
 		{/if}
 	</Dialog.Content>
@@ -580,7 +591,7 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action on:click={remove}>Continue</AlertDialog.Action>
+			<AlertDialog.Action onclick={remove}>Continue</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

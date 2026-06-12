@@ -1,56 +1,66 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import type { Gallery, Image } from '$lib/types.js';
+	import { cn, getImageDimensions, getImageUrl } from '$lib/utils.js';
+	import ChapterEndToast from './ChapterEndToast.svelte';
+	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader.svelte.js';
+	import TouchNavigation from './TouchNavigation.svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import ChapterEndToast from './ChapterEndToast.svelte';
-	import type { Scaling, ScalingOption, TouchLayoutOption } from './reader';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import { siteConfig } from '$lib/stores';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import type { Gallery, Image } from '$lib/types';
-	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
-	import type { ReaderPreset } from '~shared/config/image.schema';
+	import type { ReaderPreset } from '~shared/config/image.schema.js';
 
-	export let gallery: Gallery;
+	let {
+		gallery,
+		currentPage,
+		minWidth,
+		maxWidth,
+		selectedPreset,
+		selectedScalingOption,
+		selectedTouchLayoutOption,
+		previewLayout,
+		hasPrevious,
+		hasNext,
+		toolbarPosition,
+		onPrevious,
+		onNext,
+		onMenu,
+		imageServer
+	}: {
+		gallery: Gallery;
+		currentPage: number;
+		minWidth: number;
+		maxWidth: number;
+		selectedPreset: ReaderPreset | undefined;
+		selectedScalingOption: ScalingOption;
+		selectedTouchLayoutOption: TouchLayoutOption;
+		previewLayout: boolean;
+		hasPrevious: boolean;
+		hasNext: boolean;
+		toolbarPosition: 'top' | 'bottom';
+		onPrevious: () => void;
+		onNext: () => void;
+		onMenu: (value?: boolean) => void;
+		imageServer: string;
+	} = $props();
 
-	export let currentPage: number;
+	let isMounted = $state(false);
 
-	export let minWidth: number;
-	export let maxWidth: number;
+	const currentImage = $derived(gallery.images[currentPage - 1]!);
+	const selectedScaling = $derived(selectedScalingOption.value);
+	const imageWidth = $derived(selectedPreset?.width ?? currentImage.width);
+	const imageHeight = $derived(
+		selectedPreset?.width
+			? Math.round((selectedPreset?.width * currentImage.height!) / currentImage.width!)
+			: currentImage.height
+	);
+	const imageUrl = $derived(getImageUrl(currentPage, gallery, selectedPreset, imageServer));
 
-	export let selectedPreset: ReaderPreset | undefined;
-	export let selectedScalingOption: ScalingOption;
-	export let selectedTouchLayoutOption: TouchLayoutOption;
+	let scrollContainer: HTMLDivElement = $state(undefined!);
+	let navContainer: HTMLDivElement = $state(undefined!);
+	let imageElement: HTMLImageElement = $state(undefined!);
 
-	export let previewLayout: boolean;
-
-	export let hasPrevious: boolean;
-	export let hasNext: boolean;
-
-	export let toolbarPosition: 'top' | 'bottom';
-
-	export let onPrevious: () => void;
-	export let onNext: () => void;
-	export let onMenu: (value?: boolean) => void;
-
-	let isMounted = false;
-
-	$: currentImage = gallery.images[currentPage - 1]!;
-
-	$: selectedScaling = selectedScalingOption.value;
-
-	$: imageWidth = selectedPreset?.width ?? currentImage.width;
-	$: imageHeight = selectedPreset?.width
-		? Math.round((selectedPreset?.width * currentImage.height!) / currentImage.width!)
-		: currentImage.height;
-
-	$: imageUrl = getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer);
-
-	let scrollContainer: HTMLDivElement;
-	let navContainer: HTMLDivElement;
-	let imageElement: HTMLImageElement;
-
-	let imageStatus = gallery.images.map((image) => ({ ...image, status: 'idle' }));
+	let imageStatus = $state(gallery.images.map((image) => ({ ...image, status: 'idle' as string })));
 
 	function setPosition() {
 		if (!navContainer || !scrollContainer) {
@@ -124,7 +134,7 @@
 			const imageEl = new Image(width, height);
 			imageEl.onload = () => (image.status = 'loaded');
 			imageEl.onerror = () => (image.status = 'loaded');
-			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, $siteConfig.imageServer);
+			imageEl.src = getImageUrl(image.pageNumber, gallery, preset, imageServer);
 		}
 	}
 
@@ -133,23 +143,23 @@
 		setPosition();
 	});
 
-	$: {
+	$effect(() => {
 		if (selectedScaling) {
 			scrollContainer?.scrollTo({ top: 0, behavior: 'instant' });
 		}
-	}
+	});
 
-	$: {
+	$effect(() => {
 		if (isMounted) {
 			preloadPages(currentPage, selectedPreset);
 		}
-	}
+	});
 </script>
 
 <div
 	bind:this={scrollContainer}
 	class="relative w-full overflow-auto"
-	on:scroll={() => setPosition()}
+	onscroll={() => setPosition()}
 >
 	<div
 		class={cn(
@@ -193,10 +203,10 @@
 					componentProps: {
 						gallery,
 						onBack: () => {
-							goto(`/g/${gallery.id}${$page.url.search}`);
+							goto(`/g/${gallery.id}${page.url.search}`);
 							toast.dismiss('end-chapter');
-						},
-					},
+						}
+					}
 				});
 			}
 		}}

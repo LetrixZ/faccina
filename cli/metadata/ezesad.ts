@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { type ArchiveMetadata } from '../../shared/metadata';
+import { type ArchiveMetadata } from '../~shared/metadata.js';
 import eze from './eze';
+import { z } from 'zod/v3';
 
 const metadataSchema = z.object({
 	gallery_info: z.object({
@@ -12,10 +12,10 @@ const metadataSchema = z.object({
 			.object({
 				site: z.string(),
 				gid: z.number(),
-				token: z.string(),
+				token: z.string()
 			})
-			.optional(),
-	}),
+			.optional()
+	})
 });
 
 export default (content: string, archive: ArchiveMetadata) => {

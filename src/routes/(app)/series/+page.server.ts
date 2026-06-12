@@ -1,17 +1,17 @@
-import { redirect } from '@sveltejs/kit';
-import { libraryItems, searchSeries } from '$lib/server/db/queries';
-import { handleTags } from '$lib/server/utils';
+import { libraryItems, searchSeries } from '$lib/server/db/queries.js';
+import { handleTags } from '$lib/server/utils.js';
 import { parseSearchParams } from '$lib/server/utils.js';
 import type { SeriesListItem } from '$lib/types.js';
 import { randomString } from '$lib/utils.js';
-import config from '~shared/config';
-import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers';
+import { redirect } from '@sveltejs/kit';
+import config from '~shared/config.js';
+import { jsonArrayFrom, jsonObjectFrom } from '~shared/db/helpers.js';
 import db from '~shared/db/index.js';
 
 export const load = async ({ url, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams, {
 		sort: 'updated_at',
-		order: 'desc',
+		order: 'desc'
 	});
 
 	if (!locals.user && !config.site.guestAccess) {
@@ -20,8 +20,8 @@ export const load = async ({ url, locals }) => {
 				data: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total: 0,
-			},
+				total: 0
+			}
 		};
 	}
 
@@ -59,11 +59,11 @@ export const load = async ({ url, locals }) => {
 						'archives.hash',
 						'archives.title',
 						'archives.pages',
-						'archives.releasedAt',
+						'archives.releasedAt'
 					])
 					.orderBy('seriesArchive.order asc')
 					.whereRef('seriesArchive.seriesId', '=', 'series.id')
-			).as('chapters'),
+			).as('chapters')
 		])
 		.groupBy('series.id')
 		.where('series.id', 'in', ids)
@@ -74,7 +74,7 @@ export const load = async ({ url, locals }) => {
 				title: row.title,
 				hash: row.main!.hash,
 				thumbnail: row.main!.thumbnail,
-				chapters: row.chapters,
+				chapters: row.chapters
 			}))
 		);
 
@@ -90,7 +90,7 @@ export const load = async ({ url, locals }) => {
 				hash: series.hash,
 				thumbnail: series.thumbnail,
 				chapterCount: 0,
-				tags: [],
+				tags: []
 			});
 			continue;
 		}
@@ -110,7 +110,7 @@ export const load = async ({ url, locals }) => {
 			hash: series.hash,
 			thumbnail: series.thumbnail,
 			chapterCount: series.chapters.length,
-			tags: handleTags(Array.from(uniqueTags.values())),
+			tags: handleTags(Array.from(uniqueTags.values()))
 		});
 	}
 
@@ -119,7 +119,7 @@ export const load = async ({ url, locals }) => {
 			data: seriesList,
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
-		},
+			total
+		}
 	};
 };

@@ -1,11 +1,18 @@
 <script lang="ts">
-	import { Button } from './ui/button';
-	import type { GalleryListItem } from '$lib/types';
+	import type { GalleryListItem } from '$lib/types.js';
+	import { Button } from './ui/button/index.js';
 
-	export let gallery: GalleryListItem;
-	export let bookmarked: boolean;
-	export let collection: string;
-	export let onChange: () => void;
+	let {
+		gallery,
+		bookmarked,
+		collection,
+		onChange
+	}: {
+		gallery: GalleryListItem;
+		bookmarked: boolean;
+		collection: string;
+		onChange: () => void;
+	} = $props();
 </script>
 
 <div class="flex items-center justify-between gap-1">
@@ -19,5 +26,5 @@
 		{/if}
 	</div>
 
-	<Button class="text-xs" on:click={() => onChange()} size="sm" variant="outline">Change</Button>
+	<Button class="text-xs" onclick={() => onChange()} size="sm" variant="outline">Change</Button>
 </div>

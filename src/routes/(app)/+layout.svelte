@@ -1,130 +1,134 @@
 <script lang="ts">
-	import type { ActionResult } from '@sveltejs/kit';
-	import Bookmark from 'lucide-svelte/icons/bookmark';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Heart from 'lucide-svelte/icons/heart';
-	import Home from 'lucide-svelte/icons/house';
-	import LogIn from 'lucide-svelte/icons/log-in';
-	import LogOut from 'lucide-svelte/icons/log-out';
-	import Search from 'lucide-svelte/icons/search';
-	import Settings from 'lucide-svelte/icons/settings';
-	import User from 'lucide-svelte/icons/user';
-	import UserCircle from 'lucide-svelte/icons/user-round';
-	import Book from 'lucide-svelte/icons/book';
 	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
+	import { appState } from '$lib/app.svelte.js';
 	import LoginForm from '$lib/components/login-form.svelte';
 	import RecoverForm from '$lib/components/recover-form.svelte';
 	import RegisterForm from '$lib/components/register-form.svelte';
 	import ResetForm from '$lib/components/reset-form.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Input } from '$lib/components/ui/input';
-	import * as Popover from '$lib/components/ui/popover';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
 	import type { UserFormState } from '$lib/models';
-	import { query, tagList, userCollections } from '$lib/stores';
-	import { cn } from '$lib/utils';
+	import type { Tag } from '$lib/types.js';
+	import { cn } from '$lib/utils.js';
+	import Book from '@lucide/svelte/icons/book';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Heart from '@lucide/svelte/icons/heart';
+	import Home from '@lucide/svelte/icons/house';
+	import LogIn from '@lucide/svelte/icons/log-in';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Search from '@lucide/svelte/icons/search';
+	import Settings from '@lucide/svelte/icons/settings';
+	import User from '@lucide/svelte/icons/user';
+	import UserCircle from '@lucide/svelte/icons/user-round';
+	import type { ActionResult } from '@sveltejs/kit';
 
-	export let data;
+	let { data, children } = $props();
 
-	$: formAction = (() => {
-		switch ($page.route.id) {
+	const formAction = $derived.by(() => {
+		switch (page.route.id) {
 			case '/(app)/favorites':
 			case '/(app)/collections/[slug]':
 			case '/(app)/series':
 			case '/(app)/series/[id]':
-				return $page.url.pathname;
+				return page.url.pathname;
 			default:
 				return '/';
 		}
-	})();
+	});
 
-	let loginOpen = false;
-	let userFormState: UserFormState = 'login';
+	let loginOpen = $state(false);
+	let userFormState: UserFormState = $state('login');
 
-	let formEl: HTMLFormElement;
-	let inputEl: HTMLInputElement;
+	let formEl: HTMLFormElement | null = $state(null);
+	let inputEl: HTMLInputElement | null = $state(null);
 
-	$: sort = $page.url.searchParams.get('sort');
-	$: order = $page.url.searchParams.get('order');
-	$: seed = $page.url.searchParams.get('seed');
+	const sort = $derived(page.url.searchParams.get('sort'));
+	const order = $derived(page.url.searchParams.get('order'));
+	const seed = $derived(page.url.searchParams.get('seed'));
 
-	$: {
-		$query = $page.url.searchParams.get('q') ?? '';
-	}
+	const shouldAutocomplete = $state(true);
 
-	$: shouldAutocomplete = true;
+	let selectPosition = $state(-1);
+	let highligtedIndex = $state(-1);
+	let isFocused = $state(false);
+	let popoverOpen = $state(false);
+	let closedByOutsideClick = $state(false);
 
-	let selectPosition = -1;
-	let highligtedIndex = -1;
-	let isFocused = false;
-	let popoverOpen = false;
+	// svelte-ignore non_reactive_update
 	let negate = false;
+	// svelte-ignore non_reactive_update
 	let or = false;
 
-	$: filteredTags = $query.trim().length
-		? (() => {
-				let value = $query.toLowerCase();
+	const filteredTags = $derived.by(() => {
+		let value = appState.query.trim().toLowerCase();
+		if (!value.length) {
+			return [];
+		}
 
-				if (value[selectPosition - 1] !== ' ') {
-					let wordEnd = selectPosition;
-					let wordStart = selectPosition;
+		if (value[selectPosition - 1] !== ' ') {
+			let wordEnd = selectPosition;
+			let wordStart = selectPosition;
 
-					if (wordEnd < value.length) {
-						while (value[wordEnd] && value[wordEnd] !== ' ') {
-							wordEnd++;
-						}
-					}
-
-					while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
-						wordStart--;
-					}
-
-					if (wordStart >= 0 && wordEnd >= 0) {
-						value = value.substring(wordStart, wordEnd);
-					}
-				} else {
-					value = '';
+			if (wordEnd < value.length) {
+				while (value[wordEnd] && value[wordEnd] !== ' ') {
+					wordEnd++;
 				}
+			}
 
-				if (!value.trim().length || value === '-' || value === '~') {
-					return [];
-				}
+			while (value[wordStart - 1] && value[wordStart - 1] !== ' ') {
+				wordStart--;
+			}
 
-				negate = value[0] === '-';
-				or = value[0] === '~';
+			if (wordStart >= 0 && wordEnd >= 0) {
+				value = value.substring(wordStart, wordEnd);
+			}
+		} else {
+			value = '';
+		}
 
-				if (negate || or) {
-					value = value.substring(1);
-				}
+		if (!value.trim().length || value === '-' || value === '~') {
+			return [];
+		}
 
-				const tagMap = new Map();
+		negate = value[0] === '-';
+		or = value[0] === '~';
 
-				$tagList
-					.filter(({ namespace, name }) => {
-						return (
-							`${namespace}:${name}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name}"`.toLowerCase().includes(value) ||
-							`${namespace}:${name.replaceAll(' ', '_')}`.toLowerCase().includes(value) ||
-							`${namespace}:"${name.replaceAll(' ', '_')}"`.toLowerCase().includes(value)
-						);
-					})
-					.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));
+		if (negate || or) {
+			value = value.substring(1);
+		}
 
-				return Array.from(tagMap.values()).slice(0, 5);
-			})()
-		: [];
+		const tagMap = new Map<string, Tag>();
 
-	$: {
+		data.tagList
+			.filter(({ namespace, name }) => {
+				return (
+					`${namespace}:${name}`.toLowerCase().includes(value) ||
+					`${namespace}:"${name}"`.toLowerCase().includes(value) ||
+					`${namespace}:${name.replaceAll(' ', '_')}`.toLowerCase().includes(value) ||
+					`${namespace}:"${name.replaceAll(' ', '_')}"`.toLowerCase().includes(value)
+				);
+			})
+			.forEach((tag) => tagMap.set(`${tag.namespace}:"${tag.name}"`.toLowerCase(), tag));
+
+		return Array.from(tagMap.values()).slice(0, 5);
+	});
+
+	$effect(() => {
 		if (!isFocused) {
 			highligtedIndex = -1;
 		}
-	}
+	});
+
+	$effect(() => {
+		appState.query = page.url.searchParams.get('q') ?? '';
+	});
 
 	const insertTag = async (input: HTMLInputElement, index?: number) => {
-		let value = $query;
-
 		const currentPosition = input.selectionStart;
 
 		if (currentPosition === null) {
@@ -134,14 +138,14 @@
 		let wordEnd = currentPosition;
 		let wordStart = currentPosition;
 
-		if ($query[currentPosition - 1] !== ' ') {
-			if (wordEnd < $query.length) {
-				while ($query[wordEnd] && $query[wordEnd] !== ' ') {
+		if (appState.query[currentPosition - 1] !== ' ') {
+			if (wordEnd < appState.query.length) {
+				while (appState.query[wordEnd] && appState.query[wordEnd] !== ' ') {
 					wordEnd++;
 				}
 			}
 
-			while ($query[wordStart - 1] && $query[wordStart - 1] !== ' ') {
+			while (appState.query[wordStart - 1] && appState.query[wordStart - 1] !== ' ') {
 				wordStart--;
 			}
 		}
@@ -161,14 +165,16 @@
 			tagValue = '~' + tagValue;
 		}
 
-		value = $query.substring(0, wordStart) + tagValue + $query.substring(wordEnd).trimStart();
-		$query = value;
+		appState.query =
+			appState.query.substring(0, wordStart) +
+			tagValue +
+			appState.query.substring(wordEnd).trimStart();
 
 		highligtedIndex = -1;
 		popoverOpen = false;
 
 		setTimeout(() => {
-			inputEl.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
+			inputEl?.setSelectionRange(wordStart + tagValue.length, wordStart + tagValue.length);
 		}, 1);
 	};
 
@@ -180,7 +186,7 @@
 
 	const logout = () => {
 		fetch(`/logout`, {
-			method: 'POST',
+			method: 'POST'
 		}).then(() => invalidateAll());
 	};
 
@@ -188,25 +194,13 @@
 		userFormState = 'login';
 		loginOpen = true;
 	};
-
-	$: {
-		$userCollections = data.userCollections;
-	}
-
-	$: {
-		$tagList = data.tagList;
-	}
 </script>
 
-<svelte:head>
-	<title>{data.site.name}</title>
-</svelte:head>
-
-<div class="fixed z-20 flex h-fit w-full border-b bg-background shadow dark:border-border">
+<div class="fixed z-9999 flex h-fit w-full border-b bg-background shadow dark:border-border">
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 		href="/"
-		on:click={() => ($query = '')}
+		onclick={() => (appState.query = '')}
 		title="Go home"
 		variant="ghost"
 	>
@@ -216,7 +210,7 @@
 	<Button
 		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 		href="/series"
-		on:click={() => ($query = '')}
+		onclick={() => (appState.query = '')}
 		title="Series"
 		variant="ghost"
 	>
@@ -225,37 +219,36 @@
 
 	<div class="h-12 w-full flex-1 p-2">
 		<Popover.Root
-			disableFocusTrap={true}
 			onOpenChange={(open) => (popoverOpen = open)}
 			open={shouldAutocomplete && !!filteredTags.length && popoverOpen}
-			openFocus={inputEl}
-			portal={formEl}
 		>
 			<form
 				action={formAction}
 				bind:this={formEl}
 				class="relative flex h-full w-full items-center rounded-md bg-muted ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:ring-2 hover:ring-ring hover:ring-offset-2"
-				on:submit={() => (popoverOpen = false)}
+				onsubmit={() => {
+					popoverOpen = false;
+				}}
 			>
 				<Popover.Trigger class="absolute -bottom-3.5 w-full" />
 				<Input
 					autocomplete="off"
-					bind:htmlInput={inputEl}
-					bind:value={$query}
-					class="h-fit flex-grow border-0 bg-transparent py-2 !ring-0 !ring-offset-0"
+					bind:ref={inputEl}
+					bind:value={appState.query}
+					class="h-fit grow border-0 bg-transparent py-2 ring-0! ring-offset-0!"
 					name="q"
-					on:blur={() => (isFocused = false)}
-					on:focus={() => {
+					onblur={() => (isFocused = false)}
+					onfocus={() => {
 						isFocused = true;
 						popoverOpen = true;
 					}}
-					on:input={() => {
+					oninput={() => {
 						popoverOpen = true;
 						setTimeout(() => {
-							selectPosition = inputEl.selectionStart ?? -1;
+							selectPosition = inputEl?.selectionStart ?? -1;
 						}, 1);
 					}}
-					on:keydown={(ev) => {
+					onkeydown={(ev) => {
 						switch (ev.key) {
 							case 'Escape':
 								ev.preventDefault();
@@ -295,9 +288,9 @@
 								break;
 						}
 					}}
-					on:selectionchange={() => {
+					onselectionchange={() => {
 						setTimeout(() => {
-							selectPosition = inputEl.selectionStart ?? -1;
+							selectPosition = inputEl?.selectionStart ?? -1;
 						}, 1);
 					}}
 					placeholder={data.site.searchPlaceholder}
@@ -317,7 +310,7 @@
 				{/if}
 
 				<Button
-					class="aspect-square h-full rounded p-0 text-muted-foreground !ring-0 !ring-offset-0 focus-within:text-foreground"
+					class="aspect-square h-full rounded p-0 text-muted-foreground ring-0! ring-offset-0! focus-within:text-foreground"
 					type="submit"
 					variant="ghost"
 				>
@@ -326,16 +319,40 @@
 				</Button>
 			</form>
 
-			<Popover.Content align="start" class="grid w-fit p-0">
-				{#each filteredTags as tag, i}
+			<Popover.Content
+				align="start"
+				class="grid w-fit p-0 gap-0"
+				onCloseAutoFocus={(ev) => {
+					if (closedByOutsideClick) {
+						ev.preventDefault();
+						closedByOutsideClick = false;
+					} else {
+						ev.preventDefault();
+						inputEl?.focus();
+					}
+				}}
+				onInteractOutside={() => (closedByOutsideClick = true)}
+				onOpenAutoFocus={(ev) => {
+					ev.preventDefault();
+					inputEl?.focus();
+				}}
+				portalProps={{ to: formEl }}
+			>
+				{#each filteredTags as tag, i (tag)}
 					{@const value =
 						`${negate ? '-' : ''}${or ? '~' : ''}${tag.namespace}:${tag.name.split(' ').length > 1 ? `"${tag.name}"` : tag.name}`.toLowerCase()}
 
 					<Button
-						class={cn('justify-start', i === highligtedIndex && 'underline')}
-						on:click={() => {
-							inputEl.focus();
-							insertTag(inputEl, i);
+						class={cn(
+							'justify-start ring-offset-0! ring-0! focus-visible:underline',
+							i === highligtedIndex && 'underline'
+						)}
+						onclick={() => {
+							inputEl?.focus();
+
+							if (inputEl) {
+								insertTag(inputEl, i);
+							}
 						}}
 						variant="link"
 					>
@@ -346,55 +363,59 @@
 		</Popover.Root>
 	</div>
 
-	<DropdownMenu.Root preventScroll={false}>
+	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			<Button
 				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
 				href="/panel"
-				on:click={(ev) => ev.preventDefault()}
+				onclick={(ev) => ev.preventDefault()}
 				variant="ghost"
 			>
 				<UserCircle class="size-6" />
 			</Button>
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content class="min-w-40">
+		<DropdownMenu.Content class="min-w-40" preventScroll={false}>
 			<DropdownMenu.Group>
-				<DropdownMenu.Item
-					class="flex w-full cursor-pointer items-center text-neutral-200"
-					href="/preferences"
-				>
-					Preferences
-					<Settings class="ms-auto size-4" />
+				<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+					{#snippet child({ props })}
+						<a {...props} href="/preferences">
+							Preferences
+							<Settings class="ms-auto size-4" />
+						</a>
+					{/snippet}
 				</DropdownMenu.Item>
 
 				{#if data.user}
 					<DropdownMenu.Separator />
 
-					<DropdownMenu.Item
-						class="flex w-full cursor-pointer items-center text-neutral-200"
-						href="/favorites"
-					>
-						Favorites
-						<Heart class="ms-auto size-4" />
+					<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+						{#snippet child({ props })}
+							<a {...props} href="/favorites">
+								Favorites
+								<Heart class="ms-auto size-4" />
+							</a>
+						{/snippet}
 					</DropdownMenu.Item>
 
 					{#if data.site.enableCollections}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							href="/collections"
-						>
-							Collections
-							<Bookmark class="ms-auto size-4" />
+						<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+							{#snippet child({ props })}
+								<a {...props} href="/collections">
+									Collections
+									<Bookmark class="ms-auto size-4" />
+								</a>
+							{/snippet}
 						</DropdownMenu.Item>
 					{/if}
 
 					{#if data.site.enableReadHistory}
-						<DropdownMenu.Item
-							class="flex w-full cursor-pointer items-center text-neutral-200"
-							href="/read-history"
-						>
-							Read history
-							<Clock class="ms-auto size-4" />
+						<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+							{#snippet child({ props })}
+								<a {...props} href="/read-history">
+									Read history
+									<Clock class="ms-auto size-4" />
+								</a>
+							{/snippet}
 						</DropdownMenu.Item>
 					{/if}
 				{/if}
@@ -402,17 +423,18 @@
 				{#if data.user}
 					<DropdownMenu.Separator />
 
-					<DropdownMenu.Item
-						class="flex w-full cursor-pointer items-center text-neutral-200"
-						href="/account"
-					>
-						Account
-						<User class="ms-auto size-[1.125rem]" />
+					<DropdownMenu.Item class="flex w-full cursor-pointer items-center text-neutral-200">
+						{#snippet child({ props })}
+							<a {...props} href="/account">
+								Account
+								<User class="ms-auto size-4.5" />
+							</a>
+						{/snippet}
 					</DropdownMenu.Item>
 
 					<DropdownMenu.Item
 						class="flex w-full cursor-pointer items-center text-neutral-200"
-						on:click={logout}
+						onclick={logout}
 					>
 						Logout
 						<LogOut class="ms-auto size-4" />
@@ -422,7 +444,7 @@
 
 					<DropdownMenu.Item
 						class="flex w-full cursor-pointer items-center text-neutral-200"
-						on:click={showLogin}
+						onclick={showLogin}
 					>
 						Login
 						<LogIn class="ms-auto size-4" />
@@ -434,7 +456,7 @@
 </div>
 
 <div class="flex w-full flex-auto flex-col pt-12">
-	<slot />
+	{@render children?.()}
 </div>
 
 <Dialog.Root bind:open={loginOpen}>
@@ -442,29 +464,29 @@
 		{#if userFormState === 'register'}
 			<RegisterForm
 				changeState={(state) => (userFormState = state)}
-				data={data.registerForm}
+				form={data.registerForm}
 				hasMailer={data.site.hasMailer}
-				on:result={({ detail }) => handleUserFormResult(detail)}
+				onResult={handleUserFormResult}
 			/>
 		{:else if userFormState === 'recover'}
 			<RecoverForm
 				changeState={(state) => (userFormState = state)}
-				data={data.recoverForm}
+				form={data.recoverForm}
 				hasMailer={data.site.hasMailer}
-				on:result={({ detail }) => handleUserFormResult(detail)}
+				onResult={handleUserFormResult}
 			/>
 		{:else if userFormState === 'reset'}
 			<ResetForm
 				changeState={(state) => (userFormState = state)}
-				data={data.resetForm}
-				on:result={({ detail }) => handleUserFormResult(detail)}
+				form={data.resetForm}
+				onResult={handleUserFormResult}
 			/>
 		{:else if userFormState === 'login'}
 			<LoginForm
 				changeState={(state) => (userFormState = state)}
-				data={data.loginForm}
+				form={data.loginForm}
 				hasMailer={data.site.hasMailer}
-				on:result={({ detail }) => handleUserFormResult(detail)}
+				onResult={handleUserFormResult}
 			/>
 		{/if}
 	</Dialog.Content>

@@ -1,28 +1,32 @@
 <script lang="ts">
+	import { cn, type WithoutChild, type WithoutChildrenOrChild } from '$lib/utils.js';
+	import AlertDialogOverlay from './alert-dialog-overlay.svelte';
+	import AlertDialogPortal from './alert-dialog-portal.svelte';
 	import { AlertDialog as AlertDialogPrimitive } from 'bits-ui';
-	import * as AlertDialog from './index.js';
-	import { cn, flyAndScale } from '$lib/utils.js';
+	import type { ComponentProps } from 'svelte';
 
-	type $$Props = AlertDialogPrimitive.ContentProps;
-
-	export let transition: $$Props['transition'] = flyAndScale;
-	export let transitionConfig: $$Props['transitionConfig'] = undefined;
-
-	let className: $$Props['class'] = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		size = 'default',
+		portalProps,
+		...restProps
+	}: WithoutChild<AlertDialogPrimitive.ContentProps> & {
+		size?: 'default' | 'sm';
+		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof AlertDialogPortal>>;
+	} = $props();
 </script>
 
-<AlertDialog.Portal>
-	<AlertDialog.Overlay />
+<AlertDialogPortal {...portalProps}>
+	<AlertDialogOverlay />
 	<AlertDialogPrimitive.Content
-		{transition}
-		{transitionConfig}
+		bind:ref
 		class={cn(
-			'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg md:w-full',
+			'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 bg-popover text-popover-foreground ring-foreground/10 gap-6 rounded-xl p-6 ring-1 duration-100 data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-lg group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 outline-none',
 			className
 		)}
-		{...$$restProps}
-	>
-		<slot />
-	</AlertDialogPrimitive.Content>
-</AlertDialog.Portal>
+		data-size={size}
+		data-slot="alert-dialog-content"
+		{...restProps}
+	/>
+</AlertDialogPortal>

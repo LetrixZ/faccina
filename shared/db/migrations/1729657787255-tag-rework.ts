@@ -1,9 +1,9 @@
-import { type Kysely } from 'kysely';
 import config from '../../config';
 import { taxonomyTables } from '../../taxonomy';
 import { id, now } from '../helpers';
+import { type Kysely } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'sqlite') {
 		await db.schema.dropIndex('archive_slug').execute();
 	}
@@ -122,6 +122,6 @@ export async function up(db: Kysely<any>): Promise<void> {
 	await db.schema.dropTable('archive_tags_old').execute();
 }
 
-export async function down(_db: Kysely<any>): Promise<void> {
+export async function down(_db: Kysely<unknown>): Promise<void> {
 	// Just don't...
 }

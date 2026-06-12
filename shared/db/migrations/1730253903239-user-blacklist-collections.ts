@@ -1,8 +1,8 @@
-import { type Kysely, sql } from 'kysely';
 import config from '../../config';
 import { id, now } from '../helpers';
+import { type Kysely, sql } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	await db.schema
 		.createTable('user_blacklist')
 		.addColumn('user_id', 'text', (col) =>
@@ -47,7 +47,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	await db.schema.dropIndex('collection_slug').execute();
 	await db.schema.dropIndex('collection_name').execute();
 	await db.schema.dropTable('collection_archive').execute();

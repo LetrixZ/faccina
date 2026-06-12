@@ -1,20 +1,20 @@
 <script lang="ts">
-	import Pencil from 'lucide-svelte/icons/pencil';
-	import Trash from 'lucide-svelte/icons/trash';
+	import { enhance } from '$app/forms';
 	import ListItem from '$lib/components/list-item.svelte';
 	import ListNavbar from '$lib/components/list-navbar.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import PageTitle from '$lib/components/page-title.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Trash from '@lucide/svelte/icons/trash';
 
-	export let data;
+	let { data } = $props();
 
-	let deleteOpen = false;
+	let deleteOpen = $state(false);
 
-	$: library = data.libraryPage;
+	const library = $derived(data.libraryPage);
 </script>
 
 <svelte:head>
@@ -45,7 +45,7 @@
 						</Dialog.Header>
 
 						<div class="flex w-full gap-2">
-							<Button class="flex-auto" on:click={() => (deleteOpen = false)} variant="secondary">
+							<Button class="flex-auto" onclick={() => (deleteOpen = false)} variant="secondary">
 								Cancel
 							</Button>
 
@@ -60,7 +60,14 @@
 	</PageTitle>
 
 	<div class="grid items-end gap-2 md:flex">
-		<ListNavbar {library} type="series" />
+		<ListNavbar
+			defaultOrder={data.site.defaultOrder}
+			defaultPageLimit={data.site.defaultPageLimit}
+			defaultSort={data.site.defaultSort}
+			{library}
+			pageLimits={data.site.pageLimits}
+			type="series"
+		/>
 	</div>
 
 	<Separator />
@@ -68,7 +75,13 @@
 	{#if library.data.length}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
 			{#each library.data as archive (archive.id)}
-				<ListItem enableBookmark={!!data.user} gallery={archive} type="series" />
+				<ListItem
+					collections={data.userCollections}
+					enableBookmark={!!data.user}
+					gallery={archive}
+					imageServer={data.site.imageServer}
+					type="series"
+				/>
 			{/each}
 		</div>
 	{:else}
@@ -78,7 +91,7 @@
 	<Separator />
 
 	<ListPagination
-		class="mx-auto w-fit md:mx-0 md:ms-auto md:flex-grow-0"
+		class="mx-auto w-fit md:mx-0 md:ms-auto md:grow-0"
 		limit={library.limit}
 		total={library.total}
 	/>

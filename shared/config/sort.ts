@@ -9,10 +9,10 @@ export const sortOptions: { value: SortType; label: string }[] = [
 	{ value: 'created_at', label: 'Date added' },
 	{ value: 'title', label: 'Title' },
 	{ value: 'pages', label: 'Pages' },
-	{ value: 'random', label: 'Random' },
+	{ value: 'random', label: 'Random' }
 ];
 
 export const orderOptions: { value: OrderType; label: string }[] = [
 	{ value: 'desc', label: 'Descending' },
-	{ value: 'asc', label: 'Ascending' },
+	{ value: 'asc', label: 'Ascending' }
 ];

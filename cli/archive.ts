@@ -1,29 +1,29 @@
-import { createReadStream } from 'node:fs';
-import { mkdir, rename, rm, stat } from 'node:fs/promises';
-import { dirname, extname, join, parse } from 'node:path';
+import { readStream } from '$lib/server/utils.js';
+import {
+	addEmbeddedDirMetadata,
+	addEmbeddedZipMetadata,
+	addExternalMetadata,
+	MetadataFormat,
+	MetadataSchema
+} from './metadata/index.js';
+import { parseFilename } from './metadata/utils.js';
+import { directorySize, queryIdRanges } from './utilts.js';
 import { Glob, sleep } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { filetypemime } from 'magic-bytes.js';
 import naturalCompare from 'natural-compare-lite';
 import StreamZip from 'node-stream-zip';
+import { createReadStream } from 'node:fs';
+import { mkdir, rename, rm, stat } from 'node:fs/promises';
+import { dirname, extname, join, parse } from 'node:path';
 import slugify from 'slugify';
-import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
-import config from '../shared/config';
-import { now } from '../shared/db/helpers';
-import type { ArchiveMetadata, Image } from '../shared/metadata';
-import { exists, imageDirectory } from '../shared/server.utils';
-import { leadingZeros } from '../shared/utils';
-import {
-	addEmbeddedDirMetadata,
-	addEmbeddedZipMetadata,
-	addExternalMetadata,
-	MetadataFormat,
-	MetadataSchema,
-} from './metadata';
-import { parseFilename } from './metadata/utils';
-import { directorySize, queryIdRanges } from './utilts';
-import { readStream } from '$lib/server/utils';
+import { upsertImages, upsertSeries, upsertSources, upsertTags } from '~shared/archive.js';
+import config from '~shared/config.js';
+import { now } from '~shared/db/helpers.js';
+import type { ArchiveMetadata, Image } from '~shared/metadata.js';
+import { exists, imageDirectory } from '~shared/server.utils.js';
+import { leadingZeros } from '~shared/utils.js';
 
 slugify.extend({ '.': '-', _: '-', '+': '-' });
 
@@ -60,7 +60,7 @@ export type IndexScan = ArchiveScan | MetadataScan;
 export const indexArchives = async (opts: IndexOptions) => {
 	let indexScans: IndexScan[] = [];
 
-	const db = (await import('../shared/db')).default;
+	const db = (await import('~shared/db')).default;
 
 	if (opts.ids) {
 		const archives = await queryIdRanges(db.selectFrom('archives'), opts.ids)
@@ -134,7 +134,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						cwd: path,
 						absolute: true,
 						followSymlinks: true,
-						dot: true,
+						dot: true
 					})
 				)
 					.filter((path) => Array.from(imageGlob.scanSync({ cwd: dirname(path) })).length)
@@ -146,7 +146,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						cwd: path,
 						absolute: true,
 						followSymlinks: true,
-						dot: true,
+						dot: true
 					})
 				);
 
@@ -187,7 +187,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 		{
 			clearOnComplete: true,
 			format: ` {bar} - {path} - {value}/{total}`,
-			linewrap: true,
+			linewrap: true
 		},
 		cliProgress.Presets.shades_grey
 	);
@@ -404,7 +404,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 								archive.tags.push(
 									...artists.map((tag) => ({
 										namespace: 'artist',
-										name: tag,
+										name: tag
 									}))
 								);
 							}
@@ -413,7 +413,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 								archive.tags.push(
 									...circles.map((tag) => ({
 										namespace: 'circle',
-										name: tag,
+										name: tag
 									}))
 								);
 							}
@@ -433,7 +433,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					.sort(naturalCompare)
 					.map((filename, i) => ({
 						filename,
-						pageNumber: i + 1,
+						pageNumber: i + 1
 					}));
 				await zip.close();
 			} else {
@@ -441,7 +441,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 					.sort(naturalCompare)
 					.map((path, i) => ({
 						filename: path,
-						pageNumber: i + 1,
+						pageNumber: i + 1
 					}));
 			}
 
@@ -520,7 +520,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 							thumbnail: archive.thumbnail,
 							pages: images.length,
 							size,
-							updatedAt: now(),
+							updatedAt: now()
 						})
 						.where('id', '=', existingPath.id)
 						.returning(['id', 'protected'])
@@ -593,7 +593,7 @@ export const indexArchives = async (opts: IndexOptions) => {
 						releasedAt: archive.releasedAt?.toISOString(),
 						thumbnail: archive.thumbnail,
 						pages: images.length,
-						size,
+						size
 					})
 					.returning('id')
 					.executeTakeFirstOrThrow();
@@ -692,7 +692,7 @@ export const indexArchives = async (opts: IndexOptions) => {
  * Checks if an archive exists and removes if it wasn't found
  */
 export const pruneArchives = async () => {
-	const db = (await import('../shared/db')).default;
+	const db = (await import('~shared/db')).default;
 
 	const archives = await db.selectFrom('archives').select(['id', 'path']).execute();
 
@@ -717,7 +717,7 @@ export const pruneArchives = async () => {
 };
 
 export const pruneTags = async () => {
-	const db = (await import('../shared/db')).default;
+	const db = (await import('~shared/db')).default;
 
 	const disconnectedTags = await db
 		.selectFrom('tags')

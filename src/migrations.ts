@@ -1,9 +1,9 @@
-import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
-import config from '~shared/config';
-import { exists, imageDirectory } from '~shared/server.utils';
+import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import config from '~shared/config.js';
+import { exists, imageDirectory } from '~shared/server.utils.js';
 
 const migrateImagesSubHashDirectory = async () => {
 	const folders = await readdir(config.directories.images);
@@ -28,7 +28,7 @@ const migrateImagesSubHashDirectory = async () => {
 		{
 			clearOnComplete: true,
 			format: ` {bar} - {path} - {value}/{total}`,
-			linewrap: true,
+			linewrap: true
 		},
 		cliProgress.Presets.shades_grey
 	);

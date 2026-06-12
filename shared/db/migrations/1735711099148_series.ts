@@ -1,7 +1,7 @@
-import type { Kysely } from 'kysely';
 import { id, now } from '../helpers';
+import type { Kysely } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	await id(db.schema, 'series')
 		.addColumn('title', 'varchar(1024)', (col) => col.notNull())
 		.addColumn('description', 'text')
@@ -37,7 +37,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(db: Kysely<unknown>): Promise<void> {
 	await db.schema.dropTable('series_archive').execute();
 	await db.schema.dropTable('series').execute();
 }

@@ -2,25 +2,31 @@
 	import LimitOptions from '$lib/components/limit-options.svelte';
 	import ListPagination from '$lib/components/list-pagination.svelte';
 	import SortOptions from '$lib/components/sort-options.svelte';
-	import type { Sort } from '$lib/schemas';
-	import { siteConfig } from '$lib/stores';
-	import type { LibraryResponse, ListPageType } from '$lib/types';
+	import type { Order, Sort } from '$lib/schemas.js';
+	import type { LibraryResponse, ListPageType } from '$lib/types.js';
 
-	export let library: LibraryResponse<unknown>;
-	export let type: ListPageType = 'main';
-	export let sortOptions: Sort[] | undefined = undefined;
-	export let defaultSort: Sort | undefined = undefined;
+	let {
+		library,
+		type = 'main',
+		pageLimits,
+		defaultPageLimit,
+		sortOptions,
+		defaultSort,
+		defaultOrder
+	}: {
+		library: LibraryResponse<unknown>;
+		type?: ListPageType;
+		pageLimits: number[];
+		defaultPageLimit: number;
+		sortOptions?: Sort[];
+		defaultSort: Sort;
+		defaultOrder: Order;
+	} = $props();
 </script>
 
 <div class="flex w-full gap-2">
-	<LimitOptions pageLimits={$siteConfig.pageLimits} />
-	<SortOptions
-		class="w-full"
-		defaultOrder={$siteConfig.defaultOrder}
-		defaultSort={defaultSort ?? $siteConfig.defaultSort}
-		{sortOptions}
-		{type}
-	/>
+	<LimitOptions {defaultPageLimit} {pageLimits} />
+	<SortOptions class="w-full" {defaultOrder} {defaultSort} {sortOptions} {type} />
 </div>
 
 <ListPagination

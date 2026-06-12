@@ -1,7 +1,7 @@
-import { error, fail, redirect } from '@sveltejs/kit';
 import { libraryItems, searchArchives } from '$lib/server/db/queries.js';
 import { parseSearchParams } from '$lib/server/utils.js';
-import { randomString } from '$lib/utils';
+import { randomString } from '$lib/utils.js';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { jsonArrayFrom } from '~shared/db/helpers.js';
 import db from '~shared/db/index.js';
 
@@ -14,7 +14,7 @@ export const load = async ({ params, url, locals }) => {
 
 	const searchParams = parseSearchParams(url.searchParams, {
 		sort: 'series_order',
-		order: 'asc',
+		order: 'asc'
 	});
 
 	if (searchParams.sort === 'random' && !searchParams.seed) {
@@ -48,12 +48,12 @@ export const load = async ({ params, url, locals }) => {
 
 	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
-		matchIds: series.chapters.map((archive) => archive.archiveId),
+		matchIds: series.chapters.map((archive) => archive.archiveId)
 	});
 
 	const archives = await libraryItems(ids, {
 		sortingIds:
-			sort === 'series_order' ? series.chapters.map((archive) => archive.archiveId) : undefined,
+			sort === 'series_order' ? series.chapters.map((archive) => archive.archiveId) : undefined
 	});
 
 	return {
@@ -62,8 +62,8 @@ export const load = async ({ params, url, locals }) => {
 			data: archives,
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
-		},
+			total
+		}
 	};
 };
 
@@ -82,12 +82,12 @@ export const actions = {
 		if (!series) {
 			return fail(404, {
 				message: 'This series does not exists',
-				type: 'error',
+				type: 'error'
 			});
 		}
 
 		await db.deleteFrom('series').where('id', '=', series.id).execute();
 
 		redirect(301, '/series');
-	},
+	}
 };

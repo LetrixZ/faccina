@@ -1,3 +1,5 @@
+import config from '../config.js';
+import type { DB } from './types.js';
 import {
 	type Expression,
 	ExpressionWrapper,
@@ -5,20 +7,18 @@ import {
 	type SchemaModule,
 	type SelectQueryBuilderExpression,
 	type Simplify,
-	sql,
+	sql
 } from 'kysely';
 import {
 	jsonArrayFrom as postgresJsonArrayFrom,
 	jsonBuildObject as postgresJsonBuildObject,
-	jsonObjectFrom as postgresJsonObjectFrom,
+	jsonObjectFrom as postgresJsonObjectFrom
 } from 'kysely/helpers/postgres';
 import {
 	jsonArrayFrom as sqliteJsonArrayFrom,
 	jsonBuildObject as sqliteJsonBuildObject,
-	jsonObjectFrom as sqliteJsonObjectFrom,
+	jsonObjectFrom as sqliteJsonObjectFrom
 } from 'kysely/helpers/sqlite';
-import config from '../config';
-import type { DB } from './types';
 
 /**
  * Create a new table with a primary key ID

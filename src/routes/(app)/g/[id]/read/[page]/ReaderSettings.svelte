@@ -1,57 +1,63 @@
 <script lang="ts">
-	import Image from 'lucide-svelte/icons/image';
-	import Info from 'lucide-svelte/icons/info';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { type Gallery, type Image as GalleryImage } from '$lib/types.js';
+	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils.js';
 	import {
-		readerStore,
+		reader,
 		readingModeOptions,
 		reverseLayoutOptions,
 		scalingOptions,
-		touchLayoutOptions,
-		type Scaling,
-	} from './reader';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import Input from '$lib/components/ui/input/input.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
-	import * as RadioGroup from '$lib/components/ui/radio-group';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { siteConfig } from '$lib/stores';
-	import { type Gallery, type Image as GalleryImage } from '$lib/types';
-	import { cn, formatLabel, getImageDimensions, getImageUrl } from '$lib/utils';
-	import type { ReaderPreset } from '~shared/config/image.schema';
+		type Scaling
+	} from './reader.svelte.js';
+	import Image from '@lucide/svelte/icons/image';
+	import Info from '@lucide/svelte/icons/info';
+	import type { ReaderPreset } from '~shared/config/image.schema.js';
 
-	export let open = false;
-	export let onOpenChange: (value: boolean) => void;
-	export let readerAllowOriginal: boolean;
+	let {
+		open,
+		previewLayout = $bindable(),
+		gallery,
+		currentPage,
+		currentImage,
+		scrollContainer,
+		presets,
+		selectedPreset,
+		imageServer,
+		readerAllowOriginal,
+		onOpenChange
+	}: {
+		open: boolean;
+		previewLayout?: boolean;
+		gallery: Gallery;
+		currentPage: number;
+		currentImage: GalleryImage;
+		scrollContainer?: HTMLDivElement;
+		presets: ReaderPreset[];
+		selectedPreset?: ReaderPreset;
+		readerAllowOriginal: boolean;
+		imageServer: string;
+		onOpenChange?: (open: boolean) => void;
+	} = $props();
 
-	export let previewLayout = false;
+	let containers: HTMLButtonElement[] = $state([]);
 
-	export let gallery: Gallery;
+	const selectedReadingMode = $derived(reader.current?.readingMode);
 
-	export let currentPage: number;
-	export let currentImage: GalleryImage;
+	const calculateHeight = (width: number) =>
+		Math.round((width * currentImage.height!) / currentImage.width!);
 
-	export let scrollContainer: HTMLDivElement | undefined;
-
-	export let presets: ReaderPreset[];
-
-	export let selectedPreset: ReaderPreset | undefined;
-
-	let containers: HTMLButtonElement[] = [];
-
-	$: selectedReadingMode = $readerStore?.readingMode;
-
-	function calculateHeight(width: number) {
-		return Math.round((width * currentImage.height!) / currentImage.width!);
-	}
-
-	function getStyle(
+	const getStyle = (
 		image: GalleryImage,
 		preset: ReaderPreset | undefined,
 		scaling: Scaling,
 		container: HTMLButtonElement | undefined
-	) {
+	) => {
 		if (!scaling || !container) {
 			return '';
 		}
@@ -73,7 +79,7 @@
 			case 'fill-height':
 				return `height: ${container.clientHeight}px; width: auto;`;
 		}
-	}
+	};
 </script>
 
 <Dialog.Root {onOpenChange} {open}>
@@ -85,7 +91,7 @@
 			<p class="title">Image resampling</p>
 
 			<div
-				class="grid gap-4 max-md:!grid-cols-2"
+				class="grid gap-4 max-md:grid-cols-2!"
 				style="grid-template-columns: repeat({Math.min(
 					4,
 					presets.length + (readerAllowOriginal ? 1 : 0)
@@ -94,26 +100,26 @@
 				{#if readerAllowOriginal}
 					<Button
 						class={cn('relative pe-8', selectedPreset === undefined && 'ring ring-primary')}
-						on:click={() => readerStore.setImagePreset(null)}
+						onclick={() => reader.setImagePreset(null)}
 						variant="outline"
 					>
 						<span class="truncate"> Original </span>
 					</Button>
 				{/if}
 
-				{#each presets as preset}
+				{#each presets as preset (preset.hash)}
 					<Button
 						class={cn('relative pe-8', preset.hash === selectedPreset?.hash && 'ring ring-primary')}
-						on:click={() =>
+						onclick={() =>
 							selectedPreset?.hash === preset.hash
-								? readerAllowOriginal && readerStore.setImagePreset(null)
-								: readerStore.setImagePreset(preset)}
+								? readerAllowOriginal && reader.setImagePreset(null)
+								: reader.setImagePreset(preset)}
 						variant="outline"
 					>
 						<span class="truncate"> {preset.label} </span>
 
 						<Tooltip.Root>
-							<Tooltip.Trigger class="absolute end-2 " tabindex={-1}>
+							<Tooltip.Trigger class="absolute inset-e-2 " tabindex={-1}>
 								<Info class="size-4 text-neutral-300" />
 							</Tooltip.Trigger>
 							<Tooltip.Content class="text-start">
@@ -132,10 +138,10 @@
 		<p class="title">Reading mode</p>
 
 		<div class="grid gap-4 md:grid-cols-2">
-			{#each readingModeOptions as option}
+			{#each readingModeOptions as option (option.value)}
 				<Button
 					class={cn('relative pe-8', option.value === selectedReadingMode && 'ring ring-primary')}
-					on:click={() => readerStore.setReadingMode(option.value)}
+					onclick={() => reader.setReadingMode(option.value)}
 					variant="outline"
 				>
 					<span class="truncate"> {option.label} </span>
@@ -146,32 +152,36 @@
 		<div class="space-y-1 md:w-fit">
 			<Label>Gap between pages</Label>
 			<Input
-				disabled={$readerStore?.readingMode !== 'continuous-vertical'}
+				disabled={reader.current?.readingMode !== 'continuous-vertical'}
 				min="0"
-				on:change={(ev) => readerStore.setVerticalGap(parseInt(ev.currentTarget.value))}
+				onchange={(ev) => reader.setVerticalGap(parseInt(ev.currentTarget.value))}
 				type="number"
-				value={$readerStore?.verticalGap}
+				value={reader.current?.verticalGap}
 			/>
 		</div>
 
 		<p class="title">Page scaling</p>
 
 		<div class="grid grid-cols-3 gap-4">
-			{#each scalingOptions as option, i}
-				<div class="scaling-preview">
+			{#each scalingOptions as option, i (option.value)}
+				<div class="scaling-preview text-sm font-medium flex flex-col items-center gap-2">
 					<button
 						bind:this={containers[i]}
-						class:selected={$readerStore?.scaling === option.value}
-						on:click={() => {
-							readerStore.setScaling(option.value);
+						class={cn(
+							'rounded bg-neutral-900 flex aspect-video self-start justify-center overflow-hidden w-full',
+							reader.current?.scaling === option.value && 'ring ring-primary'
+						)}
+						onclick={() => {
+							reader.setScaling(option.value);
 							scrollContainer?.scrollTo({ top: 0, behavior: 'instant' });
 						}}
 					>
 						<div>
 							<img
 								alt="{gallery.title} page {currentPage}"
+								class="brightness-75"
 								height={currentImage.height}
-								src={getImageUrl(currentPage, gallery, selectedPreset, $siteConfig.imageServer)}
+								src={getImageUrl(currentPage, gallery, selectedPreset, imageServer)}
 								style={getStyle(currentImage, selectedPreset, option.value, containers[i])}
 								width={currentImage.width}
 							/>
@@ -187,22 +197,22 @@
 			<div class="space-y-1">
 				<Label>Min width</Label>
 				<Input
-					disabled={$readerStore?.scaling !== 'original'}
+					disabled={reader.current?.scaling !== 'original'}
 					min="0"
-					on:input={(ev) => readerStore.setMinWidth(parseInt(ev.currentTarget.value))}
+					oninput={(ev) => reader.setMinWidth(parseInt(ev.currentTarget.value))}
 					type="number"
-					value={$readerStore?.minWidth}
+					value={reader.current?.minWidth}
 				/>
 			</div>
 
 			<div class="space-y-1">
 				<Label>Max width</Label>
 				<Input
-					disabled={$readerStore?.scaling !== 'original'}
+					disabled={reader.current?.scaling !== 'original'}
 					min="0"
-					on:input={(ev) => readerStore.setMaxWidth(parseInt(ev.currentTarget.value))}
+					oninput={(ev) => reader.setMaxWidth(parseInt(ev.currentTarget.value))}
 					type="number"
-					value={$readerStore?.maxWidth}
+					value={reader.current?.maxWidth}
 				/>
 			</div>
 		</div>
@@ -210,22 +220,22 @@
 		<p class="title">Touch layout</p>
 
 		<div class="grid gap-6 md:grid-cols-2">
-			<div class="flex flex-grow justify-evenly gap-6">
-				{#each $touchLayoutOptions as layout}
+			<div class="flex grow justify-evenly gap-6">
+				{#each reader.touchLayoutOptions as layout (layout.name)}
 					<button
 						class={cn(
-							'relative flex aspect-[17/24] h-28 items-center justify-center overflow-hidden rounded bg-neutral-800',
-							layout.name === $readerStore?.touchLayout && 'ring ring-primary'
+							'relative flex aspect-17/24 h-28 items-center justify-center overflow-hidden rounded bg-neutral-800',
+							layout.name === reader.current?.touchLayout && 'ring ring-primary'
 						)}
-						on:click={() => readerStore.setTouchLayout(layout.name)}
+						onclick={() => reader.setTouchLayout(layout.name)}
 					>
 						<Image class="size-12 text-neutral-500/50" />
 						<div
 							class="absolute inset-0 m-auto grid"
 							style="grid-template-columns: repeat({layout.rows[0]?.length}, minmax(0, 1fr))"
 						>
-							{#each layout.rows as row}
-								{#each row as column}
+							{#each layout.rows as row, i (i)}
+								{#each row as column, j (j)}
 									{#if column === 'p'}
 										<div class="bg-red-500/60"></div>
 									{:else if column === 'n'}
@@ -265,10 +275,10 @@
 
 		<RadioGroup.Root
 			class="grid grid-cols-2 md:grid-cols-4"
-			onValueChange={(value) => readerStore.setReverseLayout(value)}
-			value={$readerStore?.reverseLayout}
+			onValueChange={(value) => reader.setReverseLayout(value)}
+			value={reader.current?.reverseLayout}
 		>
-			{#each reverseLayoutOptions as option}
+			{#each reverseLayoutOptions as option (option.value)}
 				<div class="flex items-center space-x-2">
 					<RadioGroup.Item id={option.value} value={option.value} />
 					<Label class="w-full cursor-pointer" for={option.value}>{option.label}</Label>
@@ -280,8 +290,8 @@
 
 		<RadioGroup.Root
 			class="grid grid-cols-2 md:grid-cols-4"
-			onValueChange={(value) => readerStore.setToolbarPosition(value)}
-			value={$readerStore?.toolbarPosition}
+			onValueChange={(value) => reader.setToolbarPosition(value)}
+			value={reader.current?.toolbarPosition}
 		>
 			<div class="flex items-center space-x-2">
 				<RadioGroup.Item id="top" value="top" />
@@ -295,43 +305,3 @@
 		</RadioGroup.Root>
 	</Dialog.Content>
 </Dialog.Root>
-
-<style lang="postcss">
-	.scaling-preview {
-		@apply text-sm font-medium;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.scaling-preview > button {
-		@apply rounded bg-neutral-900;
-		display: flex;
-		aspect-ratio: 16/9;
-		align-self: flex-start;
-		justify-content: center;
-		overflow: hidden;
-		width: 100%;
-	}
-
-	.scaling-preview > button.selected {
-		@apply ring ring-primary;
-	}
-
-	.scaling-preview img {
-		filter: brightness(0.75);
-	}
-
-	:global(.scaling-preview .original) {
-		width: 70%;
-	}
-
-	:global(.scaling-preview .fill-width) {
-		width: 100%;
-	}
-
-	:global(.scaling-preview .fill-height) {
-		height: 100%;
-	}
-</style>

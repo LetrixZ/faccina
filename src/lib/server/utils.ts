@@ -1,12 +1,12 @@
-import { appendFile } from 'fs/promises';
+import { orderSchema, sortSchema, type Order, type Sort } from '$lib/schemas.js';
+import type { GalleryListItem, Tag } from '../types';
 import chalk from 'chalk';
 import dayjs from 'dayjs';
+import { appendFile } from 'fs/promises';
 import { omit } from 'ramda';
 import stripAnsi from 'strip-ansi';
-import { z } from 'zod';
-import type { GalleryListItem, Tag } from '../types';
-import config from '~shared/config';
-import { orderSchema, sortSchema, type Order, type Sort } from '$lib/schemas';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 export const handleTags = (tags: Tag[]): Tag[] => {
 	const { tagExclude, tagWeight } = config.site.galleryListing;
@@ -82,11 +82,11 @@ export const searchSchema = z
 					.map((id) => parseInt(id))
 					.filter((id) => !isNaN(id))
 			)
-			.optional(),
+			.optional()
 	})
 	.transform((val) => ({
 		query: val.q,
-		...omit(['q'], val),
+		...omit(['q'], val)
 	}));
 
 export type SearchParams = z.infer<typeof searchSchema>;
@@ -106,7 +106,7 @@ export const parseSearchParams = (
 		.transform((val) => ({
 			...val,
 			sort: val.sort ?? defaults?.sort ?? config.site.defaultSort,
-			order: val.order ?? defaults?.order ?? config.site.defaultOrder,
+			order: val.order ?? defaults?.order ?? config.site.defaultOrder
 		}))
 		.parse(Object.fromEntries(searchParams));
 

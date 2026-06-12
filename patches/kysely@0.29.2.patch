@@ -1,0 +1,15 @@
+diff --git a/node_modules/kysely/.bun-tag-f29cb876cc0133ba b/.bun-tag-f29cb876cc0133ba
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index 24115070bd9d836ddf499c320ff83f8832b93b56..00e100036d85e219a0198a09e55757ebfbb15246 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -30,6 +30,7 @@ export * from './query-builder/case-builder.js';
+ export * from './query-builder/json-path-builder.js';
+ export * from './query-builder/merge-query-builder.js';
+ export * from './query-builder/merge-result.js';
++export * from './query-builder/select-query-builder-expression.js';
+ export * from './query-builder/order-by-item-builder.js';
+ export * from './raw-builder/raw-builder.js';
+ export * from './raw-builder/sql.js';

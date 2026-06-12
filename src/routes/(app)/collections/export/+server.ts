@@ -1,10 +1,10 @@
+import { getGallery } from '$lib/server/db/queries.js';
+import type { Gallery } from '$lib/types.js';
+import { getMetadata } from '$lib/utils.js';
 import { error } from '@sveltejs/kit';
-import { getGallery } from '$lib/server/db/queries';
-import type { Gallery } from '$lib/types';
-import { getMetadata } from '$lib/utils';
-import config from '~shared/config';
-import db from '~shared/db';
-import { jsonArrayFrom } from '~shared/db/helpers';
+import config from '~shared/config.js';
+import { jsonArrayFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const GET = async ({ locals, setHeaders }) => {
 	if (!locals.user) {
@@ -21,7 +21,7 @@ export const GET = async ({ locals, setHeaders }) => {
 					.select('archiveId')
 					.orderBy('collectionArchive.order asc')
 					.whereRef('collection.id', '=', 'collectionId')
-			).as('archives'),
+			).as('archives')
 		])
 		.where('userId', '=', locals.user.id)
 		.groupBy('collection.id')
@@ -52,7 +52,7 @@ export const GET = async ({ locals, setHeaders }) => {
 	}
 
 	setHeaders({
-		'Content-Disposition': 'attachment; filename=collections.json',
+		'Content-Disposition': 'attachment; filename=collections.json'
 	});
 
 	return new Response(
@@ -66,8 +66,8 @@ export const GET = async ({ locals, setHeaders }) => {
 				Sources: gallery.sources.length
 					? gallery.sources.filter((source) => source.url).map((source) => source.url)
 					: undefined,
-				Created: Math.round(new Date(gallery.createdAt).getTime() / 1000),
-			})),
+				Created: Math.round(new Date(gallery.createdAt).getTime() / 1000)
+			}))
 		})
 	);
 };

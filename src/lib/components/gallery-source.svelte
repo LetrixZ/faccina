@@ -1,22 +1,26 @@
 <script lang="ts">
-	import type { HTMLAnchorAttributes } from 'svelte/elements';
+	import Anchira from '$lib/assets/anchira.webp';
+	import ExHentai from '$lib/assets/exhentai.ico';
+	import Fakku from '$lib/assets/fakku.svg';
+	import HenTag from '$lib/assets/hentag.webp';
+	import HentaiNexus from '$lib/assets/hentainexus.webp';
+	import Irodori from '$lib/assets/irodori.webp';
+	import Koharu from '$lib/assets/koharu.png';
+	import Patreon from '$lib/assets/patreon.webp';
+	import Pixiv from '$lib/assets/pixiv.webp';
+	import ProjectHentai from '$lib/assets/project-hentai.webp';
 	import { cn } from '../utils';
-	import Anchira from '../../assets/anchira.webp';
-	import ExHentai from '../../assets/exhentai.ico';
-	import Fakku from '../../assets/fakku.svg';
-	import HenTag from '../../assets/hentag.webp';
-	import HentaiNexus from '../../assets/hentainexus.webp';
-	import Irodori from '../../assets/irodori.webp';
-	import Koharu from '../../assets/koharu.png';
-	import Patreon from '../../assets/patreon.webp';
-	import Pixiv from '../../assets/pixiv.webp';
-	import ProjectHentai from '../../assets/project-hentai.webp';
+	import type { HTMLAnchorAttributes } from 'svelte/elements';
 
-	type $$Props = HTMLAnchorAttributes & { source: { name: string; url?: string | null } };
+	let {
+		source,
+		class: className,
+		...restProps
+	}: {
+		source: { name: string; url?: string | null };
+	} & HTMLAnchorAttributes = $props();
 
-	export let source: { name: string; url?: string | null };
-
-	$: image = (() => {
+	const image = $derived.by(() => {
 		switch (source.name.toLowerCase()) {
 			case 'fakku':
 				return Fakku;
@@ -43,9 +47,9 @@
 			default:
 				return;
 		}
-	})();
+	});
 
-	$: style = (() => {
+	const style = $derived.by(() => {
 		switch (source.name.toLowerCase()) {
 			case 'fakku':
 				return 'background: #AB2328; padding: 0.25rem';
@@ -64,14 +68,11 @@
 			case 'hentainexus':
 				return 'background: black;';
 		}
-	})();
-
-	let className: $$Props['class'] = undefined;
-
-	export { className as class };
+	});
 </script>
 
 <a
+	{...restProps}
 	class={cn(
 		'flex size-6 items-center justify-center overflow-clip rounded-md bg-neutral-400',
 		className

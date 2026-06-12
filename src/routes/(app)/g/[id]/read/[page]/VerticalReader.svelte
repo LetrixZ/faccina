@@ -1,53 +1,70 @@
 <script lang="ts">
+	import { beforeNavigate } from '$app/navigation';
+	import { page } from '$app/state';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import type { Gallery, Image } from '$lib/types.js';
+	import { cn, getImageDimensions, getImageUrl } from '$lib/utils.js';
+	import type { Scaling, TouchLayoutOption } from './reader.svelte.js';
+	import TouchNavigation from './TouchNavigation.svelte';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import TouchNavigation from './TouchNavigation.svelte';
-	import type { Scaling, TouchLayoutOption } from './reader';
-	import { beforeNavigate } from '$app/navigation';
-	import { page } from '$app/stores';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { siteConfig } from '$lib/stores';
-	import type { Gallery, Image } from '$lib/types';
-	import { cn, getImageDimensions, getImageUrl } from '$lib/utils';
-	import type { ReaderPreset } from '~shared/config/image.schema';
+	import type { ReaderPreset } from '~shared/config/image.schema.js';
 
-	export let gallery: Gallery;
-	export let currentPage: number;
+	let {
+		gallery,
+		currentPage,
+		verticalGap,
+		minWidth,
+		maxWidth,
+		selectedScaling,
+		selectedPreset,
+		selectedTouchLayoutOption,
+		previewLayout,
+		hasPrevious,
+		hasNext,
+		gotoPage,
+		onPrevious,
+		onNext,
+		onMenu,
+		imageServer,
+		scrollTo = $bindable(
+			undefined as ((page: number, skipNavigation?: boolean) => void) | undefined
+		)
+	}: {
+		gallery: Gallery;
+		currentPage: number;
+		verticalGap: number;
+		minWidth: number;
+		maxWidth: number;
+		selectedScaling: Scaling;
+		selectedPreset: ReaderPreset | undefined;
+		selectedTouchLayoutOption: TouchLayoutOption;
+		previewLayout: boolean;
+		hasPrevious: boolean;
+		hasNext: boolean;
+		gotoPage: (page: number) => void;
+		onPrevious: () => void;
+		onNext: () => void;
+		onMenu: (value?: boolean) => void;
+		imageServer: string;
+		scrollTo: ((page: number, skipNavigation?: boolean) => void) | undefined;
+	} = $props();
 
-	export let verticalGap: number;
-	export let minWidth: number;
-	export let maxWidth: number;
+	let visiblePage = $state(1);
+	let blockScrollingNavigation = $state(false);
 
-	export let selectedScaling: Scaling;
-	export let selectedPreset: ReaderPreset | undefined;
-	export let selectedTouchLayoutOption: TouchLayoutOption;
+	let scrollContainer: HTMLDivElement = $state(undefined!);
+	let navContainer: HTMLDivElement = $state(undefined!);
+	let endContainer: HTMLDivElement = $state(undefined!);
 
-	export let previewLayout: boolean;
+	let containers: HTMLDivElement[] = $state([]);
 
-	export let hasPrevious: boolean;
-	export let hasNext: boolean;
+	let clientWidth: number = $state(undefined!);
+	let clientHeight: number = $state(0);
 
-	export let gotoPage: (page: number) => void;
-	export let onPrevious: () => void;
-	export let onNext: () => void;
-	export let onMenu: (value?: boolean) => void;
+	let hasWidth = $state(false);
 
-	let visiblePage = 1;
-
-	let blockScrollingNavigation = false;
-
-	let scrollContainer: HTMLDivElement;
-	let navContainer: HTMLDivElement;
-	let endContainer: HTMLDivElement;
-
-	let containers: HTMLDivElement[] = [];
-
-	let clientWidth: number;
-	let clientHeight = 0;
-
-	let hasWidth = false;
-
-	export function scrollTo(page: number, skipNavigation: boolean = false) {
+	scrollTo = (page: number, skipNavigation: boolean = false) => {
 		blockScrollingNavigation = true;
 		containers[page - 1]?.scrollIntoView({ behavior: 'instant' });
 
@@ -56,7 +73,7 @@
 		}
 
 		setTimeout(() => (blockScrollingNavigation = false));
-	}
+	};
 
 	function getStyle(
 		image: Image,
@@ -170,15 +187,15 @@
 		});
 	});
 
-	$: {
+	$effect(() => {
 		getCurrentContainer(clientHeight);
-	}
+	});
 
-	$: {
+	$effect(() => {
 		if (clientWidth !== undefined) {
 			hasWidth = true;
 		}
-	}
+	});
 </script>
 
 <div
@@ -186,7 +203,7 @@
 	bind:clientWidth
 	bind:this={scrollContainer}
 	class="relative h-full w-full overflow-y-auto"
-	on:scroll={onScroll}
+	onscroll={onScroll}
 >
 	<div class="relative h-80 w-full">
 		<div
@@ -224,7 +241,7 @@
 						selectedScaling === 'fill-height' && 'h-full max-h-dvh'
 					)}
 					in:fade={{ duration: 100 }}
-					src={getImageUrl(image.pageNumber, gallery, selectedPreset, $siteConfig.imageServer)}
+					src={getImageUrl(image.pageNumber, gallery, selectedPreset, imageServer)}
 					style={getImageStyle(image, selectedPreset, selectedScaling, minWidth)}
 				/>
 			{/if}
@@ -234,7 +251,7 @@
 	<div bind:this={endContainer} class="relative h-[40dvh] w-full">
 		<div class="absolute inset-0 flex flex-col items-center justify-center gap-4 text-neutral-200">
 			<p class="text-2xl font-medium">End of chapter</p>
-			<Button class="z-50" href="/g/{gallery.id}{$page.url.search}" variant="outline">
+			<Button class="z-50" href="/g/{gallery.id}{page.url.search}" variant="outline">
 				Go back
 			</Button>
 		</div>

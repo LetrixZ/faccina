@@ -1,9 +1,9 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { parseFilename } from './utils.js';
 import dayjs from 'dayjs';
 import arraySupport from 'dayjs/plugin/arraySupport';
-import { z } from 'zod';
-import config from '../../shared/config';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { parseFilename } from './utils';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 dayjs.extend(arraySupport);
 
@@ -15,7 +15,7 @@ const metadataSchema = z.object({
 	publisher: z.string().optional(),
 	tags: z.record(z.string(), z.array(z.string())).optional(),
 	language: z.array(z.string()).optional(),
-	url: z.string().optional(),
+	url: z.string().optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {

@@ -1,20 +1,20 @@
-import { dirname, join, parse } from 'node:path';
+import { getArchive } from '$lib/server/db/queries.js';
+import { metadataSchema } from './metadata/faccina.js';
+import hentag, { metadataSchema as hentagSchema } from './metadata/hentag.js';
+import { queryIdRanges } from './utilts.js';
+import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { extract, partial_ratio } from 'fuzzball';
-import chalk from 'chalk';
+import { dirname, join, parse } from 'node:path';
 import prompts from 'prompts';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
-import { upsertImages, upsertSeries, upsertSources, upsertTags } from '../shared/archive';
-import db from '../shared/db';
-import { jsonArrayFrom, like, now } from '../shared/db/helpers';
-import { generateFilename } from '../shared/utils';
-import { metadataSchema } from './metadata/faccina';
-import hentag, { metadataSchema as hentagSchema } from './metadata/hentag';
-import { queryIdRanges } from './utilts';
-import config from '~shared/config';
-import { getArchive } from '$lib/server/db/queries';
+import { z } from 'zod/v3';
+import { upsertImages, upsertSeries, upsertSources, upsertTags } from '~shared/archive.js';
+import config from '~shared/config.js';
+import { jsonArrayFrom, like, now } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
+import { generateFilename } from '~shared/utils.js';
 
 const henTagUrl = `https://hentag.com/api/v1/search/vault`;
 
@@ -37,7 +37,7 @@ export const scrape = async (
 		paths,
 		sleep,
 		interaction,
-		verbose,
+		verbose
 	}: { idRanges?: string; paths?: string[]; sleep: number; interaction: boolean; verbose: boolean }
 ) => {
 	if (isNaN(sleep)) {
@@ -56,7 +56,7 @@ const scrapeHenTag = async ({
 	paths,
 	sleep,
 	interaction,
-	verbose,
+	verbose
 }: {
 	idRanges?: string;
 	paths?: string[];
@@ -88,7 +88,7 @@ const scrapeHenTag = async ({
 		'nhentai',
 		'chaika',
 		'pururin',
-		'tsumino',
+		'tsumino'
 	];
 
 	const query = idRanges
@@ -113,7 +113,7 @@ const scrapeHenTag = async ({
 				.select(['name', 'url'])
 				.whereRef('archives.id', '=', 'archiveId')
 				.orderBy('archiveSources.createdAt asc')
-		).as('sources'),
+		).as('sources')
 	]);
 
 	if (paths?.length) {
@@ -128,7 +128,7 @@ const scrapeHenTag = async ({
 		{
 			clearOnComplete: true,
 			format: ` {bar} - {title} - {value}/{total}`,
-			linewrap: true,
+			linewrap: true
 		},
 		cliProgress.Presets.shades_grey
 	);
@@ -257,11 +257,11 @@ const scrapeHenTag = async ({
 							...(res.maleTags ?? []).map((t) => `male:${t}`),
 							...(res.femaleTags ?? []).map((t) => `female:${t}`),
 							...(res.characters ?? []).map((t) => `character:${t}`),
-							...(res.otherTags ?? []).map((t) => `tag:${t}`),
+							...(res.otherTags ?? []).map((t) => `tag:${t}`)
 						].join(
 							', '
-						)}\n [similarity: ${partial_ratio(res.title, filename, {})}] (${res.locations?.filter((s) => !s.includes('hentag.com')).join(', ')})`,
-					})),
+						)}\n [similarity: ${partial_ratio(res.title, filename, {})}] (${res.locations?.filter((s) => !s.includes('hentag.com')).join(', ')})`
+					}))
 				});
 
 				result = results[value]!;
@@ -314,7 +314,7 @@ const scrapeHenTag = async ({
 				description: metadata.description,
 				releasedAt: metadata.releasedAt?.toISOString(),
 				language: metadata.language,
-				updatedAt: now(),
+				updatedAt: now()
 			})
 			.where('id', '=', archive.id)
 			.execute();
@@ -375,7 +375,7 @@ export const exportMetadata = async (path: string, opts?: ExportOptions) => {
 			protected: !!archive.protected,
 			created_at: archive.createdAt,
 			released_at: archive.releasedAt,
-			deleted_at: archive.deletedAt,
+			deleted_at: archive.deletedAt
 		});
 
 		if (opts?.excludeImages) {
@@ -462,7 +462,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 					protected: data.protected,
 					createdAt: data.created_at,
 					releasedAt: data.released_at,
-					deletedAt: data.deleted_at,
+					deletedAt: data.deleted_at
 				})
 				.onConflict((oc) =>
 					oc.column('id').doUpdateSet((eb) => ({
@@ -473,7 +473,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 						language: eb.ref('excluded.language'),
 						protected: eb.ref('excluded.protected'),
 						releasedAt: eb.ref('excluded.releasedAt'),
-						deletedAt: eb.ref('excluded.deletedAt'),
+						deletedAt: eb.ref('excluded.deletedAt')
 					}))
 				)
 				.returning('id')
@@ -496,7 +496,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 					protected: data.protected,
 					createdAt: data.created_at,
 					releasedAt: data.released_at,
-					deletedAt: data.deleted_at,
+					deletedAt: data.deleted_at
 				})
 				.onConflict((oc) =>
 					oc.column('id').doUpdateSet((eb) => ({
@@ -511,7 +511,7 @@ export const importMetadata = async (path: string, opts: RestoreOptions) => {
 						protected: eb.ref('excluded.protected'),
 						createdAt: eb.ref('excluded.createdAt'),
 						releasedAt: eb.ref('excluded.releasedAt'),
-						deletedAt: eb.ref('excluded.deletedAt'),
+						deletedAt: eb.ref('excluded.deletedAt')
 					}))
 				)
 				.execute();

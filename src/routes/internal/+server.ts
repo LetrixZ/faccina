@@ -1,9 +1,9 @@
+import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries.js';
+import { parseSearchParams } from '$lib/server/utils.js';
+import type { GalleryLibraryResponse } from '$lib/types.js';
+import { decompressBlacklist, randomString } from '$lib/utils.js';
 import { json, redirect } from '@sveltejs/kit';
-import { getUserBlacklist, libraryItems, searchArchives } from '$lib/server/db/queries';
-import { parseSearchParams } from '$lib/server/utils';
-import type { GalleryLibraryResponse } from '$lib/types';
-import { decompressBlacklist, randomString } from '$lib/utils';
-import config from '~shared/config';
+import config from '~shared/config.js';
 
 export const GET = async ({ url, cookies, locals }) => {
 	const searchParams = parseSearchParams(url.searchParams);
@@ -14,7 +14,7 @@ export const GET = async ({ url, cookies, locals }) => {
 			page: searchParams.page,
 			limit: searchParams.limit,
 			total: 0,
-			seed: searchParams.seed,
+			seed: searchParams.seed
 		} as GalleryLibraryResponse);
 	}
 
@@ -34,7 +34,7 @@ export const GET = async ({ url, cookies, locals }) => {
 	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
 		tagBlacklist: blacklist,
-		matchIds: searchParams.ids,
+		matchIds: searchParams.ids
 	});
 
 	return json({
@@ -42,6 +42,6 @@ export const GET = async ({ url, cookies, locals }) => {
 		page: searchParams.page,
 		limit: searchParams.limit,
 		total,
-		seed: searchParams.seed,
+		seed: searchParams.seed
 	} as GalleryLibraryResponse);
 };

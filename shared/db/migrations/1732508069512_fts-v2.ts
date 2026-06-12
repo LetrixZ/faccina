@@ -1,7 +1,7 @@
-import { Kysely, sql } from 'kysely';
 import config from '../../config';
+import { Kysely, sql } from 'kysely';
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
 	if (config.database.vendor === 'postgresql') {
 		await sql`CREATE COLLATION numeric (provider = icu, locale = 'en@colNumeric=yes');`.execute(db);
 		await sql`ALTER TABLE "archives" ALTER COLUMN title TYPE VARCHAR(1024) COLLATE NUMERIC;`.execute(
@@ -74,4 +74,4 @@ export async function up(db: Kysely<any>): Promise<void> {
 	}
 }
 
-export async function down(_db: Kysely<any>): Promise<void> {}
+export async function down(_db: Kysely<unknown>): Promise<void> {}

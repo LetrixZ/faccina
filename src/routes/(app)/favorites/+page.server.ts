@@ -1,17 +1,16 @@
+import { libraryItems, searchArchives } from '$lib/server/db/queries.js';
+import { parseSearchParams } from '$lib/server/utils.js';
+import { randomString } from '$lib/utils.js';
 import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
-import { libraryItems, searchArchives } from '$lib/server/db/queries';
-import { parseSearchParams } from '$lib/server/utils';
-import { randomString } from '$lib/utils';
-import db from '~shared/db';
+import db from '~shared/db/index.js';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load = async ({ locals, url }) => {
 	if (!locals.user) {
 		redirect(302, `/login?to=/favorites`);
 	}
 
 	const searchParams = parseSearchParams(url.searchParams, {
-		sort: 'saved_at',
+		sort: 'saved_at'
 	});
 
 	if (searchParams.sort === 'random' && !searchParams.seed) {
@@ -37,24 +36,24 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				data: [],
 				page: searchParams.page,
 				limit: searchParams.limit,
-				total: 0,
-			},
+				total: 0
+			}
 		};
 	}
 
 	const { ids, total } = await searchArchives(searchParams, {
 		showHidden: !!locals.user?.admin,
-		matchIds: favorites,
+		matchIds: favorites
 	});
 
 	return {
 		libraryPage: {
 			data: await libraryItems(ids, {
-				sortingIds: sort === 'saved_at' ? favorites : undefined,
+				sortingIds: sort === 'saved_at' ? favorites : undefined
 			}),
 			page: searchParams.page,
 			limit: searchParams.limit,
-			total,
-		},
+			total
+		}
 	};
 };

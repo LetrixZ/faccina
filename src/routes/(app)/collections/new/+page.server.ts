@@ -1,11 +1,11 @@
-import crypto from 'crypto';
+import { createCollectionSchema } from '$lib/schemas.js';
+import { slugify } from '$lib/utils.js';
 import { fail, redirect } from '@sveltejs/kit';
+import crypto from 'crypto';
 import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { slugify } from '$lib/utils';
-import { createCollectionSchema } from '$lib/schemas';
-import config from '~shared/config';
-import db from '~shared/db';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 
 export const load = async ({ locals }) => {
 	if (!locals.user) {
@@ -15,7 +15,7 @@ export const load = async ({ locals }) => {
 	}
 
 	return {
-		createForm: await superValidate(zod(createCollectionSchema)),
+		createForm: await superValidate(zod(createCollectionSchema))
 	};
 };
 
@@ -23,13 +23,13 @@ export const actions = {
 	default: async (event) => {
 		if (!event.locals.user) {
 			return fail(400, {
-				message: 'You are not logged in',
+				message: 'You are not logged in'
 			});
 		}
 
 		if (!config.site.enableCollections) {
 			return fail(400, {
-				message: 'Collections are not enabled',
+				message: 'Collections are not enabled'
 			});
 		}
 
@@ -37,7 +37,7 @@ export const actions = {
 
 		if (!form.valid) {
 			return fail(400, {
-				form,
+				form
 			});
 		}
 
@@ -70,7 +70,7 @@ export const actions = {
 			.values({
 				name,
 				slug,
-				userId: event.locals.user.id,
+				userId: event.locals.user.id
 			})
 			.returning(['id'])
 			.executeTakeFirstOrThrow();
@@ -82,12 +82,12 @@ export const actions = {
 					archives.map((archive, i) => ({
 						archiveId: archive,
 						collectionId: id,
-						order: i,
+						order: i
 					}))
 				)
 				.execute();
 		}
 
 		redirect(300, `/collections/${slug}`);
-	},
+	}
 };

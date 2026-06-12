@@ -1,9 +1,9 @@
+import { type ArchiveMetadata } from '../~shared/metadata.js';
+import { stringOrNumberArray } from './schemas.js';
+import { parseFilename } from './utils.js';
 import YAML from 'yaml';
-import { z } from 'zod';
-import config from '../../shared/config';
-import { type ArchiveMetadata } from '../../shared/metadata';
-import { stringOrNumberArray } from './schemas';
-import { parseFilename } from './utils';
+import { z } from 'zod/v3';
+import config from '~shared/config.js';
 
 const metadataSchema = z.object({
 	title: z.string(),
@@ -21,7 +21,7 @@ const metadataSchema = z.object({
 	mixed: stringOrNumberArray.optional(),
 	other: stringOrNumberArray.optional(),
 	language: stringOrNumberArray.optional(),
-	url: z.string().optional(),
+	url: z.string().optional()
 });
 
 export default async (content: string, archive: ArchiveMetadata) => {

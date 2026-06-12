@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { type Order, type Sort } from './schemas';
-import type { serverSchema } from '~shared/config.schema';
+import { type Order, type Sort } from './schemas.js';
+import { z } from 'zod/v3';
+import type { serverSchema } from '~shared/config.schema.js';
 
 export type TagNamespace =
 	| 'artist'
@@ -153,7 +153,7 @@ export type SiteConfig = {
 export const readStatSchema = z.object({
 	archiveId: z.number(),
 	isLastPage: z.boolean(),
-	pageNumber: z.number(),
+	pageNumber: z.number()
 });
 
 export type ReadStat = z.infer<typeof readStatSchema>;

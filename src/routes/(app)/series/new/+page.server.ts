@@ -1,8 +1,8 @@
+import { createSeriesSchema } from '$lib/schemas.js';
 import { error, redirect } from '@sveltejs/kit';
 import { fail, message, setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
-import { createSeriesSchema } from '$lib/schemas';
-import db from '~shared/db';
+import db from '~shared/db/index.js';
 
 export const load = async ({ locals }) => {
 	if (!locals.user?.admin) {
@@ -10,7 +10,7 @@ export const load = async ({ locals }) => {
 	}
 
 	return {
-		form: await superValidate(zod(createSeriesSchema)),
+		form: await superValidate(zod(createSeriesSchema))
 	};
 };
 
@@ -53,7 +53,7 @@ export const actions = {
 						chapters.map((archiveId, i) => ({
 							archiveId,
 							seriesId: id,
-							order: i,
+							order: i
 						}))
 					)
 					.execute();
@@ -63,5 +63,5 @@ export const actions = {
 		});
 
 		redirect(301, `/series/${seriesId}`);
-	},
+	}
 };

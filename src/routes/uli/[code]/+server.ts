@@ -1,10 +1,9 @@
+import { lucia } from '$lib/server/auth.js';
 import { error, redirect } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { lucia } from '$lib/server/auth';
-import config from '~shared/config';
-import db from '~shared/db';
+import config from '~shared/config.js';
+import db from '~shared/db/index.js';
 
-export const GET: RequestHandler = async ({ params, cookies }) => {
+export const GET = async ({ params, cookies }) => {
 	const code = params.code;
 
 	const user = await db
@@ -17,7 +16,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 	if (!user) {
 		error(400, {
-			message: 'Invalid code',
+			message: 'Invalid code'
 		});
 	}
 
@@ -27,7 +26,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	cookies.set(sessionCookie.name, sessionCookie.value, {
 		path: '.',
 		...sessionCookie.attributes,
-		secure: config.site.secureSessionCookie,
+		secure: config.site.secureSessionCookie
 	});
 
 	await db

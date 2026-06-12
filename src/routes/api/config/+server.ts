@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import config from '~shared/config';
+import config from '~shared/config.js';
 
 export const GET = () => {
 	return json({
@@ -8,10 +8,10 @@ export const GET = () => {
 			presets: config.image.readerPresets.map((preset) => ({
 				name: preset.name,
 				hash: preset.hash,
-				label: preset.label,
+				label: preset.label
 			})),
 			defaultPreset: config.image.readerDefaultPreset,
-			allowOriginal: config.image.readerAllowOriginal,
-		},
+			allowOriginal: config.image.readerAllowOriginal
+		}
 	});
 };

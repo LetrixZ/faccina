@@ -1,35 +1,35 @@
-import { readdirSync } from 'node:fs';
-import { basename, dirname, extname, join, parse } from 'node:path';
+import type { IndexScan, MetadataScan } from '../archive.js';
+import { basenames } from '../utilts.js';
+import type { ArchiveMetadata } from '../~shared/metadata.js';
+import anchira from './anchira.js';
+import booru from './booru.js';
+import ccdc06 from './ccdc06.js';
+import comicinfo from './comicinfo.js';
+import eze from './eze.js';
+import ezesad from './ezesad.js';
+import faccina from './faccina.js';
+import gallerydl from './gallerydl.js';
+import hdoujindl from './hdoujindl.js';
+import hentag from './hentag.js';
+import hentainexus from './hentainexus.js';
+import koharu from './koharu.js';
+import koromo from './koromo.js';
 import { Glob } from 'bun';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import { strFromU8 } from 'fflate';
 import { StreamZipAsync } from 'node-stream-zip';
+import { readdirSync } from 'node:fs';
+import { basename, dirname, extname, join, parse } from 'node:path';
 import { match } from 'ts-pattern';
 import XML2JS from 'xml2js';
 import YAML from 'yaml';
-import type { ArchiveMetadata } from '../../shared/metadata';
-import type { IndexScan, MetadataScan } from '../archive';
-import { basenames } from '../utilts';
-import anchira from './anchira';
-import booru from './booru';
-import ccdc06 from './ccdc06';
-import comicinfo from './comicinfo';
-import eze from './eze';
-import ezesad from './ezesad';
-import faccina from './faccina';
-import gallerydl from './gallerydl';
-import hentag from './hentag';
-import hentainexus from './hentainexus';
-import koharu from './koharu';
-import koromo from './koromo';
-import hdoujindl from './hdoujindl';
 
 export enum MetadataFormat {
 	JSON = 'JSON',
 	YAML = 'YAML',
 	TXT = 'TXT',
-	XML = 'XML',
+	XML = 'XML'
 }
 
 export enum MetadataSchema {
@@ -45,7 +45,7 @@ export enum MetadataSchema {
 	Booru = 'Booru',
 	ComicInfo = 'ComicInfo',
 	Faccina = 'Faccina',
-	HDoujinDL = 'HDoujinDownloader',
+	HDoujinDL = 'HDoujinDownloader'
 }
 
 export const getYamlSchema = (content: string) => {

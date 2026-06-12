@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import db from '~shared/db';
-import { jsonArrayFrom } from '~shared/db/helpers';
+import { jsonArrayFrom } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
 export const GET = async ({ params, locals }) => {
 	const id = parseInt(params.id);
@@ -31,7 +31,7 @@ export const GET = async ({ params, locals }) => {
 					.select(['id', 'namespace', 'name'])
 					.whereRef('archives.id', '=', 'archiveId')
 					.orderBy('archiveTags.createdAt asc')
-			).as('tags'),
+			).as('tags')
 		])
 		.where('id', '=', id);
 

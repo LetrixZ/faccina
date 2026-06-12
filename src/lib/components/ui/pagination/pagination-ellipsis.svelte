@@ -1,19 +1,24 @@
 <script lang="ts">
-	import Ellipsis from 'lucide-svelte/icons/ellipsis';
+	import { cn, type WithElementRef, type WithoutChildren } from '$lib/utils.js';
+	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn } from '$lib/utils';
-
-	type $$Props = HTMLAttributes<HTMLSpanElement>;
-
-	let className: $$Props['class'] = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		...restProps
+	}: WithoutChildren<WithElementRef<HTMLAttributes<HTMLSpanElement>>> = $props();
 </script>
 
 <span
-	aria-hidden
-	class={cn('flex h-9 w-9 items-center justify-center', className)}
-	{...$$restProps}
+	aria-hidden="true"
+	bind:this={ref}
+	class={cn(
+		"size-9 items-center justify-center [&_svg:not([class*='size-'])]:size-4 flex",
+		className
+	)}
+	data-slot="pagination-ellipsis"
+	{...restProps}
 >
-	<Ellipsis class="h-4 w-4" />
+	<MoreHorizontalIcon />
 	<span class="sr-only">More pages</span>
 </span>

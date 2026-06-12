@@ -1,60 +1,70 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import type { Selected } from 'bits-ui';
-	import { siteConfig } from '../stores';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { Label } from '$lib/components/ui/label';
-	import * as Select from '$lib/components/ui/select';
+	import { page } from '$app/state';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
 
-	export let pageLimits: number[];
-	export let value: number | undefined = undefined;
+	let {
+		value = undefined,
+		pageLimits,
+		defaultPageLimit,
+		onChange
+	}: {
+		value?: number;
+		pageLimits: number[];
+		defaultPageLimit: number;
+		onChange?: (value: number) => boolean;
+	} = $props();
 
-	const dispatch = createEventDispatcher<{ change: number }>();
+	const options = $derived(
+		pageLimits?.map((limit) => ({
+			label: limit.toString(),
+			value: limit
+		})) ?? []
+	);
 
-	const options: { label: string; value: number }[] = pageLimits.map((limit) => ({
-		label: limit.toString(),
-		value: limit,
-	}));
-
-	$: limit = (() => {
+	const limit = $derived.by(() => {
 		if (value) {
 			return value;
 		}
 
-		const param = $page.url.searchParams.get('limit');
-
+		const param = page.url.searchParams.get('limit');
 		if (!param) {
-			return $siteConfig.defaultPageLimit;
+			return defaultPageLimit;
 		}
 
 		return parseInt(param) || pageLimits[0];
-	})();
+	});
 
-	$: limitOption = options.find((option) => option.value === limit) ?? options[0];
-
-	const onSelectedChange = (option: Selected<number> | undefined) => {
-		if (!dispatch('change', option?.value ?? pageLimits[0]!, { cancelable: true })) {
+	const onSelectedChange = (value: string | undefined) => {
+		const result = onChange?.(Number(value ?? pageLimits[0]!));
+		if (result) {
 			return;
 		}
 
-		const query = new URLSearchParams($page.url.searchParams.toString());
-		query.set('limit', option?.value.toString() ?? pageLimits[0]!.toString());
+		const query = new URLSearchParams(page.url.searchParams.toString());
+		query.set('limit', (value ?? pageLimits[0]).toString());
 
 		goto(`?${query.toString()}`);
 	};
+
+	const triggerContent = $derived(
+		options.find((option) => option.value === limit)?.label ?? 'Select page limit'
+	);
 </script>
 
 <div class="flex items-end justify-between gap-2">
-	<div class="space-y-0.5 md:w-fit">
+	<div class="space-y-2 md:w-fit">
 		<Label class="text-end">Per page</Label>
-		<Select.Root items={options} {onSelectedChange} preventScroll={false} selected={limitOption}>
+		<Select.Root onValueChange={onSelectedChange} type="single" value={limit?.toString()}>
 			<Select.Trigger aria-label="Select page limit" class="w-20">
-				<Select.Value class="text-muted-foreground-light" />
+				{triggerContent}
 			</Select.Trigger>
-			<Select.Content>
-				{#each options as option}
-					<Select.Item value={option.value}>{option.label}</Select.Item>
+			<Select.Content align="start" preventScroll={false}>
+				{#each options as option (option.value)}
+					<Select.Item label={option.label} value={option.value.toString()}>
+						{option.label}
+					</Select.Item>
 				{/each}
 			</Select.Content>
 		</Select.Root>

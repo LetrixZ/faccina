@@ -1,12 +1,12 @@
-import { randomBytes } from 'crypto';
 import chalk from 'chalk';
+import { randomBytes } from 'crypto';
 import { generateIdFromEntropySize } from 'lucia';
-import config from '../shared/config';
-import { now } from '../shared/db/helpers';
-import { recoveryCode, sendRecoveryEmail } from '../shared/users';
+import config from '~shared/config.js';
+import { now } from '~shared/db/helpers.js';
+import { recoveryCode, sendRecoveryEmail } from '~shared/users.js';
 
 export const generateLoginLink = async (username: string) => {
-	const db = (await import('../shared/db')).default;
+	const db = (await import('~shared/db')).default;
 
 	let user = await db
 		.selectFrom('users')
@@ -23,7 +23,7 @@ export const generateLoginLink = async (username: string) => {
 				.values({
 					id: generateIdFromEntropySize(10),
 					username,
-					passwordHash: Bun.password.hashSync(randomBytes(24).toString('hex')),
+					passwordHash: Bun.password.hashSync(randomBytes(24).toString('hex'))
 				})
 				.returning('id')
 				.executeTakeFirstOrThrow();
@@ -47,7 +47,7 @@ export const generateLoginLink = async (username: string) => {
 		.values({
 			userId: user.id,
 			code,
-			type: 'login',
+			type: 'login'
 		})
 		.execute();
 
@@ -59,7 +59,7 @@ export const generateLoginLink = async (username: string) => {
 };
 
 export const recoverAccess = async (username: string, codeOnly: boolean) => {
-	const db = (await import('../shared/db')).default;
+	const db = (await import('~shared/db')).default;
 
 	const user = await db
 		.selectFrom('users')

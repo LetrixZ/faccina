@@ -1,10 +1,10 @@
-import { resolve } from 'node:path';
+import imageSchema from './config/image.schema.js';
+import metadataSchema from './config/metadata.schema.js';
+import siteSchema from './config/site.schema.js';
 import camelcaseKeys from 'camelcase-keys';
+import { resolve } from 'node:path';
 import type { CamelCase } from 'type-fest';
-import { z } from 'zod';
-import imageSchema from './config/image.schema';
-import metadataSchema from './config/metadata.schema';
-import siteSchema from './config/site.schema';
+import { z } from 'zod/v3';
 
 type CamelCaseOptions = {
 	preserveConsecutiveUppercase?: boolean;
@@ -12,7 +12,7 @@ type CamelCaseOptions = {
 
 type CamelCasedPropertiesDeep<
 	Value,
-	Options extends CamelCaseOptions = { preserveConsecutiveUppercase: true },
+	Options extends CamelCaseOptions = { preserveConsecutiveUppercase: true }
 > = Value extends () => void | Date | RegExp
 	? Value
 	: Value extends Array<infer U>
@@ -30,13 +30,13 @@ export const camelizeSchema = <T extends z.ZodTypeAny>(
 
 export const directoriesSchema = z.object({
 	content: z.string().transform((path) => resolve(path)),
-	images: z.string().transform((path) => resolve(path)),
+	images: z.string().transform((path) => resolve(path))
 });
 
 export const databaseSchema = z.discriminatedUnion('vendor', [
 	z.object({
 		vendor: z.literal('sqlite'),
-		path: z.string(),
+		path: z.string()
 	}),
 	z.object({
 		vendor: z.literal('postgresql'),
@@ -44,14 +44,14 @@ export const databaseSchema = z.discriminatedUnion('vendor', [
 		user: z.string(),
 		password: z.string(),
 		host: z.string().default('localhost'),
-		port: z.number().min(0).max(65535).default(5432),
-	}),
+		port: z.number().min(0).max(65535).default(5432)
+	})
 ]);
 
 export const serverSchema = z.object({
 	logging: z.union([z.boolean(), z.string()]).default(true),
 	auto_unpack: z.boolean().default(false),
-	download_archive_extension: z.enum(['zip', 'cbz']).default('cbz'),
+	download_archive_extension: z.enum(['zip', 'cbz']).default('cbz')
 });
 
 export const mailerSchema = z.object({
@@ -60,7 +60,7 @@ export const mailerSchema = z.object({
 	secure: z.boolean().default(false),
 	user: z.string().optional(),
 	pass: z.string().optional(),
-	from: z.string(),
+	from: z.string()
 });
 
 export const configSchema = z.object({
@@ -70,5 +70,5 @@ export const configSchema = z.object({
 	site: siteSchema.default({}),
 	metadata: metadataSchema.default({}),
 	image: imageSchema.default({}),
-	mailer: mailerSchema.optional(),
+	mailer: mailerSchema.optional()
 });

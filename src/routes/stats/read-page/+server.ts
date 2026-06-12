@@ -1,10 +1,9 @@
-import type { RequestHandler } from '@sveltejs/kit';
-import { readStatSchema } from '$lib/types';
-import config from '~shared/config';
-import db from '~shared/db';
-import { max, now } from '~shared/db/helpers';
+import { readStatSchema } from '$lib/types.js';
+import config from '~shared/config.js';
+import { max, now } from '~shared/db/helpers.js';
+import db from '~shared/db/index.js';
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST = async ({ request, locals }) => {
 	const { data } = readStatSchema.safeParse(await request.json());
 
 	if (locals.user && config.site.enableReadHistory && data) {
@@ -22,7 +21,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					.set((eb) => ({
 						lastReadAt: now(),
 						lastPage: data.pageNumber,
-						maxPage: max(data.pageNumber, eb.ref('maxPage')),
+						maxPage: max(data.pageNumber, eb.ref('maxPage'))
 					}))
 					.where('archiveId', '=', data.archiveId)
 					.where('userId', '=', locals.user.id)
@@ -34,7 +33,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						lastReadAt: now(),
 						lastPage: data.pageNumber,
 						maxPage: max(data.pageNumber, eb.ref('maxPage')),
-						finishedAt: data.isLastPage ? now() : undefined,
+						finishedAt: data.isLastPage ? now() : undefined
 					}))
 					.where('archiveId', '=', data.archiveId)
 					.where('userId', '=', locals.user.id)
@@ -49,7 +48,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					lastPage: data.pageNumber,
 					maxPage: data.pageNumber,
 					finishedAt: data.isLastPage ? now() : undefined,
-					userId: locals.user.id,
+					userId: locals.user.id
 				})
 				.execute();
 		}

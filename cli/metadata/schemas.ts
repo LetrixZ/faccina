@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 export const stringOrNumberArray = z
 	.array(z.union([z.string(), z.number()]))
