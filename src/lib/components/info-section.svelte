@@ -16,7 +16,7 @@
 
 <div
 	class={cn(
-		'bg-neutral-200 p-3 odd:bg-neutral-100 dark:bg-neutral-800 odd:dark:bg-neutral-900',
+		'p-3 bg-neutral-800 odd:bg-neutral-900',
 		className
 	)}
 >

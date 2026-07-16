@@ -44,10 +44,7 @@
 </script>
 
 <Button
-	class={cn(
-		'h-fit w-fit px-1.5 py-0.5 text-sm font-medium text-neutral-50 dark:text-neutral-100',
-		classes
-	)}
+	class={cn('h-fit w-fit px-1.5 py-0.5 text-sm font-medium text-neutral-100', classes)}
 	href={url}
 	variant="secondary"
 	{...newTab && { target: '_blank' }}

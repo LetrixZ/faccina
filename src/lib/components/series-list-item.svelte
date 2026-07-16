@@ -6,7 +6,7 @@
 
 	let {
 		series,
-		imageServer
+		imageServer,
 	}: {
 		series: SeriesListItem;
 		imageServer: string;
@@ -56,7 +56,7 @@
 				width={640}
 			/>
 
-			<div class="absolute bottom-1 inset-e-1 flex gap-1">
+			<div class="inset-e-1 absolute bottom-1 flex gap-1">
 				<div class="w-fit rounded-md bg-neutral-900 p-1 text-xs font-bold text-white opacity-70">
 					{series.chapterCount}C
 				</div>
@@ -81,7 +81,7 @@
 
 			{#if moreCount}
 				<Button
-					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200"
+					class="h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-200"
 					variant="secondary"
 				>
 					+ {moreCount}

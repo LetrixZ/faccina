@@ -196,9 +196,9 @@
 	};
 </script>
 
-<div class="fixed z-9999 flex h-fit w-full border-b bg-background shadow dark:border-border">
+<div class="fixed z-9999 flex h-fit w-full border-b bg-background shadow border-border">
 	<Button
-		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:text-primary"
 		href="/"
 		onclick={() => (appState.query = '')}
 		title="Go home"
@@ -208,7 +208,7 @@
 	</Button>
 
 	<Button
-		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+		class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:text-primary"
 		href="/series"
 		onclick={() => (appState.query = '')}
 		title="Series"
@@ -366,7 +366,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			<Button
-				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:dark:text-primary"
+				class="size-12 rounded-none p-0 text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 hover:text-primary"
 				href="/panel"
 				onclick={(ev) => ev.preventDefault()}
 				variant="ghost"

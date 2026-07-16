@@ -19,7 +19,7 @@
 >
 	<CalendarPrimitive.YearSelect
 		bind:ref
-		class="dark:bg-popover dark:text-popover-foreground absolute inset-0 opacity-0"
+		class="bg-popover text-popover-foreground absolute inset-0 opacity-0"
 		{...restProps}
 	>
 		{#snippet child({ props, yearItems, selectedYearItem })}
