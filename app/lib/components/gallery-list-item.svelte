@@ -96,7 +96,7 @@
 
 			{#if moreCount}
 				<Button
-					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-50 dark:text-neutral-200'}
+					class={'h-6 w-fit px-1.5 py-0 text-xs font-semibold text-neutral-200'}
 					variant="secondary"
 				>
 					+ {moreCount}
