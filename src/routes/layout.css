@@ -135,3 +135,15 @@ main {
 	margin-inline: auto;
 	padding-inline: 2rem;
 }
+
+[data-sonner-toaster][data-sonner-theme='dark'][data-sonner-toaster][data-sonner-theme='dark'] {
+	--bg-opacity: 70%;
+	--success-bg: hsla(150, 100%, 6%, var(--bg-opacity));
+	--info-bg: hsla(215, 100%, 6%, var(--bg-opacity));
+	--warning-bg: hsla(64, 100%, 6%, var(--bg-opacity));
+	--error-bg: hsla(358, 76%, 10%, var(--bg-opacity));
+
+	li {
+		backdrop-filter: blur(10px);
+	}
+}

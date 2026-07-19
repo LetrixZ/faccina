@@ -14,7 +14,6 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import type { Preset } from '$lib/image-presets';
 	import { type Task } from '$lib/models';
 	import {
 		cn,
@@ -39,6 +38,7 @@
 	import { MetaTags } from 'svelte-meta-tags';
 	import { toast } from 'svelte-sonner';
 	import { writable } from 'svelte/store';
+	import type { Preset } from '~shared/image-presets.js';
 	import { generateFilename } from '~shared/utils';
 
 	let { data } = $props();
